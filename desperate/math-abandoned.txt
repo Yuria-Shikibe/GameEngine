@@ -1,0 +1,149 @@
+	// float range(float range) {
+	//     return random(-range, range);
+	// }
+	//
+	// int range(int range) {
+	//     return random(-range, range);
+	// }
+	//
+	// float range(float min, float max) {
+	//     if (chance(0.5)) {
+	//         return random(min, max);
+	//     }
+	//     else {
+	//         return -random(min, max);
+	//     }
+	// }
+
+	// bool chance(double d) {
+	//     return d >= 1f || rand.nextFloat() < d;
+	// }
+
+	/** Returns a random number between 0 (inclusive) and the specified value (inclusive). */
+	// int random(int range) {
+	//     return rand.nextInt(range + 1);
+	// }
+
+	/** Returns a random number between start (inclusive) and end (inclusive). */
+	// int random(int start, int end) {
+	//     return start + rand.nextInt(end - start + 1);
+	// }
+
+	/** Returns a random number between 0 (inclusive) and the specified value (inclusive). */
+	// long random(long range) {
+	//     return (long)(rand.nextDouble() * range);
+	// }
+
+	/** Returns a random number between start (inclusive) and end (inclusive). */
+	// long random(long start, long end) {
+	//     return start + (long)(rand.nextDouble() * (end - start));
+	// }
+
+	/** Returns a random bool value. */
+	// bool randombool() {
+	//     return rand.nextbool();
+	// }
+
+	/** Returns true if a random value between 0 and 1 is less than the specified value. */
+	// bool randombool(float chance) {
+	//     return Mathf.random() < chance;
+	// }
+
+	/** Returns random number between 0.0 (inclusive) and 1.0 (exclusive). */
+	// float random() {
+	//     return rand.nextFloat();
+	// }
+
+	/** Returns a random number between 0 (inclusive) and the specified value (exclusive). */
+	// float random(float range) {
+	//     return rand.nextFloat() * range;
+	// }
+
+	/** Returns a random number between start (inclusive) and end (exclusive). */
+	// float random(float start, float end) {
+	//     return start + rand.nextFloat() * (end - start);
+	// }
+
+	/** Returns -1 or 1, randomly. */
+	// int randomSign() {
+	//     return 1 | (rand.nextInt() >> 31);
+	// }
+
+	//TODO these can be optimized to a single function, setting the seed and getting a result may be expensive
+
+	/** Inclusive. */
+	// int randomSeed(long seed, int min, int max) {
+	//     seedr.setSeed(seed);
+	//     if (isPowerOfTwo(max)) {
+	//         seedr.nextInt();
+	//     }
+	//     return seedr.nextInt(max - min + 1) + min;
+	// }
+	//
+	// /** Inclusive. */
+	// float randomSeed(long seed, float min, float max) {
+	//     seedr.setSeed(seed);
+	//     return (min + seedr.nextFloat() * (max - min));
+	// }
+	//
+	// float randomSeed(long seed) {
+	//     seedr.setSeed(seed * 99999);
+	//     return seedr.nextFloat();
+	// }
+	//
+	// float randomSeed(long seed, float max) {
+	//     seedr.setSeed(seed * 99999);
+	//     return seedr.nextFloat() * max;
+	// }
+	//
+	// float randomSeedRange(long seed, float range) {
+	//     seedr.setSeed(seed * 99999);
+	//     return range * (seedr.nextFloat() - 0.5f) * 2f;
+	// }
+
+	/**
+	 * Returns a triangularly distributed random number between -1.0 (exclusive) and 1.0 (exclusive), where values around zero are
+	 * more likely.
+	 * <p>
+	 * This is an optimized version of {@link randomTriangular(float, float, float) randomTriangular(-1, 1, 0)@endlink}
+	 */
+	// float randomTriangular() {
+	//     return rand.nextFloat() - rand.nextFloat();
+	// }
+
+	/**
+	 * Returns a triangularly distributed random number between {@code -max} (exclusive) and {@code max} (exclusive), where values
+	 * around zero are more likely.
+	 * <p>
+	 * This is an optimized version of {@link randomTriangular(float, float, float) randomTriangular(-max, max, 0)@endlink}
+	 * @param max the upper limit
+	 */
+	// float randomTriangular(float max) {
+	//     return (rand.nextFloat() - rand.nextFloat()) * max;
+	// }
+
+	/**
+	 * Returns a triangularly distributed random number between {@code min} (inclusive) and {@code max} (exclusive), where the
+	 * {@code mode} argument defaults to the midpoint between the bounds, giving a symmetric distribution.
+	 * <p>
+	 * This method is equivalent of {@link #randomTriangular(float, float, float) randomTriangular(min, max, (min + max) * .5f)}
+	 * @param min the lower limit
+	 * @param max the upper limit
+	 */
+	// float randomTriangular(float min, float max) {
+	//     return randomTriangular(min, max, (min + max) * 0.5f);
+	// }
+
+	/**
+	 * Returns a triangularly distributed random number between {@code min} (inclusive) and {@code max} (exclusive), where values
+	 * around {@code mode} are more likely.
+	 * @param min the lower limit
+	 * @param max the upper limit
+	 * @param mode the point around which the values are more likely
+	 */
+	// float randomTriangular(float min, float max, float mode) {
+	//     float u = rand.nextFloat();
+	//     float d = max - min;
+	//     if (u <= (mode - min) / d) return min + (float)sqrt(u * d * (mode - min));
+	//     return max - (float)sqrt((1 - u) * d * (max - mode));
+	// }

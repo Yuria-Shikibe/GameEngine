@@ -1,0 +1,27 @@
+module ;
+
+export module OS.ApplicationListener;
+
+export namespace OS{
+	class ApplicationListener{
+	public:
+		virtual ~ApplicationListener() = default;
+
+		virtual void update() = 0;
+
+		ApplicationListener() = default;
+
+		friend bool operator==(const ApplicationListener& lhs, const ApplicationListener& rhs){
+			return &lhs == &rhs;
+		}
+
+		friend bool operator!=(const ApplicationListener& lhs, const ApplicationListener& rhs){
+			return &lhs != &rhs;
+		}
+
+		ApplicationListener(const ApplicationListener& o) = delete;
+		ApplicationListener(ApplicationListener&& o) = delete;
+		ApplicationListener& operator=(const ApplicationListener& o) = delete;
+		ApplicationListener& operator=(ApplicationListener&& o) = delete;
+	};
+}

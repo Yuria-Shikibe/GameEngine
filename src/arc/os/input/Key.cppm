@@ -1,0 +1,159 @@
+//
+// Created by Matrix on 2023/11/19.
+//
+
+module ;
+
+#include <GLFW/glfw3.h>
+
+export module OS.Key;
+
+import <functional>;
+import <ranges>;
+
+export namespace OS{
+	struct KeyBind {
+	protected:
+		int key = GLFW_KEY_UNKNOWN;
+		int expectedState = GLFW_PRESS;
+		int bindMode = GLFW_MOD_ALT;
+
+		std::function<void(int)> action = nullptr;
+
+	public:
+		KeyBind(const int key, const int expectedState, const std::function<void(int)>& action) : key(key),
+		                                                                                          expectedState(expectedState),
+		                                                                                          action(action) {
+		}
+
+		KeyBind(const int key, const int expectedState) : KeyBind(key, expectedState, nullptr) {
+		}
+
+		explicit KeyBind(const std::function<void(int)>& action) : action(action) {
+		}
+
+		virtual ~KeyBind() = default;
+
+		KeyBind(const KeyBind& other) = default;
+
+		KeyBind(KeyBind&& other) noexcept : key(other.key),
+		                                    expectedState(other.expectedState),
+		                                    action(std::move(other.action)) {
+		}
+
+		KeyBind& operator=(const KeyBind& other) {
+			if (this == &other) return *this;
+			action = other.action;
+			key = other.key;
+			expectedState = other.expectedState;
+			return *this;
+		}
+
+		KeyBind& operator=(KeyBind&& other) noexcept {
+			if (this == &other) return *this;
+			action = std::move(other.action);
+			key = other.key;
+			expectedState = other.expectedState;
+			return *this;
+		}
+
+		bool activated(GLFWwindow* window) const {
+			return glfwGetKey(window, key) == expectedState;
+		}
+
+		bool activated(const int targetState) const {
+			return targetState == expectedState;
+		}
+
+		int keyCode() const {
+			return key;
+		}
+
+		int state() const {
+			return expectedState;
+		}
+
+		void tryRun(const int state) const {
+			if (activated(state))act();
+		}
+
+		void act() const {
+			action(keyCode());
+		}
+
+		friend bool operator==(const KeyBind& lhs, const KeyBind& rhs) {
+			return lhs.key == rhs.key && lhs.expectedState == rhs.expectedState && &lhs.action == &rhs.action;
+		}
+
+		friend bool operator!=(const KeyBind& lhs, const KeyBind& rhs) {
+			return !(lhs == rhs);
+		}
+	};
+
+	struct KeyBindMultipleTarget {
+	protected:
+		std::unordered_map<int, bool> linkedMap;
+		int count = 0;
+		int expectedCount = 0;
+
+		std::function<void()> action = nullptr;
+
+	public:
+		//Should Be Called!
+		void registerRequired(const std::vector<KeyBind>& arr) {
+			for (const auto& keyBind : arr) {
+				linkedMap.insert_or_assign(keyBind.keyCode(), false);
+			}
+
+			expectedCount = static_cast<int>(arr.size());
+		}
+
+		void trigger(const KeyBind& bind) {
+			if (bool& keyState = linkedMap.at(bind.keyCode()); !keyState) {
+				keyState = true;
+				count++;
+			}
+
+			if (count == expectedCount) {
+				action();
+				resetState();
+			}
+		}
+
+		void resetState() {
+			for (bool& val : linkedMap | std::views::values) {
+				val = false;
+			}
+
+			count = 0;
+		}
+
+		explicit KeyBindMultipleTarget(const std::function<void()>& action) : action(action) {
+		}
+
+		explicit KeyBindMultipleTarget(std::function<void()>&& action) : action(std::move(action)) {
+		}
+
+		KeyBindMultipleTarget(const std::function<void()>& action, const std::vector<KeyBind>& arr) : action(action) {
+			registerRequired(arr);
+		}
+	};
+
+	struct KeyBindMultiple final : virtual KeyBind {
+	protected:
+		KeyBindMultipleTarget* linkedTarget = nullptr;
+
+	public:
+		KeyBindMultiple(const int key_, const int expectedState_, KeyBindMultipleTarget* linkedTarget) : KeyBind(key_, expectedState_, [this]([[maybe_unused]] int k) {this->linkedTarget->trigger(*this);}),
+		                                                                                                 linkedTarget(linkedTarget) {
+		}
+
+		KeyBindMultiple(const int key_, KeyBindMultipleTarget* linkedTarget) : KeyBindMultiple(key_, GLFW_PRESS, linkedTarget) {
+		}
+
+
+		KeyBindMultiple(const KeyBind& keyBind, KeyBindMultipleTarget* linkedTarget) : KeyBindMultiple(keyBind.keyCode(), keyBind.state(), linkedTarget) {
+
+		}
+	};
+}
