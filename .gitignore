@@ -4,6 +4,8 @@ cmake-build-debug-visual-studio/
 cmake-build-release-visual-studio/
 .idea/
 
+out/
+.vs/
 # User ================================
 # 用户自定义的其他忽略文件
 
@@ -54,7 +56,6 @@ cmake-build-*/
 *.iws
 
 # IntelliJ
-out/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
