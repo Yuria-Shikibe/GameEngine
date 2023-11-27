@@ -9,6 +9,7 @@ import <glad/glad.h>;
 import <filesystem>;
 import <iostream>;
 import <functional>;
+import <type_traits>;
 import <string>;
 import <span>;
 import <set>;
@@ -83,18 +84,11 @@ export namespace GL {
 		return static_cast<GLuint>(type);
 	}
 
-	struct ShaderTypeHash{
-		size_t operator()(ShaderType type) const{
-			return static_cast<size_t>(type);
-		}
-	};
-
 	class Shader {
 	protected:
-		mutable std::unordered_map <std::string, GLint> uniformLocationMap;
-		mutable std::unordered_map <std::string, GLint> attribuLocationMap;
-
-		mutable std::unordered_map<ShaderType, std::string, ShaderTypeHash> typeList;
+		mutable std::unordered_map <std::string, GLint> uniformLocationMap{};
+		mutable std::unordered_map <std::string, GLint> attribuLocationMap{};
+		mutable std::unordered_map<ShaderType, std::string> typeList{};
 
 		GLuint programID = 0;
 
@@ -146,7 +140,7 @@ export namespace GL {
 		}
 
 		static GLuint compile(const std::string &src, const ShaderType shaderType) {
-			const unsigned int shader = glCreateShader(typeID(shaderType));
+			const GLuint shader = glCreateShader(typeID(shaderType));
 			const char *vert = src.c_str();
 
 			glShaderSource(shader, 1, &vert, nullptr);
@@ -171,11 +165,7 @@ export namespace GL {
 
 		void bindLoaction() const {
 			for(auto& [key, pos] : uniformLocationMap) {
-				auto i = glGetUniformLocation(programID, key.data());
-
-				if(pos == -1) {
-					pos = glGetUniformLocation(programID, key.data());
-				}
+				if(pos == -1)pos = glGetUniformLocation(programID, key.data());
 			}
 		}
 
@@ -228,7 +218,7 @@ export namespace GL {
 			bindLoaction();
 		}
 
-		~Shader(){
+		~Shader(){ // NOLINT(*-use-equals-default)
 			glDeleteProgram(programID);
 		}
 
@@ -263,15 +253,11 @@ export namespace GL {
 			std::vector<ShaderSourceParser> parsers;
 
 			[[nodiscard]] ShaderSourceParserMulti(const std::initializer_list<ShaderSourceParser> list){
-				for(auto parser: list) {
-					parsers.push_back(parser);
-				}
+				for(auto parser: list)parsers.push_back(parser);
 			}
 
 			void operator()(const std::string& line) const {
-				for(const auto& parser: parsers) {
-					parser(line);
-				}
+				for(const auto& parser: parsers)parser(line);
 			}
 		};
 
@@ -342,8 +328,6 @@ export namespace GL {
 			return std::make_unique<Shader>(*shaderDir, list);
 		}
 
-
-
 		void unbind() const {
 			glUseProgram(0);
 		}
@@ -396,7 +380,6 @@ export namespace GL {
 
 		void setTexture2D(const std::string &name, const Texture2D &texture, const int offset = 0) const {
 			texture.active(offset);
-
 
 			texture.bind();
 

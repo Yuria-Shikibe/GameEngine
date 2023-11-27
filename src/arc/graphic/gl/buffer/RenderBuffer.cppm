@@ -10,11 +10,11 @@ export import Graphic.Resizeable;
 export namespace GL{
 class RenderBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableInt{
 	protected:
-		int width, height;
+		unsigned int width, height;
 	public:
 		RenderBuffer() : width(2), height(2){}
 
-		RenderBuffer(const int w, const int h) : width(w), height(h){
+		RenderBuffer(const unsigned int w, const unsigned int h) : width(w), height(h){
 			glGenRenderbuffers(1, &bufferID);
 			targetFlag = GL_RENDERBUFFER;
 
@@ -35,7 +35,7 @@ class RenderBuffer : virtual public GLBuffer, virtual public Graphic::Resizeable
 			glBindRenderbuffer(targetFlag, 0);
 		}
 
-		void resize(const int w, const int h) override{
+		void resize(const unsigned int w, const unsigned int h) override{
 			width = w;
 			height = h;
 			bind();

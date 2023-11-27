@@ -1,7 +1,5 @@
 module;
 
-
-
 export module Core;
 
 import <functional>;
@@ -126,7 +124,8 @@ export namespace Core{
 		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_W, GLFW_PRESS, [](const int k){camera->trans(0,  baseMoveSpeed * OS::delta());}));
 		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_S, GLFW_PRESS, [](const int k){camera->trans(0, -baseMoveSpeed * OS::delta());}));
 
-		input->registerKeyBindMulti(false, {OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) }, []() {camera->setScale(1.0f);});
+		auto keys = std::array{OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) };
+		input->registerKeyBindMulti(false, keys, []() {camera->setScale(1.0f);});
 
 		OS::registerListener(input);
 	}

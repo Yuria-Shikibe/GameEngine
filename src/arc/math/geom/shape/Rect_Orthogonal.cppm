@@ -7,6 +7,7 @@ import Concepts;
 import Math;
 import Geom.Vector2D;
 import Geom.Shape;
+import <ostream>;
 
 export namespace Geom::Shape{
 	/**
@@ -14,7 +15,7 @@ export namespace Geom::Shape{
 	 * \tparam T 
 	 */
 	template <Concepts::Number T>
-	class Rect_Orthogonal final : virtual public Shape<Rect_Orthogonal<T>>{
+	class Rect_Orthogonal final : virtual public Shape<Rect_Orthogonal<T>, T>{
 		static constexpr T HALF = static_cast<T>(2);
 
 		T srcX{0};
@@ -44,7 +45,7 @@ export namespace Geom::Shape{
 
 		Rect_Orthogonal() = default;
 
-		~Rect_Orthogonal() override = default;
+		~Rect_Orthogonal() = default;
 
 		Rect_Orthogonal(const Rect_Orthogonal& other)
 			: srcX(other.srcX),
@@ -78,6 +79,25 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
+		friend bool operator==(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
+			return lhs.srcX == rhs.srcX
+			       && lhs.srcY == rhs.srcY
+			       && lhs.width == rhs.width
+			       && lhs.height == rhs.height;
+		}
+
+		friend bool operator!=(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
+			return !(lhs == rhs);
+		}
+
+		friend std::ostream& operator<<(std::ostream& os, const Rect_Orthogonal& obj) {
+			return os
+			       << "srcX: " << obj.srcX
+			       << " srcY: " << obj.srcY
+			       << " width: " << obj.width
+			       << " height: " << obj.height;
+		}
+
 		[[nodiscard]] T getSrcX() const{
 			return srcX;
 		}
@@ -102,7 +122,7 @@ export namespace Geom::Shape{
 			if(w >= 0){
 				this->width = w;
 			} else{
-				T abs = std::abs(w);
+				T abs = w < 0 ? -w : w; // abs
 				srcX -= abs;
 				this->width = abs;
 			}
@@ -121,10 +141,33 @@ export namespace Geom::Shape{
 				this->height = h;
 			}
 			else {
-				T abs = std::abs(h);
+				T abs = h < 0 ? -h : h; // abs
 				srcY -= abs;
 				this->height = abs;
 			}
+		}
+
+		[[nodiscard]] bool contains(const Rect_Orthogonal& other) const override{
+			return
+				other.srcX > srcX && other.srcX + other.width < srcX + width &&
+				other.srcY > srcY && other.srcY + other.height < srcY + height;
+		}
+
+		[[nodiscard]] bool overlap(const Rect_Orthogonal& other) const override{
+			return !(
+				srcX >= other.srcX + other.width  ||
+				srcX +  width	  <= other.srcX   ||
+				srcY >= other.srcY + other.height ||
+				srcY +  height	  <= other.srcY
+			);
+		}
+
+		[[nodiscard]] bool inBound_edgeExclusive(const Vector2D& v) const override{
+			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
+		}
+
+		[[nodiscard]] bool inBound_edgeInclusive(const Vector2D& v) const override{
+			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
 		[[nodiscard]] T endX() const{
@@ -160,6 +203,13 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
+		Rect_Orthogonal& move(const T x, const T y) {
+			srcX += x;
+			srcY += y;
+
+			return *this;
+		}
+
 		Rect_Orthogonal& setSize(const Vector2D& v) {
 			return *setSize(v.x, v.y);
 		}
@@ -189,19 +239,19 @@ export namespace Geom::Shape{
 		}
 
 		[[nodiscard]] Vector2D vert_00()const {
-			return { srcX, srcY };
+			return { static_cast<float>(srcX), static_cast<float>(srcY) };
 		}
 
 		[[nodiscard]] Vector2D vert_10() const {
-			return { srcX + width, srcY };
+			return { static_cast<float>(srcX + width), static_cast<float>(srcY) };
 		}
 
 		[[nodiscard]] Vector2D vert_01() const {
-			return { srcX, srcY + height };
+			return { static_cast<float>(srcX), static_cast<float>(srcY + height) };
 		}
 
 		[[nodiscard]] Vector2D vert_11() const {
-			return { srcX + width, srcY + height };
+			return {static_cast<float>(srcX + width), static_cast<float>(srcY + height) };
 		}
 
 		[[nodiscard]] T area() const{
@@ -210,29 +260,6 @@ export namespace Geom::Shape{
 
 		[[nodiscard]] float ratio() const{
 			return static_cast<float>(width) / static_cast<float>(height);
-		}
-
-		[[nodiscard]] bool contains(const Rect_Orthogonal& other) const override{
-			return
-				other.srcX > srcX && other.srcX + other.width < srcX + width &&
-				other.srcY > srcY && other.srcY + other.height < srcY + height;
-		}
-
-		[[nodiscard]] bool overlap(const Rect_Orthogonal& other) const override{
-			return !(
-				srcX >= other.srcX + other.width  ||
-				srcX +  width	  <= other.srcX   ||
-				srcY >= other.srcY + other.height ||
-				srcY +  height	  <= other.srcY
-			);
-		}
-
-		[[nodiscard]] bool inBound_edgeExclusive(const Vector2D& v) const override{
-			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
-		}
-
-		[[nodiscard]] bool inBound_edgeInclusive(const Vector2D& v) const override{
-			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
 		std::vector<Vector2D>& vertices(std::vector<Vector2D>& collector) const override{
@@ -247,4 +274,5 @@ export namespace Geom::Shape{
 
 	using OrthoRectFloat = Rect_Orthogonal<float>;
 	using OrthoRectInt = Rect_Orthogonal<int>;
+	using OrthoRectUInt = Rect_Orthogonal<unsigned int>;
 }

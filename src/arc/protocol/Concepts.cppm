@@ -23,4 +23,7 @@ export namespace Concepts {
 
 	template <typename T, typename functype>
 	concept Invokable = std::is_convertible_v<T, std::function<functype>>;
+
+	template <typename T>
+	concept Enum = std::is_enum_v<T>;
 }

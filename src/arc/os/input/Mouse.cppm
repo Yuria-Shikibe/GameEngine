@@ -51,6 +51,10 @@ export namespace OS{
 		void tryRun(const int state) const {
 			if (activated(state))action(button);
 		}
+
+		void act() const {
+			action(button);
+		}
 	};
 }
 

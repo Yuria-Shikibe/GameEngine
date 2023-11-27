@@ -107,7 +107,7 @@ export namespace OS{
 			return entry.exists();
 		}
 
-		bool deleteFile() const {  // NOLINT(*-use-nodiscard)
+		[[maybe_unused]] bool deleteFile() const {  // NOLINT(*-use-nodiscard)
 			return exist() && remove(entry);
 		}
 
@@ -141,21 +141,16 @@ export namespace OS{
 			return extension().empty();
 		}
 
-		bool createDir(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
+		[[maybe_unused]] bool createDir(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
 			return  autoCreateParents ? create_directories(entry) : create_directory(entry);
 		}
 
-		[[nodiscard]] File getParent() const {
-			return File{ path().parent_path() };
+		void createDirQuiet(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
+			// ReSharper disable once CppExpressionWithoutSideEffects
+			createDir(autoCreateParents);
 		}
 
-		[[nodiscard]] File subFile(const std::string& name) const {
-			if(!isDir())throw ext::RuntimeException{};
-
-			return File{ absolutePath().string().append("\\").append(name) };
-		}
-
-		bool createFile(const bool autoCreateParents = false) const { // NOLINT(*-use-nodiscard)
+		[[maybe_unused]] bool createFile(const bool autoCreateParents = false) const { // NOLINT(*-use-nodiscard)
 			if (exist())return false;
 
 			if(autoCreateParents){
@@ -169,6 +164,21 @@ export namespace OS{
 			ofStream.close();
 
 			return valid;
+		}
+
+		void createFileQuiet(const bool autoCreateParents = false) const {
+			// ReSharper disable once CppExpressionWithoutSideEffects
+			createFile(autoCreateParents);
+		}
+
+		[[nodiscard]] File getParent() const {
+			return File{ path().parent_path() };
+		}
+
+		[[nodiscard]] File subFile(const std::string& name) const {
+			if(!isDir())throw ext::RuntimeException{};
+
+			return File{ absolutePath().string().append("\\").append(name) };
 		}
 
 		[[nodiscard]] File find(const std::string& name) const{
@@ -252,6 +262,13 @@ export namespace OS{
 			}
 
 			return file_contents.str();
+		}
+
+		template<Concepts::Invokable<void(const std::ofstream&)> Func>
+		void writeByte(const Func& func) {
+			if(std::ofstream ofStream(absolutePath(), std::ios::binary); ofStream.is_open()) {
+				func(ofStream);
+			}
 		}
 
 		[[nodiscard]] std::string readString() const {

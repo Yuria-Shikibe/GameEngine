@@ -16,8 +16,13 @@ import Geom.Matrix3D;
 
 import GL.Blending;
 import GL.Shader;
+import GL.Mesh;
+import GL.Buffer.IndexBuffer;
+import GL.Buffer.VertexBuffer;
+import GL.VertexArray;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
+import <memory>;
 
 using namespace Graphic;
 using namespace Geom;
@@ -36,6 +41,13 @@ export namespace Graphic::Draw{
 	inline float contextStroke = 1.0f;
 
 	inline Matrix3D MAT_IDT;
+
+	inline std::unique_ptr<Mesh> rawMesh{nullptr};
+
+	inline void blit() {
+		rawMesh->bind();
+		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
+	}
 
 //	static Vector2D vec2_0;
 //	static Vector2D vec2_1;

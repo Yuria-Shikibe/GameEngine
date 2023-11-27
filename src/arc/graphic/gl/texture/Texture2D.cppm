@@ -1,28 +1,37 @@
 module;
 
-#include <glad/glad.h>
-#include "../src/arc/io/Image.h"
-
 export module GL.Texture.Texture2D;
 
 import File;
 import Graphic.Resizeable;
 import <string>;
 import <ostream>;
+import <memory>;
+import <glad/glad.h>;
+import Image;
 
 export namespace GL{
 	class Texture2D : virtual public Graphic::ResizeableInt
 	{
 
 	protected:
-		unsigned char* localData = nullptr;
 		GLuint textureID = 0;
 
 	public:
+		struct STBI_DataDeleter {
+			void operator()(unsigned char* t) const {
+				if(t) {
+					stbi::free(t);
+				}
+			}
+		};
+
 		std::string texName;
 		GLenum targetFlag = GL_TEXTURE_2D;
-		int width = 0, height = 0;
-		int bpp = 0;
+		unsigned int width = 0, height = 0;
+		unsigned int bpp{4};
+
+		std::unique_ptr<unsigned char, STBI_DataDeleter> localData = nullptr;
 
 		Texture2D() = default;
 
@@ -30,13 +39,26 @@ export namespace GL{
 			glDeleteTextures(1, &textureID);
 		}
 
-		Texture2D(const int w, const int h): width(w), height(h){
+		Texture2D(const unsigned int w, const unsigned int h, unsigned char* data): width(w), height(h){
+			localData.reset(data);
+
 			glGenTextures(1, &textureID);
 			bind();
 
-			glTexImage2D(targetFlag, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+			if(!data)localData.reset(new unsigned char[w * h * 4]);
+			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
+
 			glGenerateMipmap(targetFlag);
 			setParametersDef();
+			free();
+		}
+
+		Texture2D(const unsigned int w, const unsigned int h, std::unique_ptr<unsigned char[]>&& data) : Texture2D(w, h, data.release()) {
+
+		}
+
+		Texture2D(const unsigned int w, const unsigned int h) : Texture2D(w, h, nullptr) {
+
 		}
 
 		explicit Texture2D(const OS::File& file){
@@ -60,33 +82,27 @@ export namespace GL{
 			return !(lhs == rhs);
 		}
 
-		Texture2D(const Texture2D& other): texName(other.texName),
-		                                   textureID(other.textureID),
-		                                   width(other.width),
-		                                   height(other.height),
-		                                   bpp(other.bpp){
+		Texture2D(const Texture2D& other) noexcept: localData(other.copyData().release()),
+											   texName(other.texName),
+											   textureID(other.textureID),
+		                                       targetFlag(other.targetFlag),
+											   width(other.width),
+											   height(other.height),
+											   bpp(other.bpp){
 		}
 
-		Texture2D(Texture2D&& other) noexcept: localData(other.localData),
+		Texture2D(Texture2D&& other) noexcept: localData(std::move(other.localData)),
 		                                       texName(std::move(other.texName)),
 		                                       textureID(other.textureID),
+											   targetFlag(other.targetFlag),
 		                                       width(other.width),
 		                                       height(other.height),
 		                                       bpp(other.bpp){
 		}
 
-		Texture2D& operator=(const Texture2D& other){
-			if(this == &other) return *this;
-			texName = other.texName;
-			textureID = other.textureID;
-			width = other.width;
-			height = other.height;
-			bpp = other.bpp;
-			return *this;
-		}
-
 		Texture2D& operator=(Texture2D&& other) noexcept{
 			if(this == &other) return *this;
+			localData = std::move(other.localData);
 			texName = std::move(other.texName);
 			textureID = other.textureID;
 			width = other.width;
@@ -95,19 +111,30 @@ export namespace GL{
 			return *this;
 		}
 
-		void resize(const int w, const int h) override{
+		void free() {
+			localData.reset(nullptr);
+		}
+
+		void resize(const unsigned int w, const unsigned int h) override{
+			if(w == width && h == height)return;
+
+			free();
+
 			bind();
-			glTexImage2D(targetFlag, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData);
+			glTexImage2D(targetFlag, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			width = w;
 			height = h;
 			unbind();
 		}
 
-		void loadFromFile(const OS::File& file){
-			stbi_set_flip_vertically_on_load(1);
+		[[nodiscard]] bool valid() const {
+			return localData != nullptr;
+		}
 
+		void loadFromFile(const OS::File& file){
 			//TODO File Support
-			localData = stbi_load(file.absolutePath().string().data(), &width, &height, &bpp, 4);
+			unsigned char* data = stbi::loadPng(file, width, height, bpp);
+			localData.reset(data);
 
 			glGenTextures(1, &textureID);
 
@@ -116,14 +143,22 @@ export namespace GL{
 			active();
 			bind();
 			 //TODO : Check if needed here.
-			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData);
+			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			glGenerateMipmap(targetFlag);
 			unbind();
 
-			if (localData) {
-				stbi_image_free(localData);
-				localData = nullptr;
+			free();
+		}
+
+		void updateData() {
+			bind();
+
+			//Avoid unnecessary resize allocate
+			if(!valid()) {
+				localData.reset(new unsigned char[width * height * 4]);
 			}
+
+			glGetTexImage(targetFlag, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 		}
 
 		void setParametersDef() const{
@@ -153,7 +188,7 @@ export namespace GL{
 			glBindTexture(targetFlag, textureID);
 		}
 		
-		void active(const unsigned char slotOffset = 0) const{
+		void active(const unsigned char slotOffset = 0) const{ // NOLINT(*-convert-member-functions-to-static)
 			glActiveTexture(GL_TEXTURE0 + slotOffset);
 		}
 
@@ -165,8 +200,26 @@ export namespace GL{
 			glBindTexture(targetFlag, 0);
 		}
 
+		[[nodiscard]] size_t dataSize() const { //How many bytes!
+			if(!localData)return 0;
+
+			return width * height * bpp;
+		}
+
+		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
+			const size_t size = dataSize();
+			auto* data = new unsigned char[size]{0};
+			std::copy_n(localData.get(), size, data);
+
+			return std::unique_ptr<unsigned char[]>(data);
+		}
+
 		[[nodiscard]] GLuint getID() const{
 			return textureID;
+		}
+
+		void setID(const GLuint id){
+			textureID = id;;
 		}
 	};
 }

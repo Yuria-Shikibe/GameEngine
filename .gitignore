@@ -4,6 +4,9 @@ cmake-build-debug-visual-studio/
 cmake-build-release-visual-studio/
 .idea/
 
+resource/logs/crashes/*.txt
+resource/screenshots/*.png
+
 out/
 .vs/
 # User ================================

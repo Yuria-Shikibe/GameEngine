@@ -95,9 +95,8 @@ inline void windowRefreshCallback(GLFWwindow* window){
 
 }
 
-inline void mouseBottomCallBack(GLFWwindow* window, int button, int action, int mods){
-//	std::cout << button << " | " << action << " | " << mods << std::endl;
-	//TODO Input Mouse Interact Impl
+inline void mouseBottomCallBack(GLFWwindow* window, const int button, const int action, const int mods){
+	Core::input->informMouseAction(window, button, action, mods);
 }
 
 inline void cursorPosCallback(GLFWwindow* window, const double xPos, const double yPos) {

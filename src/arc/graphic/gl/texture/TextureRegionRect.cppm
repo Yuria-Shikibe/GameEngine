@@ -1,5 +1,7 @@
 export module GL.Texture.TextureRegionRect;
 
+import Concepts;
+import Geom.Shape.Rect_Orthogonal;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
 import <tuple>;
@@ -64,13 +66,7 @@ export namespace GL{
 		[[nodiscard]] float v11() const override{return v1;}
 		[[nodiscard]] float v10() const override{return u0;}
 
-		TextureRegionRect(const TextureRegionRect& other)
-			: TextureRegion(other),
-			  u0(other.u0),
-			  v0(other.v0),
-			  u1(other.u1),
-			  v1(other.v1) {
-		}
+		TextureRegionRect(const TextureRegionRect& other) = default;
 
 		TextureRegionRect(TextureRegionRect&& other) noexcept
 			: TextureRegion(std::move(other)),
@@ -98,6 +94,15 @@ export namespace GL{
 			u1 = other.u1;
 			v1 = other.v1;
 			return *this;
+		}
+
+		template<Concepts::Number N0, Concepts::Number N1>
+		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const Geom::Shape::Rect_Orthogonal<N1>& external) {
+			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(external.getWidth());
+			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(external.getHeight());
+
+			u1 = static_cast<float>(internal.endX()) / static_cast<float>(external.getWidth());
+			v1 = static_cast<float>(internal.endY()) / static_cast<float>(external.getHeight());
 		}
 
 		friend bool operator==(const TextureRegionRect& lhs, const TextureRegionRect& rhs) {

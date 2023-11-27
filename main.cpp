@@ -1,5 +1,6 @@
 import <iostream>;
 import <GLFW/glfw3.h>;
+import <glad/glad.h>;
 //import <print>;
 import <functional>;
 
@@ -11,6 +12,7 @@ import Event;
 import StackTrace;
 
 import Graphic.Draw;
+import Graphic.Pixmap;
 import Graphic.RendererImpl;
 
 import Math;
@@ -25,6 +27,7 @@ import Core.Batch.Batch_Sprite;
 import Assets;
 import Graphic.Color;
 
+import Image;
 
 import GL.Buffer.MultiSampleFrameBuffer;
 import GL.Buffer.IndexBuffer;
@@ -38,7 +41,11 @@ using namespace Graphic;
 using namespace Draw;
 using namespace GL;
 
+bool screenShotRequest = false;
+
 int main(){
+	stbi::setFlipVertically_load(true);
+	stbi::setFlipVertically_write(true);
 	//TODO move these into application loader
 	Core::initCore();
 
@@ -65,8 +72,41 @@ int main(){
 		Core::renderer = new Graphic::RendererImpl{w, h};
 	});
 
+	{//TODO pack this into a class like screen shot manager
+		Core::input->registerKeyBind(false, GLFW_KEY_F1, GLFW_PRESS, [](int key)mutable  {
+			screenShotRequest = true;
+		});
+
+		Event::generalUpdateEvents.on<Event::Draw_After>([](const Event::Draw_After& a){
+			if(screenShotRequest) {
+				const Graphic::Pixmap pixmap{Core::renderer->defaultFrameBuffer->getTexture(true)};
+				//
+				auto&& f = Assets::screenshotDir.subFile("lastShot.png");
+				//
+				pixmap.write(f, true);
+
+				screenShotRequest = false;
+			}
+		});
+	}
+
 	Graphic::Draw::defTexture(*Assets::Textures::whiteRegion);
 	Graphic::Draw::texture();
+	Graphic::Draw::rawMesh.reset(new Mesh{[](const Mesh& mesh) {
+		mesh.getIndexBuffer().bind();
+		mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
+		mesh.getVertexBuffer().bind();
+		mesh.getVertexBuffer().setData({
+			-1.0f, -1.0f,
+			-1.0f,  1.0f,
+			 1.0f,  1.0f,
+			 1.0f, -1.0f
+		});
+
+		AttributeLayout& layout = mesh.getVertexArray().getLayout();
+		layout.addFloat(2);
+		mesh.getVertexArray().addBuffer(mesh.getVertexBuffer());
+	}});
 
 	const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
 
@@ -77,9 +117,7 @@ int main(){
 	using Graphic::Color;
 
 	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
-
 	    Core::renderer->frameBegin(frameBuffer);
-
 
 	    float offset = 200.0f;
 

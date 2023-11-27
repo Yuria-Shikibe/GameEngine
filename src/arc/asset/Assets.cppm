@@ -1,5 +1,6 @@
 export module Assets;
 
+import Font.FreeType;
 import OS.FileTree;
 export import GL.Shader;
 export import GL.Uniform;
@@ -11,6 +12,7 @@ import File;
 import Core;
 import <iostream>;
 import <memory>;
+import <span>;
 
 using namespace GL;
 
@@ -27,6 +29,8 @@ export namespace Assets{
 	inline OS::File assetsDir;
 	inline OS::File shaderDir;
 	inline OS::File textureDir;
+	inline OS::File fontDir;
+	inline OS::File screenshotDir;
 
 	namespace Shaders {
 		inline Shader* stdPost = nullptr;
@@ -67,15 +71,35 @@ export namespace Assets{
 		}
 	}
 
+	namespace Fonts {
+		OS::File cache;
+
+		void load() {
+			cache = fontDir.subFile("cache");
+			if(!cache.exist())cache.createDir();
+			Font::FT::loadLib();
+
+			Font::FT::load({' ' + 1, 0b0111'1110}, fontDir.subFile("consola.ttf"), cache);
+		}
+
+		void dispose() {
+
+		}
+	}
+
 	inline void load() {
 		OS::FileTree& mainTree = *Core::rootFileTree;
 
 		assetsDir = mainTree.findDir("assets");
 		shaderDir = mainTree.find("shader");
 		textureDir = mainTree.find("texture");
+		fontDir = mainTree.find("fonts");
+
+		screenshotDir = mainTree.find("screenshots"); //TODO move this to other places, it doesn't belong to assets!
 
 		Shaders::load();
 		Textures::load();
+		Fonts::load();
 	}
 
 	inline void dispose() {

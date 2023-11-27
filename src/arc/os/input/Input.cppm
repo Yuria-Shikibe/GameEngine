@@ -14,9 +14,11 @@ import <memory>;
 import <GLFW/glfw3.h>;
 
 import Geom.Vector2D;
+import Concepts;
 import OS.Key;
 import OS.Mouse;
 import OS.ApplicationListener;
+import <span>;
 
 using namespace OS;
 
@@ -28,32 +30,30 @@ export namespace Core{
 	using std::array;
 	using std::unique_ptr;
 
-	class Input final : public virtual ApplicationListener
-	{
-
+	class Input final : public virtual ApplicationListener {
 	public:
-		vector<function<void(float, float)>> scrollListener;
-		vector<function<void(float, float)>> cursorListener;
+		vector<function<void(float, float)>> scrollListener{};
+		vector<function<void(float, float)>> cursorListener{};
 
 		//Should Increase the abstract level? Or just...
-		array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST> keys;
-		array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST> keys_frequentCheck;
-		set<int> pressedKeys;
+		array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST> keys{};
+		array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST> keys_frequentCheck{};
+		set<int> pressedKeys{};
 
 
 		//TODO Seriously, this array is pretty small, and most calls are LMB or RMB, may be directly using a array instead of a set is faster?
-		array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8> mouseBinds;
-		array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8> mouseBinds_frequentCheck;
-		set<int> pressedMouseButtons;
+		array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8> mouseBinds{};
+		array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8> mouseBinds_frequentCheck{};
+		array<bool, GLFW_MOUSE_BUTTON_8 + 1> pressedMouseButtons{};
 
 		//I think multi key bins are already enough for normal usage. Key + Mouse needn't be considered.
-		vector<unique_ptr<KeyBindMultipleTarget>> multipleKeyBinds;
+		vector<unique_ptr<KeyBindMultipleTarget>> multipleKeyBinds{};
 
 	protected:
-		GLFWwindow* window;
-		bool isInbound = false;
-		Geom::Vector2D mousePos;
-		Geom::Vector2D scrollOffset;
+		GLFWwindow* window{nullptr};
+		bool isInbound{false};
+		Geom::Vector2D mousePos{};
+		Geom::Vector2D scrollOffset{};
 
 	public:
 		explicit Input(GLFWwindow* w) : window(w) {
@@ -83,11 +83,10 @@ export namespace Core{
 		void informMouseAction(const GLFWwindow* targetWin, const int button, const int action, [[maybe_unused]] int mods) {
 			if (targetWin != window)return;
 
-			if (action == GLFW_PRESS) {
-				pressedMouseButtons.insert(button);
-			}
-			else if (action == GLFW_RELEASE) {
-				pressedMouseButtons.erase(button);
+			switch(action) {
+				case GLFW_PRESS : pressedMouseButtons[button] = true; break;
+				case GLFW_RELEASE : pressedMouseButtons[button] = false; break;
+				default : break;
 			}
 
 			const vector<unique_ptr<MouseBind>>& binds = mouseBinds[button];
@@ -99,21 +98,26 @@ export namespace Core{
 			}
 		}
 
+		template<Concepts::Invokable<void(int)> Func>
+		void registerKeyBind(const bool frequentCheck, const int key, const int expectedState, Func&& func) {
+			registerKeyBind(frequentCheck, new KeyBind{key, expectedState, func});
+		}
+
 		void registerKeyBind(const bool frequentCheck, KeyBind* keyBind) {
 			array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST>& container = frequentCheck ? keys_frequentCheck : keys;
 
 			container[keyBind->keyCode()].push_back(std::make_unique<KeyBind>(*keyBind));
 		}
 
-		void registerKeyBindMulti(const bool frequentCheck, const vector<KeyBind>& keyBinds,
+		void registerKeyBindMulti(const bool frequentCheck, const std::span<KeyBind>& keyBinds,
 		                          std::function<void()>&& act) {
-			const auto target = new KeyBindMultipleTarget{ std::forward<std::function<void()>>(act), keyBinds };
+			const auto target = new KeyBindMultipleTarget{ act, keyBinds };
 
 			for (const auto& keyBind : keyBinds) {
 				registerKeyBind(frequentCheck, new KeyBindMultiple{ keyBind, target });
 			}
 
-			multipleKeyBinds.push_back(std::make_unique<KeyBindMultipleTarget>(*target));
+			multipleKeyBinds.emplace_back(target);
 		}
 
 		void clearAllBinds() {
@@ -195,6 +199,14 @@ export namespace Core{
 			for (const int key : pressedKeys) {
 				for (const auto& keyBind : keys_frequentCheck[key]) {
 					if (keyBind->activated(window))keyBind->act();
+				}
+			}
+
+			for(int key = 0; key < pressedMouseButtons.size(); ++key) {
+				if(pressedMouseButtons[key]) {
+					for (const auto& mouseBind : mouseBinds_frequentCheck[key]) {
+						if (mouseBind->activated(window))mouseBind->act();
+					}
 				}
 			}
 		}

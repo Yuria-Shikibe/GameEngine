@@ -1,8 +1,4 @@
 
-//
-// Created by Matrix on 2023/11/21.
-//
-
 //TODO Redirect cout, generate crash logs...
 
 module ;
@@ -13,6 +9,7 @@ import <utility>;
 import <chrono>;
 import <string>;
 import <sstream>;
+import <utility>;
 export import File;
 
 export namespace Core{
@@ -28,9 +25,11 @@ export namespace Core{
 		OS::File runtimeLogFile;
 
 	public:
-		[[nodiscard]] explicit Log(const OS::File& dir)
-			: logDir(dir) {
+		//TODO redirect cout
+		[[nodiscard]] explicit Log(OS::File dir)
+			: logDir(std::move(dir)) {
 			crahsDir = logDir.subFile("crashes");
+			crahsDir.createDir();
 			runtimeLogFile = logDir.subFile(static_cast<std::string>(INFO) + std::to_string(getCurrentSystemTime()));
 		}
 
@@ -38,7 +37,7 @@ export namespace Core{
 			return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		}
 
-		OS::File generateCrashFile(const std::string& suffix = std::to_string(getCurrentSystemTime())) const{
+		[[nodiscard]] OS::File generateCrashFile(const std::string& suffix = std::to_string(getCurrentSystemTime()) + ".txt") const{
 			const OS::File crash = crahsDir.subFile(static_cast<std::string>(CRASH) + suffix);
 
 			if(auto&& subs = crahsDir.subs(); subs.size() > maxCrashCache) {

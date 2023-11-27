@@ -24,7 +24,11 @@ static float globalTick_ = 0.0f;     //Tick
 static float updateTime_ = 0.0f;     //Sec   | No Pause
 static float updateTick_ = 0.0f;     //Tick  | NO Pause
 
-inline void exit_(int s);
+inline void exit_(int s, const std::string& what);
+
+inline void exit_(const int s) {
+	exit_(s, "");
+}
 
 export namespace OS{
 	// extern inline int width, height;
@@ -98,6 +102,9 @@ export namespace OS{
 		};
 	}
 
+	inline void exitWith(const std::string& what) {
+		exit_(SIGTERM, what);
+	}
 
 	inline bool continueLoop(GLFWwindow* window){
 		return !glfwWindowShouldClose(window);
@@ -137,8 +144,12 @@ export namespace OS{
 }
 
 
-void exit_(const int s) {
+void exit_(const int s, const std::string& what = "") {
 	std::stringstream ss;
+
+	if(!what.empty()) {
+		ss << what << "\n\n";
+	}
 
 	ss << "Crashed! : Code-" << s << '\n';
 

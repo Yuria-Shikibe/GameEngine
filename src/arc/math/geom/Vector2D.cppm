@@ -7,6 +7,7 @@ module ;
 export module Geom.Vector2D;
 
 import <complex>;
+import <type_traits>;
 
 export import Geom.Position;
 export import Geom.Vector3D;
@@ -16,12 +17,6 @@ export import Math.Bit;
 export namespace Geom{
 	struct Vector2D final : Position
 	{
-		struct Vector2DHasher{
-			size_t operator()(const Vector2D& vector2D) const {
-				return hash_code(vector2D);
-			}
-		};
-
 		~Vector2D() override = default;
 
 		float x = 0, y = 0;
@@ -418,5 +413,15 @@ export namespace Geom{
 	const Vector2D ZERO{ 0, 0 };
 	const Vector2D X{ 1, 0 };
 	const Vector2D Y{ 0, 1 };
+}
+
+export {
+	template<>
+	struct std::hash<Geom::Vector2D>{
+		size_t operator()(const Geom::Vector2D& v) const noexcept {
+			// ReSharper disable once CppCStyleCast
+			return *(size_t*)&v.x;
+		}
+	};
 }
 

@@ -9,20 +9,20 @@ import GL.Buffer;
 import GL.Buffer.RenderBuffer;
 import Graphic.Resizeable;
 
-
 export namespace GL{
 	class FrameBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableInt
 	{
 	protected:
-		int width = 0, height = 0;
+		unsigned int width = 0, height = 0;
 		Texture2D* sample = nullptr;
 		RenderBuffer* renderBuffer = nullptr;
 
 	public:
 		FrameBuffer() = default;
 
-		FrameBuffer(const int w, const int h){
+		FrameBuffer(const unsigned int w, const unsigned int h){
 			sample = new Texture2D{ w, h };
+			sample->localData.reset(nullptr);
 			renderBuffer = new RenderBuffer{ w, h };
 			width = w;
 			height = h;
@@ -45,14 +45,14 @@ export namespace GL{
 			delete renderBuffer;
 		}
 
-		void resize(const int w, const int h) override{
+		void resize(const unsigned int w, const unsigned int h) override{
 			width = w;
 			height = h;
 			if(sample)sample->resize(w, h);
 			if(renderBuffer)renderBuffer->resize(w, h);
 		}
 
-		bool check() const{
+		[[nodiscard]] bool check() const{
 			bind();
 			return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 		}
@@ -65,17 +65,37 @@ export namespace GL{
 			glBindFramebuffer(targetFlag, 0);
 		}
 
-		Texture2D& getTexture() const{
+		[[nodiscard]] unsigned char* readPixelsRaw(const int width, const int height, const int srcX = 0, const int srcY = 0) const {
+			bind();
+			auto* pixels = new unsigned char[width * height * 4]{0};
+			glReadPixels(srcX, srcY, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+
+
+			return pixels;
+		}
+
+		[[nodiscard]] unsigned char* readPixelsRaw() const {
+			return readPixelsRaw(width, height, 0, 0);
+		}
+
+
+		[[nodiscard]] Texture2D& getTexture(const bool loadData = true) const{
+			// if(loadData)sample->localData.reset(readPixelsRaw());
+			if(loadData) {
+				sample->updateData();
+			}
+
 			return *sample;
 		}
 
-		GLuint getTextureID() const{
+		[[nodiscard]] GLuint getTextureID() const{
 			return sample->getID();
 		}
 
 
-		int getWidth() const { return width; }
-		int getHeight() const { return height; }
+		[[nodiscard]] int getWidth() const { return width; }
+		[[nodiscard]] int getHeight() const { return height; }
 
 	};
 }

@@ -12,7 +12,27 @@ export namespace Graphic{
 	using std::max;
 	using std::min;
 
+	/**
+	 * \brief  32Bits for 4 u byte[0, 255]
+	 * \code
+	 * 00000000__00000000__00000000__00000000
+	 * r value^  g value^  b value^  a value^
+	 *       24        16         8         0
+	 * \endcode
+	 */
 	class Color{
+	public:
+		static constexpr auto maxVal = std::numeric_limits<unsigned char>::max();
+		static constexpr float maxValF = static_cast<float>(std::numeric_limits<unsigned char>::max());
+		static constexpr unsigned int r_Offset = 24;
+		static constexpr unsigned int g_Offset = 16;
+		static constexpr unsigned int b_Offset = 8 ;
+		static constexpr unsigned int a_Offset = 0 ;
+		static constexpr unsigned int a_Bits = 0x00'00'00'ff;
+		static constexpr unsigned int b_Bits = 0x00'00'ff'00;
+		static constexpr unsigned int g_Bits = 0x00'ff'00'00;
+		static constexpr unsigned int r_Bits = 0xff'00'00'00;
+
 	public:
 		float r = 0, g = 0, b = 0, a = 0;
 
@@ -527,7 +547,6 @@ export namespace Graphic{
 		[[nodiscard]] std::string toString() const{
 			std::stringstream ss;
 			ss << std::hex << (static_cast<colorBits>(255 * r) << 24 | static_cast<colorBits>(255 * g) << 16 | static_cast<colorBits>(255 * b) << 8 | static_cast<colorBits>(255 * a));
-
 
 			if (const int paddingSize = 8 - static_cast<int>(ss.str().size()); paddingSize > 0) {
 				const std::string hex = ss.str();

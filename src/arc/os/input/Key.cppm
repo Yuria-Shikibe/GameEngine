@@ -4,10 +4,11 @@
 
 module ;
 
-#include <GLFW/glfw3.h>
+#include <iostream>
 
 export module OS.Key;
 
+import <GLFW/glfw3.h>;
 import <functional>;
 import <ranges>;
 
@@ -61,15 +62,15 @@ export namespace OS{
 			return glfwGetKey(window, key) == expectedState;
 		}
 
-		bool activated(const int targetState) const {
+		[[nodiscard]] bool activated(const int targetState) const {
 			return targetState == expectedState;
 		}
 
-		int keyCode() const {
+		[[nodiscard]] int keyCode() const {
 			return key;
 		}
 
-		int state() const {
+		[[nodiscard]] int state() const {
 			return expectedState;
 		}
 
@@ -93,6 +94,10 @@ export namespace OS{
 	struct KeyBindMultipleTarget {
 	protected:
 		std::unordered_map<int, bool> linkedMap;
+
+		int resetFrameDelta = 0;
+		const int expectedResetFrameDelta = 50; //TODO this should vary from user's display refresh rate.
+
 		int count = 0;
 		int expectedCount = 0;
 
@@ -100,7 +105,7 @@ export namespace OS{
 
 	public:
 		//Should Be Called!
-		void registerRequired(const std::vector<KeyBind>& arr) {
+		void registerRequired(const std::span<KeyBind>& arr) {
 			for (const auto& keyBind : arr) {
 				linkedMap.insert_or_assign(keyBind.keyCode(), false);
 			}
@@ -120,12 +125,18 @@ export namespace OS{
 			}
 		}
 
-		void resetState() {
-			for (bool& val : linkedMap | std::views::values) {
-				val = false;
-			}
+   		void resetState() {
+			resetFrameDelta++;
 
-			count = 0;
+			if(resetFrameDelta >= expectedResetFrameDelta) {
+				for (bool& val : linkedMap | std::views::values) {
+					val = false;
+				}
+
+				count = 0;
+
+				resetFrameDelta = 0;
+			}
 		}
 
 		explicit KeyBindMultipleTarget(const std::function<void()>& action) : action(action) {
@@ -134,7 +145,7 @@ export namespace OS{
 		explicit KeyBindMultipleTarget(std::function<void()>&& action) : action(std::move(action)) {
 		}
 
-		KeyBindMultipleTarget(const std::function<void()>& action, const std::vector<KeyBind>& arr) : action(action) {
+		KeyBindMultipleTarget(const std::function<void()>& action, const std::span<KeyBind>& arr) : action(action) {
 			registerRequired(arr);
 		}
 	};

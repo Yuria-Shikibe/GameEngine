@@ -10,10 +10,10 @@ import Math;
 
 export namespace Geom::Shape{
 
-	template <typename  T>
+	template <class T, typename dataT>
 	class Shape{
-		virtual ~Shape() = default;
-
+	protected:
+		~Shape() = default;
 		Shape() = default;
 
 	public:
@@ -31,8 +31,8 @@ export namespace Geom::Shape{
 			return !this->overlap(other);
 		}
 
-		virtual T maxDiagonalSqLen() const = 0;
-		virtual T maxDiagonalLen()const { return std::sqrt(maxDiagonalSqLen()); }
+		virtual dataT maxDiagonalSqLen() const = 0;
+		virtual dataT maxDiagonalLen()const { return std::sqrt(maxDiagonalSqLen()); }
 
 		Shape(const Shape& other) = default;
 

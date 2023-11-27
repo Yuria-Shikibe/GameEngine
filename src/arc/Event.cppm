@@ -43,6 +43,25 @@ export namespace Event {
 		}
 	};
 
+
+	template <Concepts::Enum T, T maxsize>
+	class EventManager_Quick {
+	protected:
+		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events;
+
+	public:
+		void fire(const T event) {
+			for (const auto tasks = events.at(static_cast<size_t>(event)); const auto& listener : tasks) {
+				listener(&event);
+			}
+		}
+
+		template <Concepts::Invokable<void()> Func>
+		void on(const T index, Func&& func){
+			events[static_cast<size_t>(index)].emplace_back(func);
+		}
+	};
+
 	//TODO Move these to other places
 	inline EventManager generalCheckEvents{};
 	inline EventManager generalUpdateEvents{};

@@ -32,9 +32,7 @@ class Renderer : virtual public ResizeableInt {
 		std::stack<FrameBuffer*> frameStack;
 
 		Renderer(const int w, const int h): width(w), height(h){
-			defaultFrameBuffer = std::make_unique<FrameBuffer>();
-
-			defaultFrameBuffer->resize(w, h);
+			defaultFrameBuffer = std::make_unique<FrameBuffer>(w, h);
 
 			contextFrameBuffer = defaultFrameBuffer.get();
 
@@ -63,11 +61,11 @@ class Renderer : virtual public ResizeableInt {
 
 		virtual void frameEnd() = 0;
 
-		bool sustainSize(const int w, const int h) const {
+		[[nodiscard]] bool sustainSize(const int w, const int h) const {
 			return w == width && h == height;
 		}
 
-		virtual void resize(const int w, const int h) override{
+		void resize(const unsigned int w, const unsigned int h) override{
 			if (w == width && h == height)return;
 
 			width = w;
@@ -93,6 +91,18 @@ class Renderer : virtual public ResizeableInt {
 			Event::generalUpdateEvents.fire(draw_post);
 
 			Event::generalUpdateEvents.fire(draw_after);
+
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer->getID());
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		}
+
+		[[nodiscard]] unsigned char* readScreen() const {
+			glBindFramebuffer(GL_FRAMEBUFFER, defaultFrameBuffer->getID());
+			auto* pixels = new unsigned char[width * height * 4]{0};
+			glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+			return pixels;
 		}
 
 		virtual void drawMain(){

@@ -11,7 +11,7 @@ export namespace GL{
 	public:
 		int samples = 4;
 
-		MultiSampleRenderBuffer(const int w, const int h, const int samples_) : RenderBuffer() {
+		MultiSampleRenderBuffer(const unsigned int w, const unsigned int h, const int samples_) : RenderBuffer() {
 			targetFlag = GL_RENDERBUFFER;
 			this->samples = samples_;
 
@@ -24,7 +24,7 @@ export namespace GL{
 			RenderBuffer::unbind();
 		}
 
-		void resize(const int w, const int h) override{
+		void resize(const unsigned int w, const unsigned int h) override{
 			width = w;
 			height = h;
 			bind();

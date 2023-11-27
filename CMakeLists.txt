@@ -46,7 +46,7 @@ message(STATUS "Loading...")
 # Source Files...
 file(GLOB_RECURSE SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c
+#        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c
 #        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui
 #        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.qrc
 )
@@ -63,8 +63,8 @@ file(GLOB_RECURSE CURRENT_HEADERS
 # Modules...
 #
 file(GLOB_RECURSE FAST_MODULES
-    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
-    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cxx
+#    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
+#    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cxx
     ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
 )
 
@@ -76,6 +76,7 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 
 # Static link
 link_libraries(
+    freetype.lib
     glfw3.lib
     opengl32.lib
     gdi32.lib
@@ -90,13 +91,14 @@ add_executable(
         ${PROJECT_NAME}      #[[Project Name]]
         ${SOURCE_FILES}      #[[.cpp]]
         ${CURRENT_HEADERS}   #[[.h]]
+        ${FAST_MODULES}
         glad.c               #[[Glad Attachment]]
-        main.cpp             #[[main()]]
+        main.cpp
 )
 
-target_sources(${PROJECT_NAME}
-        PUBLIC
-        ${FAST_MODULES}      #[[Modules]]
-)
+#target_sources(${PROJECT_NAME}
+#        PUBLIC
+#        ${FAST_MODULES}      #[[Modules]]
+#)
 
 message(STATUS "Compile Complete...")
