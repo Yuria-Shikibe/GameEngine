@@ -361,7 +361,8 @@ export namespace Font {
 	void saveCacheVersion(std::ostream& stream, const unsigned char& version) {
 		stream.write(reinterpret_cast<const char*>(&version), sizeof(version));
 	}
-
+	
+	//Just use 'size', not EOF, just my preference...
 	void readCacheData(std::istream& stream, FT_UInt& width, FT_UInt& height, size_t& size) {
 		stream.read(reinterpret_cast<char*>(&width ), sizeof(width ));
 		stream.read(reinterpret_cast<char*>(&height), sizeof(height));
