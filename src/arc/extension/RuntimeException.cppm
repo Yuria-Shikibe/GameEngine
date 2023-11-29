@@ -13,7 +13,7 @@ import <exception>;
 export namespace ext{
 	class RuntimeException final : virtual public std::exception{
 	public:
-		std::string data;
+		std::string data{};
 
 		explicit RuntimeException(const std::string& str){
 			std::stringstream ss;
@@ -28,6 +28,8 @@ export namespace ext{
 		[[nodiscard]] char const* what() const override {
 			return data.data();
 		}
+
+		void postToLog() const;
 
 		RuntimeException() : RuntimeException("") {
 

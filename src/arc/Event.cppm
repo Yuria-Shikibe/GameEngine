@@ -5,6 +5,8 @@ export module Event;
 import <functional>;
 import <typeindex>;
 import <unordered_map>;
+import <set>;
+import RuntimeException;
 import Concepts;
 
 export namespace Event {
@@ -18,15 +20,23 @@ export namespace Event {
 	struct ApplicationMainLoop_Pre      final : EventType {};
 	struct ApplicationMainLoop_After    final : EventType {};
 
+	template<Concepts::Derived<EventType> T>
+	constexpr std::type_index indexOf() {
+		return std::type_index(typeid(T));
+	}
+
 	class EventManager {
-	protected:
+		std::set<std::type_index> registered{};
 		std::unordered_map<std::type_index, std::vector<std::function<void(const void*)>>> events;
 
 	public:
-		template <typename T>
-			requires Concepts::Derived<T, EventType>
+		template <Concepts::Derived<EventType> T>
 		void fire(const T& event) {
-			if (const auto itr = events.find(std::type_index(typeid(T))); itr != events.end()) {
+#ifdef DEBUG_LOCAL
+			if(!registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
+#endif
+
+			if (const auto itr = events.find(indexOf<T>()); itr != events.end()) {
 				for (const auto& listener : itr->second) {
 					listener(&event);
 				}
@@ -36,23 +46,37 @@ export namespace Event {
 		template <typename T, typename Func>
 			requires Concepts::Derived<T, EventType> && Concepts::Invokable<Func, void(const T&)>
 		void on(Func&& func){
+#ifdef DEBUG_LOCAL
+			if(!registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
+#endif
+
 			const auto eventType = std::type_index(typeid(T));
 			events[eventType].emplace_back([fun = std::forward<Func>(func)](const void* event) {
 				fun(*static_cast<const T*>(event));
 			});
 		}
+
+		template <Concepts::Derived<EventType> ...T>
+		void registerType(T... args) {
+			(registered.insert(std::type_index(typeid(T))), ...);
+		}
+
+		[[nodiscard]] explicit EventManager(std::set<std::type_index>&& registered)
+			: registered(std::move(registered)) {
+		}
+
+		[[nodiscard]] EventManager() = default;
 	};
 
 
 	template <Concepts::Enum T, T maxsize>
-	class EventManager_Quick {
-	protected:
+	class SingalManager {
 		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events;
 
 	public:
 		void fire(const T event) {
 			for (const auto tasks = events.at(static_cast<size_t>(event)); const auto& listener : tasks) {
-				listener(&event);
+				listener();
 			}
 		}
 
@@ -63,7 +87,15 @@ export namespace Event {
 	};
 
 	//TODO Move these to other places
-	inline EventManager generalCheckEvents{};
-	inline EventManager generalUpdateEvents{};
+	inline EventManager generalCheckEvents{{
+
+	}};
+	inline EventManager generalUpdateEvents{{
+		indexOf<Draw_After>(),
+		indexOf<Draw_Post>(),
+		indexOf<Draw_Prepare>(),
+		indexOf<ApplicationMainLoop_Pre>(),
+		indexOf<ApplicationMainLoop_After>()
+	}};
 }
 

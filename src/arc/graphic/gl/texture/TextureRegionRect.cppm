@@ -56,6 +56,10 @@ export namespace GL{
 			return *data;
 		}
 
+		void setTexture(const Texture2D& texture2D){
+			data = &texture2D;
+		}
+
 		[[nodiscard]] float u00() const override{return u0;}
 		[[nodiscard]] float u01() const override{return u0;}
 		[[nodiscard]] float u11() const override{return u1;}

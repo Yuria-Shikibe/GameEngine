@@ -122,7 +122,7 @@ export namespace Graphic{
         }
 
         void create(const unsigned int width, const unsigned int height){
-            data = std::unique_ptr<unsigned char[]>(new (std::nothrow) unsigned char[width * height * Channels]{0});
+            data.reset(new (std::nothrow) unsigned char[width * height * Channels]{0});
             if(data == nullptr)throw ext::RuntimeException{"Failed to create pixmap!"};
 
             this->width = width;
@@ -130,6 +130,7 @@ export namespace Graphic{
         }
 
         void free() {
+            width = height = 0;
             data.reset(nullptr);
         }
 
@@ -169,6 +170,7 @@ export namespace Graphic{
                 if(!file.exist() || !result)throw ext::RuntimeException{"Inexist File!"};
             }
 
+            // ReSharper disable once CppTooWideScopeInitStatement
             std::string&& ext = file.extension();
 
             if(ext == ".png") {
@@ -419,6 +421,7 @@ export namespace Graphic{
             }
         }
 
+        //If the area of the pixmaps are the same, the longer one row it be, the faster the function works.
         void set(const Pixmap& pixmap, const unsigned int dstx, const unsigned int dsty) const {
             const unsigned int rowDataCount = pixmap.getWidth() * Channels;
 
@@ -426,7 +429,7 @@ export namespace Graphic{
                 const auto indexDst =  this->dataIndex(dstx, dsty + y);
                 const auto indexSrc = pixmap.dataIndex(0   ,        y);
 
-                std::copy_n(pixmap.data.get() + indexSrc, rowDataCount, indexDst);
+                std::copy_n(pixmap.data.get() + indexSrc, rowDataCount, data.get() + indexDst);
             }
         }
     };

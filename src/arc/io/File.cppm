@@ -181,6 +181,12 @@ export namespace OS{
 			return File{ absolutePath().string().append("\\").append(name) };
 		}
 
+		[[nodiscard]] File subFile(const char* name) const {
+			if(!isDir())throw ext::RuntimeException{};
+
+			return File{ absolutePath().string().append("\\").append(name) };
+		}
+
 		[[nodiscard]] File find(const std::string& name) const{
 			for (const auto & item : directory_iterator(path()))
 			{

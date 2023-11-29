@@ -85,9 +85,9 @@ export namespace OS{
 	}
 
 	inline void launch(){
-		std::signal(SIGABRT, exit_);
-		std::signal(SIGILL, exit_);
-		std::signal(SIGSEGV, exit_);
+		// std::signal(SIGABRT, exit_);
+		// std::signal(SIGILL, exit_);
+		// std::signal(SIGSEGV, exit_);
 
 		deltaSetter = [](float& f){
 			f = static_cast<float>(glfwGetTime()) - globalTime_;

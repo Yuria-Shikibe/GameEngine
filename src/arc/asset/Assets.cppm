@@ -1,6 +1,8 @@
+module;
+
 export module Assets;
 
-import Font.FreeType;
+import Font;
 import OS.FileTree;
 export import GL.Shader;
 export import GL.Uniform;
@@ -24,7 +26,7 @@ export namespace Assets{
 //	namespace Shaders{
 //		inline std::unique_ptr<Shader> texPost;
 //	}
-
+	typedef unsigned long CharCode;
 
 	inline OS::File assetsDir;
 	inline OS::File shaderDir;
@@ -72,14 +74,50 @@ export namespace Assets{
 	}
 
 	namespace Fonts {
-		OS::File cache;
+		OS::File cacheDir;
+		// Font::FontsManager
+
+		const Font::FontFlags
+			*consola_regular{nullptr},
+			*consola_italic{nullptr},
+			*consola_bold{nullptr},
+			*consola_italic_bold{nullptr}
+
+		;
 
 		void load() {
-			cache = fontDir.subFile("cache");
-			if(!cache.exist())cache.createDir();
-			Font::FT::loadLib();
+			cacheDir = fontDir.subFile("cache");
+			if(!cacheDir.exist())cacheDir.createDirQuiet();
+			// Font::FT::loadLib();
+;
+			const std::vector<CharCode> targetChars {' ' + 1, '~'};
 
-			Font::FT::load({' ' + 1, 0b0111'1110}, fontDir.subFile("consola.ttf"), cache);
+			Font::rootCacheDir = cacheDir;
+			consola_regular =
+				Font::registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
+			consola_italic =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
+			consola_bold =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
+			consola_italic_bold =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
+
+			// Font::loadLib();
+
+			// if(FT_New_Face(Font::freeTypeLib, fontDir.subFile("consola.ttf" ).absolutePath().string().data(), 0, &face)) {
+			// 	throw std::exception{};
+			// }
+			//
+			// if(FT_Set_Pixel_Sizes(face, 0, 48)) {
+			// 	throw std::exception{};
+			// }
+			//
+			// if(FT_Load_Char(face, 'c', FT_LOAD_RENDER)) {
+			// 	throw std::exception{};
+			// }
+
+			Font::load();
+			// Font::FT::load({' ' + 1, 0b0111'1110}, fontDir.subFile("consola.ttf"), cache);
 		}
 
 		void dispose() {

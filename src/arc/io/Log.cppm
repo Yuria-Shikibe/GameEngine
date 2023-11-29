@@ -20,16 +20,16 @@ export namespace Core{
 		static constexpr unsigned int maxLogCache = 10;
 
 	protected:
-		OS::File logDir;
-		OS::File crahsDir;
-		OS::File runtimeLogFile;
+		OS::File logDir{};
+		OS::File crahsDir{};
+		OS::File runtimeLogFile{};
 
 	public:
 		//TODO redirect cout
 		[[nodiscard]] explicit Log(OS::File dir)
 			: logDir(std::move(dir)) {
 			crahsDir = logDir.subFile("crashes");
-			crahsDir.createDir();
+			crahsDir.createDirQuiet();
 			runtimeLogFile = logDir.subFile(static_cast<std::string>(INFO) + std::to_string(getCurrentSystemTime()));
 		}
 
