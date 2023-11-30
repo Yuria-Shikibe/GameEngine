@@ -10,6 +10,11 @@ import <tuple>;
 export namespace GL{
 	class TextureRegion{
 	public:
+		/**
+		 * \brief Does Not Hold The Ownership Of Source Texture, just borrow it!
+		 * */
+		const Texture2D* data = nullptr;
+
 		virtual ~TextureRegion() = default;
 
 		TextureRegion() = default;
@@ -50,11 +55,6 @@ export namespace GL{
 			data = other.data;
 			return *this;
 		}
-
-		/**
-		 * \brief Does Not Hold The Ownership Of Source Texture, just borrow it!
-		 * */
-		const Texture2D* data = nullptr;
 
 		[[nodiscard]] virtual const Texture2D* getData() const {
 			return data;

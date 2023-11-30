@@ -28,11 +28,11 @@ export namespace GL{
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override {
-			bind();
-
-			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
 			width = w;
 			height = h;
+
+			bind();
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, width, height, GL_TRUE);
 			unbind();
 		}
 	};

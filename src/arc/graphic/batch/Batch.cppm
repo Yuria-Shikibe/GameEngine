@@ -104,6 +104,10 @@ export namespace Core{
 			blending->apply();
 		}
 
+		[[nodiscard]] const Mesh* getMesh() const {
+			return mesh.get();
+		}
+
 		void setProjection(const Geom::Matrix3D* porj){
 			projection = porj;
 		}

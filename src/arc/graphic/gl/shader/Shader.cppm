@@ -165,7 +165,12 @@ export namespace GL {
 
 		void bindLoaction() const {
 			for(auto& [key, pos] : uniformLocationMap) {
-				if(pos == -1)pos = glGetUniformLocation(programID, key.data());
+				if(pos == -1) {
+					pos = glGetUniformLocation(programID, key.data());
+					auto t = pos;
+
+
+				}
 			}
 		}
 
@@ -231,7 +236,7 @@ export namespace GL {
 		Shader(Shader &&tgt) = delete;
 
 		struct ShaderSourceParser {
-			const std::string& keyWord;
+			const std::string keyWord{};
 			std::unordered_map<std::string, GLint>& target;
 
 			[[nodiscard]] ShaderSourceParser(const std::string& keyWord, std::unordered_map<std::string, GLint>& target)
@@ -245,12 +250,13 @@ export namespace GL {
 					const size_t beginWord = line.find_last_of(' ') + 1;
 
 					target[line.substr(beginWord, endLine - beginWord)] = -1;
+
 				}
 			}
 		}uniformParser{"uniform", uniformLocationMap}, attribuParser{"attribute", attribuLocationMap};
 
 		struct ShaderSourceParserMulti {
-			std::vector<ShaderSourceParser> parsers;
+			std::vector<ShaderSourceParser> parsers{};
 
 			[[nodiscard]] ShaderSourceParserMulti(const std::initializer_list<ShaderSourceParser> list){
 				for(auto parser: list)parsers.push_back(parser);
@@ -318,7 +324,7 @@ export namespace GL {
 			glUseProgram(programID);
 		}
 
-		std::unique_ptr<Shader> copy() const {
+		[[nodiscard]] std::unique_ptr<Shader> copy() const {
 			std::vector<std::pair<ShaderType, std::string>> list;
 
 			for (const auto& pair : typeList) {

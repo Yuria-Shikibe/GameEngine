@@ -136,6 +136,16 @@ export namespace Geom::Shape{
 			return { srcX + width / HALF, srcY + height / HALF };
 		}
 
+		template <Concepts::Number T_>
+		Rect_Orthogonal<T_> as() const {
+			return Rect_Orthogonal<T_>{
+				static_cast<T_>(srcX),
+				static_cast<T_>(srcY),
+				static_cast<T_>(width),
+				static_cast<T_>(height),
+			};
+		}
+
 		void setHeight(const T h){
 			if (h >= 0) {
 				this->height = h;
@@ -170,11 +180,11 @@ export namespace Geom::Shape{
 			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
-		[[nodiscard]] T endX() const{
+		[[nodiscard]] T getEndX() const{
 			return srcX + width;
 		}
 
-		[[nodiscard]] T endY() const{
+		[[nodiscard]] T getEndY() const{
 			return srcY + height;
 		}
 
@@ -206,6 +216,14 @@ export namespace Geom::Shape{
 		Rect_Orthogonal& move(const T x, const T y) {
 			srcX += x;
 			srcY += y;
+
+			return *this;
+		}
+
+		template <Concepts::Number T1, Concepts::Number T2>
+		Rect_Orthogonal& scl(const T1 xScl, const T2 yScl) {
+			width = static_cast<T>(static_cast<T1>(width) * xScl);
+			height = static_cast<T>(static_cast<T1>(height) * yScl);
 
 			return *this;
 		}

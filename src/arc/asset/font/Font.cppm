@@ -32,6 +32,10 @@ import Image;
 import Event;
 import Core;
 
+void exitLoad(const std::string& fontName) {
+	throw ext::RuntimeException{"Font Load Failed : " + fontName};
+}
+
 using namespace Geom;
 using Graphic::Pixmap;
 
@@ -86,10 +90,16 @@ export namespace Font {
 
 	void writeIntoPixmap(const FT_Bitmap& map, unsigned char* data) {
 		for(size_t size = 0; size < map.width * map.rows; ++size) {
+			//Normal
 			data[size * 4 + 0] = 0xff;
 			data[size * 4 + 1] = 0xff;
 			data[size * 4 + 2] = 0xff;
 			data[size * 4 + 3] = map.buffer[size];
+
+			// data[size * 4 + 0] = map.buffer[size];
+			// data[size * 4 + 1] = 0x6f;
+			// data[size * 4 + 2] = 0xff;
+			// data[size * 4 + 3] = 0xef;
 		}
 	}
 
@@ -112,10 +122,17 @@ export namespace Font {
 			}
 
 			[[nodiscard]] CharData() = default;
+
+			// Shape::OrthoRectFloat& normalize(Shape::OrthoRectFloat& in, const float xOffset = 0, const float yOffset = 0) {
+			// 	in.s
+			// }
 		};
 
 		Shape::OrthoRectUInt box{};
 		std::unordered_map<FT_ULong, CharData> charDatas{};
+		float spaceSpacing{-1};
+		float lineSpacingMin{-1};
+
 		std::unique_ptr<Pixmap> fontPixmap{nullptr};
 
 		[[nodiscard]] FontData() = default;
@@ -152,6 +169,8 @@ export namespace Font {
 			}
 		}
 	};
+
+	const FontData::CharData emptyCharData{};
 
 	struct FontFlags {
 		static constexpr auto styleOffset = 16;
@@ -208,6 +227,65 @@ export namespace Font {
 			return FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 		};*/
 
+		const FontFlags* fallback{nullptr};
+
+		FontFlags* tryLoad(const FT_ULong charCode){
+			if(!face) { //Fall back may roll to font that doesn't need cache, just load its face
+				if(FT_New_Face(freeTypeLib, fontFile.absolutePath().string().data(), 0, &face)) {
+					exitLoad(fullname());
+				}
+			}
+
+			FT_Set_Pixel_Sizes(face, 0, height);
+
+			if(const auto state = FT_Load_Char(face, charCode, loadFlags); state != 0) {
+				if(state == FT_Err_Invalid_Glyph_Index) {
+					if(fallback){ //Seriously I don't want to use const cast
+						return const_cast<FontFlags*>(fallback)->tryLoad(charCode);
+					}
+
+					const std::string str = FT_Error_String(state);
+					exitLoad(fullname() + " | " + str);
+				}
+			}
+
+			return this;
+		}
+
+		[[nodiscard]] bool containsData(const FT_ULong charCode) const {
+			if(data) {
+				if(data->charDatas.contains(charCode))return true;
+			}
+
+			if(fallback) {
+				return fallback->containsData(charCode);
+			}
+
+			return false;
+		}
+
+		[[nodiscard]] const FontData::CharData* getCharData(const FT_ULong charCode) const {
+			if(data) {
+				if(const auto itr = data->charDatas.find(charCode); itr != data->charDatas.end()) {
+					return &itr->second;
+				}
+			}
+
+			if(fallback) {
+				return fallback->getCharData(charCode);
+			}
+
+			return nullptr;
+		}
+
+		[[nodiscard]] const FontFlags* getFallback() const {
+			return fallback;
+		}
+
+		void setFallback(const FontFlags* const fallback) {
+			this->fallback = fallback;
+		}
+
 		[[nodiscard]] std::string fullname() const {
 			return fontFile.stem() + "-" + styleName;
 		}
@@ -247,8 +325,14 @@ export namespace Font {
 			return internalID & mask | static_cast<FT_UInt>(Style::regualr) << styleOffset;
 		}
 
+		void free() {
+			if(!face)FT_Done_Face(face);
+			face = nullptr;
+		}
+
 		~FontFlags() {
-			FT_Done_Face(face);
+			if(!face)FT_Done_Face(face);
+			face = nullptr;
 		}
 	};
 
@@ -262,8 +346,9 @@ export namespace Font {
 	public:
 		[[nodiscard]] FontsManager() = default;
 
-		[[nodiscard]] explicit FontsManager(GL::Texture2D&& texture, const std::vector<std::unique_ptr<FontFlags>>& fontsRaw)
-			: fontTexture(std::make_unique<GL::Texture2D>(std::forward<GL::Texture2D>(texture))) {
+		[[nodiscard]] explicit FontsManager(Graphic::Pixmap& texture, const std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
+			fontTexture.reset(new GL::Texture2D(texture.getWidth(), texture.getHeight(), texture.release()));
+
 			const Shape::OrthoRectUInt bound{fontTexture->width, fontTexture->height};
 
 			fonts.reserve(fontsRaw.size());
@@ -283,14 +368,28 @@ export namespace Font {
 					charData.region.setTexture(*fontTexture);
 
 					charData.region.fetchInto(charData.charBox, bound);
+					charData.region.flipY();
+					if(value->data->lineSpacingMin < 0) {
+						value->data->lineSpacingMin = std::max(static_cast<float>(charData.charBox.getHeight()), value->data->lineSpacingMin);
+					}
 				}
 
 				//The pixmap data for a single font wont be needed anymore in all cases, release it if possible;
 				if(value->data->fontPixmap)value->data->fontPixmap->free();
+
+				if(value->data->spaceSpacing < 0)value->data->spaceSpacing = static_cast<float>(contains(value->internalID, '_') ? getCharData(value->internalID, '_')->charBox.getWidth() : 15);
 			}
 		}
 
-		[[nodiscard]] const FontFlags* choose(const FT_UInt id) const {
+		[[nodiscard]] const GL::Texture2D* getTexture() const {
+			return fontTexture.get();
+		}
+
+		[[nodiscard]] const FontFlags* obtain(const FontFlags* const flag) const {
+			return obtain(flag->internalID);
+		}
+
+		[[nodiscard]] const FontFlags* obtain(const FT_UInt id) const {
 			if(const auto itr = fonts.find(id); itr != fonts.end()) {
 				return itr->second;
 			}
@@ -298,12 +397,12 @@ export namespace Font {
 			return nullptr;
 		}
 
-		[[nodiscard]] bool contains(const FT_ULong charCode, const FT_UInt id) const {
+		[[nodiscard]] bool contains(const FT_UInt id, const FT_ULong charCode) const {
 			return supportedFonts.at(charCode).contains(id);
 		}
 
-		[[nodiscard]] const FontData::CharData* charData(const FT_ULong charCode, const FT_UInt id) const {
-			return contains(charCode, id) ? &fonts.at(id)->data->charDatas.at(charCode) : static_cast<const FontData::CharData*>(nullptr);
+		[[nodiscard]] const FontData::CharData* getCharData(const FT_UInt id, const FT_ULong charCode) const {
+			return contains(id, charCode) ? &fonts.at(id)->data->charDatas.at(charCode) : static_cast<const FontData::CharData*>(nullptr);
 		}
 	};
 
@@ -317,9 +416,9 @@ export namespace Font {
 
 		[[nodiscard]] FontData_Preload(const FT_ULong charCode, const FT_GlyphSlot glyph) : // NOLINT(*-misplaced-const)
 			charCode(charCode),
+			matrices(glyph->metrics),
 			box(glyph->bitmap.width, glyph->bitmap.rows),
-			pixmap(glyph->bitmap.width, glyph->bitmap.rows),
-			matrices(glyph->metrics)
+			pixmap(glyph->bitmap.width, glyph->bitmap.rows)
 		{
 			if(glyph->bitmap.buffer) {
 				writeIntoPixmap(glyph->bitmap, pixmap.getData());
@@ -375,14 +474,11 @@ export namespace Font {
 		stream.write(reinterpret_cast<const char*>(&size  ), sizeof(size  ));
 	}
 
-	void exit(const std::string& fontName) {
-		throw ext::RuntimeException{"Font Load Failed : " + fontName};
-	}
 
 	void loadFont(FontFlags& params) {
 		const std::string fontFullName = params.fullname();
 
-		if(!params.face)exit(fontFullName);
+		if(!params.face)exitLoad(fontFullName);
 
 		const auto fontCacheDir = params.fontCacheDir();
 
@@ -419,40 +515,29 @@ export namespace Font {
 
 		Graphic::Pixmap maxMap{};
 
-		if(needCache) {
-
+		if(needCache){
 			FT_UInt currentWidth = 0;
 			FT_UInt maxHeight = 0;
 
 			for(size_t t = 0; t < params.segments.size() / 2; ++t) {
 				for(FT_ULong i = params.segments[t * 2]; i <= params.segments[t * 2 + 1]; ++i) {
+					const FontFlags& valid = * params.tryLoad(i);
 
-					if(!params.face)exit(fontFullName);
-
-					FT_Set_Pixel_Sizes(params.face, 0, params.height);
-
-					if(auto state = FT_Load_Char(params.face, i, params.loadFlags); state != 0) {
-						std::string str = FT_Error_String(state);
-						exit(fontFullName + " | " + str);
+					if(!valid.face->glyph) {
+						exitLoad(fontFullName);
 					}
 
-					if(!params.face->glyph) {
-						exit(fontFullName);
-					}
-
-					if (params.loader && params.face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-						if (params.loader(params.face)) {
-							exit(fontFullName);
+					if (params.loader && valid.face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+						if (params.loader(valid.face)) {
+							exitLoad(fontFullName);
 						}
 					}
 
-					fontDatas.emplace_back(i, params.face->glyph);
+					fontDatas.emplace_back(i, valid.face->glyph);
 					fontDatas.back().box.move(currentWidth, 0);
 
-					fontDatas.back().pixmap.write(texFile.getParent().subFile(std::to_string(i) + ".bmp"), true);
-
-					maxHeight = std::max(maxHeight, params.face->glyph->bitmap.rows);
-					currentWidth += params.face->glyph->bitmap.width;
+					maxHeight = std::max(maxHeight, valid.face->glyph->bitmap.rows);
+					currentWidth += valid.face->glyph->bitmap.width;
 				}
 			}
 
@@ -468,8 +553,6 @@ export namespace Font {
 			currentWidth = 0;
 			for(const auto& data : fontDatas) {
 				data.write(fstream);
-
-				data.pixmap.write(texFile.getParent().subFile(std::to_string(data.charCode) + "-1.bmp"), true);
 
 				maxMap.set(data.pixmap, currentWidth, 0);
 				currentWidth += data.pixmap.getWidth();
@@ -498,25 +581,7 @@ export namespace Font {
 		}
 	}
 
-	void loadLib() {
-		if(FT_Init_FreeType(&freeTypeLib)) {
-			throw ext::RuntimeException{"Unable to initialize FreeType Library!"};
-		}
-	}
-
-	void load() { //Dose not support hot load!
-		//FT Lib init;
-
-		loadLib();
-
-		stbi::setFlipVertically_write(false);
-
-		//User Customized fonts to load;
-
-		fontLoadListeners.fire(FontLoadState::begin);
-
-		//Init face data;
-
+	bool checkCahce(){
 		bool requiresRecache = false;
 
 		for(const auto& params: loadFlags) {
@@ -524,15 +589,10 @@ export namespace Font {
 				FT_Face face;
 
 				if(FT_New_Face(freeTypeLib, params->fontFile.absolutePath().string().data(), 0, &face)) {
-					exit(params->fullname());
+					exitLoad(params->fullname());
 				}
 
 				params->face = face;
-
-// #ifdef DEBUG_LOCAL //Debug Adajustments
-// 				if(params->familyName != params->face->family_name)std::cout << "Uncorrect Family Name! :" << params->familyName;
-// 				if(params->styleName != params->face->style_name)std::cout << "Uncorrect Family Name! :" << params->styleName;
-// #endif
 
 				//Correct the style name if necessary
 				params->familyName = params->face->family_name;
@@ -557,7 +617,10 @@ export namespace Font {
 			}
 		}
 
-		//Cache prepare
+		return requiresRecache;
+	}
+
+	Graphic::Pixmap merge(bool requiresRecache) {
 		Graphic::Pixmap mergedMap{};
 
 		const OS::File dataFile = rootCacheDir.subFile("merged.bin");
@@ -640,9 +703,10 @@ export namespace Font {
 			mergedMap.loadFrom(texFile);
 		}
 
+		return mergedMap;
+	}
 
-		//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
-
+	void assignID() {
 		std::vector<std::string> loadedFamily;
 		for(size_t i = 0; i < loadFlags.size(); ++i) {
 			// ReSharper disable once CppUseStructuredBinding
@@ -660,9 +724,35 @@ export namespace Font {
 			flag.internalID |= getStyleID(flag.styleName) << FontFlags::styleOffset;
 		}
 
-		//FontsManager obtain the texture from the total cache; before this no texture should be generated!
+	}
 
-		manager = std::make_unique<FontsManager>(mergedMap.genTex_move(), loadFlags);
+	void loadLib() {
+		if(FT_Init_FreeType(&freeTypeLib)) {
+			throw ext::RuntimeException{"Unable to initialize FreeType Library!"};
+		}
+	}
+
+	void load() { //Dose not support hot load!
+		stbi::setFlipVertically_write(false);
+		stbi::setFlipVertically_load(false);
+
+		//FT Lib init;
+		loadLib();
+
+		//User Customized fonts to load;
+		fontLoadListeners.fire(FontLoadState::begin);
+
+		//Init face data;
+		const bool requiresRecache = checkCahce();
+
+		//Cache prepare
+		Graphic::Pixmap&& mergedMap = merge(requiresRecache);
+
+		assignID();
+
+		//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
+		//FontsManager obtain the texture from the total cache; before this no texture should be generated!
+		manager = std::make_unique<FontsManager>(mergedMap, loadFlags);
 
 		//FontsManager init its member's TextureRegion data;
 
@@ -674,9 +764,14 @@ export namespace Font {
 
 		//Load End
 
+		stbi::setFlipVertically_load(true);
 		stbi::setFlipVertically_write(true);
 
 		//TODO delete all datas wont be used?
+
+		for (const auto& flags : loadFlags) {
+			flags->free();
+		}
 	}
 
 	const FontFlags* registerFont(FontFlags* flag){

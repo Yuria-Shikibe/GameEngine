@@ -4,6 +4,7 @@ export module GL.Texture.Texture2D;
 
 import File;
 import Graphic.Resizeable;
+import RuntimeException;
 import <string>;
 import <ostream>;
 import <memory>;
@@ -26,7 +27,7 @@ export namespace GL{
 			}
 		};
 
-		std::string texName;
+		std::string texName{"null"};
 		GLenum targetFlag = GL_TEXTURE_2D;
 		unsigned int width = 0, height = 0;
 		unsigned int bpp{4};
@@ -40,20 +41,11 @@ export namespace GL{
 		}
 
 		Texture2D(const unsigned int w, const unsigned int h, unsigned char* data): width(w), height(h){
-			localData.reset(data);
-
-			glGenTextures(1, &textureID);
-			bind();
-
-			if(!data)localData.reset(new unsigned char[w * h * 4]);
-			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
-
-			glGenerateMipmap(targetFlag);
-			setParametersDef();
-			free();
+			init(data);
 		}
 
-		Texture2D(const unsigned int w, const unsigned int h, std::unique_ptr<unsigned char[]>&& data) : Texture2D(w, h, data.release()) {
+		Texture2D(const unsigned int w, const unsigned int h, std::unique_ptr<unsigned char[]>&& data) :
+		Texture2D(w, h, data.release()) {
 
 		}
 
@@ -119,11 +111,11 @@ export namespace GL{
 			if(w == width && h == height)return;
 
 			free();
-
-			bind();
-			glTexImage2D(targetFlag, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			width = w;
 			height = h;
+
+			bind();
+			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			unbind();
 		}
 
@@ -134,19 +126,25 @@ export namespace GL{
 		void loadFromFile(const OS::File& file){
 			//TODO File Support
 			unsigned char* data = stbi::loadPng(file, width, height, bpp);
+			init(data);
+		}
+
+		void init(unsigned char* data) {
 			localData.reset(data);
+
+			if(bpp != 4) {
+				throw ext::RuntimeException{"Illegal Bpp Size: " + bpp};
+			}
 
 			glGenTextures(1, &textureID);
 
-			setParametersDef();
-
 			active();
 			bind();
-			 //TODO : Check if needed here.
+			//TODO : Check if needed here.
 			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			glGenerateMipmap(targetFlag);
-			unbind();
 
+			setParametersDef();
 			free();
 		}
 
@@ -159,6 +157,7 @@ export namespace GL{
 			}
 
 			glGetTexImage(targetFlag, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
+			unbind();
 		}
 
 		void setParametersDef() const{
@@ -207,8 +206,13 @@ export namespace GL{
 		}
 
 		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
+			if(!valid()) {
+				throw ext::RuntimeException{"Texture doesn't contains data!"};
+			}
+
 			const size_t size = dataSize();
 			auto* data = new unsigned char[size]{0};
+
 			std::copy_n(localData.get(), size, data);
 
 			return std::unique_ptr<unsigned char[]>(data);

@@ -65,6 +65,7 @@ export namespace Containers{
         };
 
     protected:
+        size_t maxSize{0};
         std::vector<std::unique_ptr<T>> vault;
         PoolDeleter deleter;
 

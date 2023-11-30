@@ -70,7 +70,7 @@ export namespace Core{
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-		window = Graphic::initWindow(APPLICATION_NAME, 800, 800, monitor);
+		window = Graphic::initWindow(APPLICATION_NAME);
 
 		OS::launch();
 

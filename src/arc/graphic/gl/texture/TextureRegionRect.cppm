@@ -68,7 +68,7 @@ export namespace GL{
 		[[nodiscard]] float v00() const override{return v0;}
 		[[nodiscard]] float v01() const override{return v1;}
 		[[nodiscard]] float v11() const override{return v1;}
-		[[nodiscard]] float v10() const override{return u0;}
+		[[nodiscard]] float v10() const override{return v0;}
 
 		TextureRegionRect(const TextureRegionRect& other) = default;
 
@@ -100,17 +100,25 @@ export namespace GL{
 			return *this;
 		}
 
+		void flipY() {
+			std::swap(v0, v1);
+		}
+
+		void flipX() {
+			std::swap(u0, u1);
+		}
+
 		template<Concepts::Number N0, Concepts::Number N1>
 		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const Geom::Shape::Rect_Orthogonal<N1>& external) {
 			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(external.getWidth());
 			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(external.getHeight());
 
-			u1 = static_cast<float>(internal.endX()) / static_cast<float>(external.getWidth());
-			v1 = static_cast<float>(internal.endY()) / static_cast<float>(external.getHeight());
+			u1 = static_cast<float>(internal.getEndX()) / static_cast<float>(external.getWidth());
+			v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(external.getHeight());
 		}
 
 		friend bool operator==(const TextureRegionRect& lhs, const TextureRegionRect& rhs) {
-			return static_cast<const TextureRegion &>(lhs) == static_cast<const TextureRegion &>(rhs)
+			return lhs.data == rhs.data
 			       && lhs.u0 == rhs.u0
 			       && lhs.v0 == rhs.v0
 			       && lhs.u1 == rhs.u1
@@ -123,7 +131,7 @@ export namespace GL{
 
 		friend void swap(TextureRegionRect& lhs, TextureRegionRect& rhs) noexcept {
 			using std::swap;
-			swap(static_cast<TextureRegion &>(lhs), static_cast<TextureRegion &>(rhs));
+			swap(lhs.data, rhs.data);
 			swap(lhs.u0, rhs.u0);
 			swap(lhs.v0, rhs.v0);
 			swap(lhs.u1, rhs.u1);

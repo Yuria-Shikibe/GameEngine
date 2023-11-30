@@ -29,9 +29,11 @@ export namespace GL {
 			FrameBuffer::unbind();
 		}
 
-		MultiSampleFrameBuffer(const int w, const int h) : MultiSampleFrameBuffer(w, h, 4, 4) {
+		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h) : MultiSampleFrameBuffer(w, h, 4, 4) {
 
 		}
+
+		using FrameBuffer::resize;
 	};
 }
 

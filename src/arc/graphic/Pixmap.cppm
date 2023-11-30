@@ -47,12 +47,17 @@ export namespace Graphic{
             return bpp;
         }
 
-        [[nodiscard]] const unsigned char* getData() const {
+        [[nodiscard]] unsigned char* release() {
+            return data.release();
+        }
+
+        [[nodiscard]] unsigned char* getData() const & {
             return data.get();
         }
 
-        [[nodiscard]] unsigned char* getData() {
-            return data.get();
+        [[nodiscard]] unsigned char* getData() && {
+            width = height = 0;
+            return data.release();
         }
 
         [[nodiscard]] Pixmap(const unsigned int width, const unsigned int height)
@@ -82,7 +87,7 @@ export namespace Graphic{
 
         }
 
-        explicit Pixmap(const GL::FrameBuffer& buffer) : Pixmap(buffer.getWidth(), buffer.getHeight(), buffer.getTexture().copyData().get()){
+        explicit Pixmap(const GL::FrameBuffer& buffer) : Pixmap(buffer.getWidth(), buffer.getHeight(), buffer.getTexture().localData.release()){
         }
 
         Pixmap(const Pixmap& other)
@@ -131,7 +136,7 @@ export namespace Graphic{
 
         void free() {
             width = height = 0;
-            data.reset(nullptr);
+            if(data)data.reset(nullptr);
         }
 
         void loadFrom(const OS::File& file) {
@@ -141,8 +146,6 @@ export namespace Graphic{
         }
 
         void loadFrom(const GL::Texture2D& texture2D) {
-            if(!texture2D.valid())throw ext::RuntimeException{"Invalid Texture!"};
-
             data = texture2D.copyData();
             width = texture2D.width;
             height = texture2D.height;
@@ -187,7 +190,9 @@ export namespace Graphic{
         }
 
         [[nodiscard]] GL::Texture2D genTex_move(){
-            return GL::Texture2D{width, height, std::move(data)};
+            GL::Texture2D tex{width, height, std::move(data)};
+            width = height = 0;
+            return tex;
         }
 
         [[nodiscard]] size_t dataIndex(const unsigned int x, const unsigned int y) const {

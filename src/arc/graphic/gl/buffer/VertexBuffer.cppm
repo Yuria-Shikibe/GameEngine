@@ -10,6 +10,9 @@ export namespace GL{
 	class VertexBuffer final : virtual public GLBuffer
 	{
 
+	protected:
+		GLsizei bufferSize = 0;
+
 	public:
 		VertexBuffer() {
 			glGenBuffers(1, &bufferID);
@@ -35,15 +38,23 @@ export namespace GL{
 		template <typename T>
 		void setData(const T* data, const GLsizei count, const GLenum mode = GL_DYNAMIC_DRAW) {
 			glBufferData(targetFlag, count * sizeof(T), data, mode);
+			bufferSize = count;
 		}
 
-		template <typename T, size_t size>
+		template <typename T, GLsizei size>
 		void setData(const T(&arr)[size], const GLenum mode = GL_DYNAMIC_DRAW) {
 			glBufferData(targetFlag, size * sizeof(T), &arr, mode);
+			bufferSize = size;
 		}
 
-		void setDataRaw(const void* data, const GLuint size, const GLenum mode = GL_DYNAMIC_DRAW) const{
+		template <typename T>
+		void setDataRaw(const T* data, const GLsizei size, const GLenum mode = GL_DYNAMIC_DRAW) {
 			glBufferData(targetFlag, size, data, mode);
+			bufferSize = size / sizeof(T);
+		}
+
+		[[nodiscard]] GLsizei getSize() const {
+			return bufferSize;
 		}
 
 		void unbind() const override {

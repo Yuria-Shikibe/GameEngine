@@ -52,6 +52,7 @@ export namespace Graphic{
 			throw GL_Exception("Failed to create GLFW windowMain");
 		}
 
+		glViewport(0, 0, scr_width, scr_height);
 		glfwSwapInterval(1);
 		glEnable(GL_MULTISAMPLE);
 

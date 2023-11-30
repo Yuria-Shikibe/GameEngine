@@ -2,7 +2,12 @@ module;
 
 export module Assets;
 
+import GL.Mesh.RenderableMesh;
+import GL.Buffer.IndexBuffer;
+import GL.Buffer.VertexBuffer;
+import GL.VertexArray;
 import Font;
+import GlyphArrangement;
 import OS.FileTree;
 export import GL.Shader;
 export import GL.Uniform;
@@ -15,6 +20,7 @@ import Core;
 import <iostream>;
 import <memory>;
 import <span>;
+import <unordered_map>;
 
 using namespace GL;
 
@@ -38,6 +44,7 @@ export namespace Assets{
 		inline Shader* stdPost = nullptr;
 		inline Shader* texPost = nullptr;
 		inline Shader* screenSpace = nullptr;
+		inline Shader* coordAxis = nullptr;
 
 		void load() {
 			texPost = new Shader{ shaderDir, "tex-std" };
@@ -49,6 +56,15 @@ export namespace Assets{
 			});
 
 			screenSpace = new Shader(shaderDir, "screenspace");
+
+			coordAxis = new Shader(shaderDir, "coordinate-axis");
+			coordAxis->setUniformer([]([[maybe_unused]] const Shader& shader) {
+				shader.setFloat("width", 3.0f);
+				shader.setFloat("spacing", 100);
+				shader.setFloat("scale", Core::camera->scale);
+				shader.setVec2("screenSize", Core::renderer->getWidth(), Core::renderer->getHeight());
+				shader.setVec2("cameraPos", Core::camera->position);
+			});
 		}
 
 		void dispose() {
@@ -78,12 +94,19 @@ export namespace Assets{
 		// Font::FontsManager
 
 		const Font::FontFlags
-			*consola_regular{nullptr},
-			*consola_italic{nullptr},
-			*consola_bold{nullptr},
-			*consola_italic_bold{nullptr}
+			*consola_Regular{nullptr},
+			*consola_Italic{nullptr},
+			*consola_Bold{nullptr},
+			*consola_Bold_Italic{nullptr},
 
+			*josefinSans_Regular{nullptr},
+			*josefinSans_Bold{nullptr},
+
+			*telegrama{nullptr}
 		;
+
+		const Font::FontsManager* manager{nullptr};
+
 
 		void load() {
 			cacheDir = fontDir.subFile("cache");
@@ -93,34 +116,77 @@ export namespace Assets{
 			const std::vector<CharCode> targetChars {' ' + 1, '~'};
 
 			Font::rootCacheDir = cacheDir;
-			consola_regular =
-				Font::registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
-			consola_italic =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
-			consola_bold =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
-			consola_italic_bold =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
-
-			// Font::loadLib();
-
-			// if(FT_New_Face(Font::freeTypeLib, fontDir.subFile("consola.ttf" ).absolutePath().string().data(), 0, &face)) {
-			// 	throw std::exception{};
-			// }
+			// consola_Regular =
+			// 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
+			// consola_Italic =
+			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
+			// consola_Bold =
+			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
+			// consola_Bold_Italic =
+			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
 			//
-			// if(FT_Set_Pixel_Sizes(face, 0, 48)) {
-			// 	throw std::exception{};
-			// }
-			//
-			// if(FT_Load_Char(face, 'c', FT_LOAD_RENDER)) {
-			// 	throw std::exception{};
-			// }
+			// josefinSans_Regular =
+			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
+			// josefinSans_Bold =
+			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars});
+
+			telegrama =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
 
 			Font::load();
-			// Font::FT::load({' ' + 1, 0b0111'1110}, fontDir.subFile("consola.ttf"), cache);
+
+			Font::registerParserableFont(telegrama);
+
+			manager = Font::manager.get();
+
+			Font::loadParser(telegrama);
 		}
 
 		void dispose() {
+
+		}
+	}
+
+	namespace Meshes {
+		GL::Mesh
+			*raw{nullptr},
+			*coords{nullptr}
+		;
+
+		void load() {
+			raw = new Mesh{[](const Mesh& mesh) {
+				mesh.getIndexBuffer().bind();
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
+				mesh.getVertexBuffer().bind();
+				mesh.getVertexBuffer().setData({
+					-1.0f, -1.0f,
+					-1.0f,  1.0f,
+					 1.0f,  1.0f,
+					 1.0f, -1.0f
+				}, GL_STATIC_DRAW);
+
+				AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				layout.addFloat(2);
+				mesh.getVertexArray().active();
+			}};
+
+			coords = new GL::RenderableMesh(Assets::Shaders::coordAxis, [](const GL::RenderableMesh& mesh) {
+				mesh.getIndexBuffer().bind();
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
+				mesh.getVertexBuffer().bind();
+				mesh.getVertexBuffer().setData({
+					-1.0f, -1.0f,
+					-1.0f,  1.0f,
+					 1.0f,  1.0f,
+					 1.0f, -1.0f
+				}, GL_STATIC_DRAW);
+
+				AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				layout.addFloat(2);
+				mesh.getVertexArray().active();
+			});
+
+			auto t = coords;
 
 		}
 	}
@@ -138,11 +204,13 @@ export namespace Assets{
 		Shaders::load();
 		Textures::load();
 		Fonts::load();
+		Meshes::load();
 	}
 
 	inline void dispose() {
 		Shaders::dispose();
 		Textures::dispose();
+		Fonts::dispose();
 	}
 }
 

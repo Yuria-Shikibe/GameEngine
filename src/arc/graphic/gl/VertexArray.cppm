@@ -90,13 +90,13 @@ export namespace GL{
 			glBindVertexArray(0);
 		}
 
-		void addBuffer(const VertexBuffer& vertices) const{
+		void active(/*const VertexBuffer& vertices*/) const{
 			bind();
-			vertices.bind();
+			// vertices.bind();
 
 			layout.generateAttributePointer();
 
-			vertices.unbind();
+			// vertices.unbind();
 			unbind();
 		}
 	};

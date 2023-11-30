@@ -23,7 +23,7 @@ export namespace Core{
 class Renderer : virtual public ResizeableInt {
 	protected:
 		std::vector<ResizeableInt*> synchronizedSizedObjects;
-	int width{4}, height{4};
+	unsigned int width{4}, height{4};
 
 	public:
 		std::unique_ptr<FrameBuffer> defaultFrameBuffer = nullptr;
@@ -31,7 +31,7 @@ class Renderer : virtual public ResizeableInt {
 
 		std::stack<FrameBuffer*> frameStack;
 
-		Renderer(const int w, const int h): width(w), height(h){
+		Renderer(const unsigned int w, const unsigned int h): width(w), height(h){
 			defaultFrameBuffer = std::make_unique<FrameBuffer>(w, h);
 
 			contextFrameBuffer = defaultFrameBuffer.get();
@@ -49,29 +49,30 @@ class Renderer : virtual public ResizeableInt {
 
 		Renderer& operator=(Renderer&& other) = delete;
 
-		[[nodiscard]] int getWidth() const {
+		[[nodiscard]] unsigned int getWidth() const {
 			return width;
 		}
 
-		[[nodiscard]] int getHeight() const {
+		[[nodiscard]] unsigned int getHeight() const {
 			return height;
 		}
 
-		virtual void frameBegin(FrameBuffer& frameBuffer, const bool resize = false, const Color& initColor = Colors::CLEAR, const GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) = 0;
+		virtual void frameBegin(FrameBuffer& frameBuffer, bool resize = false, const Color& initColor = Colors::CLEAR, GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) = 0;
 
 		virtual void frameEnd() = 0;
 
-		[[nodiscard]] bool sustainSize(const int w, const int h) const {
+		[[nodiscard]] bool sustainSize(const unsigned int w, const unsigned int h) const {
 			return w == width && h == height;
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
-			if (w == width && h == height)return;
+			if (sustainSize(w, h))return;
 
 			width = w;
 			height = h;
 
 			defaultFrameBuffer->resize(w, h);
+			contextFrameBuffer->resize(w, h);
 
 			for(const auto & resizeable : synchronizedSizedObjects){
 				resizeable->resize(w, h);

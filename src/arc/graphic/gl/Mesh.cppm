@@ -16,6 +16,7 @@ import GL.VertexArray;
 export namespace GL{
 	struct Mesh
 	{
+		virtual ~Mesh() = default;
 
 		std::unique_ptr<VertexBuffer> vertexBuffer = nullptr;
 		std::unique_ptr<IndexBuffer> indexBuffer = nullptr;
@@ -66,10 +67,16 @@ export namespace GL{
 			return *vertexArray;
 		}
 
-		void bind() const{
+		virtual void bind() const{
 			vertexBuffer->bind();
 			indexBuffer->bind();
 			vertexArray->bind();
+		}
+
+		virtual void unbind() const{
+			vertexBuffer->unbind();
+			indexBuffer->unbind();
+			vertexArray->unbind();
 		}
 
 		template <size_t size>
@@ -89,7 +96,7 @@ export namespace GL{
 			return *this;
 		}
 
-		void render(const GLenum primitiveType, const int offset, const int count) const{
+		virtual void render(const GLenum primitiveType, const int offset, const int count) const{
 			if (indexBuffer != nullptr && indexBuffer->getSize() > 0) {
 				glDrawElements(primitiveType, count, GL_UNSIGNED_INT, reinterpret_cast<const void*>(offset * sizeof(GLuint)));
 			}
@@ -98,8 +105,17 @@ export namespace GL{
 			}
 		}
 
-		void render(const int count) const{
+		virtual void render(const int count) const{
 			render(GL_TRIANGLES, 0, count);
+		}
+
+		virtual void render() const {
+			bind();
+			if(indexBuffer && indexBuffer->getSize() > 0) { // NOLINT(*-branch-clone)
+				render(indexBuffer->getSize());
+			}else{
+				render(vertexBuffer->getSize());
+			}
 		}
 	};
 }

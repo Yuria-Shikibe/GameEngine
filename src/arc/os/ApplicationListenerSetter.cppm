@@ -83,12 +83,17 @@ inline void framebufferSizeCallback(GLFWwindow* window, const int width, const i
 	// make sure the viewport matches the new windowMain dimensions; note that width and
 	// height will be significantly larger than specified on retina displays.
 
+	std::cout << "Resized Buffer: " << width << "|" << height << '\n';
+
 	glViewport(0, 0, width, height);
 	Core::renderer->resize(width, height);
+
 }
 
 inline void windowResizeCallback(GLFWwindow* window, const int width, const int height){
-	framebufferSizeCallback(window, width, height);
+	// std::cout << "Resized : " << width << "|" << height << '\n';
+	// framebufferSizeCallback(window, width, height);
+	// Core::renderer->resize(width, height);
 }
 
 inline void windowRefreshCallback(GLFWwindow* window){

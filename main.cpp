@@ -17,6 +17,7 @@ import Graphic.RendererImpl;
 
 import Math;
 import Geom.Vector2D;
+import Geom.Shape.Rect_Orthogonal;
 
 import OS;
 import OS.ApplicationListenerSetter;
@@ -33,8 +34,10 @@ import GL.Buffer.MultiSampleFrameBuffer;
 import GL.Buffer.IndexBuffer;
 import GL.VertexArray;
 import GL.Mesh;
+import GL.Texture.TextureRegionRect;
 import GL.Blending;
 import Event;
+import GlyphArrangement;
 
 using namespace std;
 using namespace Graphic;
@@ -79,7 +82,7 @@ int main(){
 
 		Event::generalUpdateEvents.on<Event::Draw_After>([](const Event::Draw_After& a){
 			if(screenShotRequest) {
-				const Graphic::Pixmap pixmap{Core::renderer->defaultFrameBuffer->getTexture(true)};
+				const Graphic::Pixmap pixmap{Core::renderer->getWidth(), Core::renderer->getHeight(), Core::renderer->defaultFrameBuffer->readPixelsRaw()};
 				//
 				auto&& f = Assets::screenshotDir.subFile("lastShot.png");
 				//
@@ -92,89 +95,51 @@ int main(){
 
 	Graphic::Draw::defTexture(*Assets::Textures::whiteRegion);
 	Graphic::Draw::texture();
-	Graphic::Draw::rawMesh.reset(new Mesh{[](const Mesh& mesh) {
-		mesh.getIndexBuffer().bind();
-		mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
-		mesh.getVertexBuffer().bind();
-		mesh.getVertexBuffer().setData({
-			-1.0f, -1.0f,
-			-1.0f,  1.0f,
-			 1.0f,  1.0f,
-			 1.0f, -1.0f
-		});
 
-		AttributeLayout& layout = mesh.getVertexArray().getLayout();
-		layout.addFloat(2);
-		mesh.getVertexArray().addBuffer(mesh.getVertexBuffer());
-	}});
+	Graphic::Draw::rawMesh = Assets::Meshes::raw;
 
 	const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
 
 	GL::MultiSampleFrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
-
 	Core::renderer->registerSynchronizedObject(&frameBuffer);
 
-	using Graphic::Color;
+	auto&& file = Assets::assetsDir.subFile("test.txt");
+
+
+	const Font::GlyphLayout layout{Font::parser->parse(file.readString())};
+
 
 	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
+		Draw::meshBegin(Core::batch->getMesh());
 	    Core::renderer->frameBegin(frameBuffer);
 
-	    float offset = 200.0f;
+	    // auto data = Assets::Fonts::manager->obtain(Assets::Fonts::telegrama);
+		const Geom::Vector2D c = Core::camera->screenCenter();
 
-	    for (int il = -8; il <= 8; ++il) {
-	        const auto i = abs(static_cast<float>(il));
+		// Core::batch->getMesh()->vertexArray->bind();
+		// glFlush();
+		// Assets::Meshes::coords->unbind();
 
-	        Color c1{ Math::absin(i * OS::globalTime() * 1.5f, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 1.5f + 0.33f * 2, 16 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 1.5f + 0.66f * 1, 24 / i,0.6f) + 0.45f , 0.3f + Math::absin(OS::globalTime() * i * 1.0f, 5, 0.7f) };
-	        Color c2{ Math::absin(i * OS::globalTime() * 2.5f, 32 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.5f + 0.33f * 3, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.5f + 0.66f * 2, 16 / i,0.6f) + 0.45f , 0.3f + Math::absin(OS::globalTime() * i * 2.0f, 5, 0.7f) };
-	        Color c3{ Math::absin(i * OS::globalTime() * 3.0f, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 3.0f + 0.33f * 0, 32 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 3.0f + 0.66f * 3, 24 / i,0.6f) + 0.45f , 0.3f + Math::absin(OS::globalTime() * i * 3.0f, 5, 0.7f) };
-	        Color c4{ Math::absin(i * OS::globalTime() * 2.0f, 16 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.0f + 0.33f * 1, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.0f + 0.66f * 0, 32 / i,0.6f) + 0.45f , 0.3f + Math::absin(OS::globalTime() * i * 4.0f, 5, 0.7f) };
-
-	        Draw::vert(texture,
-	            (i - 0.5f) * offset, (i - 0.5f) * offset, c1, Colors::CLEAR,
-	            (i - 0.5f) * offset, (i + 0.5f) * offset, c2, Colors::CLEAR,
-	            (i + 0.5f) * offset, (i + 0.5f) * offset, c3, Colors::CLEAR,
-	            (i + 0.5f) * offset, (i - 0.5f) * offset, c4, Colors::CLEAR
-	        );
-	    }
-
-	    Draw::blend(GL::Blendings::ADDICTIVE);
-
-	    offset += 12;
-
-	    for (int il = -8; il <= 8; ++il) {
-	        const auto i = abs(static_cast<float>(il));
-
-	        Color c4{ Math::absin(i * OS::globalTime() * 1.5f, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 1.5f + 0.33f * 2, 16 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 1.5f + 0.66f * 1, 24 / i,0.6f) + 0.45f , 0.1f + Math::absin(i * OS::globalTime() * i * 1.0f, 5, 0.3f) };
-	        Color c3{ Math::absin(i * OS::globalTime() * 2.5f, 32 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.5f + 0.33f * 3, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.5f + 0.66f * 2, 16 / i,0.6f) + 0.45f , 0.1f + Math::absin(i * OS::globalTime() * i * 2.0f, 5, 0.3f) };
-	        Color c2{ Math::absin(i * OS::globalTime() * 3.0f, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 3.0f + 0.33f * 0, 32 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 3.0f + 0.66f * 3, 24 / i,0.6f) + 0.45f , 0.1f + Math::absin(i * OS::globalTime() * i * 3.0f, 5, 0.3f) };
-	        Color c1{ Math::absin(i * OS::globalTime() * 2.0f, 16 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.0f + 0.33f * 1, 24 / i,0.6f) + 0.45f, Math::absin(i * OS::globalTime() * 2.0f + 0.66f * 0, 32 / i,0.6f) + 0.45f , 0.1f + Math::absin(i * OS::globalTime() * i * 4.0f, 5, 0.3f) };
-
-	        Draw::vert(texture,
-	            (i - 0.5f) * offset, (i - 0.5f) * offset, c1, Colors::CLEAR,
-	            (i - 0.5f) * offset, (i + 0.5f) * offset, c2, Colors::CLEAR,
-	            (i + 0.5f) * offset, (i + 0.5f) * offset, c3, Colors::CLEAR,
-	            (i + 0.5f) * offset, (i - 0.5f) * offset, c4, Colors::CLEAR
-	        );
-	    }
-
-	    Geom::Vector2D c = Core::camera->screenCenter();
-
-	    Draw::stroke(5);
-	    Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.051f)),
-	        { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
-	    );
-
-	    Draw::blend();
-
+		Draw::stroke(3);
 		Draw::color(Colors::WHITE);
-		Draw::stroke(5);
 
-	    Draw::lineAngleCenter(c.getX(), c.getY(), 45, 50);
-	    Draw::lineAngleCenter(c.getX(), c.getY(), -45, 50);
+		Draw::lineAngleCenter(c.getX(), c.getY(), 135.0f, 50.0f);
 
-	    Draw::flush();
+		Draw::lineAngleCenter(c.getX(), c.getY(), 45, 50);
+
+		Draw::meshBegin(Assets::Meshes::coords);
+		Draw::meshEnd(true);
+
+		layout.render();
+	 //
+		 Draw::stroke(5);
+		 Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.051f)),
+		     { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
+		 );
+
 
 	    Core::renderer->frameEnd();
+		Draw::meshEnd(Core::batch->getMesh());
 	});
 
 	while (OS::continueLoop(Core::window)){
@@ -185,6 +150,8 @@ int main(){
 		Core::camera->setOrtho(static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
 
 		Core::renderer->draw();
+
+		// Draw::blit()
 
 		OS::poll(Core::window);
 	}

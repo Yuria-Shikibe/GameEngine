@@ -3,8 +3,6 @@
 //
 module;
 
-
-
 export module Core.Batch.Batch_Sprite;
 
 import <glad/glad.h>;
@@ -74,7 +72,7 @@ export namespace Core{
 						layout.addFloat(4); //src rgba
 					}
 
-					mesh.getVertexArray().addBuffer(mesh.getVertexBuffer());
+					mesh.getVertexArray().active();
 				}
 			});
 

@@ -33,8 +33,8 @@ export namespace Geom{
 
 	template <Concepts::Number T>
 	bool overlap(const T x, const T y, const T radius, const Rect_Orthogonal<T>& rect) {
-		T closestX = std::clamp<T>(x, rect.getSrcX(), rect.endX());
-		T closestY = std::clamp<T>(y, rect.getSrcY(), rect.endY());
+		T closestX = std::clamp<T>(x, rect.getSrcX(), rect.getEndX());
+		T closestY = std::clamp<T>(y, rect.getSrcY(), rect.getEndY());
 
 		T distanceX = x - closestX;
 		T distanceY = y - closestY;
