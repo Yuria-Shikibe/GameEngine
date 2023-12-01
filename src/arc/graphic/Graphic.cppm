@@ -7,15 +7,20 @@ export module Graphic;
 
 import GL.GL_Exception;
 import <string>;
+import <iostream>;
+
+inline void throw_GL_Exception(const int error_code, const char* description) {
+	std::cout << "ERROR CODE: " << error_code << std::endl << description << std::endl;
+}
 
 export namespace Graphic{
-
-	inline void enableMSAA(const unsigned int scale = 2){
+	inline void enableMSAA(const int scale = 2){
 		glfwWindowHint(GLFW_SAMPLES, scale);
 	}
 
 	// ReSharper disable once CppInconsistentNaming
 	inline void initGLFW(){
+		glfwSetErrorCallback(throw_GL_Exception);
 		glfwInit();
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);

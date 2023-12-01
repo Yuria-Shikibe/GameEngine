@@ -68,7 +68,7 @@ export namespace Graphic{
 			return set(other);  // NOLINT(misc-unconventional-assign-operator)
 		}
 
-		static std::size_t hash_value(const Color& obj){
+		static size_t hash_value(const Color& obj){
 			return obj.hashCode();
 		}
 
@@ -92,9 +92,14 @@ export namespace Graphic{
 			return !lhs.equals(rhs);
 		}
 
-		static Color& valueOf(const std::string& hex){
-			Color c{};
-			return valueOf(c, hex);
+		static Color valueOf(const std::string& hex){
+			const int offset = hex[0] == '#' ? 1 : 0;
+
+			const int r = parseHex(hex, offset, offset + 2);
+			const int g = parseHex(hex, offset + 2, offset + 4);
+			const int b = parseHex(hex, offset + 4, offset + 6);
+			const int a = hex.length() - offset != 8 ? 255 : parseHex(hex, offset + 6, offset + 8);
+			return Color{static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f};
 		}
 
 		static Color& valueOf(Color& color, const std::string& hex){

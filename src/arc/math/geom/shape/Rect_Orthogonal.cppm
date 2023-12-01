@@ -118,15 +118,7 @@ export namespace Geom::Shape{
 			return width;
 		}
 
-		void setWidth(const T w){
-			if(w >= 0){
-				this->width = w;
-			} else{
-				T abs = w < 0 ? -w : w; // abs
-				srcX -= abs;
-				this->width = abs;
-			}
-		}
+
 
 		[[nodiscard]] T getHeight() const{
 			return height;
@@ -146,6 +138,16 @@ export namespace Geom::Shape{
 			};
 		}
 
+		void setWidth(const T w){
+			if(w >= 0){
+				this->width = w;
+			} else{
+				T abs = w < 0 ? -w : w;
+				srcX -= abs;
+				this->width = abs;
+			}
+		}
+
 		void setHeight(const T h){
 			if (h >= 0) {
 				this->height = h;
@@ -154,6 +156,20 @@ export namespace Geom::Shape{
 				T abs = h < 0 ? -h : h; // abs
 				srcY -= abs;
 				this->height = abs;
+			}
+		}
+
+		void setLargerWidth(const T v) {
+			T abs = v < 0 ? -v : v;
+			if(abs > width) {
+				setWidth(v);
+			}
+		}
+
+		void setLargerHeight(const T v) {
+			T abs = v < 0 ? -v : v;
+			if(abs > height) {
+				setHeight(v);
 			}
 		}
 
@@ -213,6 +229,13 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
+		Rect_Orthogonal& addSize(const T x, const T y) {
+			this->setWidth(width + x);
+			this->setHeight(height + y);
+
+			return *this;
+		}
+
 		Rect_Orthogonal& move(const T x, const T y) {
 			srcX += x;
 			srcY += y;
@@ -229,7 +252,7 @@ export namespace Geom::Shape{
 		}
 
 		Rect_Orthogonal& setSize(const Vector2D& v) {
-			return *setSize(v.x, v.y);
+			return setSize(static_cast<T>(v.x), static_cast<T>(v.y));
 		}
 
 		Rect_Orthogonal& setCenter(const T x, const T y){

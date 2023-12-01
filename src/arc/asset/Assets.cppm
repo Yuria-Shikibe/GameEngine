@@ -99,8 +99,16 @@ export namespace Assets{
 			*consola_Bold{nullptr},
 			*consola_Bold_Italic{nullptr},
 
+			*times_Regular{nullptr},
+			*times_Italic{nullptr},
+			*times_Bold{nullptr},
+			*times_Bold_Italic{nullptr},
+
 			*josefinSans_Regular{nullptr},
 			*josefinSans_Bold{nullptr},
+
+			*josefinSans_Regular_Large{nullptr},
+			*josefinSans_Bold_Large{nullptr},
 
 			*telegrama{nullptr}
 		;
@@ -109,6 +117,8 @@ export namespace Assets{
 
 
 		void load() {
+			constexpr int DefFlag = 1L << 2;
+
 			cacheDir = fontDir.subFile("cache");
 			if(!cacheDir.exist())cacheDir.createDirQuiet();
 			// Font::FT::loadLib();
@@ -116,30 +126,60 @@ export namespace Assets{
 			const std::vector<CharCode> targetChars {' ' + 1, '~'};
 
 			Font::rootCacheDir = cacheDir;
-			// consola_Regular =
-			// 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
-			// consola_Italic =
-			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
-			// consola_Bold =
-			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
-			// consola_Bold_Italic =
-			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
-			//
-			// josefinSans_Regular =
-			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
-			// josefinSans_Bold =
-			//  	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars});
+			consola_Regular =
+				Font::registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
+			consola_Italic =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
+			consola_Bold =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
+			consola_Bold_Italic =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
+
+			times_Regular =
+			Font::registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ), cacheDir,  targetChars});
+			times_Italic =
+				 Font::registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"), cacheDir,  targetChars});
+			times_Bold =
+				 Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"), cacheDir,  targetChars});
+			times_Bold_Italic =
+				 Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"), cacheDir,  targetChars});
+
+			josefinSans_Regular =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
+			josefinSans_Bold =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars});
+
+			josefinSans_Regular_Large =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars, DefFlag, 90});
+			josefinSans_Bold_Large =
+			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars, DefFlag, 90});
 
 			telegrama =
 			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
 
 			Font::load();
 
-			Font::registerParserableFont(telegrama);
+			Font::registerParserableFont("tms-R" , times_Regular);
+			Font::registerParserableFont("tms-B" , times_Bold);
+			Font::registerParserableFont("tms-I" , times_Italic);
+			Font::registerParserableFont("tms-BI", times_Bold_Italic);
+
+			Font::registerParserableFont("csl-R" , consola_Regular);
+			Font::registerParserableFont("csl-B" , consola_Bold);
+			Font::registerParserableFont("csl-I" , consola_Italic);
+			Font::registerParserableFont("csl-BI", consola_Bold_Italic);
+
+			Font::registerParserableFont("jfs-B", josefinSans_Bold);
+			Font::registerParserableFont("jfs-R", josefinSans_Regular);
+
+			Font::registerParserableFont("jfsL-B", josefinSans_Bold_Large);
+			Font::registerParserableFont("jfsL-R", josefinSans_Regular_Large);
+
+			Font::registerParserableFont("tele", telegrama);
 
 			manager = Font::manager.get();
 
-			Font::loadParser(telegrama);
+			Font::loadParser(consola_Regular);
 		}
 
 		void dispose() {

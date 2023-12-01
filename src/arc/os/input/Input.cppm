@@ -150,6 +150,7 @@ export namespace Core{
 				pressedKeys.erase(key);
 			}
 
+
 			const vector<unique_ptr<KeyBind>>& binds = keys[key];
 
 			if (binds.empty())return;

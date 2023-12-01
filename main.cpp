@@ -106,8 +106,9 @@ int main(){
 	auto&& file = Assets::assetsDir.subFile("test.txt");
 
 
-	const Font::GlyphLayout layout{Font::parser->parse(file.readString())};
-
+	const auto layout = Font::glyphParser->parse(file.readString());
+	layout->setAlign(Font::TypeSettingAlign::bottom_left);
+	layout->move(80, 30);
 
 	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
 		Draw::meshBegin(Core::batch->getMesh());
@@ -130,13 +131,18 @@ int main(){
 		Draw::meshBegin(Assets::Meshes::coords);
 		Draw::meshEnd(true);
 
-		layout.render();
-	 //
-		 Draw::stroke(5);
-		 Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.051f)),
-		     { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
-		 );
+		const float progress = std::fmod(OS::globalTime() / 5, 1);
+		layout->render();
 
+		Draw::stroke(3);
+		Draw::color(Colors::RED);
+
+		Draw::rect_line(layout->bound, true, layout->offset);
+
+		Draw::stroke(5);
+		Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
+		    { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
+		);
 
 	    Core::renderer->frameEnd();
 		Draw::meshEnd(Core::batch->getMesh());

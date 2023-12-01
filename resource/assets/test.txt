@@ -1,9 +1,18 @@
-    C++ Is The Worst Language In The World.
+${tab}C++ Is The Worst Language In The World.
 So is java!
-
+${font#tele}
 This is the shittiest code I have written
+O${sbt}2${\sbt}
+p${sut}2${\sut}
+${font#tms-BI}${scl#[]}${igl}
 
-Fuck OpenGL
-Fuck Clang
-Fuck FreeType
-Fuck EVERYTHING!
+x${sut}2${\sut} + 6x + 2 = 0
+
+${font#csl-BI}${igl}
+${font#jfsL-R}Title${font#jfs-R} text
+123123123123123123
+
+________________________________________
+${color#[1376ffaf]}${font#csl-R}${igl}
+123${scl#[2.0]}Clang${scl#[]}123
+${color#[aaaaaaff]}${font#csl-I}${igl}

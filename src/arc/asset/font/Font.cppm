@@ -122,10 +122,6 @@ export namespace Font {
 			}
 
 			[[nodiscard]] CharData() = default;
-
-			// Shape::OrthoRectFloat& normalize(Shape::OrthoRectFloat& in, const float xOffset = 0, const float yOffset = 0) {
-			// 	in.s
-			// }
 		};
 
 		Shape::OrthoRectUInt box{};
@@ -207,6 +203,7 @@ export namespace Font {
 
 		FT_Face face{nullptr};
 		unsigned char expectedVersion = 0;
+
 		std::string styleName = static_cast<std::string>(regular);
 		std::string familyName{};
 
@@ -295,11 +292,11 @@ export namespace Font {
 		}
 
 		[[nodiscard]] OS::File dataFile(const OS::File& cacheDir) const {
-			return cacheDir.subFile(fullname() + static_cast<std::string>(data_suffix));
+			return cacheDir.subFile(fullname() + "-" + std::to_string(height) + static_cast<std::string>(data_suffix));
 		}
 
 		[[nodiscard]] OS::File texFile(const OS::File& cacheDir) const {
-			return cacheDir.subFile(fullname() + static_cast<std::string>(tex_suffix ));
+			return cacheDir.subFile(fullname() + "-" + std::to_string(height) + static_cast<std::string>(tex_suffix ));
 		}
 
 		template <typename ...T>

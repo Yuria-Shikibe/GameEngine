@@ -75,15 +75,14 @@ export namespace OS{
 }
 
 
-inline void throw_GL_Exception(const int error_code, const char* description) {
-	std::cout << "ERROR CODE: " << error_code << std::endl << description << std::endl;
-}
-
-inline void framebufferSizeCallback(GLFWwindow* window, const int width, const int height) {
+inline void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	// make sure the viewport matches the new windowMain dimensions; note that width and
 	// height will be significantly larger than specified on retina displays.
 
-	std::cout << "Resized Buffer: " << width << "|" << height << '\n';
+	// std::cout << "Resized Buffer: " << width << "|" << height << '\n';
+
+	width = std::max(2, width);
+	height = std::max(2, height);
 
 	glViewport(0, 0, width, height);
 	Core::renderer->resize(width, height);
@@ -138,12 +137,12 @@ inline void scaleCallback(GLFWwindow* window, const float xScale, const float yS
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
 inline void keyCallback(GLFWwindow* window, const int key, const int scanCode, const int action, const int mods){
 	// std::cout << key << " | " << action << " | " << mods << std::endl;
-	Core::input->informKeyAction(window, key, scanCode, action, mods);
+	if(key >= 0 && key < GLFW_KEY_LAST)Core::input->informKeyAction(window, key, scanCode, action, mods);
 }
 
 export namespace OS{
 	inline void loadListeners(GLFWwindow* window) {
-		glfwSetErrorCallback(throw_GL_Exception);
+
 		glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 		glfwSetCursorPosCallback(window, cursorPosCallback);
 		glfwSetDropCallback(window, dropCallback);

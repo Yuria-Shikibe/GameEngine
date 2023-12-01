@@ -517,6 +517,17 @@ export namespace Graphic::Draw{
 		line(*contextTexture, x + vec2_0.x * offset, y + vec2_0.y * offset, x + vec2_0.x * (length + offset), y + vec2_0.y * (length + offset));
 	}
 
+	void rect_line(const float srcx, const float srcy, const float width, const float height, const bool cap = true){
+		line(*defaultTexture, srcx		, srcy		 , srcx						  , srcy + height - contextStroke, cap);
+		line(*defaultTexture, srcx		, srcy + height, srcx + width - contextStroke, srcy + height				, cap);
+		line(*defaultTexture, srcx + width, srcy + height, srcx + width				  , srcy          + contextStroke, cap);
+		line(*defaultTexture, srcx + width, srcy		 , srcx		   + contextStroke, srcy							, cap);
+	}
+
+	void rect_line(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vector2D& offset = Geom::ZERO){
+		rect_line(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(), rect.getHeight(), cap);
+	}
+
 	void lineSquare(const float x, const float y, const float radius, float ang){
 		ang += 45.000f;
 		const float dst = contextStroke * Math::SQRT2 / 2.0f;

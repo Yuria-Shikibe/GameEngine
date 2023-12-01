@@ -11,7 +11,7 @@ import <string>;
 import <exception>;
 
 export namespace ext{
-	class RuntimeException final : virtual public std::exception{
+	class RuntimeException : virtual public std::exception{
 	public:
 		std::string data{};
 
@@ -29,9 +29,20 @@ export namespace ext{
 			return data.data();
 		}
 
-		void postToLog() const;
+		virtual void postToLog() const;
 
 		RuntimeException() : RuntimeException("") {
+
+		}
+	};
+
+	class NullPointerException : RuntimeException{
+	public:
+		[[nodiscard]] explicit NullPointerException(const std::string& str)
+			: RuntimeException(str) {
+		}
+
+		[[nodiscard]] NullPointerException() : NullPointerException("Null Pointer At...") {
 
 		}
 	};
