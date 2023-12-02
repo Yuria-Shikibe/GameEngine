@@ -15,7 +15,7 @@ bool modified(float a){
 void main() {
 	vec4 color = vec4(0.883, 0.893, 0.945, 0.0);
 	
-	float dottedLineLength = spacing / 8.0;
+	const float dottedLineLength = 8;
 	float dottedLineWidth = dottedLineLength / 2.0;
 
 	vec2 worldCoords = (gl_FragCoord.xy - screenSize * 0.5) / scale + cameraPos;

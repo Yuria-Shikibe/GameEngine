@@ -125,7 +125,7 @@ export namespace Core{
 		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_S, GLFW_PRESS, [](const int k){camera->trans(0, -baseMoveSpeed * OS::delta());}));
 
 		auto keys = std::array{OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) };
-		input->registerKeyBindMulti(false, keys, []() {camera->setScale(1.0f);});
+		input->registerKeyBindMulti(true, keys, []() {camera->setScale(1.0f);});
 
 		OS::registerListener(input);
 	}

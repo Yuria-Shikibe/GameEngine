@@ -69,17 +69,22 @@ export namespace Core{
 
 		Input& operator=(Input&& other) = delete;
 
+
 		void registerMouseBind(const bool frequentCheck, MouseBind* mouseBind) {
 			array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8>& container = frequentCheck ? mouseBinds_frequentCheck : mouseBinds;
 
 			container[mouseBind->getButton()].push_back(std::make_unique<MouseBind>(*mouseBind));
 		}
 
+		template<Concepts::Invokable<void()> Func>
+		void registerMouseBind(const bool frequentCheck, const int button, const int expectedState, Func&& func) {
+			registerMouseBind(frequentCheck, new MouseBind{button, expectedState, func});
+		}
+
 		/**
 		 * \brief No remove function provided. If the input binds needed to be changed, clear it all and register the new binds by the action table.
 		 * this is a infrequent operation so just keep the code clean.
 		 */
-
 		void informMouseAction(const GLFWwindow* targetWin, const int button, const int action, [[maybe_unused]] int mods) {
 			if (targetWin != window)return;
 
@@ -168,7 +173,7 @@ export namespace Core{
 			}
 		}
 
-		Geom::Vector2D& getPos() {
+		Geom::Vector2D& getMousePos() {
 			return mousePos;
 		}
 

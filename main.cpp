@@ -3,6 +3,8 @@ import <GLFW/glfw3.h>;
 import <glad/glad.h>;
 //import <print>;
 import <functional>;
+import <sstream>;
+#include <iomanip>
 
 import Platform;
 import File;
@@ -73,6 +75,13 @@ int main(){
 		glfwGetWindowSize(Core::window, &w, &h);
 
 		Core::renderer = new Graphic::RendererImpl{w, h};
+
+		Core::input->registerMouseBind(false, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, [] {
+			Geom::Vector2D pos = Core::input->getMousePos();
+			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f).scl(1.0f, -1.0f);
+			pos *= Core::camera->screenToWorld;
+			Core::camera->position.set(pos);
+		});
 	});
 
 	{//TODO pack this into a class like screen shot manager
@@ -110,6 +119,8 @@ int main(){
 	layout->setAlign(Font::TypeSettingAlign::bottom_left);
 	layout->move(80, 30);
 
+	const auto coordCenter = std::make_shared<Font::GlyphLayout>();
+
 	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
 		Draw::meshBegin(Core::batch->getMesh());
 	    Core::renderer->frameBegin(frameBuffer);
@@ -133,6 +144,17 @@ int main(){
 
 		const float progress = std::fmod(OS::globalTime() / 5, 1);
 		layout->render();
+
+		std::stringstream ss{};
+
+
+		ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << c.getX() << ", " << c.getY() << ")";
+
+		Font::glyphParser->parse(coordCenter.get(), ss.str());
+
+		coordCenter->offset.set(c).add(155, 35);
+		coordCenter->setAlign(Font::TypeSettingAlign::bottom_left);
+		coordCenter->render();
 
 		Draw::stroke(3);
 		Draw::color(Colors::RED);

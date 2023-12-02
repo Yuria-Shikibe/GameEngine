@@ -61,8 +61,16 @@ export namespace Core{
 			height /= scale;
 
 			worldToScreen.setOrthogonal(0, 0, width, height).translate(-position.x + width / 2.0f, -position.y + height / 2.0f);
+			updated(width, height);
 		}
 
+		void updated(const float width, const float height) {
+			// Geom::Vector2D trans{};
+			// worldToScreen.getTranslation(trans);
+			// screenToWorld.setOrthogonal(0, 0, width, height).inv().translate(position.x - width / 2.0f, position.y - height / 2.0f);
+
+			screenToWorld.set(worldToScreen).inv();
+		}
 	};
 }
 

@@ -104,6 +104,13 @@ export namespace Font {
 		Geom::Shape::OrthoRectFloat bound{};
 		Geom::Vector2D offset{};
 
+		void reset() {
+			toRender.clear();
+			bound.setSize(0, 0);
+			bound.setSrc(0, 0);
+			offset.setZero();
+		}
+
 		void move(const float x, const float y) {
 			offset.add(x, y);
 		}
@@ -185,11 +192,12 @@ export namespace Font {
 		Graphic::Color currentColor = Graphic::Colors::WHITE;
 		Graphic::Color fallbackColor = Graphic::Colors::WHITE;
 
+		const FontFlags* defaultFont{nullptr};
 		const FontFlags* currentFont{nullptr};
 		const FontFlags* fallbackFont{nullptr};
 
 		[[nodiscard]] explicit TypesettingTable(const FontFlags* const font)
-			: currentFont(font), fallbackFont(font) {
+			: defaultFont(font), currentFont(font), fallbackFont(font) {
 			if(!currentFont)throw ext::NullPointerException{};
 			spaceSpaceing = currentFont->data->spaceSpacing;
 			lineSpacing = currentFont->data->lineSpacingMin * 1.8f;
@@ -211,6 +219,16 @@ export namespace Font {
 
 		[[nodiscard]] float padTop_paragraph() const {
 			return currentScale * paragraphSpacing;
+		}
+
+		void reset() {
+			currentColor = fallbackColor = Graphic::Colors::WHITE;
+			currentScale = 1.0f;
+			set(defaultFont);
+			fallbackFont = defaultFont;
+
+			offset.setZero();
+			additionalYOffset = 0;
 		}
 	};
 
@@ -295,11 +313,11 @@ export namespace Font {
 
 		}
 
-		[[nodiscard]] virtual std::shared_ptr<GlyphLayout> parse(const std::string& text) const {
+		virtual void parse(GlyphLayout* const layout, const std::string& text) const {
 			constexpr auto npos = std::string::npos;
 
-			const auto layout = std::make_shared<GlyphLayout>();
-
+			context.reset();
+			layout->reset();
 			auto& datas = layout->toRender;
 			datas.reserve(text.length());
 
@@ -385,6 +403,12 @@ export namespace Font {
 			std::for_each(std::execution::par_unseq, datas.begin(), datas.end(), [offsetY](GlyphVertData& data) {
 				data.moveY(offsetY);
 			});
+		}
+
+		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string& text) const {
+			const auto layout = std::make_shared<GlyphLayout>();
+
+			parse(layout.get(), text);
 
 			return layout;
 		}

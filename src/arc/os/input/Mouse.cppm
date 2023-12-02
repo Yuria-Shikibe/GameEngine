@@ -16,17 +16,17 @@ export namespace OS{
 		int button = 0;
 		int expectedState = 1;
 
-		std::function<void(int)> action = nullptr;
+		std::function<void()> action = nullptr;
 
 		int mod = 0;
 
 	public:
-		MouseBind(const int button, const int expectedState, const std::function<void(int)>& action) : button(button),
+		MouseBind(const int button, const int expectedState, const std::function<void()>& action) : button(button),
 		                                                                                               expectedState(expectedState),
 		                                                                                               action(action) {
 		}
 
-		MouseBind(const int button, const std::function<void(int)>& action) : MouseBind(button, GLFW_PRESS, action) {}
+		MouseBind(const int button, const std::function<void()>& action) : MouseBind(button, GLFW_PRESS, action) {}
 
 		[[nodiscard]] int getButton() const {
 			return button;
@@ -49,11 +49,11 @@ export namespace OS{
 		}
 
 		void tryRun(const int state) const {
-			if (activated(state))action(button);
+			if (activated(state))action();
 		}
 
 		void act() const {
-			action(button);
+			action();
 		}
 	};
 }

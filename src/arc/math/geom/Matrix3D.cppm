@@ -67,11 +67,16 @@ export namespace Geom{
 
 		~Matrix3D() = default;
 
-		friend Vector2D& operator*(const Matrix3D& mat, Vector2D& vec2) {
+		friend Vector2D operator*(const Matrix3D& mat, const Vector2D& vec2) {
+			Vector2D vector2D{};
+			return vector2D.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
+		}
+
+		friend Vector2D operator*=(Vector2D& vec2, const Matrix3D& mat) {
 			return vec2.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
 		}
 
-		friend Matrix3D& operator*(const Matrix3D& lhs, Matrix3D& rhs) {
+		friend Matrix3D& operator*=(const Matrix3D& lhs, Matrix3D& rhs) {
 			return rhs.mulLeft(lhs);
 		}
 
@@ -264,6 +269,14 @@ export namespace Geom{
 			return *this;
 		}
 
+		Matrix3D& setTranslation(const float x, const float y) {
+			val[M02] = x;
+			val[M12] = y;
+			val[M22] = 1;
+
+			return *this;
+		}
+
 		Matrix3D& setToTranslation(const Vector2D& translation) {
 			val[M00] = 1;
 			val[M10] = 0;
@@ -350,13 +363,13 @@ export namespace Geom{
 		}
 
 		Matrix3D& set(const Matrix3D& mat) {
-			std::copy(&mat.val[0], &mat.val[9], &val[0]);
+			std::copy_n(mat.val, 9, val);
 			return *this;
 		}
 
 		Matrix3D& set(const float values[]) {
 			// if (size < 9)throw std::exception("Cannot Construct A Matrix Without 9 Numbers.");
-			std::copy(&values[0], &values[9], &val[0]);
+			std::copy_n(values, 9, val);
 			return *this;
 		}
 
@@ -485,6 +498,8 @@ export namespace Geom{
 		[[nodiscard]] float getRotationRad() const {
 			return Math::atan2(val[M10], val[M00]);
 		}
+
+
 
 		Matrix3D& scl(const float scale) {
 			val[M00] *= scale;
