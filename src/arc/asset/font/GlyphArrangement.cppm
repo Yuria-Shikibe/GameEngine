@@ -104,6 +104,8 @@ export namespace Font {
 		Geom::Shape::OrthoRectFloat bound{};
 		Geom::Vector2D offset{};
 
+		std::string last{};
+
 		void reset() {
 			toRender.clear();
 			bound.setSize(0, 0);
@@ -175,6 +177,8 @@ export namespace Font {
 
 	std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);*/
 
+	struct ModifierableData;
+
 	struct TypesettingTable {
 		float spaceSpaceing{-1};
 		float lineSpacing{-1};
@@ -186,6 +190,7 @@ export namespace Font {
 		Geom::Vector2D offset{};
 
 		std::vector<GlyphVertData*> currentLineData{};
+		std::vector<std::function<void(const ModifierableData&)>> endlineOperation{};
 		Geom::Shape::OrthoRectFloat currentLineBound{};
 
 		//TODO uses stack for multi fallback?
@@ -316,6 +321,8 @@ export namespace Font {
 		virtual void parse(GlyphLayout* const layout, const std::string& text) const {
 			constexpr auto npos = std::string::npos;
 
+			if(layout->last == text)return;
+
 			context.reset();
 			layout->reset();
 			auto& datas = layout->toRender;
@@ -326,8 +333,6 @@ export namespace Font {
 			size_t tokenBegin = npos;
 			std::string token{};
 			Geom::Vector2D currentPosition{0, -context.lineSpacing};
-
-			context.currentLineBound.setSize(0, context.lineSpacing);
 
 			for(size_t index = 0; index < text.size(); ++index) {
 				const char currentChar = text.at(index);
@@ -395,10 +400,16 @@ export namespace Font {
 				}
 			}
 
-			layout->bound.addSize(0, -context.currentScale * context.lineSpacing * 2);
+			if(text.back() != '\n' && charParser->contains('\n')){
+				charParser->parse('\n', {context, currentPosition, lastCharData, *layout});
+			}
+
+			layout->bound.addSize(0, -2 * context.currentLineBound.getHeight());
+
+			layout->bound.setLargerWidth(currentPosition.getX() + normalize(lastCharData->matrices.horiAdvance));
 
 			//TODO should this really work?
-			float offsetY = layout->bound.getHeight() + context.lineSpacing * 0.258f;
+			float offsetY = layout->bound.getHeight() + context.currentLineBound.getHeight() * 0.255f;
 
 			std::for_each(std::execution::par_unseq, datas.begin(), datas.end(), [offsetY](GlyphVertData& data) {
 				data.moveY(offsetY);
@@ -434,13 +445,6 @@ export namespace Font {
 	GlyphParser* glyphParser = nullptr;
 
 	namespace ParserFunctions {
-		void resetScl(const ModifierableData& data) {
-			const float last = data.context.currentScale;
-			data.context.currentScale = 1.0;
-			data.context.currentLineBound.setLargerHeight(data.context.lineSpacing);
-			data.cursorPos.add(normalize(data.charData->matrices.horiAdvance) * (last - data.context.currentScale), 0);
-		}
-
 		void setScl(const ModifierableData& data, const float target) {
 			const float last = data.context.currentScale;
 
@@ -448,12 +452,22 @@ export namespace Font {
 
 			data.context.additionalYOffset = std::max(
 				data.context.additionalYOffset,
-				(data.context.currentScale - 1.0f) * data.context.currentLineBound.getHeight() * 0.35f
+				(data.context.currentScale - 1.0f) * data.context.currentLineBound.getHeight() * 0.75f
 			);
 
-			data.context.currentLineBound.setLargerHeight(data.context.currentScale * data.context.currentFont->height);
+			float yMove = 0.0f;
 
-			data.cursorPos.add(normalize(data.charData->matrices.horiAdvance) * (last - data.context.currentScale), 0);
+			if(data.cursorPos.x == 0.0f) {
+				yMove = data.context.lineSpacing * (last - data.context.currentScale);
+			}
+
+			data.cursorPos.add(
+			normalize(data.charData->matrices.horiAdvance) * (last - data.context.currentScale), yMove
+			);
+		}
+
+		void resetScl(const ModifierableData& data) {
+			setScl(data, 1.0f);
 		}
 	}
 
@@ -465,16 +479,22 @@ export namespace Font {
 		};
 
 		glyphParser->charParser->modifier['\n'] = [](const ModifierableData& data) {
-			data.context.currentLineBound.setWidth(std::max(
-				data.context.currentLineBound.getWidth(),
+			data.context.currentLineBound.setLargerWidth(
 				data.cursorPos.getX() + normalize(data.charData->matrices.horiAdvance) * data.context.currentScale
-			));
+			);
+
 			data.charData = &Font::emptyCharData;
 			data.cursorPos.setX(0);
 
-			data.context.currentLineBound.scl(1.0, data.context.currentScale);
+			data.context.currentLineBound.setHeight(data.context.lineSpacing * data.context.currentScale);
 
-			std::for_each(std::execution::par_unseq, data.context.currentLineData.begin(), data.context.currentLineData.end(),
+			for (const auto& operation : data.context.endlineOperation) {
+				operation(data);
+			}
+
+			data.context.currentLineBound.addSize(0, data.context.additionalYOffset);
+
+			if(data.context.additionalYOffset != 0.0f)std::for_each(std::execution::par_unseq, data.context.currentLineData.begin(), data.context.currentLineData.end(),
 				[lineSpacing = data.context.additionalYOffset](GlyphVertData* vertData) {
 				vertData->moveY(-lineSpacing);
 			});
@@ -482,13 +502,14 @@ export namespace Font {
 			data.cursorPos.add(0, -data.context.currentLineBound.getHeight());
 
 			data.context.currentLineData.clear();
-			data.layout.bound.setWidth(std::max(data.layout.bound.getWidth(), data.context.currentLineBound.getWidth()));
-			data.layout.bound.addSize(0 ,data.context.currentLineBound.getHeight());
+			data.layout.bound.setLargerWidth(data.context.currentLineBound.getWidth());
+			data.layout.bound.setHeight(-data.cursorPos.getY() + data.context.currentLineBound.getHeight());
 
-			data.context.currentLineBound.setHeight(data.context.lineSpacing);
 			data.context.currentLineBound.setSrc(0, 0);
 
 			data.context.additionalYOffset = 0;
+
+			data.context.endlineOperation.clear();
 		};
 
 		glyphParser->tokenParser->modifier["color"] = [](const std::string& command, const ModifierableData& data) {
@@ -535,7 +556,9 @@ export namespace Font {
 
 		//igl for Ignore Line, used for a line for token.
 		glyphParser->tokenParser->modifier["igl"] = [](const std::string& command, const ModifierableData& data) {
-			data.cursorPos.add(0, data.context.currentLineBound.getHeight() * (1.0f + (data.context.currentScale - 1.0) * 0.5f));
+			data.context.endlineOperation.push_back([](const ModifierableData& d) {
+				d.context.currentLineBound.setHeight(0);
+			});
 		};
 
 		glyphParser->tokenParser->modifier["tab"] = [](const std::string& command, const ModifierableData& data) {

@@ -84,15 +84,13 @@ inline void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	width = std::max(2, width);
 	height = std::max(2, height);
 
-	glViewport(0, 0, width, height);
 	Core::renderer->resize(width, height);
 
-}
-
-inline void windowResizeCallback(GLFWwindow* window, const int width, const int height){
-	// std::cout << "Resized : " << width << "|" << height << '\n';
-	// framebufferSizeCallback(window, width, height);
-	// Core::renderer->resize(width, height);
+	if(!Core::currentMonitor) {
+		auto& lastBound = Core::lastScreenBound;
+		glfwGetWindowPos(window, lastBound.getSrcXRaw(), lastBound.getSrcYRaw());
+		glfwGetWindowSize(window, lastBound.getWidthRaw(), lastBound.getHeightRaw());
+	}
 }
 
 inline void windowRefreshCallback(GLFWwindow* window){
@@ -100,6 +98,7 @@ inline void windowRefreshCallback(GLFWwindow* window){
 }
 
 inline void mouseBottomCallBack(GLFWwindow* window, const int button, const int action, const int mods){
+	// std::cout << button << " | " << action << '\n';
 	Core::input->informMouseAction(window, button, action, mods);
 }
 
@@ -140,8 +139,20 @@ inline void keyCallback(GLFWwindow* window, const int key, const int scanCode, c
 	if(key >= 0 && key < GLFW_KEY_LAST)Core::input->informKeyAction(window, key, scanCode, action, mods);
 }
 
+inline void monitorCallback(GLFWmonitor* monitor, int event){
+	Core::currentMonitor = monitor;
+}
+
+inline void maximizeCallback(GLFWwindow* window, const int maximized) {
+	if(maximized == GLFW_FALSE) {
+		const auto& lastBound = Core::lastScreenBound;
+		glfwSetWindowPos(window, lastBound.getSrcX(), lastBound.getSrcY());
+		glfwSetWindowSize(window, lastBound.getWidth(), lastBound.getHeight());
+	}
+}
+
 export namespace OS{
-	inline void loadListeners(GLFWwindow* window) {
+	void loadListeners(GLFWwindow* window) {
 
 		glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 		glfwSetCursorPosCallback(window, cursorPosCallback);
@@ -151,10 +162,12 @@ export namespace OS{
 		glfwSetCharModsCallback(window, charModCallback);
 
 		glfwSetKeyCallback(window, keyCallback);
+		glfwSetMonitorCallback(monitorCallback);
 
 		glfwSetScrollCallback(window, scrollCallback);
 		glfwSetWindowContentScaleCallback(window, scaleCallback);
-		glfwSetWindowSizeCallback(window, windowResizeCallback);
+
+		glfwSetWindowMaximizeCallback(window, maximizeCallback);
 		glfwSetWindowRefreshCallback(window, windowRefreshCallback);
 		glfwSetMouseButtonCallback(window, mouseBottomCallBack);
 		// setInputMode_Cursor(OS::CursorMode::hidden);

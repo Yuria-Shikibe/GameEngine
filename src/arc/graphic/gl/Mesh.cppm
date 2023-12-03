@@ -9,7 +9,6 @@ import <glad/glad.h>;
 import <functional>;
 import <memory>;
 import GL.Buffer.IndexBuffer;
-import GL.Shader;
 import GL.Buffer.VertexBuffer;
 import GL.VertexArray;
 
@@ -18,20 +17,16 @@ export namespace GL{
 	{
 		virtual ~Mesh() = default;
 
-		std::unique_ptr<VertexBuffer> vertexBuffer = nullptr;
-		std::unique_ptr<IndexBuffer> indexBuffer = nullptr;
-		std::unique_ptr<VertexArray> vertexArray = nullptr;
+		std::unique_ptr<VertexBuffer> vertexBuffer{std::make_unique<VertexBuffer>()};
+		std::unique_ptr<IndexBuffer> indexBuffer{std::make_unique<IndexBuffer>()};
+		std::unique_ptr<VertexArray> vertexArray{std::make_unique<VertexArray>()};
 
 		//TODO Should Meshes obtain their own shaders?
 		//std::unique_ptr<Shader> defaultShader = nullptr;
 
-		Mesh(){
-			vertexBuffer = std::make_unique<VertexBuffer>();
-			indexBuffer = std::make_unique<IndexBuffer>();
-			vertexArray = std::make_unique<VertexArray>();
-		}
+		Mesh() = default;
 
-		explicit Mesh(const auto& init) : Mesh() {
+		explicit Mesh(const auto& init){
 			init(*this);
 		}
 

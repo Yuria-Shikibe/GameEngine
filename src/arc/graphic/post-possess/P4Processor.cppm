@@ -7,6 +7,7 @@ export module Graphic.PostProcessor.P4Processor;
 
 import <glad/glad.h>;
 import Graphic.PostProcessor;
+import GL;
 import GL.Shader;
 import RuntimeException;
 import Graphic.Draw;
@@ -29,64 +30,52 @@ export namespace Graphic {
 	/**
 	 * \brief P4 for Ping Pong Post Processor, pairs mode
 	 **/
-	template <Concepts::Derived<TexturePoster> Poster = TexturePoster>
-	class P4Processor : virtual public PostProcessor{
+	class P4Processor : public PostProcessor{
+	protected:
+		mutable FrameBuffer ping{2, 2};
+		mutable FrameBuffer pong{2, 2};
+
 	public:
 		~P4Processor() override = default;
 
-		FrameBuffer ping{2, 2};
-		FrameBuffer pong{2, 2};
+		PostProcessor* ping2pong = nullptr;
+		PostProcessor* pong2ping = nullptr;
 
-		Shader* ping2pongShader = nullptr;
-		Shader* pong2pingShader = nullptr;
-
-		Texture2D& pingTexture = ping.getTexture(false);
-		Texture2D& pongTexture = pong.getTexture(false);
 
 		unsigned int processTimes = 1;
 
-		[[nodiscard]] P4Processor(FrameBuffer* const toProcess, Shader* const ping2PongShader, Shader* const pong2PingShader)
-			: PostProcessor(toProcess),
-			  ping2pongShader(ping2PongShader),
-			  pong2pingShader(pong2PingShader) {
+		[[nodiscard]] P4Processor(PostProcessor* const ping2PongShader, PostProcessor* const pong2PingShader)
+			: ping2pong(ping2PongShader),
+			  pong2ping(pong2PingShader) {
 		}
 
-		void begin() override {
-			if(ping2pongShader == nullptr || ping2pongShader == nullptr)throw ext::RuntimeException{"Null Pointer Exception For Invalid Shaders!"};
+		[[nodiscard]] P4Processor(PostProcessor* const ping2Pong, PostProcessor* const pong2Ping, const unsigned processTimes)
+			: ping2pong(ping2Pong),
+			pong2ping(pong2Ping),
+			processTimes(processTimes) {
+		}
+
+		void begin() const override {
+			if(ping2pong == nullptr || ping2pong == nullptr || toProcess == nullptr)throwException();
 
 			ping.resize(toProcess->getWidth(), toProcess->getHeight());
 			pong.resize(toProcess->getWidth(), toProcess->getHeight());
 
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, toProcess->getID());
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ping.getID());
-			glBlitFramebuffer(0, 0, toProcess->getWidth(), toProcess->getHeight(), 0, 0, toProcess->getWidth(), toProcess->getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			ping.clear();
+			pong.clear();
+
+			Draw::blitRaw(toProcess, &ping);
 		}
 
-		void process() override {
+		void process() const override {
 			for(unsigned int i = 0; i < processTimes; i ++) {
-				ping2pongShader->bind();
-				ping2pongShader->apply();
-
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, ping.getID());
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pong.getID());
-
-				Draw::blit();
-
-				pong2pingShader->bind();
-				pong2pingShader->apply();
-
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, pong.getID());
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ping.getID());
-
-				Draw::blit();
+				ping2pong->apply(&ping, &pong);
+				pong2ping->apply(&pong, &ping);
 			}
-
 		}
 
-		void end() override {
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, ping.getID());
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, toProcess->getID());
-			glBlitFramebuffer(0, 0, toProcess->getWidth(), toProcess->getHeight(), 0, 0, toProcess->getWidth(), toProcess->getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		void end(FrameBuffer* target) const override {
+			Draw::blitRaw(&ping, target);
 		}
 	};
 }

@@ -23,7 +23,7 @@ message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmodules-ts")
 #set(CMAKE_EXPERIMENTAL_CXX_MODULE_DYNDEP ON)
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DDEBUG_LOCAL)
 endif ()
 
@@ -91,14 +91,13 @@ add_executable(
         ${PROJECT_NAME}      #[[Project Name]]
         ${SOURCE_FILES}      #[[.cpp]]
         ${CURRENT_HEADERS}   #[[.h]]
-        ${FAST_MODULES}
         glad.c               #[[Glad Attachment]]
         main.cpp
 )
 
-#target_sources(${PROJECT_NAME}
-#        PUBLIC
-#        ${FAST_MODULES}      #[[Modules]]
-#)
+target_sources(${PROJECT_NAME}
+        PUBLIC
+        ${FAST_MODULES}      #[[Modules]]
+)
 
 message(STATUS "Compile Complete...")

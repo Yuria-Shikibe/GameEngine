@@ -3,6 +3,7 @@ module ;
 export module GL.Blending;
 
 import <glad/glad.h>;
+import GL;
 
 export namespace GL{
 	class Blending
@@ -59,7 +60,7 @@ export namespace GL{
 		friend bool operator!=(const Blending& lhs, const Blending& rhs);
 
 		void apply() const{
-			glEnable(GL_BLEND);
+			GL::enable(GL_BLEND);
 			glBlendFuncSeparate(src, dst, srcAlpha, dstAlpha);
 		}
 	};

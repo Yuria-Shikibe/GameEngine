@@ -1,10 +1,10 @@
 module ;
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 export module Graphic;
 
+import <glad/glad.h>;
+import <GLFW/glfw3.h>;
+import Geom.Shape.Rect_Orthogonal;
 import GL.GL_Exception;
 import <string>;
 import <iostream>;
@@ -19,13 +19,17 @@ export namespace Graphic{
 	}
 
 	// ReSharper disable once CppInconsistentNaming
-	inline void initGLFW(){
+	inline void initOpenGL(){
 		glfwSetErrorCallback(throw_GL_Exception);
 		glfwInit();
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		// glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	}
+
+	const GLFWvidmode* getVideoMode(GLFWmonitor* const monitor = glfwGetPrimaryMonitor()) {
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		return mode;
 	}
 
 	/**
@@ -40,8 +44,7 @@ export namespace Graphic{
 		// glfw windowMain creation
 		GLFWwindow* windowMain = glfwCreateWindow(scr_width, scr_height, windowTitle.c_str(), monitor, share);
 		// renderer = new Renderer();
-		if (windowMain == nullptr)
-		{
+		if (windowMain == nullptr){
 			glfwTerminate();
 			throw GL_Exception("Failed to create GLFW windowMain");
 		}
@@ -57,12 +60,20 @@ export namespace Graphic{
 			throw GL_Exception("Failed to create GLFW windowMain");
 		}
 
-		glViewport(0, 0, scr_width, scr_height);
-		glfwSwapInterval(1);
-		glEnable(GL_MULTISAMPLE);
-
-//		initRenderer(scr_width, scr_height);
-
 		return windowMain;
+	}
+
+	void fullScreen(GLFWwindow* window, GLFWmonitor*& monitor, const std::string& windowTitle) {
+		monitor = glfwGetPrimaryMonitor();
+		const auto mode = getVideoMode(monitor);
+		glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+		//RESIZE RENDERER!!
+	}
+
+	void windowize(GLFWwindow* window, GLFWmonitor*& monitor, const Geom::Shape::OrthoRectInt& lastBound, const std::string& windowTitle) {
+		const auto mode = getVideoMode(monitor);
+		monitor = nullptr;
+		glfwSetWindowMonitor(window, monitor, lastBound.getSrcX(), lastBound.getSrcY(), lastBound.getWidth(), lastBound.getHeight(), mode->refreshRate);
+		//RESIZE RENDERER!!
 	}
 }

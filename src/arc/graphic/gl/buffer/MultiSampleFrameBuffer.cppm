@@ -13,8 +13,8 @@ export namespace GL {
 	public:
 		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h, const int texSamples, const int renderSamples)
 				: FrameBuffer() {
-			sample = new MultiSampleTexture2D{w, h, texSamples};
-			renderBuffer = new MultiSampleRenderBuffer{w, h, renderSamples};
+			sample.reset(new MultiSampleTexture2D{w, h, texSamples});
+			renderBuffer.reset(new MultiSampleRenderBuffer{w, h, renderSamples});
 			width = w;
 			height = h;
 

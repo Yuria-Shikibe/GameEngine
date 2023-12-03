@@ -10,6 +10,7 @@ import GL.GL_Exception;
 import GL.Constants;
 import Core.Renderer;
 import GL.Buffer.FrameBuffer;
+import Graphic.PostProcessor;
 import Graphic.Color;
 import Graphic.Draw;
 
@@ -43,15 +44,25 @@ export namespace Graphic {
 			}
 		}
 
+		void frameEnd(PostProcessor* processor) override {
+			{
+				FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+
+				Draw::flush();
+
+				processor->apply(contextFrameBuffer, beneathFrameBuffer);
+
+				contextFrameBuffer = beneathFrameBuffer;
+			}
+		}
+
 		void frameEnd() override {
 			{
 				FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
 				Draw::flush();
 
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, contextFrameBuffer->getID());
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, beneathFrameBuffer->getID());
-				glBlitFramebuffer(0, 0, contextFrameBuffer->getWidth(), contextFrameBuffer->getHeight(), 0, 0, beneathFrameBuffer->getWidth(), beneathFrameBuffer->getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+				Draw::blitRaw(contextFrameBuffer, beneathFrameBuffer);
 
 				contextFrameBuffer = beneathFrameBuffer;
 			}

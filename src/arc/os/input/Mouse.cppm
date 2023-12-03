@@ -28,7 +28,7 @@ export namespace OS{
 
 		MouseBind(const int button, const std::function<void()>& action) : MouseBind(button, GLFW_PRESS, action) {}
 
-		[[nodiscard]] int getButton() const {
+		[[nodiscard]] int code() const {
 			return button;
 		}
 

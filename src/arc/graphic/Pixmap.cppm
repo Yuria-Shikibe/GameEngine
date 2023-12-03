@@ -87,7 +87,7 @@ export namespace Graphic{
 
         }
 
-        explicit Pixmap(const GL::FrameBuffer& buffer) : Pixmap(buffer.getWidth(), buffer.getHeight(), buffer.getTexture().localData.release()){
+        explicit Pixmap(const GL::FrameBuffer& buffer) : Pixmap(buffer.getWidth(), buffer.getHeight(), buffer.getTexture(true).localData.release()){
         }
 
         Pixmap(const Pixmap& other)

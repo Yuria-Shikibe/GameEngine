@@ -11,6 +11,7 @@ import GL.GL_Exception;
 import Event;
 import Graphic.Color;
 import Graphic.Resizeable;
+import Graphic.PostProcessor;
 
 using namespace GL;
 using namespace Graphic;
@@ -59,6 +60,8 @@ class Renderer : virtual public ResizeableInt {
 
 		virtual void frameBegin(FrameBuffer& frameBuffer, bool resize = false, const Color& initColor = Colors::CLEAR, GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) = 0;
 
+		virtual void frameEnd(PostProcessor*) = 0;
+
 		virtual void frameEnd() = 0;
 
 		[[nodiscard]] bool sustainSize(const unsigned int w, const unsigned int h) const {
@@ -70,6 +73,8 @@ class Renderer : virtual public ResizeableInt {
 
 			width = w;
 			height = h;
+
+			glViewport(0, 0, width, height);
 
 			defaultFrameBuffer->resize(w, h);
 			contextFrameBuffer->resize(w, h);

@@ -2,6 +2,8 @@
 // Created by Matrix on 2023/11/18.
 //
 
+module;
+
 export module GL.Texture.TextureRegion;
 
 export import GL.Texture.Texture2D;

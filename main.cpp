@@ -1,10 +1,11 @@
+#include <iomanip>
+
 import <iostream>;
 import <GLFW/glfw3.h>;
 import <glad/glad.h>;
 //import <print>;
 import <functional>;
 import <sstream>;
-#include <iomanip>
 
 import Platform;
 import File;
@@ -17,6 +18,13 @@ import Graphic.Draw;
 import Graphic.Pixmap;
 import Graphic.RendererImpl;
 
+import Graphic.PostProcessor.BloomProcessor;
+import Graphic.PostProcessor.ShaderProcessor;
+import Graphic.PostProcessor.PipeProcessor;
+import Graphic.PostProcessor.P4Processor;
+
+
+
 import Math;
 import Geom.Vector2D;
 import Geom.Shape.Rect_Orthogonal;
@@ -25,6 +33,8 @@ import OS;
 import OS.ApplicationListenerSetter;
 
 import Core;
+import Ctrl.ControlCommands;
+import Ctrl.Constants;
 import Core.Batch.Batch_Sprite;
 
 import Assets;
@@ -33,6 +43,7 @@ import Graphic.Color;
 import Image;
 
 import GL.Buffer.MultiSampleFrameBuffer;
+import GL.Buffer.FrameBuffer;
 import GL.Buffer.IndexBuffer;
 import GL.VertexArray;
 import GL.Mesh;
@@ -48,7 +59,7 @@ using namespace GL;
 
 bool screenShotRequest = false;
 
-int main(){
+void init() {
 	stbi::setFlipVertically_load(true);
 	stbi::setFlipVertically_write(true);
 	//TODO move these into application loader
@@ -70,13 +81,17 @@ int main(){
 			return shader;
 		});
 
+		Core::batch->setProjection(&Core::camera->worldToScreen);
+
 		int w, h;
 
 		glfwGetWindowSize(Core::window, &w, &h);
 
 		Core::renderer = new Graphic::RendererImpl{w, h};
 
-		Core::input->registerMouseBind(false, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, [] {
+		Ctrl::registerCommands(Core::input);
+
+		Core::input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
 			Geom::Vector2D pos = Core::input->getMousePos();
 			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f).scl(1.0f, -1.0f);
 			pos *= Core::camera->screenToWorld;
@@ -85,7 +100,7 @@ int main(){
 	});
 
 	{//TODO pack this into a class like screen shot manager
-		Core::input->registerKeyBind(false, GLFW_KEY_F1, GLFW_PRESS, [](int key)mutable  {
+		Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, []() mutable  {
 			screenShotRequest = true;
 		});
 
@@ -104,16 +119,23 @@ int main(){
 
 	Graphic::Draw::defTexture(*Assets::Textures::whiteRegion);
 	Graphic::Draw::texture();
-
 	Graphic::Draw::rawMesh = Assets::Meshes::raw;
+}
+
+int main(){
+	init();
 
 	const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
 
-	GL::MultiSampleFrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
+	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
+	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
+
+	Core::renderer->registerSynchronizedObject(&multiSample);
 	Core::renderer->registerSynchronizedObject(&frameBuffer);
 
-	auto&& file = Assets::assetsDir.subFile("test.txt");
 
+
+	auto&& file = Assets::assetsDir.subFile("test.txt");
 
 	const auto layout = Font::glyphParser->parse(file.readString());
 	layout->setAlign(Font::TypeSettingAlign::bottom_left);
@@ -121,10 +143,25 @@ int main(){
 
 	const auto coordCenter = std::make_shared<Font::GlyphLayout>();
 
-	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
-		Draw::meshBegin(Core::batch->getMesh());
-	    Core::renderer->frameBegin(frameBuffer);
+	Graphic::ShaderProcessor blurX{Assets::Shaders::gaussian, [](const Shader& shader) {
+		shader.setVec2("direction", {2, 0});
+	}};
 
+	Graphic::ShaderProcessor blurY{Assets::Shaders::gaussian, [](const Shader& shader) {
+		shader.setVec2("direction", {0, 2});
+	}};
+
+
+	Graphic::BloomProcessor processor{&blurX, &blurY, Assets::Shaders::bloom};
+
+	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
+		Draw::meshBegin(Assets::Meshes::coords);
+		Draw::meshEnd(true);
+
+		Draw::meshBegin(Core::batch->getMesh());
+
+	    Core::renderer->frameBegin(frameBuffer);
+	    Core::renderer->frameBegin(multiSample);
 	    // auto data = Assets::Fonts::manager->obtain(Assets::Fonts::telegrama);
 		const Geom::Vector2D c = Core::camera->screenCenter();
 
@@ -139,10 +176,6 @@ int main(){
 
 		Draw::lineAngleCenter(c.getX(), c.getY(), 45, 50);
 
-		Draw::meshBegin(Assets::Meshes::coords);
-		Draw::meshEnd(true);
-
-		const float progress = std::fmod(OS::globalTime() / 5, 1);
 		layout->render();
 
 		std::stringstream ss{};
@@ -166,7 +199,8 @@ int main(){
 		    { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
 		);
 
-	    Core::renderer->frameEnd();
+	    Core::renderer->frameEnd(Assets::PostProcessors::multiToBasic);
+	    Core::renderer->frameEnd(&processor);
 		Draw::meshEnd(Core::batch->getMesh());
 	});
 

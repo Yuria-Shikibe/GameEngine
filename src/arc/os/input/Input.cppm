@@ -15,36 +15,151 @@ import <GLFW/glfw3.h>;
 
 import Geom.Vector2D;
 import Concepts;
+import Ctrl.Constants;
 import OS.Key;
 import OS.Mouse;
 import OS.ApplicationListener;
+import <algorithm>;
+import <execution>;
 import <span>;
+import <unordered_set>;
 
 using namespace OS;
 
 export namespace Core{
-
 	using std::vector;
 	using std::set;
+	using std::pair;
 	using std::function;
 	using std::array;
 	using std::unique_ptr;
 
 	class Input final : public virtual ApplicationListener {
 	public:
+		unsigned int refreshRate = 60;
 		vector<function<void(float, float)>> scrollListener{};
 		vector<function<void(float, float)>> cursorListener{};
 
-		//Should Increase the abstract level? Or just...
-		array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST> keys{};
-		array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST> keys_frequentCheck{};
-		set<int> pressedKeys{};
+		template <typename T, size_t total = 0>
+		struct PressedChecker {
+			virtual ~PressedChecker() = default;
 
+			virtual void insert(int code) = 0;
+			virtual void remove(int code) = 0;
+			virtual void operator()(const array<vector<unique_ptr<T>>, total>& range) = 0;
+		};
 
-		//TODO Seriously, this array is pretty small, and most calls are LMB or RMB, may be directly using a array instead of a set is faster?
-		array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8> mouseBinds{};
-		array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8> mouseBinds_frequentCheck{};
-		array<bool, GLFW_MOUSE_BUTTON_8 + 1> pressedMouseButtons{};
+		template <typename T, size_t total = 0>
+		struct ArrayChecker final : PressedChecker<T, total>{
+			array<bool, total> pressed{};
+
+			void insert(const int code) override {
+				pressed[code] = true;
+			}
+
+			void remove(const int code) override {
+				pressed[code] = false;
+			}
+
+			void operator()(const array<vector<unique_ptr<T>>, total>& range) override {
+				for(int key = 0; key < range.size(); ++key) {
+					if(pressed[key]) {
+						for (const auto& mouseBind : range[key]) {
+							mouseBind->act();
+						}
+					}
+				}
+			}
+		};
+
+		template <typename T, size_t total = 0>
+		struct SetChecker final : PressedChecker<T, total>{
+			std::unordered_set<int> pressed{};
+
+			void insert(const int code) override {
+				pressed.insert(code);
+			}
+
+			void remove(const int code) override {
+				pressed.erase(code);
+			}
+
+			void operator()(const array<vector<unique_ptr<T>>, total>& range) override {
+				for(const int key : pressed) {
+					for (const auto& mouseBind : range[key]) {
+						mouseBind->act();
+					}
+				}
+			}
+		};
+
+		template <typename T, size_t total, Concepts::Derived<PressedChecker<T, total>> Checker>
+			requires requires(T t){t.state();t.code();t.tryRun(0);t.act();} && Concepts::HasDefConstructor<Checker>
+		struct InputGroup {
+			array<vector<unique_ptr<T>>, total> binds{};
+			array<vector<unique_ptr<T>>, total> continuous{};
+			array<float, total> doubleClick{};
+			Checker pressed{};
+
+			void inform(const int code, int action, const int mods) {
+				switch(action) { // NOLINT(*-multiway-paths-covered)
+					case Ctrl::Act_Press : {
+						pressed.insert(code);
+						if(doubleClick[code] <= 0) {
+							doubleClick[code] = Ctrl::doublePressMaxSpaceing;
+						}else{
+							doubleClick[code] = -1;
+							action = Ctrl::Act_DoubleClick;
+						}
+						break;
+					}
+					case Ctrl::Act_Release : {
+						pressed.remove(code);
+						break;
+					}
+					default : break;
+				}
+
+				const auto& targets = binds[code];
+
+				if (targets.empty())return;
+
+				for (const auto& bind : targets) {
+					bind->tryRun(action);
+				}
+			}
+
+			void update(const float delta) {
+				pressed(continuous);
+
+				for(float& reload : doubleClick) {
+					if(reload > 0)reload -= delta;
+				}
+			}
+
+			void registerBind(T* bind) {
+				auto& container = Ctrl::isContinuous(bind->state()) ? continuous : binds;
+
+				if(Ctrl::isContinuous(bind->state())) {
+
+				}
+
+				container[bind->code()].emplace_back(std::make_unique<T>(*bind));
+			}
+
+			void clear() {
+				std::for_each(std::execution::par_unseq, binds.begin(), binds.end(), [](vector<unique_ptr<T>>& ptrs) {
+					ptrs.clear();
+				});
+
+				std::for_each(std::execution::par_unseq, continuous.begin(), continuous.end(), [](vector<unique_ptr<T>>& ptrs) {
+					ptrs.clear();
+				});
+			}
+		};
+
+		InputGroup<MouseBind, Ctrl::MOUSE_BUTTON_COUNT, ArrayChecker<MouseBind, Ctrl::MOUSE_BUTTON_COUNT>> mouseGroup{};
+		InputGroup<KeyBind  , Ctrl::KEY_COUNT	     , SetChecker<KeyBind, Ctrl::KEY_COUNT>> keyGroup{};
 
 		//I think multi key bins are already enough for normal usage. Key + Mouse needn't be considered.
 		vector<unique_ptr<KeyBindMultipleTarget>> multipleKeyBinds{};
@@ -69,100 +184,52 @@ export namespace Core{
 
 		Input& operator=(Input&& other) = delete;
 
-
-		void registerMouseBind(const bool frequentCheck, MouseBind* mouseBind) {
-			array<vector<unique_ptr<MouseBind>>, GLFW_MOUSE_BUTTON_8>& container = frequentCheck ? mouseBinds_frequentCheck : mouseBinds;
-
-			container[mouseBind->getButton()].push_back(std::make_unique<MouseBind>(*mouseBind));
+		void registerMouseBind(MouseBind* mouseBind) {
+			mouseGroup.registerBind(mouseBind);
 		}
 
 		template<Concepts::Invokable<void()> Func>
-		void registerMouseBind(const bool frequentCheck, const int button, const int expectedState, Func&& func) {
-			registerMouseBind(frequentCheck, new MouseBind{button, expectedState, func});
+		void registerMouseBind(const int button, const int expectedState, Func&& func) {
+			registerMouseBind(new MouseBind{button, expectedState, func});
 		}
 
-		/**
-		 * \brief No remove function provided. If the input binds needed to be changed, clear it all and register the new binds by the action table.
-		 * this is a infrequent operation so just keep the code clean.
-		 */
-		void informMouseAction(const GLFWwindow* targetWin, const int button, const int action, [[maybe_unused]] int mods) {
-			if (targetWin != window)return;
-
-			switch(action) {
-				case GLFW_PRESS : pressedMouseButtons[button] = true; break;
-				case GLFW_RELEASE : pressedMouseButtons[button] = false; break;
-				default : break;
-			}
-
-			const vector<unique_ptr<MouseBind>>& binds = mouseBinds[button];
-
-			if (binds.empty())return;
-
-			for (const auto& bind : binds) {
-				bind->tryRun(action);
-			}
+		template<Concepts::Invokable<void()> Func>
+		void registerKeyBind(const int key, const int expectedState, Func&& func) {
+			registerKeyBind(new KeyBind{key, expectedState, func});
 		}
 
-		template<Concepts::Invokable<void(int)> Func>
-		void registerKeyBind(const bool frequentCheck, const int key, const int expectedState, Func&& func) {
-			registerKeyBind(frequentCheck, new KeyBind{key, expectedState, func});
+		void registerKeyBind(KeyBind* keyBind) {
+
+			keyGroup.registerBind(keyBind);
 		}
 
-		void registerKeyBind(const bool frequentCheck, KeyBind* keyBind) {
-			array<vector<unique_ptr<KeyBind>>, GLFW_KEY_LAST>& container = frequentCheck ? keys_frequentCheck : keys;
-
-			container[keyBind->keyCode()].push_back(std::make_unique<KeyBind>(*keyBind));
-		}
-
-		void registerKeyBindMulti(const bool frequentCheck, const std::span<KeyBind>& keyBinds,
+		void registerKeyBindMulti(const std::span<KeyBind>& keyBinds,
 		                          std::function<void()>&& act) {
 			const auto target = new KeyBindMultipleTarget{ act, keyBinds };
 
 			for (const auto& keyBind : keyBinds) {
-				registerKeyBind(frequentCheck, new KeyBindMultiple{ keyBind, target });
+				registerKeyBind(new KeyBindMultiple{ keyBind, target });
 			}
 
 			multipleKeyBinds.emplace_back(target);
 		}
 
 		void clearAllBinds() {
-			for (auto& keyBinds : keys) {
-				keyBinds.clear();
-			}
-
-			for (auto& keyBinds : keys_frequentCheck) {
-				keyBinds.clear();
-			}
-
-			for (auto& keyBinds : mouseBinds) {
-				keyBinds.clear();
-			}
-
-			for (auto& keyBinds : mouseBinds_frequentCheck) {
-				keyBinds.clear();
-			}
-
+			keyGroup.clear();
+			mouseGroup.clear();
 			multipleKeyBinds.clear();
 		}
 
-		void informKeyAction(const GLFWwindow* targetWin, const int key, [[maybe_unused]] int scanCode, const int action, [[maybe_unused]] int mods) {
-			if (targetWin != window)return;
+		/**
+		 * \brief No remove function provided. If the input binds needed to be changed, clear it all and register the new binds by the action table.
+		 * this is a infrequent operation so just keep the code clean.
+		 */
+		void informMouseAction(const GLFWwindow* targetWin, const int button, const int action, [[maybe_unused]] const int mods) {
+			mouseGroup.inform(button, action, mods);
+		}
 
-			if (action == GLFW_PRESS) {
-				pressedKeys.insert(key);
-			}
-			else if (action == GLFW_RELEASE) {
-				pressedKeys.erase(key);
-			}
-
-
-			const vector<unique_ptr<KeyBind>>& binds = keys[key];
-
-			if (binds.empty())return;
-
-			for (const auto& bind : binds) {
-				bind->tryRun(action);
-			}
+		void informKeyAction(const GLFWwindow* targetWin, const int key, [[maybe_unused]] int scanCode, const int action, [[maybe_unused]] const int mods) {
+			keyGroup.inform(key, action, mods);
 		}
 
 		void setPos(const float x, const float y) {
@@ -197,24 +264,13 @@ export namespace Core{
 			isInbound = b;
 		}
 
-		void update() override {
+		void update(const float delta) override {
 			for (const auto& multipleKeyBind : multipleKeyBinds) {
-				multipleKeyBind->resetState();
+				multipleKeyBind->resetState(delta);
 			}
 
-			for (const int key : pressedKeys) {
-				for (const auto& keyBind : keys_frequentCheck[key]) {
-					if (keyBind->activated(window))keyBind->act();
-				}
-			}
-
-			for(int key = 0; key < pressedMouseButtons.size(); ++key) {
-				if(pressedMouseButtons[key]) {
-					for (const auto& mouseBind : mouseBinds_frequentCheck[key]) {
-						if (mouseBind->activated(window))mouseBind->act();
-					}
-				}
-			}
+			keyGroup.update(delta);
+			mouseGroup.update(delta);
 		}
 
 	};

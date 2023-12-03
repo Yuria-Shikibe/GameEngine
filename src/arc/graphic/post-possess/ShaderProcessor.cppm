@@ -1,6 +1,6 @@
 module;
 
-export module Graphic.PostProcessor.FilterProcessor;
+export module Graphic.PostProcessor.ShaderProcessor;
 
 import <glad/glad.h>;
 import <functional>;
@@ -11,35 +11,63 @@ import GL.Shader;
 using GL::FrameBuffer;
 
 export namespace Graphic {
-	class FilterProcessor : public PostProcessor{
+	class ShaderProcessor final : public PostProcessor{
 	public:
-		[[nodiscard]] explicit FilterProcessor(FrameBuffer* const toProcess)
+		[[nodiscard]] explicit ShaderProcessor(FrameBuffer* const toProcess)
 			: PostProcessor(toProcess) {
 		}
 
-		[[nodiscard]] FilterProcessor(FrameBuffer* const toProcess, GL::Shader* const shader)
+		[[nodiscard]] ShaderProcessor(FrameBuffer* const toProcess, const GL::Shader* const shader)
 			: PostProcessor(toProcess),
 			shader(shader) {
 		}
 
-		[[nodiscard]] explicit FilterProcessor(GL::Shader* const shader)
+		[[nodiscard]] explicit ShaderProcessor(const GL::Shader* const shader)
 			: shader(shader) {
 		}
 
-		[[nodiscard]] FilterProcessor(GL::Shader* const shader,
-			const std::function<void(const GL::Shader&)>& shaderHandler)
+		[[nodiscard]] ShaderProcessor(const GL::Shader* const shader,
+		                              const std::function<void(const GL::Shader&)>& shaderHandler)
 			: shader(shader),
 			shaderHandler(shaderHandler) {
 		}
 
-		GL::Shader* shader{nullptr};
+		ShaderProcessor(const ShaderProcessor& other)
+			: PostProcessor(other),
+			shader(other.shader),
+			shaderHandler(other.shaderHandler) {
+		}
+
+		ShaderProcessor(ShaderProcessor&& other) noexcept
+			: PostProcessor(std::move(other)),
+			shader(other.shader),
+			shaderHandler(std::move(other.shaderHandler)) {
+		}
+
+		ShaderProcessor& operator=(const ShaderProcessor& other) {
+			if(this == &other) return *this;
+			PostProcessor::operator =(other);
+			shader = other.shader;
+			shaderHandler = other.shaderHandler;
+			return *this;
+		}
+
+		ShaderProcessor& operator=(ShaderProcessor&& other) noexcept {
+			if(this == &other) return *this;
+			PostProcessor::operator =(std::move(other));
+			shader = other.shader;
+			shaderHandler = std::move(other.shaderHandler);
+			return *this;
+		}
+
+		const GL::Shader* shader{nullptr};
 		std::function<void(const GL::Shader&)> shaderHandler{nullptr};
 
-		void begin() override {
+		void begin() const override {
 
 		}
 
-		void end(FrameBuffer* target) override {
+		void end(FrameBuffer* target) const override {
 			if(shader == nullptr || toProcess == nullptr || target == nullptr)throwException();
 			// toProcess->bind(FrameBuffer::READ);
 
@@ -52,7 +80,7 @@ export namespace Graphic {
 			Draw::blit(shader, shaderHandler);
 		}
 
-		void process() override {
+		void process() const override {
 
 		}
 	};

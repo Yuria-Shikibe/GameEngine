@@ -6,6 +6,7 @@ module ;
 export module Graphic.Draw;
 
 import Math;
+import Concepts;
 
 import Core;
 import Core.Batch;
@@ -20,10 +21,13 @@ import GL.Shader;
 import GL.Mesh;
 import GL.Buffer.IndexBuffer;
 import GL.Buffer.VertexBuffer;
+import GL.Buffer.FrameBuffer;
 import GL.VertexArray;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
 import RuntimeException;
+import <functional>;
+import <glad/glad.h>;
 import <memory>;
 import <stack>;
 
@@ -57,10 +61,33 @@ export namespace Graphic::Draw{
 
 	inline std::stack<const Mesh*> formerMesh{};
 
-	inline void blit() {
+	template <Concepts::Invokable<void(const Shader&)> func>
+	void blit(const Shader* shader, const func& f) {
+		if(shader) {
+			shader->bind();
+			shader->applyDynamic(f);
+		}
+
 		rawMesh->bind();
 		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
 	}
+
+	inline void blit(const Shader* shader = nullptr) {
+		if(shader) {
+			shader->bind();
+			shader->apply();
+		}
+
+		rawMesh->bind();
+		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
+	}
+
+	inline void blitRaw(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw, const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_NEAREST) {
+		read->bind(GL::FrameBuffer::READ);
+		draw->bind(GL::FrameBuffer::DRAW);
+		glBlitFramebuffer(0, 0, read->getWidth(), read->getHeight(), 0, 0, draw->getWidth(), draw->getHeight(), mask, filter);
+	}
+
 
 	inline void color(const Color& color){
 		contextColor = color;
@@ -415,7 +442,20 @@ export namespace Graphic::Draw{
 		);
 	}
 
-	inline void quad(const TextureRegion& region, const Geom::Shape::OrthoRectFloat& rect, const float x, const float y){
+	inline void rect(const TextureRegion& region,
+				 const float x, const float y,
+				 const float w, const float h
+	) {
+		vert_monochromeAll(
+				*region.data, contextColor, contextMixColor,
+				x, y, region.u00(), region.v00(),
+				x, y + h, region.u01(), region.v01(),
+				x + w, y + h, region.u11(), region.v11(),
+				x + w, y, region.u10(), region.v10()
+		);
+	}
+
+	inline void quad(const TextureRegion& region, const Geom::Shape::OrthoRectFloat& rect, const float x = 0, const float y = 0){
 		vert_monochromeAll(
 				*region.data, contextColor, contextMixColor,
 				rect.getSrcX() + x, rect.getSrcY() + y, region.u00(), region.v00(),

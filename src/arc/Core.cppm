@@ -3,16 +3,19 @@ module;
 export module Core;
 
 import <functional>;
+import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 
 import Graphic;
+import Geom.Shape.Rect_Orthogonal;
 
 import Core.Audio;
 import Core.AssetsLoader;
 import Core.Bundle;
 import Core.Settings;
-import Core.UIRoot;
 import Core.Log;
+
+import UI.Root;
 
 import RuntimeException;
 
@@ -21,6 +24,7 @@ export import Core.Batch;
 export import Core.Input;
 export import Core.Camera;
 export import Core.Renderer;
+export import GL;
 export import GL.Constants;
 export import OS.FileTree;
 export import OS.Key;
@@ -28,8 +32,20 @@ export import OS;
 import <iostream>;
 
 export namespace Core{
+	const std::string title = APPLICATION_NAME;
+
 	inline GLFWwindow* window = nullptr;
-	inline GLFWmonitor* monitor = nullptr;
+	inline GLFWmonitor* mainMonitor = nullptr;
+	inline GLFWmonitor* currentMonitor = nullptr;
+
+	inline Geom::Shape::OrthoRectInt lastScreenBound{};
+
+	inline void setScreenBound(GLFWwindow* win = window) {
+		glfwGetWindowSize(win, lastScreenBound.getWidthRaw(), lastScreenBound.getHeightRaw());
+		glfwGetWindowPos(win, lastScreenBound.getSrcXRaw(), lastScreenBound.getSrcYRaw());
+	}
+
+	inline const GLFWvidmode* mainScreenMode = nullptr;
 	//using unique ptr?
 
 	/* Almost Done */
@@ -52,7 +68,7 @@ export namespace Core{
 	/* 0.00% */
 	inline Settings* settings = nullptr;
 	/* 0.00% */
-	inline UIRoot* uiRoot = nullptr;
+	inline UI::Root* uiRoot = nullptr;
 	/* 0.00% */
 	inline Bundle* bundle = nullptr;
 	/* 0.00% */
@@ -61,19 +77,39 @@ export namespace Core{
 	//TODO maybe some objects for task management, if necessary
 	//TODO Async Impl...
 
-	inline void initCore(const std::function<void()>& initializer = nullptr){
-		monitor = glfwGetPrimaryMonitor();
+	inline void initMainWindow() {
+		mainMonitor = glfwGetPrimaryMonitor();
 
-		Graphic::initGLFW();
+		mainScreenMode = Graphic::getVideoMode(mainMonitor);
+
+		OS::screenWidth = mainScreenMode->width;
+		OS::screenHeight = mainScreenMode->height;
+		OS::refreshRate = mainScreenMode->refreshRate;
 
 #ifdef __APPLE__
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-		window = Graphic::initWindow(APPLICATION_NAME);
+		window = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
 
-		OS::launch();
+		glfwSetWindowSizeCallback(window, [](GLFWwindow* win, const int width, const int height){
+			Core::lastScreenBound.setSize(width, height);
+		});
 
+		// Graphic::fullScreen(window, currentMonitor, title);
+		glfwMaximizeWindow(window);
+		setScreenBound();
+
+		glViewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
+		glfwSwapInterval(1);
+		GL::enable(GL_MULTISAMPLE);
+
+		lastScreenBound.set(100, 100, OS::screenWidth * 0.75f, OS::screenHeight * 0.75f);
+
+		glfwSetWindowSizeCallback(window, nullptr);
+	}
+
+	inline void initFileSystem() {
 #ifdef DEBUG_LOCAL
 #ifdef ASSETS_DIR
 		rootFileTree = new OS::FileTree{ASSETS_DIR};
@@ -86,6 +122,16 @@ export namespace Core{
 		OS::crashFileGetter = [] {
 			return log->generateCrashFile();
 		};
+	}
+
+	inline void initCore(const std::function<void()>& initializer = nullptr){
+		Graphic::initOpenGL();
+
+		initMainWindow();
+
+		OS::launch();
+
+		initFileSystem();
 
 		if(initializer){
 			initializer();
@@ -106,26 +152,7 @@ export namespace Core{
 			initializer();
 		}
 
-		if(!batch)throw ext::RuntimeException{};
-
-		batch->setProjection(&camera->worldToScreen);
-
-		input->scrollListener.emplace_back([]([[maybe_unused]] float x, const float y) -> void {
-			camera->setScale(camera->getScale() + y * OS::delta() * 5.0f);
-		});
-
-		static float baseMoveSpeed = 50;
-
-		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS, [](const int k){baseMoveSpeed = 200;}));
-		input->registerKeyBind(false, new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_RELEASE, [](const int k){baseMoveSpeed =  50;}));
-
-		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_A, GLFW_PRESS, [](const int k){camera->trans(-baseMoveSpeed * OS::delta(), 0);}));
-		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_D, GLFW_PRESS, [](const int k){camera->trans( baseMoveSpeed * OS::delta(), 0);}));
-		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_W, GLFW_PRESS, [](const int k){camera->trans(0,  baseMoveSpeed * OS::delta());}));
-		input->registerKeyBind(true , new OS::KeyBind(GLFW_KEY_S, GLFW_PRESS, [](const int k){camera->trans(0, -baseMoveSpeed * OS::delta());}));
-
-		auto keys = std::array{OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) };
-		input->registerKeyBindMulti(true, keys, []() {camera->setScale(1.0f);});
+		if(!batch)throw ext::NullPointerException{"Empty Default Batch!"};
 
 		OS::registerListener(input);
 	}

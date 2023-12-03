@@ -3,27 +3,33 @@ module;
 export module GL.Buffer.FrameBuffer;
 
 import <glad/glad.h>;
+import <memory>;
 
 import GL.Texture.Texture2D;
 import GL.Buffer;
 import GL.Buffer.RenderBuffer;
 import Graphic.Resizeable;
+import Graphic.Color;
 
 export namespace GL{
 	class FrameBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableInt
 	{
 	protected:
 		unsigned int width = 0, height = 0;
-		Texture2D* sample = nullptr;
-		RenderBuffer* renderBuffer = nullptr;
+		std::unique_ptr<Texture2D> sample{nullptr};
+		std::unique_ptr<RenderBuffer> renderBuffer{nullptr};
 
 	public:
+		static constexpr GLenum DEF = GL_FRAMEBUFFER;
+		static constexpr GLenum DRAW = GL_DRAW_FRAMEBUFFER;
+		static constexpr GLenum READ = GL_READ_FRAMEBUFFER;
+
 		FrameBuffer() = default;
 
 		FrameBuffer(const unsigned int w, const unsigned int h){
-			sample = new Texture2D{ w, h };
+			sample = std::make_unique<Texture2D>(w, h);
 			sample->localData.reset(nullptr);
-			renderBuffer = new RenderBuffer{ w, h };
+			renderBuffer = std::make_unique<RenderBuffer>(w, h);
 			width = w;
 			height = h;
 
@@ -40,9 +46,6 @@ export namespace GL{
 
 		~FrameBuffer() override{
 			glDeleteFramebuffers(1, &bufferID);
-
-			delete sample;
-			delete renderBuffer;
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
@@ -61,11 +64,15 @@ export namespace GL{
 			glBindFramebuffer(targetFlag, bufferID);
 		}
 
+		void bind(const GLenum mode) const {
+			glBindFramebuffer(mode, bufferID);
+		}
+
 		void unbind() const override{
 			glBindFramebuffer(targetFlag, 0);
 		}
 
-		[[nodiscard]] unsigned char* readPixelsRaw(const int width, const int height, const int srcX = 0, const int srcY = 0) const {
+		[[nodiscard]] unsigned char* readPixelsRaw(const unsigned int width, const unsigned int height, const int srcX = 0, const int srcY = 0) const {
 			bind();
 			auto* pixels = new unsigned char[width * height * 4]{0};
 			glReadPixels(srcX, srcY, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -80,8 +87,7 @@ export namespace GL{
 		}
 
 
-		[[nodiscard]] Texture2D& getTexture(const bool loadData = true) const{
-			// if(loadData)sample->localData.reset(readPixelsRaw());
+		[[nodiscard]] Texture2D& getTexture(const bool loadData) const{
 			if(loadData) {
 				sample->updateData();
 			}
@@ -89,13 +95,23 @@ export namespace GL{
 			return *sample;
 		}
 
+		[[nodiscard]] Texture2D& getTexture() const{
+			return *sample;
+		}
+
 		[[nodiscard]] GLuint getTextureID() const{
 			return sample->getID();
 		}
 
+		void clear(const Graphic::Color& initColor = Graphic::Colors::CLEAR, GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) const {
+			bind();
+			glClearColor(initColor.r, initColor.g, initColor.b, initColor.a);
+			glClear(mask);
+		}
 
-		[[nodiscard]] int getWidth() const { return width; }
-		[[nodiscard]] int getHeight() const { return height; }
+
+		[[nodiscard]] unsigned int getWidth() const { return width; }
+		[[nodiscard]] unsigned int getHeight() const { return height; }
 
 	};
 }

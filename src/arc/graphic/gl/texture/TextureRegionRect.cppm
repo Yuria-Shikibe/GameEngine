@@ -1,3 +1,5 @@
+module;
+
 export module GL.Texture.TextureRegionRect;
 
 import Concepts;

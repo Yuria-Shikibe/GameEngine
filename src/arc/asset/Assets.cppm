@@ -14,7 +14,13 @@ export import GL.Uniform;
 export import GL.Texture.Texture2D;
 export import GL.Texture.TextureRegion;
 import GL.Texture.TextureRegionRect;
+
+import Geom.Vector2D;
+
 import Graphic.Color;
+import Graphic.PostProcessor.MultiSampleBliter;
+import Graphic.PostProcessor;
+
 import File;
 import Core;
 import <iostream>;
@@ -45,6 +51,10 @@ export namespace Assets{
 		inline Shader* texPost = nullptr;
 		inline Shader* screenSpace = nullptr;
 		inline Shader* coordAxis = nullptr;
+		inline Shader* filter = nullptr;
+
+		inline Shader* gaussian = nullptr;
+		inline Shader* bloom = nullptr;
 
 		void load() {
 			texPost = new Shader{ shaderDir, "tex-std" };
@@ -65,12 +75,48 @@ export namespace Assets{
 				shader.setVec2("screenSize", Core::renderer->getWidth(), Core::renderer->getHeight());
 				shader.setVec2("cameraPos", Core::camera->position);
 			});
+
+			filter = new Shader(shaderDir, "filter");
+			filter->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("tex");
+			});
+
+			gaussian = new Shader(shaderDir, "gaussian-blur");
+			gaussian->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("u_texture");
+				shader.setVec2("size", Core::renderer->getWidth(), Core::renderer->getHeight());
+			});
+
+			bloom = new Shader(shaderDir, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});
+			bloom->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("texture0", 0);
+				shader.setTexture2D("texture1", 1);
+			});
 		}
 
 		void dispose() {
 			delete texPost;
 			delete stdPost;
 			delete screenSpace;
+			delete coordAxis;
+			delete filter;
+			delete gaussian;
+			delete bloom;
+		}
+	}
+
+	namespace PostProcessors {
+		Graphic::PostProcessor
+			*multiToBasic{nullptr}
+
+		;
+
+		void load() {
+			multiToBasic = new Graphic::MultiSampleBliter{};
+		}
+
+		void dispose() {
+			delete multiToBasic;
 		}
 	}
 
@@ -136,13 +182,13 @@ export namespace Assets{
 			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
 
 			times_Regular =
-			Font::registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ), cacheDir,  targetChars});
+				Font::registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ), cacheDir,  targetChars});
 			times_Italic =
-				 Font::registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"), cacheDir,  targetChars});
+				Font::registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"), cacheDir,  targetChars});
 			times_Bold =
-				 Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"), cacheDir,  targetChars});
+				Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"), cacheDir,  targetChars});
 			times_Bold_Italic =
-				 Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"), cacheDir,  targetChars});
+				Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"), cacheDir,  targetChars});
 
 			josefinSans_Regular =
 			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
@@ -229,6 +275,11 @@ export namespace Assets{
 			auto t = coords;
 
 		}
+
+		void dispose() {
+			delete raw;
+			delete coords;
+		}
 	}
 
 	inline void load() {
@@ -245,12 +296,15 @@ export namespace Assets{
 		Textures::load();
 		Fonts::load();
 		Meshes::load();
+		PostProcessors::load();
 	}
 
 	inline void dispose() {
 		Shaders::dispose();
 		Textures::dispose();
 		Fonts::dispose();
+		Meshes::dispose();
+		PostProcessors::dispose();
 	}
 }
 

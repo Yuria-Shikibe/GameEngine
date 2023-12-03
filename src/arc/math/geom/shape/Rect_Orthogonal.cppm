@@ -102,12 +102,20 @@ export namespace Geom::Shape{
 			return srcX;
 		}
 
+		[[nodiscard]] T* getSrcXRaw(){
+			return &srcX;
+		}
+
 		void setSrcX(const T x){
 			this->srcX = x;
 		}
 
 		[[nodiscard]] T getSrcY() const{
 			return srcY;
+		}
+
+		[[nodiscard]] T* getSrcYRaw(){
+			return &srcY;
 		}
 
 		void setSrcY(const T y){
@@ -118,10 +126,16 @@ export namespace Geom::Shape{
 			return width;
 		}
 
-
-
 		[[nodiscard]] T getHeight() const{
 			return height;
+		}
+
+		[[nodiscard]] T* getWidthRaw(){
+			return &width;
+		}
+
+		[[nodiscard]] T* getHeightRaw(){
+			return &height;
 		}
 
 		[[nodiscard]] Vector2D getCenter() const{
@@ -249,6 +263,14 @@ export namespace Geom::Shape{
 			height = static_cast<T>(static_cast<T1>(height) * yScl);
 
 			return *this;
+		}
+
+		void set(const T srcx, const T srcy, const T width, const T height) {
+			srcX = srcx;
+			srcY = srcy;
+
+			setWidth(width);
+			setHeight(height);
 		}
 
 		Rect_Orthogonal& setSize(const Vector2D& v) {

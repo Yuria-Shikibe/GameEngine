@@ -167,9 +167,6 @@ export namespace GL {
 			for(auto& [key, pos] : uniformLocationMap) {
 				if(pos == -1) {
 					pos = glGetUniformLocation(programID, key.data());
-					auto t = pos;
-
-
 				}
 			}
 		}
@@ -258,7 +255,7 @@ export namespace GL {
 		struct ShaderSourceParserMulti {
 			std::vector<ShaderSourceParser> parsers{};
 
-			[[nodiscard]] ShaderSourceParserMulti(const std::initializer_list<ShaderSourceParser> list){
+			[[nodiscard]] explicit ShaderSourceParserMulti(const std::initializer_list<ShaderSourceParser> list){
 				for(auto parser: list)parsers.push_back(parser);
 			}
 
@@ -301,7 +298,7 @@ export namespace GL {
 			return compile(shaderDir->find(stemName + suffix(ShaderType::comp)).readString(), ShaderType::comp);
 		}
 
-		unsigned int compile(const ShaderType type, const std::string& stemName) const{
+		[[nodiscard]] unsigned int compile(const ShaderType type, const std::string& stemName) const{
 			switch (type) {
 				case ShaderType::vert:
 					return compileVertShader(stemName);
@@ -392,8 +389,18 @@ export namespace GL {
 			uniformTexture(getLocation(name), offset);
 		}
 
+		void setTexture2D(const std::string &name, const int offset = 0) const {
+			uniformTexture(getLocation(name), offset);
+		}
+
 		void apply() const {
 			drawer(*this);
+		}
+
+		template <Concepts::Invokable<void(const Shader&)> func>
+		void applyDynamic(const func& f) const {
+			drawer(*this);
+			f(*this);
 		}
 
 		[[nodiscard]] GLuint getID() const {

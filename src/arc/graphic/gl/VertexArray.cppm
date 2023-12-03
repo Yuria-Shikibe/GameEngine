@@ -4,10 +4,11 @@
 
 module ;
 
-#include <glad/glad.h>
+
 
 export module GL.VertexArray;
 
+import <glad/glad.h>;
 import <vector>;
 import GL.Buffer.VertexBuffer;
 
@@ -25,7 +26,7 @@ export namespace GL{
 	{
 	protected:
 		GLsizei stride = 0;
-		std::vector<VertElem> elems;
+		std::vector<VertElem> elems{};
 
 	public:
 		void add(const GLenum type, const GLint size, const GLboolean normalized = true){

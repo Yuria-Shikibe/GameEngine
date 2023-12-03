@@ -7,7 +7,7 @@ export namespace OS{
 	public:
 		virtual ~ApplicationListener() = default;
 
-		virtual void update() = 0;
+		virtual void update(float delta) = 0;
 
 		ApplicationListener() = default;
 

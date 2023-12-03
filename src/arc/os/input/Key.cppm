@@ -17,12 +17,12 @@ export namespace OS{
 	protected:
 		int key = GLFW_KEY_UNKNOWN;
 		int expectedState = GLFW_PRESS;
-		int bindMode = GLFW_MOD_ALT;
+		int bindMode = 0;
 
-		std::function<void(int)> action = nullptr;
+		std::function<void()> action = nullptr;
 
 	public:
-		KeyBind(const int key, const int expectedState, const std::function<void(int)>& action) : key(key),
+		KeyBind(const int key, const int expectedState, const std::function<void()>& action) : key(key),
 		                                                                                          expectedState(expectedState),
 		                                                                                          action(action) {
 		}
@@ -30,7 +30,7 @@ export namespace OS{
 		KeyBind(const int key, const int expectedState) : KeyBind(key, expectedState, nullptr) {
 		}
 
-		explicit KeyBind(const std::function<void(int)>& action) : action(action) {
+		explicit KeyBind(const std::function<void()>& action) : action(action) {
 		}
 
 		virtual ~KeyBind() = default;
@@ -66,7 +66,7 @@ export namespace OS{
 			return targetState == expectedState;
 		}
 
-		[[nodiscard]] int keyCode() const {
+		[[nodiscard]] int code() const {
 			return key;
 		}
 
@@ -79,7 +79,7 @@ export namespace OS{
 		}
 
 		void act() const {
-			action(keyCode());
+			action();
 		}
 
 		friend bool operator==(const KeyBind& lhs, const KeyBind& rhs) {
@@ -93,10 +93,10 @@ export namespace OS{
 
 	struct KeyBindMultipleTarget {
 	protected:
-		std::unordered_map<int, bool> linkedMap;
+		std::unordered_map<int, bool> linkedMap{};
 
-		int resetFrameDelta = 0;
-		const int expectedResetFrameDelta = 50; //TODO this should vary from user's display refresh rate.
+		float resetFrameDelta = 0;
+		static constexpr float expectedResetFrameDelta = 30.0f; //TODO this should vary from user's display refresh rate.
 
 		int count = 0;
 		int expectedCount = 0;
@@ -107,26 +107,26 @@ export namespace OS{
 		//Should Be Called!
 		void registerRequired(const std::span<KeyBind>& arr) {
 			for (const auto& keyBind : arr) {
-				linkedMap.insert_or_assign(keyBind.keyCode(), false);
+				linkedMap.insert_or_assign(keyBind.code(), false);
 			}
 
 			expectedCount = static_cast<int>(arr.size());
 		}
 
 		void trigger(const KeyBind& bind) {
-			if (bool& keyState = linkedMap.at(bind.keyCode()); !keyState) {
+			if (bool& keyState = linkedMap.at(bind.code()); !keyState) {
 				keyState = true;
 				count++;
 			}
 
 			if (count == expectedCount) {
 				action();
-				resetState();
+				resetState(expectedResetFrameDelta);
 			}
 		}
 
-   		void resetState() {
-			resetFrameDelta++;
+   		void resetState(const float delta) {
+			if(count > 0)resetFrameDelta += delta;
 
 			if(resetFrameDelta >= expectedResetFrameDelta) {
 				for (bool& val : linkedMap | std::views::values) {
@@ -150,12 +150,12 @@ export namespace OS{
 		}
 	};
 
-	struct KeyBindMultiple final : virtual KeyBind {
+	struct KeyBindMultiple final : KeyBind {
 	protected:
 		KeyBindMultipleTarget* linkedTarget = nullptr;
 
 	public:
-		KeyBindMultiple(const int key_, const int expectedState_, KeyBindMultipleTarget* linkedTarget) : KeyBind(key_, expectedState_, [this]([[maybe_unused]] int k) {this->linkedTarget->trigger(*this);}),
+		KeyBindMultiple(const int key_, const int expectedState_, KeyBindMultipleTarget* linkedTarget) : KeyBind(key_, expectedState_, [this]() {this->linkedTarget->trigger(*this);}),
 		                                                                                                 linkedTarget(linkedTarget) {
 		}
 
@@ -163,7 +163,7 @@ export namespace OS{
 		}
 
 
-		KeyBindMultiple(const KeyBind& keyBind, KeyBindMultipleTarget* linkedTarget) : KeyBindMultiple(keyBind.keyCode(), keyBind.state(), linkedTarget) {
+		KeyBindMultiple(const KeyBind& keyBind, KeyBindMultipleTarget* linkedTarget) : KeyBindMultiple(keyBind.code(), keyBind.state(), linkedTarget) {
 
 		}
 	};
