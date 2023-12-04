@@ -742,8 +742,8 @@ export namespace Graphic{
 
 		template <int size>
 		static Color createLerp(const Color(&arr)[size], const float s) {
-			const Color ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
-			const Color cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+			const Color& ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
+			const Color& cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
 
 			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
 			const float i = 1.0f - n;
@@ -752,12 +752,22 @@ export namespace Graphic{
 
 		template <int size>
 		Color& lerp(const Color(&arr)[size], const float s) {
-			const Color ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
-			const Color cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+			const Color& ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
+			const Color& cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
 
 			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
 			const float i = 1.0f - n;
 			return set(ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n);
+		}
+
+		template <int size>
+		Color& lerp(const Color*(&arr)[size], const float s) {
+			const Color* ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
+			const Color* cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+
+			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
+			const float i = 1.0f - n;
+			return set(ca->r * i + cb->r * n, ca->g * i + cb->g * n, ca->b * i + cb->b * n, ca->a * i + cb->a * n);
 		}
 	};
 

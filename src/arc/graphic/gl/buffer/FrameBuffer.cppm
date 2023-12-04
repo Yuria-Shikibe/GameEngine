@@ -103,7 +103,7 @@ export namespace GL{
 			return sample->getID();
 		}
 
-		void clear(const Graphic::Color& initColor = Graphic::Colors::CLEAR, GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) const {
+		void clear(const Graphic::Color& initColor = Graphic::Colors::CLEAR, const GLbitfield mask = GL_COLOR_BUFFER_BIT) const {
 			bind();
 			glClearColor(initColor.r, initColor.g, initColor.b, initColor.a);
 			glClear(mask);

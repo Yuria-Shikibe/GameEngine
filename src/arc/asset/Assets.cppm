@@ -53,8 +53,10 @@ export namespace Assets{
 		inline Shader* coordAxis = nullptr;
 		inline Shader* filter = nullptr;
 
+		inline Shader* threshold_light = nullptr;
 		inline Shader* gaussian = nullptr;
 		inline Shader* bloom = nullptr;
+		inline Shader* blit = nullptr;
 
 		void load() {
 			texPost = new Shader{ shaderDir, "tex-std" };
@@ -81,6 +83,11 @@ export namespace Assets{
 				shader.setTexture2D("tex");
 			});
 
+			threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
+			threshold_light->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("u_texture");
+			});
+
 			gaussian = new Shader(shaderDir, "gaussian-blur");
 			gaussian->setUniformer([](const Shader& shader) {
 				shader.setTexture2D("u_texture");
@@ -92,6 +99,11 @@ export namespace Assets{
 				shader.setTexture2D("texture0", 0);
 				shader.setTexture2D("texture1", 1);
 			});
+
+			blit = new Shader(shaderDir, "blit");
+			blit->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("texture", 0);
+			});
 		}
 
 		void dispose() {
@@ -102,6 +114,7 @@ export namespace Assets{
 			delete filter;
 			delete gaussian;
 			delete bloom;
+			delete blit;
 		}
 	}
 
@@ -242,16 +255,15 @@ export namespace Assets{
 		void load() {
 			raw = new Mesh{[](const Mesh& mesh) {
 				mesh.getIndexBuffer().bind();
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
+				const unsigned int data[] = {0, 1, 2, 0, 3, 2};
+				mesh.getIndexBuffer().setDataRaw(data, GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
 				mesh.getVertexBuffer().bind();
 				mesh.getVertexBuffer().setData({
-					-1.0f, -1.0f,
-					-1.0f,  1.0f,
-					 1.0f,  1.0f,
-					 1.0f, -1.0f
+					-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f
 				}, GL_STATIC_DRAW);
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				layout.addFloat(2);
 				layout.addFloat(2);
 				mesh.getVertexArray().active();
 			}};
@@ -271,9 +283,6 @@ export namespace Assets{
 				layout.addFloat(2);
 				mesh.getVertexArray().active();
 			});
-
-			auto t = coords;
-
 		}
 
 		void dispose() {

@@ -108,7 +108,7 @@ export namespace Font {
 		max
 	};
 
-	Event::SingalManager<FontLoadState, FontLoadState::max> fontLoadListeners{};
+	Event::SignalManager<FontLoadState, FontLoadState::max> fontLoadListeners{};
 
 	struct FontData {
 		struct CharData {

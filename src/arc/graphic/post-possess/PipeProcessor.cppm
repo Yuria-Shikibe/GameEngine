@@ -37,18 +37,21 @@ export namespace Graphic {
 		}
 
 		void begin() const override {
+			temp1.clear();
+			temp2.clear();
+
 			temp1.resize(toProcess->getWidth(), toProcess->getHeight());
 			temp2.resize(toProcess->getWidth(), toProcess->getHeight());
 
-			Draw::blitRaw(toProcess, &temp1);
-			flag = false;
+			processors.front()->apply(toProcess, &temp1);
+			flag = true;
 		}
 
 		void process() const override {
-			for(const auto& processor : processors) {
-				FrameBuffer* const read = flag ? &temp1 : &temp2;
-				FrameBuffer* const draw = flag ? &temp2 : &temp1;
-				processor->apply(read, draw);
+			for(size_t i = 1; i < processors.size() - 1; ++i) {
+				FrameBuffer* read = flag ? &temp1 : &temp2;
+				FrameBuffer* draw = flag ? &temp2 : &temp1;
+				processors[i]->apply(read, draw);
 				flag = !flag;
 
 				read->clear();
@@ -56,8 +59,9 @@ export namespace Graphic {
 		}
 
 		void end(FrameBuffer* target) const override {
-			const FrameBuffer* const read = flag ? &temp1 : &temp2;
-			Draw::blitRaw(read, target);
+			FrameBuffer* const read = flag ? &temp1 : &temp2;
+
+			processors.back()->apply(read, target);
 		}
 	};
 }

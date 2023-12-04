@@ -9,12 +9,8 @@ import <unordered_set>;
 import <glad/glad.h>;
 
 namespace GL {
-
-std::unordered_set<GLenum> currentState;
-
+    std::unordered_set<GLenum> currentState;
 }
-
-
 
 export namespace GL {
     void enable(const GLenum cap) {
@@ -41,6 +37,14 @@ export namespace GL {
         }else {
             GL::disable(cap);
         }
+    }
+
+    void viewport(const GLsizei x, const GLsizei y, const GLsizei width, const GLsizei height) {
+        glViewport(x, y, width, height);
+    }
+
+    void viewport(const GLsizei width, const GLsizei height) {
+        viewport(0, 0, width, height);
     }
 }
 

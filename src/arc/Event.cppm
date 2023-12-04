@@ -31,6 +31,7 @@ export namespace Event {
 
 	public:
 		template <Concepts::Derived<EventType> T>
+			requires std::is_final_v<T>
 		void fire(const T& event) {
 #ifdef DEBUG_LOCAL
 			if(!registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
@@ -44,7 +45,7 @@ export namespace Event {
 		}
 
 		template <typename T, typename Func>
-			requires Concepts::Derived<T, EventType> && Concepts::Invokable<Func, void(const T&)>
+			requires Concepts::Derived<T, EventType> && Concepts::Invokable<Func, void(const T&)> && std::is_final_v<T>
 		void on(Func&& func){
 #ifdef DEBUG_LOCAL
 			if(!registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
@@ -70,7 +71,7 @@ export namespace Event {
 
 
 	template <Concepts::Enum T, T maxsize>
-	class SingalManager {
+	class SignalManager {
 		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events;
 
 	public:

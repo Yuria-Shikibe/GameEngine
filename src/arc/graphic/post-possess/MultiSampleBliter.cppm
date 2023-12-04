@@ -28,8 +28,7 @@ export namespace Graphic {
 		void end(FrameBuffer* target) const override {
 			if(target == nullptr || toProcess == nullptr)throwException();
 
-			Draw::blitRaw(toProcess, target);
-
+			Draw::blitCopy(toProcess, target);
 		}
 
 		void process() const override {}

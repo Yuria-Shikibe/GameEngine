@@ -58,6 +58,7 @@ using namespace Draw;
 using namespace GL;
 
 bool screenShotRequest = false;
+bool bloomTest = false;
 
 void init() {
 	stbi::setFlipVertically_load(true);
@@ -104,6 +105,10 @@ void init() {
 			screenShotRequest = true;
 		});
 
+		Core::input->registerKeyBind(Ctrl::KEY_F2, Ctrl::Act_Press, []() mutable  {
+			bloomTest = !bloomTest;
+		});
+
 		Event::generalUpdateEvents.on<Event::Draw_After>([](const Event::Draw_After& a){
 			if(screenShotRequest) {
 				const Graphic::Pixmap pixmap{Core::renderer->getWidth(), Core::renderer->getHeight(), Core::renderer->defaultFrameBuffer->readPixelsRaw()};
@@ -120,9 +125,11 @@ void init() {
 	Graphic::Draw::defTexture(*Assets::Textures::whiteRegion);
 	Graphic::Draw::texture();
 	Graphic::Draw::rawMesh = Assets::Meshes::raw;
+	Graphic::Draw::blitter = Assets::Shaders::blit;
 }
 
 int main(){
+
 	init();
 
 	const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
@@ -144,30 +151,30 @@ int main(){
 	const auto coordCenter = std::make_shared<Font::GlyphLayout>();
 
 	Graphic::ShaderProcessor blurX{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", {2, 0});
+		shader.setVec2("direction", {1.22f, 0});
 	}};
 
 	Graphic::ShaderProcessor blurY{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", {0, 2});
+		shader.setVec2("direction", {0, 1.22f});
 	}};
 
+	Graphic::BloomProcessor bloom{&blurX, &blurY, Assets::Shaders::bloom, Assets::Shaders::threshold_light};
 
-	Graphic::BloomProcessor processor{&blurX, &blurY, Assets::Shaders::bloom};
+	Graphic::ShaderProcessor blend{Draw::blitter};
+	// Graphic::P4Processor processor{&blurX, &blurY};
+	Graphic::PipeProcessor multiBlend{};
+	multiBlend << Assets::PostProcessors::multiToBasic << &blend;
 
 	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
 		Draw::meshBegin(Assets::Meshes::coords);
 		Draw::meshEnd(true);
 
+	    if(bloomTest)Core::renderer->frameBegin(frameBuffer);
+	    Core::renderer->frameBegin(multiSample);
+
+		const Geom::Vector2D c = Core::camera->screenCenter();
 		Draw::meshBegin(Core::batch->getMesh());
 
-	    Core::renderer->frameBegin(frameBuffer);
-	    Core::renderer->frameBegin(multiSample);
-	    // auto data = Assets::Fonts::manager->obtain(Assets::Fonts::telegrama);
-		const Geom::Vector2D c = Core::camera->screenCenter();
-
-		// Core::batch->getMesh()->vertexArray->bind();
-		// glFlush();
-		// Assets::Meshes::coords->unbind();
 
 		Draw::stroke(3);
 		Draw::color(Colors::WHITE);
@@ -190,7 +197,7 @@ int main(){
 		coordCenter->render();
 
 		Draw::stroke(3);
-		Draw::color(Colors::RED);
+		Draw::color(Colors::BLUE, Colors::SKY, 0.445f);
 
 		Draw::rect_line(layout->bound, true, layout->offset);
 
@@ -199,9 +206,9 @@ int main(){
 		    { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
 		);
 
-	    Core::renderer->frameEnd(Assets::PostProcessors::multiToBasic);
-	    Core::renderer->frameEnd(&processor);
 		Draw::meshEnd(Core::batch->getMesh());
+	    Core::renderer->frameEnd(&multiBlend);
+	    if(bloomTest)Core::renderer->frameEnd(&bloom);
 	});
 
 	while (OS::continueLoop(Core::window)){

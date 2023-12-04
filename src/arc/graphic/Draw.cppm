@@ -58,11 +58,15 @@ export namespace Graphic::Draw{
 	inline Matrix3D MAT_IDT{};
 
 	inline const Mesh* rawMesh{nullptr};
+	inline const Shader* blitter{nullptr};
 
 	inline std::stack<const Mesh*> formerMesh{};
 
 	template <Concepts::Invokable<void(const Shader&)> func>
-	void blit(const Shader* shader, const func& f) {
+	void blit(const GL::FrameBuffer* const draw, const Shader* shader, const func& f) {
+		GL::viewport(0, 0, draw->getWidth(), draw->getHeight());
+		draw->bind(GL::FrameBuffer::DRAW);
+
 		if(shader) {
 			shader->bind();
 			shader->applyDynamic(f);
@@ -72,7 +76,10 @@ export namespace Graphic::Draw{
 		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
 	}
 
-	inline void blit(const Shader* shader = nullptr) {
+	inline void blit(const GL::FrameBuffer* const draw, const Shader* shader = blitter) {
+		GL::viewport(0, 0, draw->getWidth(), draw->getHeight());
+		draw->bind(GL::FrameBuffer::DRAW);
+
 		if(shader) {
 			shader->bind();
 			shader->apply();
@@ -82,7 +89,7 @@ export namespace Graphic::Draw{
 		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
 	}
 
-	inline void blitRaw(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw, const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_NEAREST) {
+	inline void blitCopy(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw, const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR) {
 		read->bind(GL::FrameBuffer::READ);
 		draw->bind(GL::FrameBuffer::DRAW);
 		glBlitFramebuffer(0, 0, read->getWidth(), read->getHeight(), 0, 0, draw->getWidth(), draw->getHeight(), mask, filter);

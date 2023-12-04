@@ -15,7 +15,7 @@ export import Math;
 export import Math.Bit;
 
 export namespace Geom{
-	struct Vector2D final : Position
+	struct Vector2D : Position
 	{
 		~Vector2D() override = default;
 

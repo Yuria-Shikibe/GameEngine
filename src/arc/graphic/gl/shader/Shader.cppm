@@ -384,8 +384,6 @@ export namespace GL {
 		void setTexture2D(const std::string &name, const Texture2D &texture, const int offset = 0) const {
 			texture.active(offset);
 
-			texture.bind();
-
 			uniformTexture(getLocation(name), offset);
 		}
 

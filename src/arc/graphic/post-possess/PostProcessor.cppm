@@ -6,7 +6,7 @@ export import GL.Buffer.FrameBuffer;
 export import GL.Texture.Texture2D;
 export import GL;
 
-import RuntimeException;
+export import RuntimeException;
 import <ranges>;
 import <unordered_map>;
 import <glad/glad.h>;

@@ -13,6 +13,8 @@ import RuntimeException;
 import Graphic.Draw;
 import Concepts;
 
+import Assets;
+
 using namespace GL;
 
 export namespace Graphic {
@@ -35,14 +37,24 @@ export namespace Graphic {
 		mutable FrameBuffer ping{2, 2};
 		mutable FrameBuffer pong{2, 2};
 
+		unsigned int processTimes = 3;
+		float scale = 1.0f;
+
 	public:
+		[[nodiscard]] P4Processor() = default;
+
 		~P4Processor() override = default;
 
 		PostProcessor* ping2pong = nullptr;
 		PostProcessor* pong2ping = nullptr;
 
+		[[nodiscard]] FrameBuffer* getPing() const {
+			return &ping;
+		}
 
-		unsigned int processTimes = 1;
+		[[nodiscard]] FrameBuffer* getPong() const {
+			return &pong;
+		}
 
 		[[nodiscard]] P4Processor(PostProcessor* const ping2PongShader, PostProcessor* const pong2PingShader)
 			: ping2pong(ping2PongShader),
@@ -55,16 +67,35 @@ export namespace Graphic {
 			processTimes(processTimes) {
 		}
 
+		[[nodiscard]] unsigned getProcessTimes() const {
+			return processTimes;
+		}
+
+		void setProcessTimes(const unsigned processTimes) {
+			this->processTimes = processTimes;
+		}
+
+		[[nodiscard]] float getScale() const {
+			return scale;
+		}
+
+		void setScale(const float scale) {
+			if(scale <= 0)throw ext::IllegalArguments{"Negative Scale!"};
+			this->scale = scale;
+		}
+
 		void begin() const override {
 			if(ping2pong == nullptr || ping2pong == nullptr || toProcess == nullptr)throwException();
 
-			ping.resize(toProcess->getWidth(), toProcess->getHeight());
-			pong.resize(toProcess->getWidth(), toProcess->getHeight());
+			ping.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
+			pong.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
 
 			ping.clear();
 			pong.clear();
 
-			Draw::blitRaw(toProcess, &ping);
+			toProcess->getTexture().active();
+
+			Draw::blit(&ping);
 		}
 
 		void process() const override {
@@ -75,7 +106,9 @@ export namespace Graphic {
 		}
 
 		void end(FrameBuffer* target) const override {
-			Draw::blitRaw(&ping, target);
+			ping.getTexture().active();
+
+			Draw::blit(target);
 		}
 	};
 }

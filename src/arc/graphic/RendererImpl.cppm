@@ -38,6 +38,7 @@ export namespace Graphic {
 				}
 
 				contextFrameBuffer->bind();
+				GL::viewport(contextFrameBuffer->getWidth(), contextFrameBuffer->getHeight());
 
 				glClearColor(initColor.r, initColor.g, initColor.b, initColor.a);
 				glClear(mask);
@@ -62,7 +63,7 @@ export namespace Graphic {
 
 				Draw::flush();
 
-				Draw::blitRaw(contextFrameBuffer, beneathFrameBuffer);
+				Draw::blit(beneathFrameBuffer);
 
 				contextFrameBuffer = beneathFrameBuffer;
 			}

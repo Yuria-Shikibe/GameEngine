@@ -1,6 +1,7 @@
 #version 330
 
-attribute vec4 position;
+layout (location = 0) attribute vec4 pos;
+layout (location = 1) attribute vec2 tex;
 
 uniform vec2 direction;
 uniform vec2 size;
@@ -15,7 +16,7 @@ const vec2 futher = vec2(3.2307692308, 3.2307692308);
 const vec2 closer = vec2(1.3846153846, 1.3846153846);
 
 void main(){
-	vec2 texCoord = (position.xy + vec2(1.0f, 1.0f)) * 0.5f;
+	vec2 texCoord = tex;
 	
 	vec2 sizeAndDir = direction / size;
 	vec2 f = futher*sizeAndDir;
@@ -26,8 +27,9 @@ void main(){
 	v_texCoords2 = texCoord;
 	v_texCoords3 = texCoord + c;
 	v_texCoords4 = texCoord + f;
+
 	
-	gl_Position = position;
+	gl_Position = pos;
 }
 
 

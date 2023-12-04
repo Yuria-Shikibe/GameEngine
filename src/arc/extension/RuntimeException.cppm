@@ -31,12 +31,12 @@ export namespace ext{
 
 		virtual void postToLog() const;
 
-		RuntimeException() : RuntimeException("") {
+		RuntimeException() : RuntimeException("Crashed At...") {
 
 		}
 	};
 
-	class NullPointerException : RuntimeException{
+	class NullPointerException final : RuntimeException{
 	public:
 		[[nodiscard]] explicit NullPointerException(const std::string& str)
 			: RuntimeException(str) {
@@ -46,4 +46,15 @@ export namespace ext{
 
 		}
 	};
+
+	class IllegalArguments final : RuntimeException{
+	public:
+	[[nodiscard]] explicit IllegalArguments(const std::string& str)
+		: RuntimeException(str) {
+	}
+
+	[[nodiscard]] IllegalArguments() : IllegalArguments("Illegal Arguments At...") {
+
+	}
+};
 }

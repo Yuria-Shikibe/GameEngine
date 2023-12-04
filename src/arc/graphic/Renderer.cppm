@@ -8,6 +8,7 @@ import <vector>;
 import <stack>;
 import GL.Buffer.FrameBuffer;
 import GL.GL_Exception;
+import GL;
 import Event;
 import Graphic.Color;
 import Graphic.Resizeable;
@@ -58,7 +59,17 @@ class Renderer : virtual public ResizeableInt {
 			return height;
 		}
 
-		virtual void frameBegin(FrameBuffer& frameBuffer, bool resize = false, const Color& initColor = Colors::CLEAR, GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) = 0;
+		virtual void frameBegin(FrameBuffer& frameBuffer, bool resize, const Color& initColor, GLbitfield mask) = 0;
+
+		virtual void frameBegin(FrameBuffer& frameBuffer){
+			frameBegin(frameBuffer, false, Colors::CLEAR, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+
+		virtual void frameBegin(FrameBuffer& frameBuffer, const bool resize, const Color& initColor){
+			frameBegin(frameBuffer, resize, initColor, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+
+		//TODO lambda support?
 
 		virtual void frameEnd(PostProcessor*) = 0;
 
@@ -74,8 +85,6 @@ class Renderer : virtual public ResizeableInt {
 			width = w;
 			height = h;
 
-			glViewport(0, 0, width, height);
-
 			defaultFrameBuffer->resize(w, h);
 			contextFrameBuffer->resize(w, h);
 
@@ -86,9 +95,10 @@ class Renderer : virtual public ResizeableInt {
 
 		virtual void draw(){
 			defaultFrameBuffer->bind();
+			GL::viewport(defaultFrameBuffer->getWidth(), defaultFrameBuffer->getHeight());
 
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			Event::generalUpdateEvents.fire(draw_prepare);
 

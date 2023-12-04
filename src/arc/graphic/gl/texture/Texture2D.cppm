@@ -74,22 +74,22 @@ export namespace GL{
 			return !(lhs == rhs);
 		}
 
-		Texture2D(const Texture2D& other) noexcept: localData(other.copyData().release()),
+		Texture2D(const Texture2D& other) noexcept: textureID(other.textureID),
 											   texName(other.texName),
-											   textureID(other.textureID),
-		                                       targetFlag(other.targetFlag),
-											   width(other.width),
-											   height(other.height),
-											   bpp(other.bpp){
-		}
-
-		Texture2D(Texture2D&& other) noexcept: localData(std::move(other.localData)),
-		                                       texName(std::move(other.texName)),
-		                                       textureID(other.textureID),
 											   targetFlag(other.targetFlag),
 		                                       width(other.width),
+											   height(other.height),
+											   bpp(other.bpp),
+											   localData(other.copyData().release()){
+		}
+
+		Texture2D(Texture2D&& other) noexcept: textureID(other.textureID),
+		                                       texName(std::move(other.texName)),
+		                                       targetFlag(other.targetFlag),
+											   width(other.width),
 		                                       height(other.height),
-		                                       bpp(other.bpp){
+		                                       bpp(other.bpp),
+		                                       localData(std::move(other.localData)){
 		}
 
 		Texture2D& operator=(Texture2D&& other) noexcept{
@@ -139,7 +139,7 @@ export namespace GL{
 			glGenTextures(1, &textureID);
 
 			active();
-			bind();
+
 			//TODO : Check if needed here.
 			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			glGenerateMipmap(targetFlag);
@@ -189,6 +189,7 @@ export namespace GL{
 		
 		void active(const unsigned char slotOffset = 0) const{ // NOLINT(*-convert-member-functions-to-static)
 			glActiveTexture(GL_TEXTURE0 + slotOffset);
+			bind();
 		}
 
 		void bindParam(const GLenum target) const{

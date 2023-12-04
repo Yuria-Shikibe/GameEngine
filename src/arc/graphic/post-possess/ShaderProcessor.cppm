@@ -26,6 +26,10 @@ export namespace Graphic {
 			: shader(shader) {
 		}
 
+		[[nodiscard]] ShaderProcessor() : ShaderProcessor(Draw::blitter) { // NOLINT(*-use-equals-default)
+
+		}
+
 		[[nodiscard]] ShaderProcessor(const GL::Shader* const shader,
 		                              const std::function<void(const GL::Shader&)>& shaderHandler)
 			: shader(shader),
@@ -69,15 +73,14 @@ export namespace Graphic {
 
 		void end(FrameBuffer* target) const override {
 			if(shader == nullptr || toProcess == nullptr || target == nullptr)throwException();
-			// toProcess->bind(FrameBuffer::READ);
+			toProcess->getTexture().active(0);
 
-			toProcess->getTexture().active();
-			toProcess->getTexture().bind();
+			if(shaderHandler) {
+				Draw::blit(target, shader, shaderHandler);
+			}else {
+				Draw::blit(target, shader);
+			}
 
-
-			target->bind(FrameBuffer::DEF);
-
-			Draw::blit(shader, shaderHandler);
 		}
 
 		void process() const override {
