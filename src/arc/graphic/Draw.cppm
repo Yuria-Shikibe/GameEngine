@@ -102,7 +102,12 @@ export namespace Graphic::Draw{
 	}
 
 	inline void color(const Color& c1, const Color& c2, const float t){
-		contextColor.lerp({ c1, c2 }, t);
+		static const Color* colors[2];
+
+		colors[0] = &c1;
+		colors[1] = &c2;
+
+		contextColor.lerp(colors, t);
 	}
 
 	inline void blend(const Blending& blending = Blendings::NORMAL){
