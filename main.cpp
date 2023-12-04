@@ -58,7 +58,7 @@ using namespace Draw;
 using namespace GL;
 
 bool screenShotRequest = false;
-bool bloomTest = false;
+bool bloomTest = true;
 
 void init() {
 	stbi::setFlipVertically_load(true);
@@ -128,7 +128,12 @@ void init() {
 	Graphic::Draw::blitter = Assets::Shaders::blit;
 }
 
-int main(){
+int main(int argc, char* argv[]){
+	OS::args.reserve(argc);
+
+	for(int i = 0; i < argc; ++i) {
+		OS::args.emplace_back(argv[0]);
+	}
 
 	init();
 
@@ -141,7 +146,6 @@ int main(){
 	Core::renderer->registerSynchronizedObject(&frameBuffer);
 
 
-
 	auto&& file = Assets::assetsDir.subFile("test.txt");
 
 	const auto layout = Font::glyphParser->parse(file.readString());
@@ -151,11 +155,11 @@ int main(){
 	const auto coordCenter = std::make_shared<Font::GlyphLayout>();
 
 	Graphic::ShaderProcessor blurX{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", {1.22f, 0});
+		shader.setVec2("direction", {1.32f, 0});
 	}};
 
 	Graphic::ShaderProcessor blurY{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", {0, 1.22f});
+		shader.setVec2("direction", {0, 1.32f});
 	}};
 
 	Graphic::BloomProcessor bloom{&blurX, &blurY, Assets::Shaders::bloom, Assets::Shaders::threshold_light};
@@ -197,7 +201,7 @@ int main(){
 		coordCenter->render();
 
 		Draw::stroke(3);
-		Draw::color(Colors::BLUE, Colors::SKY, 0.445f);
+		Draw::color(Colors::BLUE, Colors::SKY, 0.745f);
 
 		Draw::rect_line(layout->bound, true, layout->offset);
 

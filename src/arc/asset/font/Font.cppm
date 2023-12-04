@@ -61,6 +61,8 @@ export namespace Font {
 	constexpr std::string_view bold = "Bold";
 	constexpr std::string_view italic = "Italic";
 
+	constexpr unsigned int TexturePackGap = 4;
+
 	unsigned char getStyleID(const std::string& str) {
 		unsigned char id = 0x00;
 
@@ -534,7 +536,7 @@ export namespace Font {
 					fontDatas.back().box.move(currentWidth, 0);
 
 					maxHeight = std::max(maxHeight, valid.face->glyph->bitmap.rows);
-					currentWidth += valid.face->glyph->bitmap.width;
+					currentWidth += valid.face->glyph->bitmap.width + TexturePackGap;
 				}
 			}
 
@@ -552,7 +554,7 @@ export namespace Font {
 				data.write(fstream);
 
 				maxMap.set(data.pixmap, currentWidth, 0);
-				currentWidth += data.pixmap.getWidth();
+				currentWidth += data.pixmap.getWidth() + TexturePackGap;
 			}
 
 			maxMap.write(texFile, true);
@@ -641,7 +643,7 @@ export namespace Font {
 				loadFont(*params);
 
 				totalWidth = std::max(params->data->box.getWidth(), totalWidth);
-				totalHeight += params->data->box.getHeight();
+				totalHeight += params->data->box.getHeight() + TexturePackGap;
 				const size_t hash = hasher(params->fullname());
 				stream.write(reinterpret_cast<const char*>(&hash), sizeof(hash));
 			}
@@ -660,7 +662,7 @@ export namespace Font {
 					charData.charBox.move(0, currentHeightOffset);
 				}
 
-				currentHeightOffset += data->box.getHeight();
+				currentHeightOffset += data->box.getHeight() + TexturePackGap;
 
 				totalCharCount = std::max(totalCharCount, data->charDatas.size());
 

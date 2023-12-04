@@ -24,16 +24,16 @@ export namespace OS{
 		/**
 		 * \brief empty for add all subs
 		 * */
-		std::vector<File::sortPred> concentration;
+		std::vector<File::sortPred> concentration{};
 
-		std::vector<File> subDirectories;
+		std::vector<File> subDirectories{};
 
 		/**
 		 * \brief Key - directory name | Value - File
 		 * */
-		std::unordered_map<std::string, std::vector<File>> files;
+		std::unordered_map<std::string, std::vector<File>> files{};
 
-		File root;
+		File root{};
 
 	public:
 		[[nodiscard]] bool concentrateAll() const{

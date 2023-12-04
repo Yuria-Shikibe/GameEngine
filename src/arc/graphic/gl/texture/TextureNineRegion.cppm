@@ -8,17 +8,21 @@ export module GL.Texture.TextureNineRegion;
 
 import <array>;
 import GL.Texture.TextureRegionRect;
+import GL.Texture.Texture2D;
 import Geom.Shape.Rect_Orthogonal;
 import Geom.Vector2D;
 
 import Graphic.Draw;
 
 using Rect = Geom::Shape::OrthoRectFloat;
+using HardRect = Geom::Shape::OrthoRectUInt;
 using namespace Graphic;
 
 export namespace GL {
 	/**
 	 * \brief
+	 *	When render this TextrueRegion, only the Inner(Center) Part should be stretched, and nearby edge parts scale in its axis, and corner parts with no scale!
+	 *
 	 * @code
 	 * |                         |                   |
 	 * |               ID: 6     |       ID: 2       |    ID : 5
@@ -57,6 +61,34 @@ export namespace GL {
 
 		Geom::Vector2D bottomLeftSize{};
 		Geom::Vector2D topRightSize{};
+
+		void loadFrom(const Texture2D* const rect, const HardRect& totalBound, const HardRect& innerBound) {
+			const unsigned int
+				srcX = totalBound.getSrcX(),
+				srcY = totalBound.getSrcY(),
+				bottomLeft_W = innerBound.getSrcX() - srcX,
+				bottomLeft_H = innerBound.getSrcY() - srcY,
+				inner_W = innerBound.getWidth(),
+				inner_H = innerBound.getHeight(),
+				topRight_W = totalBound.getEndX() - innerBound.getEndX(),
+				topRight_H = totalBound.getEndY() - innerBound.getEndY();
+
+			regions[ID_center].fetchInto(innerBound, totalBound);
+
+			regions[ID_right].fetchInto(innerBound.getEndX(), bottomLeft_H + srcY, topRight_W, inner_H, totalBound);
+			regions[ID_top].fetchInto(bottomLeft_W + srcX, innerBound.getEndY(), inner_W, topRight_H, totalBound);
+			regions[ID_left].fetchInto(srcX, bottomLeft_H, bottomLeft_W, inner_H, totalBound);
+			regions[ID_bottom].fetchInto(bottomLeft_W + srcX, srcY, inner_W, bottomLeft_H, totalBound);
+
+			regions[ID_topRight].fetchInto(innerBound.getEndX(), innerBound.getEndY(), topRight_W, topRight_H, totalBound);
+			regions[ID_topLeft].fetchInto(srcX, innerBound.getEndY(), bottomLeft_W, topRight_H, totalBound);
+			regions[ID_bottomLeft].fetchInto(srcX, srcY, bottomLeft_W, bottomLeft_H, totalBound);
+			regions[ID_bottomRight].fetchInto(innerBound.getEndX(), srcY, topRight_W, bottomLeft_H, totalBound);
+
+			for(TextureRegionRect& region : regions) {
+				region.setTexture(rect);
+			}
+		}
 
 		[[nodiscard]] float getSrcX() const {
 			return -bottomLeftSize.x;

@@ -114,10 +114,10 @@ export namespace Core{
 #ifdef ASSETS_DIR
 		rootFileTree = new OS::FileTree{ASSETS_DIR};
 #else
-		rootFileTree = new OS::FileTree{};
+		rootFileTree = new OS::FileTree{OS::args[0]};
 #endif
 #else
-		rootFileTree = new OS::FileTree{};
+		rootFileTree = new OS::FileTree{OS::args[0]};
 #endif
 		OS::crashFileGetter = [] {
 			return log->generateCrashFile();

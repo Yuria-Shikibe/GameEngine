@@ -13,7 +13,7 @@ export namespace GL{
 		/**The Count Of Vert Indexes Needed To Draw A Quad*/
 		inline static constexpr int ELEMENTS_QUAD_LENGTH = 6;
 		/**Inbuilt Indexes*/
-		inline static const std::array<GLuint, ELEMENTS_QUAD_LENGTH> ELEMENTS_STD = {0, 2, 1, 2, 3, 0};
+		inline static constexpr std::array<GLuint, ELEMENTS_QUAD_LENGTH> ELEMENTS_STD = {0, 2, 1, 2, 3, 0};
 
 	protected:
 		GLsizei bufferSize = 0;

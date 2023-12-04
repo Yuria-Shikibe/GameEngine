@@ -36,13 +36,19 @@ using namespace Geom;
 using namespace GL;
 using namespace Core;
 
-static Vector2D vec2_0;
-static Vector2D vec2_1;
-static Vector2D vec2_2;
-static Vector2D vec2_3;
-static Vector2D vec2_4;
-static Vector2D vec2_5;
-static Vector2D vec2_6;
+namespace Graphic::Draw {
+	Vector2D vec2_0{};
+	Vector2D vec2_1{};
+	Vector2D vec2_2{};
+	Vector2D vec2_3{};
+	Vector2D vec2_4{};
+	Vector2D vec2_5{};
+	Vector2D vec2_6{};
+
+	Matrix3D MAT_IDT{};
+
+	const Color* colors[2];
+}
 
 export namespace Graphic::Draw{
 	inline float vertices[VERT_LENGTH_STD] = {0};
@@ -54,8 +60,6 @@ export namespace Graphic::Draw{
 	inline const TextureRegion* defaultTexture = nullptr;
 
 	inline float contextStroke = 1.0f;
-
-	inline Matrix3D MAT_IDT{};
 
 	inline const Mesh* rawMesh{nullptr};
 	inline const Shader* blitter{nullptr};
@@ -109,8 +113,6 @@ export namespace Graphic::Draw{
 	}
 
 	inline void color(const Color& c1, const Color& c2, const float t){
-		static const Color* colors[2];
-
 		colors[0] = &c1;
 		colors[1] = &c2;
 

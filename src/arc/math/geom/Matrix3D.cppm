@@ -10,8 +10,10 @@ export import Geom.Vector2D;
 import Math;
 
 export namespace Geom{
+	using MatRaw = std::array<float, 9>;
+
 	struct Matrix3D{
-	private: float tmp[9] = { 0 };
+	private: MatRaw tmp{};
 
 	public:
 		static constexpr int M00 = 0;
@@ -24,10 +26,10 @@ export namespace Geom{
 		static constexpr int M21 = 5;
 		static constexpr int M22 = 8;
 
-		float val[9]{};
+		MatRaw val{};
 
 	private:
-		static void mul(float mat_a[], const float mat_b[]) {
+		static void mul(MatRaw& mat_a, const MatRaw& mat_b) {
 			const float v00 = mat_a[M00] * mat_b[M00] + mat_a[M01] * mat_b[M10] + mat_a[M02] * mat_b[M20];
 			const float v01 = mat_a[M00] * mat_b[M01] + mat_a[M01] * mat_b[M11] + mat_a[M02] * mat_b[M21];
 			const float v02 = mat_a[M00] * mat_b[M02] + mat_a[M01] * mat_b[M12] + mat_a[M02] * mat_b[M22];
@@ -52,13 +54,12 @@ export namespace Geom{
 		}
 
 	public:
-		[[nodiscard]] const float* getVal() const{
-			return val;
+		[[nodiscard]] const float* getRawVal() const{
+			return val.data();
 		}
 
-
 		friend bool operator==(const Matrix3D& lhs, const Matrix3D& rhs){
-			return std::equal(&lhs.val[0], &lhs.val[8], &rhs.val[0]);
+			return std::equal(lhs.val.begin(), lhs.val.end(), rhs.val.begin());
 		}
 
 		friend bool operator!=(const Matrix3D& lhs, const Matrix3D& rhs){
@@ -100,7 +101,7 @@ export namespace Geom{
 			set(values);
 		}
 
-		explicit Matrix3D(const std::array<float, 9>& arr) {
+		explicit Matrix3D(const MatRaw& arr) {
 			set(arr.data());
 		}
 
@@ -131,8 +132,8 @@ export namespace Geom{
 		Matrix3D& setOrthogonal(const float x, const float y, const float width, const float height) {
 			const float right = x + width, top = y + height;
 
-			const float x_orth = 2 / (right - x);
-			const float y_orth = 2 / (top - y);
+			const float x_orth = 2.0f / (right - x);
+			const float y_orth = 2.0f / (top - y);
 
 			const float tx = -(right + x) / (right - x);
 			const float ty = -(top + y) / (top - y);
@@ -148,15 +149,15 @@ export namespace Geom{
 		}
 
 		Matrix3D& idt() {
-			val[M00] = 1;
-			val[M10] = 0;
-			val[M20] = 0;
-			val[M01] = 0;
-			val[M11] = 1;
-			val[M21] = 0;
-			val[M02] = 0;
-			val[M12] = 0;
-			val[M22] = 1;
+			val[M00] = 1.0f;
+			val[M10] = 0.0f;
+			val[M20] = 0.0f;
+			val[M01] = 0.0f;
+			val[M11] = 1.0f;
+			val[M21] = 0.0f;
+			val[M02] = 0.0f;
+			val[M12] = 0.0f;
+			val[M22] = 1.0f;
 			return *this;
 		}
 
@@ -363,13 +364,13 @@ export namespace Geom{
 		}
 
 		Matrix3D& set(const Matrix3D& mat) {
-			std::copy_n(mat.val, 9, val);
+			std::ranges::copy(mat.val, val.begin());
 			return *this;
 		}
 
 		Matrix3D& set(const float values[]) {
 			// if (size < 9)throw std::exception("Cannot Construct A Matrix Without 9 Numbers.");
-			std::copy_n(values, 9, val);
+			std::copy_n(values, 9, val.begin());
 			return *this;
 		}
 
@@ -475,9 +476,9 @@ export namespace Geom{
 			return *this;
 		}
 
-		// std::array<float, 9> Geom::getValues() const{
-		// 	return std::array<float, 9>{ val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7], val[8] };
-		// }
+		[[nodiscard]] MatRaw copyData() const{
+			return MatRaw{val};
+		}
 
 		Vector2D& getTranslation(Vector2D& position) const {
 			position.x = val[M02];
@@ -498,8 +499,6 @@ export namespace Geom{
 		[[nodiscard]] float getRotationRad() const {
 			return Math::atan2(val[M10], val[M00]);
 		}
-
-
 
 		Matrix3D& scl(const float scale) {
 			val[M00] *= scale;
@@ -522,18 +521,10 @@ export namespace Geom{
 		Matrix3D& transpose() {
 			// Where MXY you do not have to change MXX
 
-			const float v01 = val[M10];
-			const float v02 = val[M20];
-			const float v10 = val[M01];
-			const float v12 = val[M21];
-			const float v20 = val[M02];
-			const float v21 = val[M12];
-			val[M01] = v01;
-			val[M02] = v02;
-			val[M10] = v10;
-			val[M12] = v12;
-			val[M20] = v20;
-			val[M21] = v21;
+			std::swap(val[M10], val[M01]);
+			std::swap(val[M20], val[M02]);
+			std::swap(val[M12], val[M21]);
+
 			return *this;
 		}
 

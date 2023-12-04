@@ -62,6 +62,10 @@ export namespace GL{
 			data = &texture2D;
 		}
 
+		void setTexture(const Texture2D* const texture2D){
+			data = texture2D;
+		}
+
 		[[nodiscard]] float u00() const override{return u0;}
 		[[nodiscard]] float u01() const override{return u0;}
 		[[nodiscard]] float u11() const override{return u1;}
@@ -117,6 +121,15 @@ export namespace GL{
 
 			u1 = static_cast<float>(internal.getEndX()) / static_cast<float>(external.getWidth());
 			v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(external.getHeight());
+		}
+
+		template<Concepts::Number N0, Concepts::Number N1>
+		void fetchInto(const N0 srcX, const N0 srcY, const N0 width, const N0 height, const Geom::Shape::Rect_Orthogonal<N1>& external) {
+			u0 = static_cast<float>(srcX) / static_cast<float>(external.getWidth());
+			v0 = static_cast<float>(srcY) / static_cast<float>(external.getHeight());
+
+			u1 = static_cast<float>(srcX + width) / static_cast<float>(external.getWidth());
+			v1 = static_cast<float>(srcY + height) / static_cast<float>(external.getHeight());
 		}
 
 		friend bool operator==(const TextureRegionRect& lhs, const TextureRegionRect& rhs) {

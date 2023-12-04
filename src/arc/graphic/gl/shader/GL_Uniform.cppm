@@ -23,6 +23,6 @@ export namespace GL{
 	}
 
 	inline void uniformMat3D(const GLint location, const Geom::Matrix3D& mat){
-		glUniformMatrix3fv(location, 1, GL_FALSE, mat.getVal());
+		glUniformMatrix3fv(location, 1, GL_FALSE, mat.getRawVal());
 	}
 }

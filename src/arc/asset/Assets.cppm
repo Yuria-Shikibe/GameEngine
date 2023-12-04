@@ -255,8 +255,7 @@ export namespace Assets{
 		void load() {
 			raw = new Mesh{[](const Mesh& mesh) {
 				mesh.getIndexBuffer().bind();
-				const unsigned int data[] = {0, 1, 2, 0, 3, 2};
-				mesh.getIndexBuffer().setDataRaw(data, GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
 				mesh.getVertexBuffer().bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f

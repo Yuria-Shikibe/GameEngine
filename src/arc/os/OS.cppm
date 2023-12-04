@@ -39,6 +39,9 @@ inline void exit_(const int s) {
 inline bool paused = false;
 
 export namespace OS{
+	std::vector<std::string> args{};
+
+
 	// extern inline int width, height;
 	Event::ApplicationMainLoop_Pre preEvent;
 	Event::ApplicationMainLoop_After afterEvent;

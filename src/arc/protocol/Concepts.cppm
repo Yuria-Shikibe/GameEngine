@@ -29,4 +29,12 @@ export namespace Concepts {
 
 	template <typename T>
 	concept Enum = std::is_enum_v<T>;
+
+	template <typename T>
+	concept NonNegative = std::is_unsigned_v<T>;
+
+	template <typename T>
+	concept Signed = !std::is_unsigned_v<T> && Number<T>;
+
+
 }

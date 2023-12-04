@@ -378,7 +378,7 @@ export namespace GL {
 
 		// ------------------------------------------------------------------------
 		void setMat3(const std::string &name, const Geom::Matrix3D &mat) const {
-			glUniformMatrix3fv(getLocation(name), 1, GL_FALSE, mat.getVal());
+			glUniformMatrix3fv(getLocation(name), 1, GL_FALSE, mat.getRawVal());
 		}
 
 		void setTexture2D(const std::string &name, const Texture2D &texture, const int offset = 0) const {

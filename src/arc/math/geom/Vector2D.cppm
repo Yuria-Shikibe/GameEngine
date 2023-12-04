@@ -15,8 +15,10 @@ export import Math;
 export import Math.Bit;
 
 export namespace Geom{
-	struct Vector2D : Position
+
+	struct Vector2D : public Position
 	{
+
 		~Vector2D() override = default;
 
 		float x = 0, y = 0;

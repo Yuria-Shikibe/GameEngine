@@ -15,7 +15,7 @@ export namespace Geom::Shape{
 	 * \tparam T 
 	 */
 	template <Concepts::Number T>
-	class Rect_Orthogonal final : virtual public Shape<Rect_Orthogonal<T>, T>{
+	class Rect_Orthogonal final : public Shape<Rect_Orthogonal<T>, T>{
 		static constexpr T HALF = static_cast<T>(2);
 
 		T srcX{0};
@@ -152,7 +152,9 @@ export namespace Geom::Shape{
 			};
 		}
 
-		void setWidth(const T w){
+
+		template<typename U = T>
+		void setWidth(const T w)requires Concepts::Signed<U>{
 			if(w >= 0){
 				this->width = w;
 			} else{
@@ -162,7 +164,13 @@ export namespace Geom::Shape{
 			}
 		}
 
-		void setHeight(const T h){
+		template<typename U = T>
+		void setWidth(const T w)requires Concepts::NonNegative<U>{
+			this->width = w;
+		}
+
+		template<typename U = T>
+		void setHeight(const T h)requires Concepts::Signed<U>{
 			if (h >= 0) {
 				this->height = h;
 			}
@@ -171,6 +179,26 @@ export namespace Geom::Shape{
 				srcY -= abs;
 				this->height = abs;
 			}
+		}
+
+		template<typename U = T>
+		void setHeight(const T h)requires Concepts::NonNegative<U>{
+			this->height = h;
+		}
+
+		Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::Signed<T> {
+			this->setWidth(width + x);
+			this->setHeight(height + y);
+
+			return *this;
+		}
+
+		Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::NonNegative<T> {
+			using S = std::make_signed_t<T>;
+			this->template setWidth<S>(static_cast<S>(width) + static_cast<S>(x));
+			this->template setHeight<S>(static_cast<S>(height) + static_cast<S>(y));
+
+			return *this;
 		}
 
 		void setLargerWidth(const T v) {
@@ -239,13 +267,6 @@ export namespace Geom::Shape{
 		Rect_Orthogonal& setSize(const T x, const T y) {
 			this->setWidth(x);
 			this->setHeight(y);
-
-			return *this;
-		}
-
-		Rect_Orthogonal& addSize(const T x, const T y) {
-			this->setWidth(width + x);
-			this->setHeight(height + y);
 
 			return *this;
 		}
