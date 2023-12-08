@@ -103,7 +103,7 @@ export namespace UI {
 
 		[[nodiscard]] Changed() = default;
 
-		bool contains(const ChangedType type) const {
+		[[nodiscard]] bool contains(const ChangedType type) const {
 			return flags | type;
 		}
 

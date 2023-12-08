@@ -1,9 +1,9 @@
-#version 330
+#version 330 core
 
-layout (location = 0) attribute vec4 pos;
-layout (location = 1) attribute vec2 tex;
+layout (location = 0) in vec4 pos;
+layout (location = 1) in vec2 tex;
 
-varying vec2 texCoord;
+out vec2 texCoord;
 
 void main() {
 	texCoord = tex;

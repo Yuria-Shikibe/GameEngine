@@ -10,6 +10,7 @@ import <array>;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
 import Geom.Shape.Rect_Orthogonal;
+import RuntimeException;
 import Geom.Vector2D;
 
 import Graphic.Draw;
@@ -43,6 +44,7 @@ export namespace GL {
 	 * @endcode
 	 */
 	class TextureNineRegion {
+	public:
 		static constexpr int ID_center = 0;
 		static constexpr int ID_right = 1;
 		static constexpr int ID_top = 2;
@@ -62,7 +64,21 @@ export namespace GL {
 		Geom::Vector2D bottomLeftSize{};
 		Geom::Vector2D topRightSize{};
 
+
+		[[nodiscard]] TextureNineRegion() = default;
+
+		[[nodiscard]] TextureNineRegion(const Texture2D* const rect, const HardRect& totalBound, const HardRect& innerBound) {
+			loadFrom(rect, totalBound, innerBound);
+		}
+
 		void loadFrom(const Texture2D* const rect, const HardRect& totalBound, const HardRect& innerBound) {
+			if(
+				totalBound.getSrcX() > innerBound.getSrcX() || totalBound.getSrcY() > innerBound.getSrcY() ||
+				totalBound.getEndX() < innerBound.getEndX() || totalBound.getEndY() < innerBound.getEndY()
+			) {
+				throw ext::IllegalArguments{"NineRegion Receives An Inner Part Larger Than Exter Part!"};
+			}
+
 			const unsigned int
 				srcX = totalBound.getSrcX(),
 				srcY = totalBound.getSrcY(),
@@ -86,8 +102,12 @@ export namespace GL {
 			regions[ID_bottomRight].fetchInto(innerBound.getEndX(), srcY, topRight_W, bottomLeft_H, totalBound);
 
 			for(TextureRegionRect& region : regions) {
-				region.setTexture(rect);
+				region.setData(rect);
 			}
+
+			innerSize.set(inner_W, inner_H);
+			bottomLeftSize.set(bottomLeft_W, bottomLeft_H);
+			topRightSize.set(topRight_W, topRight_H);
 		}
 
 		[[nodiscard]] float getSrcX() const {

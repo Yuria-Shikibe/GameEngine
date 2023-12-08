@@ -7,19 +7,25 @@ export module Core.Camera;
 
 import <algorithm>;
 
+import OS.ApplicationListener;
 import Geom.Vector2D;
 import Geom.Matrix3D;
+import <valarray>;
+import <numbers>;
 
 using namespace Geom;
 
 export namespace Core{
-	class Camera final : public virtual Position {
-	public:
+	class Camera final : public Position, public OS::ApplicationListener{
+	protected:
 		Matrix3D worldToScreen{};
 		Matrix3D screenToWorld{};
 		Vector2D position{0, 0};
-		float scale = 1.0f;
 
+		float scale{1.0f};
+		float targetScale{1.0f};
+
+	public:
 		Camera() = default;
 
 		[[nodiscard]] float getX() const override {
@@ -40,16 +46,8 @@ export namespace Core{
 
 		~Camera() override = default;
 
-		void setScale(const float f) {
-			scale = std::max(f, 0.2f);
-		}
-
 		void trans(const float x, const float y) {
 			position.add(x, y);
-		}
-
-		[[nodiscard]] float getScale() const {
-			return scale;
 		}
 
 		[[nodiscard]] Vector2D screenCenter() const {
@@ -70,6 +68,52 @@ export namespace Core{
 			// screenToWorld.setOrthogonal(0, 0, width, height).inv().translate(position.x - width / 2.0f, position.y - height / 2.0f);
 
 			screenToWorld.set(worldToScreen).inv();
+		}
+
+		void update(const float delta) override {
+			scale = std::exp(std::lerp(
+				std::log(scale), std::log(targetScale), delta * 0.1f
+			));
+		}
+
+		[[nodiscard]] Matrix3D& getWorldToScreen() {
+			return worldToScreen;
+		}
+
+		void setWorldToScreen(const Matrix3D& worldToScreen) {
+			this->worldToScreen = worldToScreen;
+		}
+
+		[[nodiscard]] Matrix3D& getScreenToWorld() {
+			return screenToWorld;
+		}
+
+		void setScreenToWorld(const Matrix3D& screenToWorld) {
+			this->screenToWorld = screenToWorld;
+		}
+
+		[[nodiscard]] Vector2D& getPosition() {
+			return position;
+		}
+
+		void setPosition(const Vector2D& position) {
+			this->position = position;
+		}
+
+		[[nodiscard]] float getScale() const {
+			return scale;
+		}
+
+		void setScale(const float scale) {
+			this->scale = scale;
+		}
+
+		[[nodiscard]] float getTargetScale() const {
+			return targetScale;
+		}
+
+		void setTargetScale(const float targetScale) {
+			this->targetScale = std::clamp(targetScale, 0.2f, 10.0f);
 		}
 	};
 }

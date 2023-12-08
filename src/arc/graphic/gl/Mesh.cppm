@@ -63,15 +63,17 @@ export namespace GL{
 		}
 
 		virtual void bind() const{
-			vertexBuffer->bind();
-			indexBuffer->bind();
+			// vertexBuffer->bind();
+
 			vertexArray->bind();
+			indexBuffer->bind();
 		}
 
 		virtual void unbind() const{
-			vertexBuffer->unbind();
-			indexBuffer->unbind();
+			// vertexBuffer->unbind();
+
 			vertexArray->unbind();
+			indexBuffer->unbind();
 		}
 
 		template <size_t size>
@@ -92,10 +94,10 @@ export namespace GL{
 		}
 
 		virtual void render(const GLenum primitiveType, const int offset, const int count) const{
+
 			if (indexBuffer != nullptr && indexBuffer->getSize() > 0) {
-				glDrawElements(primitiveType, count, GL_UNSIGNED_INT, reinterpret_cast<const void*>(offset * sizeof(GLuint)));
-			}
-			else {
+				glDrawElements(primitiveType, count, GL_UNSIGNED_INT, offset == 0 ? nullptr : reinterpret_cast<const void*>(offset * sizeof(GLuint)));
+			}else {
 				glDrawArrays(primitiveType, offset, count);
 			}
 		}

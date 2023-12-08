@@ -9,11 +9,13 @@ export module GL.Mesh.RenderableMesh;
 export import GL.Mesh;
 import GL.Shader;
 import RuntimeException;
+import <glad/glad.h>;
 
 export namespace GL {
 	struct RenderableMesh final : Mesh {
 	protected:
 		const Shader* shader = nullptr;
+		GLenum primitiveType = GL_TRIANGLE_FAN;
 
 	public:
 		~RenderableMesh() override = default;
@@ -42,6 +44,10 @@ export namespace GL {
 			shader->bind();
 			shader->apply();
 			Mesh::render();
+		}
+
+		void render(const int count) const override{
+			render(primitiveType, 0, count);
 		}
 	};
 }

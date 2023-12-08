@@ -31,6 +31,8 @@ export import OS.Key;
 export import OS;
 import <iostream>;
 
+
+
 export namespace Core{
 	const std::string title = APPLICATION_NAME;
 
@@ -39,7 +41,7 @@ export namespace Core{
 	inline GLFWmonitor* currentMonitor = nullptr;
 
 	inline Geom::Shape::OrthoRectInt lastScreenBound{};
-
+	inline bool maximizedWin = true;
 	inline void setScreenBound(GLFWwindow* win = window) {
 		glfwGetWindowSize(win, lastScreenBound.getWidthRaw(), lastScreenBound.getHeightRaw());
 		glfwGetWindowPos(win, lastScreenBound.getSrcXRaw(), lastScreenBound.getSrcYRaw());
@@ -92,21 +94,24 @@ export namespace Core{
 
 		window = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
 
-		glfwSetWindowSizeCallback(window, [](GLFWwindow* win, const int width, const int height){
-			Core::lastScreenBound.setSize(width, height);
-		});
+		if(maximizedWin) {
+			glfwSetWindowSizeCallback(window, [](GLFWwindow* win, const int width, const int height){
+				Core::lastScreenBound.setSize(width, height);
+			});
 
-		// Graphic::fullScreen(window, currentMonitor, title);
-		glfwMaximizeWindow(window);
-		setScreenBound();
+			// Graphic::fullScreen(window, currentMonitor, title);
+			glfwMaximizeWindow(window);
+			setScreenBound();
 
-		glViewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
-		glfwSwapInterval(1);
-		GL::enable(GL_MULTISAMPLE);
+			glViewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
+			glfwSwapInterval(1);
+			GL::enable(GL_MULTISAMPLE);
 
-		lastScreenBound.set(100, 100, OS::screenWidth * 0.75f, OS::screenHeight * 0.75f);
+			lastScreenBound.set(100, 100, OS::screenWidth * 0.75f, OS::screenHeight * 0.75f);
 
-		glfwSetWindowSizeCallback(window, nullptr);
+			glfwSetWindowSizeCallback(window, nullptr);
+		}
+
 	}
 
 	inline void initFileSystem() {
@@ -130,6 +135,7 @@ export namespace Core{
 		initMainWindow();
 
 		OS::launch();
+		GL::init();
 
 		initFileSystem();
 
@@ -155,6 +161,7 @@ export namespace Core{
 		if(!batch)throw ext::NullPointerException{"Empty Default Batch!"};
 
 		OS::registerListener(input);
+		OS::registerListener(camera);
 	}
 
 	inline void dispose(){

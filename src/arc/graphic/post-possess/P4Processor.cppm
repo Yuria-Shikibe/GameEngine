@@ -19,17 +19,6 @@ using namespace GL;
 
 export namespace Graphic {
 	/**
-	 * \brief Support Customized Blit, if the default Draw cannot meet the requirements;
-	 */
-	struct TexturePoster {
-		virtual ~TexturePoster() = default;
-
-		virtual void operator()(const Texture2D& texture2D){
-			Draw::post(texture2D);
-		}
-	};
-
-	/**
 	 * \brief P4 for Ping Pong Post Processor, pairs mode
 	 **/
 	class P4Processor : public PostProcessor{

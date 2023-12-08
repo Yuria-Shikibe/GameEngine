@@ -43,6 +43,7 @@ export namespace Assets{
 	inline OS::File assetsDir;
 	inline OS::File shaderDir;
 	inline OS::File textureDir;
+	inline OS::File texCacheDir;
 	inline OS::File fontDir;
 	inline OS::File screenshotDir;
 
@@ -73,9 +74,9 @@ export namespace Assets{
 			coordAxis->setUniformer([]([[maybe_unused]] const Shader& shader) {
 				shader.setFloat("width", 3.0f);
 				shader.setFloat("spacing", 100);
-				shader.setFloat("scale", Core::camera->scale);
+				shader.setFloat("scale", Core::camera->getScale());
 				shader.setVec2("screenSize", Core::renderer->getWidth(), Core::renderer->getHeight());
-				shader.setVec2("cameraPos", Core::camera->position);
+				shader.setVec2("cameraPos", Core::camera->getPosition());
 			});
 
 			filter = new Shader(shaderDir, "filter");
@@ -255,10 +256,13 @@ export namespace Assets{
 		void load() {
 			raw = new Mesh{[](const Mesh& mesh) {
 				mesh.getIndexBuffer().bind();
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 				mesh.getVertexBuffer().bind();
 				mesh.getVertexBuffer().setData({
-					-1.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f
+					-1.0f, -1.0f, 0.0f, 0.0f,
+					 1.0f, -1.0f, 1.0f, 0.0f,
+					 1.0f,  1.0f, 1.0f, 1.0f,
+					-1.0f,  1.0f, 0.0f, 1.0f
 				}, GL_STATIC_DRAW);
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
@@ -269,13 +273,13 @@ export namespace Assets{
 
 			coords = new GL::RenderableMesh(Assets::Shaders::coordAxis, [](const GL::RenderableMesh& mesh) {
 				mesh.getIndexBuffer().bind();
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_LENGTH, GL_STATIC_DRAW);
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 				mesh.getVertexBuffer().bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f,
-					-1.0f,  1.0f,
+					 1.0f, -1.0f,
 					 1.0f,  1.0f,
-					 1.0f, -1.0f
+					-1.0f,  1.0f
 				}, GL_STATIC_DRAW);
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
@@ -297,6 +301,9 @@ export namespace Assets{
 		shaderDir = mainTree.find("shader");
 		textureDir = mainTree.find("texture");
 		fontDir = mainTree.find("fonts");
+
+		texCacheDir = assetsDir.subFile("tex-cache");
+		texCacheDir.createDirQuiet();
 
 		screenshotDir = mainTree.find("screenshots"); //TODO move this to other places, it doesn't belong to assets!
 

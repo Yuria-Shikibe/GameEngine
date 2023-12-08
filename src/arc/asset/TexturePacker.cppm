@@ -7,6 +7,7 @@ import Graphic.Pixmap;
 import Geom.Shape.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
+import GL;
 import RuntimeException;
 import File;
 import <algorithm>;
@@ -131,7 +132,7 @@ export namespace Graphic {
 		}
 
 		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string& pageName) :
-			TexturePackPage(cacheDir, pageName, {2048, 2048}, false){
+			TexturePackPage(cacheDir, pageName, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}, false){
 		}
 
 		void push(const OS::File& file, const PixmapModifer& modifer = nullptr) {
@@ -222,6 +223,7 @@ export namespace Graphic {
 			for(int i = 0; i < mergedMaps.size(); ++i) {
 				mergedMaps[i].write(cacheDir.subFile(pageName + std::to_string(i) + ".png"), true);
 			}
+
 		}
 
 		/**

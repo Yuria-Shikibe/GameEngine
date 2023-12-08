@@ -1,6 +1,6 @@
-#version 430 core
+#version 330 core
 
-layout (location = 0) uniform sampler2D u_texture;
+uniform sampler2D u_texture;
 
 in vec2 v_texCoord;
 

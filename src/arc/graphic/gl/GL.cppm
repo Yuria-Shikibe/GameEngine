@@ -10,6 +10,8 @@ import <glad/glad.h>;
 
 namespace GL {
     std::unordered_set<GLenum> currentState;
+
+    int maxTexSize = 4096;
 }
 
 export namespace GL {
@@ -20,11 +22,20 @@ export namespace GL {
         }
     }
 
+    unsigned int getMaxTextureSize() {
+        return maxTexSize;
+    }
+
     void disable(const GLenum cap) {
         if(currentState.contains(cap)) {
             currentState.erase(cap);
             glDisable(cap);
         }
+    }
+
+    void init() {
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+
     }
 
     bool getState(const GLenum cap) {

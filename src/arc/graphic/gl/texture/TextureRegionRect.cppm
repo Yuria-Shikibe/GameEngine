@@ -9,7 +9,22 @@ import GL.Texture.TextureRegion;
 import <tuple>;
 
 export namespace GL{
-	class TextureRegionRect final : virtual public TextureRegion
+
+	/**
+	 * \brief
+	 * @code
+	 * y
+	 * ^
+	 * |
+	 * |   01(u0, v1)         11(u1, v1)
+	 * |
+	 * |             --IMAGE--
+	 * |
+	 * |   00(u0, v0)         10(u1, v0)
+	 * +-------------------------------> x (Normally)
+	 * @endcode
+	 */
+	class TextureRegionRect final : public TextureRegion
 	{
 	public:
 		~TextureRegionRect() override = default;
@@ -17,15 +32,6 @@ export namespace GL{
 		float u0 = 0.0f, v0 = 0.0f, u1 = 1.0f, v1 = 1.0f;
 
 		TextureRegionRect() = default;
-
-		/*	| y
-		 *  |   01(u0, v1)         11(u1, v1)
-		 *  |
-		 *  |             --IMAGE--
-		 *  |
-		 *  |   00(u0, v0)         10(u1, v0)
-		 *  + ------------------------------> x (Normally)
-		 * */
 
 
 		[[nodiscard]] TextureRegionRect(const float u0, const float v0, const float u1, const float v1)
@@ -52,18 +58,6 @@ export namespace GL{
 			v0 = _v0;
 			u1 = _u1;
 			v1 = _v1;
-		}
-
-		[[nodiscard]] const Texture2D& texture() const{
-			return *data;
-		}
-
-		void setTexture(const Texture2D& texture2D){
-			data = &texture2D;
-		}
-
-		void setTexture(const Texture2D* const texture2D){
-			data = texture2D;
 		}
 
 		[[nodiscard]] float u00() const override{return u0;}
@@ -114,6 +108,14 @@ export namespace GL{
 			std::swap(u0, u1);
 		}
 
+		[[nodiscard]] float getWidth() const {
+			return std::abs(u1 - u0) * data->getWidth();
+		}
+
+		[[nodiscard]] float getHeight() const {
+			return std::abs(v1 - v0) * data->getHeight();
+		}
+
 		template<Concepts::Number N0, Concepts::Number N1>
 		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const Geom::Shape::Rect_Orthogonal<N1>& external) {
 			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(external.getWidth());
@@ -121,6 +123,24 @@ export namespace GL{
 
 			u1 = static_cast<float>(internal.getEndX()) / static_cast<float>(external.getWidth());
 			v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(external.getHeight());
+		}
+
+		template<Concepts::Number N0>
+		void fetchIntoCurrent(const Geom::Shape::Rect_Orthogonal<N0>& internal) {
+			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(getData()->getWidth());
+			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(getData()->getHeight());
+
+			u1 = static_cast<float>(internal.getEndX()) / static_cast<float>(getData()->getWidth());
+			v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(getData()->getHeight());
+		}
+
+		template<Concepts::Number N0, Concepts::Number N1>
+		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const N1 width, const N1 height) {
+			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(width);
+			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(height);
+
+			u1 = static_cast<float>(internal.getEndX()) / static_cast<float>(width);
+			v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(height);
 		}
 
 		template<Concepts::Number N0, Concepts::Number N1>

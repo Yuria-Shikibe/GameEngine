@@ -44,18 +44,19 @@ export namespace Graphic {
 
 		float threshold = 0.35f;
 
-		float intensity_blo = 1.12f;
-		float intensity_ori = 1.5f;
+		float intensity_blo = 0.85f;
+		float intensity_ori = 1.185f;
 		float scale = 0.25f;
 
 		bool blending = true;
 
 		void begin() const override {
 			temp.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
+			Draw::blit(&temp);
 		}
 
 		void process() const override {
-			blur.apply(toProcess, &temp);
+			blur.apply(&temp, &temp);
 		}
 
 		void end(FrameBuffer* target) const override {

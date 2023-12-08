@@ -5,7 +5,7 @@ uniform lowp sampler2D texture1;
 uniform lowp float intensity_blo;
 uniform lowp float intensity_ori;
 
-varying vec2 texCoord;
+in vec2 texCoord;
 
 void main(){
 	vec4 original = texture2D(texture0, texCoord) * intensity_ori;

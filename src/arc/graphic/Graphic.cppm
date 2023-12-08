@@ -6,11 +6,12 @@ import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 import Geom.Shape.Rect_Orthogonal;
 import GL.GL_Exception;
+import RuntimeException;
 import <string>;
-import <iostream>;
+import <sstream>;
 
 inline void throw_GL_Exception(const int error_code, const char* description) {
-	std::cout << "ERROR CODE: " << error_code << std::endl << description << std::endl;
+	throw ext::IllegalArguments{"ERROR CODE: " + std::to_string(error_code) + "\n\n" + std::string(description) + "\n\n"};
 }
 
 export namespace Graphic{
@@ -22,8 +23,8 @@ export namespace Graphic{
 	inline void initOpenGL(){
 		glfwSetErrorCallback(throw_GL_Exception);
 		glfwInit();
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	}
 

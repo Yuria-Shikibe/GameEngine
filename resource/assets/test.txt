@@ -1,10 +1,4 @@
-123
-AASF A
-${igl}
-123123123
-123123123
-123${scl#[3,0]}123123
-123123123
-12312312${scl#[]}3123
-123123123
-123123123
+${font#tele}${color#[1778fcf0]}${igl}
+${scl#[3,0]}AB${color#[ff1111f0]}CD${color#[11ff11f0]}EFG${color#[ffffffff]}H${scl#[]}ABCDEFG
+ABCDEFGH
+ABCDEFGH

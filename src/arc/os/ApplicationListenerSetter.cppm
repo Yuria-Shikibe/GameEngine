@@ -86,7 +86,7 @@ inline void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 
 	Core::renderer->resize(width, height);
 
-	if(!Core::currentMonitor) {
+	if(!Core::currentMonitor && !Core::maximizedWin) {
 		auto& lastBound = Core::lastScreenBound;
 		glfwGetWindowPos(window, lastBound.getSrcXRaw(), lastBound.getSrcYRaw());
 		glfwGetWindowSize(window, lastBound.getWidthRaw(), lastBound.getHeightRaw());
@@ -149,6 +149,8 @@ inline void maximizeCallback(GLFWwindow* window, const int maximized) {
 		glfwSetWindowPos(window, lastBound.getSrcX(), lastBound.getSrcY());
 		glfwSetWindowSize(window, lastBound.getWidth(), lastBound.getHeight());
 	}
+
+	Core::maximizedWin = maximized;
 }
 
 export namespace OS{

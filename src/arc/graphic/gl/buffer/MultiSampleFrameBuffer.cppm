@@ -23,8 +23,10 @@ export namespace GL {
 			glGenFramebuffers(1, &bufferID);
 			FrameBuffer::bind();
 
-			glFramebufferTexture2D(targetFlag, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, sample->getID(), 0);
-			glFramebufferRenderbuffer(targetFlag, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderBuffer->getID());
+			glFramebufferTexture2D(targetFlag, GL_COLOR_ATTACHMENT0, sample->getTargetFlag(), sample->getID(), 0);
+			glFramebufferRenderbuffer(targetFlag, GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer->getTargetFlag(), renderBuffer->getID());
+
+			// sample->setScale(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
 
 			FrameBuffer::unbind();
 		}

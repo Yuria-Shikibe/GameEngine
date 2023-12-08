@@ -36,5 +36,9 @@ export namespace Concepts {
 	template <typename T>
 	concept Signed = !std::is_unsigned_v<T> && Number<T>;
 
-
+	template <typename T, typename Item>
+	concept Iterable = requires(T t){
+		std::is_same_v<decltype(std::begin(std::declval<T&>())), Item>;
+		std::is_same_v<decltype(std::end(std::declval<T&>())), Item>;
+	};
 }

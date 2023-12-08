@@ -29,6 +29,10 @@ export namespace GL{
 		[[maybe_unused]] [[nodiscard]] virtual GLuint getID() const{
 			return bufferID;
 		}
+
+		[[nodiscard]] GLenum getTargetFlag() const {
+			return targetFlag;
+		}
 	};
 }
 

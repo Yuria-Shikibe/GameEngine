@@ -1,15 +1,15 @@
 #version 330 core
-layout (location = 0) attribute vec4 pos;
-layout (location = 1) attribute vec2 texCoord;
-layout (location = 2) attribute vec4 mixColor;
-layout (location = 3) attribute vec4 scrColor;
+layout (location = 0) in vec4 pos;
+layout (location = 1) in vec2 texCoord;
+layout (location = 2) in vec4 mixColor;
+layout (location = 3) in vec4 scrColor;
 
 uniform mat3 view;
 //uniform mat3 projection;
 
-varying vec2 v_texCoord;
-varying vec4 v_mixColor;
-varying vec4 v_srcColor;
+out vec2 v_texCoord;
+out vec4 v_mixColor;
+out vec4 v_srcColor;
 
 void main()
 {

@@ -195,7 +195,8 @@ export namespace OS{
 					return File{item};
 				}
 			}
-			return {};
+
+			throw ext::RuntimeException{"Unable To Find File: " + subFile(name).absolutePath().string()};
 		}
 
 		/**

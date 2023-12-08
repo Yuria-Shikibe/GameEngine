@@ -23,6 +23,8 @@ export namespace ext{
 			getStackTraceBrief(ss);
 
 			data = ss.str();
+
+			RuntimeException::postToLog();
 		}
 
 		[[nodiscard]] char const* what() const override {

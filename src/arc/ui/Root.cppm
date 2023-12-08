@@ -6,6 +6,12 @@ export module UI.Root;
 
 export namespace UI{
 	class Root{
+		//Focus
+
+		//Input Listeners
+
+		//Renderers
+
 
 	};
 }

@@ -72,8 +72,8 @@ export namespace Graphic{
         }
 
         explicit Pixmap(const GL::Texture2D& texture2D)
-            : width(texture2D.width),
-              height(texture2D.height) {
+            : width(texture2D.getWidth()),
+              height(texture2D.getHeight()) {
             loadFrom(texture2D);
         }
 
@@ -123,7 +123,7 @@ export namespace Graphic{
         }
 
         [[nodiscard]] bool valid() const {
-            return data != nullptr;
+            return data != nullptr && dataSize() > 0;
         }
 
         void create(const unsigned int width, const unsigned int height){
@@ -147,9 +147,8 @@ export namespace Graphic{
 
         void loadFrom(const GL::Texture2D& texture2D) {
             data = texture2D.copyData();
-            width = texture2D.width;
-            height = texture2D.height;
-            bpp = texture2D.bpp;
+            width = texture2D.getWidth();
+            height = texture2D.getHeight();
         }
 
         void loadRaw(const unsigned char* data, const int length, const size_t offset = 0) {
@@ -189,7 +188,7 @@ export namespace Graphic{
             return GL::Texture2D{width, height, copyData()};
         }
 
-        [[nodiscard]] GL::Texture2D genTex_move(){
+        [[nodiscard]] GL::Texture2D genTex_move() && {
             GL::Texture2D tex{width, height, std::move(data)};
             width = height = 0;
             return tex;
@@ -203,7 +202,7 @@ export namespace Graphic{
         [[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
             const auto size = dataSize();
             const auto dataN = new unsigned char[size];
-            std::copy_n(data.get(), size, dataN);
+            std::memcpy(dataN, data.get(), size);
 
             return std::unique_ptr<unsigned char[]>(dataN);
         }
@@ -255,7 +254,6 @@ export namespace Graphic{
         }
 
         static colorBits blend(const colorBits src, const colorBits dst){
-
             const colorBits src_a = src & Color::a_Bits;
             if(src_a == 0) return dst;
 
@@ -275,6 +273,11 @@ export namespace Graphic{
                 dst_g << Color::g_Offset |
                 dst_b << Color::b_Offset |
                     a << Color::a_Offset;
+        }
+
+        void blend(const unsigned int x, const unsigned int y, const Color& color) const {
+            const colorBits raw = getRaw(x, y);
+            setRaw(x, y, blend(raw, color.rgba8888()));
         }
 
         [[nodiscard]] Pixmap crop(const unsigned int srcX, const unsigned int srcY, const unsigned int tWidth, const unsigned int tHeight) const {
@@ -434,7 +437,9 @@ export namespace Graphic{
                 const auto indexDst =  this->dataIndex(dstx, dsty + y);
                 const auto indexSrc = pixmap.dataIndex(0   ,        y);
 
-                std::copy_n(pixmap.data.get() + indexSrc, rowDataCount, data.get() + indexDst);
+                // std::copy_n(pixmap.data.get() + indexSrc, rowDataCount, data.get() + indexDst);
+                // std::memcpy(pixmap.data.get() + indexSrc, data.get() + indexDst, rowDataCount);
+                std::memcpy(data.get() + indexDst, pixmap.data.get() + indexSrc, rowDataCount);
             }
         }
     };

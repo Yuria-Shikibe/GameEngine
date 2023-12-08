@@ -2,7 +2,7 @@
 
 uniform lowp sampler2D u_texture;
 uniform lowp vec2 threshold;
-varying vec2 texCoord;
+in vec2 texCoord;
 
 void main(){
 	vec4 color = texture2D(u_texture, texCoord);

@@ -1,16 +1,16 @@
 #version 330
 
-layout (location = 0) attribute vec4 pos;
-layout (location = 1) attribute vec2 tex;
+layout (location = 0) in vec4 pos;
+layout (location = 1) in vec2 tex;
 
 uniform vec2 direction;
 uniform vec2 size;
 
-varying vec2 v_texCoords0;
-varying vec2 v_texCoords1;
-varying vec2 v_texCoords2;
-varying vec2 v_texCoords3;
-varying vec2 v_texCoords4;
+out vec2 v_texCoords0;
+out vec2 v_texCoords1;
+out vec2 v_texCoords2;
+out vec2 v_texCoords3;
+out vec2 v_texCoords4;
 
 const vec2 futher = vec2(3.2307692308, 3.2307692308);
 const vec2 closer = vec2(1.3846153846, 1.3846153846);

@@ -61,7 +61,7 @@ export namespace Font {
 	constexpr std::string_view bold = "Bold";
 	constexpr std::string_view italic = "Italic";
 
-	constexpr unsigned int TexturePackGap = 4;
+	constexpr unsigned int TexturePackGap = 2;
 
 	unsigned char getStyleID(const std::string& str) {
 		unsigned char id = 0x00;
@@ -348,7 +348,7 @@ export namespace Font {
 		[[nodiscard]] explicit FontsManager(Graphic::Pixmap& texture, const std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
 			fontTexture.reset(new GL::Texture2D(texture.getWidth(), texture.getHeight(), texture.release()));
 
-			const Shape::OrthoRectUInt bound{fontTexture->width, fontTexture->height};
+			const Shape::OrthoRectUInt bound{fontTexture->getWidth(), fontTexture->getHeight()};
 
 			fonts.reserve(fontsRaw.size());
 			for(const auto& value: fontsRaw) {
@@ -364,7 +364,7 @@ export namespace Font {
 
 				//Set font char texture region uv
 				for(auto& charData : value->data->charDatas | std::ranges::views::values) {
-					charData.region.setTexture(*fontTexture);
+					charData.region.setData(*fontTexture);
 
 					charData.region.fetchInto(charData.charBox, bound);
 					charData.region.flipY();

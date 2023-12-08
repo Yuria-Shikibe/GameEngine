@@ -17,10 +17,13 @@ export namespace GL{
 
 	protected:
 		GLuint textureID = 0;
+		GLenum targetFlag = GL_TEXTURE_2D;
+		unsigned int width = 0, height = 0;
+		unsigned int bpp{4};
 
 	public:
 		struct STBI_DataDeleter {
-			void operator()(unsigned char* t) const {
+			void operator()(unsigned char* t) const { // NOLINT(*-non-const-parameter)
 				if(t) {
 					stbi::free(t);
 				}
@@ -28,20 +31,27 @@ export namespace GL{
 		};
 
 		std::string texName{"null"};
-		GLenum targetFlag = GL_TEXTURE_2D;
-		unsigned int width = 0, height = 0;
-		unsigned int bpp{4};
 
 		std::unique_ptr<unsigned char, STBI_DataDeleter> localData = nullptr;
 
 		Texture2D() = default;
 
-		~Texture2D() override{
+		[[nodiscard]] GLenum getTargetFlag() const {
+			return targetFlag;
+		}
+
+		~Texture2D() override{ // NOLINT(*-use-equals-default)
 			glDeleteTextures(1, &textureID);
 		}
 
-		Texture2D(const unsigned int w, const unsigned int h, unsigned char* data): width(w), height(h){
-			init(data);
+		/**
+		 * \brief WARNING! the data will be release after load, copy the data if needed!
+		 * \param w
+		 * \param h
+		 * \param data
+		 */
+		Texture2D(const unsigned int w, const unsigned int h, unsigned char*&& data): width(w), height(h){
+			init(std::forward<unsigned char*>(data));
 		}
 
 		Texture2D(const unsigned int w, const unsigned int h, std::unique_ptr<unsigned char[]>&& data) :
@@ -75,20 +85,20 @@ export namespace GL{
 		}
 
 		Texture2D(const Texture2D& other) noexcept: textureID(other.textureID),
-											   texName(other.texName),
 											   targetFlag(other.targetFlag),
-		                                       width(other.width),
-											   height(other.height),
+											   width(other.width),
+		                                       height(other.height),
 											   bpp(other.bpp),
+											   texName(other.texName),
 											   localData(other.copyData().release()){
 		}
 
 		Texture2D(Texture2D&& other) noexcept: textureID(other.textureID),
-		                                       texName(std::move(other.texName)),
 		                                       targetFlag(other.targetFlag),
-											   width(other.width),
-		                                       height(other.height),
+		                                       width(other.width),
+											   height(other.height),
 		                                       bpp(other.bpp),
+		                                       texName(std::move(other.texName)),
 		                                       localData(std::move(other.localData)){
 		}
 
@@ -123,13 +133,25 @@ export namespace GL{
 			return localData != nullptr;
 		}
 
-		void loadFromFile(const OS::File& file){
-			//TODO File Support
-			unsigned char* data = stbi::loadPng(file, width, height, bpp);
-			init(data);
+		[[nodiscard]] unsigned getWidth() const {
+			return width;
 		}
 
-		void init(unsigned char* data) {
+		[[nodiscard]] unsigned getHeight() const {
+			return height;
+		}
+
+		void loadFromFile(const OS::File& file){
+			//TODO File Support
+			init(stbi::loadPng(file, width, height, bpp));
+		}
+
+
+		/**
+		 * \brief The data will be released after init, uses rv-ref to pass the pointer
+		 * \param data
+		 */
+		void init(unsigned char*&& data) {
 			localData.reset(data);
 
 			if(bpp != 4) {
@@ -142,13 +164,14 @@ export namespace GL{
 
 			//TODO : Check if needed here.
 			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
+
 			glGenerateMipmap(targetFlag);
 
 			setParametersDef();
 			free();
 		}
 
-		void updateData() {
+		void updateData() { // NOLINT(*-make-member-function-const)
 			bind();
 
 			//Avoid unnecessary resize allocate

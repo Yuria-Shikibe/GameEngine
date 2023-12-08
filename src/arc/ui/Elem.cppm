@@ -6,6 +6,7 @@ module;
 
 export module UI.Elem;
 
+export import UI.Flags;
 import Event;
 import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
@@ -29,7 +30,6 @@ export namespace UI {
 		std::vector<Elem*> children{};
 		std::unordered_set<Elem*> focusTarget{};
 		Event::EventManager eventListener{};
-		// Event::SingalManager eventListener{};
 
 		std::vector<Elem*> toRemove{};
 
@@ -93,7 +93,7 @@ export namespace UI {
 			bound.setSize(s, s);
 		}
 
-		const Rect& getBound() const {
+		[[nodiscard]] const Rect& getBound() const {
 			return bound;
 		}
 

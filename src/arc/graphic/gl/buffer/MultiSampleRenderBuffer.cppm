@@ -20,7 +20,7 @@ export namespace GL{
 
 			glGenRenderbuffers(1, &bufferID);
 			RenderBuffer::bind();
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples_, GL_DEPTH24_STENCIL8, w, h);
+			glRenderbufferStorageMultisample(targetFlag, samples_, GL_DEPTH24_STENCIL8, w, h);
 			RenderBuffer::unbind();
 		}
 
@@ -28,7 +28,7 @@ export namespace GL{
 			width = w;
 			height = h;
 			bind();
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, w, h);
+			glRenderbufferStorageMultisample(targetFlag, samples, GL_DEPTH24_STENCIL8, w, h);
 			unbind();
 		}
 	};

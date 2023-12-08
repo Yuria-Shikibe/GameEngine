@@ -25,6 +25,7 @@ import GL.Buffer.FrameBuffer;
 import GL.VertexArray;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
+import GL.Texture.TextureRegionRect;
 import RuntimeException;
 import <functional>;
 import <glad/glad.h>;
@@ -45,8 +46,6 @@ namespace Graphic::Draw {
 	Vector2D vec2_5{};
 	Vector2D vec2_6{};
 
-	Matrix3D MAT_IDT{};
-
 	const Color* colors[2];
 }
 
@@ -60,6 +59,8 @@ export namespace Graphic::Draw{
 	inline const TextureRegion* defaultTexture = nullptr;
 
 	inline float contextStroke = 1.0f;
+
+	inline const Matrix3D MAT_IDT{};
 
 	inline const Mesh* rawMesh{nullptr};
 	inline const Shader* blitter{nullptr};
@@ -77,7 +78,7 @@ export namespace Graphic::Draw{
 		}
 
 		rawMesh->bind();
-		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
+		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH);
 	}
 
 	inline void blit(const GL::FrameBuffer* const draw, const Shader* shader = blitter) {
@@ -90,7 +91,7 @@ export namespace Graphic::Draw{
 		}
 
 		rawMesh->bind();
-		rawMesh->render(GL::IndexBuffer::ELEMENTS_QUAD_LENGTH);
+		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH);
 	}
 
 	inline void blitCopy(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw, const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR) {
@@ -368,9 +369,9 @@ export namespace Graphic::Draw{
 		vert(
 				texture,
 				x1, y1, 0.0f, 0.0f, c1, cm1,
-				x2, y2, 0.0f, 1.0f, c2, cm2,
+				x2, y2, 1.0f, 0.0f, c2, cm2,
 				x3, y3, 1.0f, 1.0f, c3, cm3,
-				x4, y4, 1.0f, 0.0f, c4, cm4
+				x4, y4, 0.0f, 1.0f, c4, cm4
 		);
 	}
 
@@ -384,9 +385,9 @@ export namespace Graphic::Draw{
 		vert_monochromeMix(
 				texture, contextMixColor,
 				x1, y1, 0.0f, 0.0f, c1,
-				x2, y2, 0.0f, 1.0f, c2,
+				x2, y2, 1.0f, 0.0f, c2,
 				x3, y3, 1.0f, 1.0f, c3,
-				x4, y4, 1.0f, 0.0f, c4
+				x4, y4, 0.0f, 1.0f, c4
 		);
 	}
 
@@ -400,14 +401,10 @@ export namespace Graphic::Draw{
 		vert_monochromeAll(
 				texture, contextColor, contextMixColor,
 				x1, y1, 0.0f, 0.0f,
-				x2, y2, 0.0f, 1.0f,
+				x2, y2, 1.0f, 0.0f,
 				x3, y3, 1.0f, 1.0f,
-				x4, y4, 1.0f, 0.0f
+				x4, y4, 0.0f, 1.0f
 		);
-	}
-
-	inline void post(const Texture2D& texture) {
-		vert(texture, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f);
 	}
 
 	inline void vert(
@@ -433,11 +430,11 @@ export namespace Graphic::Draw{
 	                 const float x4, const float y4, const Color& c4
 	) {
 		vert_monochromeMix(
-				*region.data, contextMixColor,
+				*region.getData(), contextMixColor,
 				x1, y1, region.u00(), region.v00(), c1,
-				x2, y2, region.u01(), region.v01(), c2,
+				x2, y2, region.u10(), region.v10(), c2,
 				x3, y3, region.u11(), region.v11(), c3,
-				x4, y4, region.u10(), region.v10(), c4
+				x4, y4, region.u01(), region.v01(), c4
 		);
 	}
 
@@ -448,11 +445,11 @@ export namespace Graphic::Draw{
                  const float x4, const float y4
 	) {
 		vert_monochromeAll(
-				*region.data, contextColor, contextMixColor,
+				*region.getData(), contextColor, contextMixColor,
 				x1, y1, region.u00(), region.v00(),
-				x2, y2, region.u01(), region.v01(),
+				x2, y2, region.u10(), region.v10(),
 				x3, y3, region.u11(), region.v11(),
-				x4, y4, region.u10(), region.v10()
+				x4, y4, region.u01(), region.v01()
 		);
 	}
 
@@ -461,31 +458,53 @@ export namespace Graphic::Draw{
 				 const float w, const float h
 	) {
 		vert_monochromeAll(
-				*region.data, contextColor, contextMixColor,
-				x, y, region.u00(), region.v00(),
-				x, y + h, region.u01(), region.v01(),
+				*region.getData(), contextColor, contextMixColor,
+				x    , y    , region.u00(), region.v00(),
+				x + w, y    , region.u10(), region.v10(),
 				x + w, y + h, region.u11(), region.v11(),
-				x + w, y, region.u10(), region.v10()
+				x    , y + h, region.u01(), region.v01()
 		);
+	}
+
+	inline void rect(const TextureRegionRect& region,
+				 const float x, const float y,
+				 const float ang
+	) {
+		const float sin = Math::sinDeg(ang);
+		const float cos = Math::cosDeg(ang);
+		const float w1 = cos * region.getWidth() * 0.5f;
+		const float h1 = sin * region.getWidth() * 0.5f;
+
+		const float w2 = -sin * region.getHeight() * 0.5f;
+		const float h2 = cos * region.getHeight() * 0.5f;
+		vert_monochromeAll(
+				*region.getData(), contextColor, contextMixColor,
+				x - w1 - w2, y - h1 - h2, region.u00(), region.v00(),
+				x + w1 - w2, y + h1 - h2, region.u10(), region.v10(),
+				x + w1 + w2, y + h1 + h2, region.u11(), region.v11(),
+				x - w1 + w2, y - h1 + h2, region.u01(), region.v01()
+		);
+
+
 	}
 
 	inline void quad(const TextureRegion& region, const Geom::Shape::OrthoRectFloat& rect, const float x = 0, const float y = 0){
 		vert_monochromeAll(
-				*region.data, contextColor, contextMixColor,
+				*region.getData(), contextColor, contextMixColor,
 				rect.getSrcX() + x, rect.getSrcY() + y, region.u00(), region.v00(),
-				rect.getSrcX() + x, rect.getEndY() + y, region.u01(), region.v01(),
+				rect.getSrcX() + x, rect.getEndY() + y, region.u10(), region.v10(),
 				rect.getEndX() + x, rect.getEndY() + y, region.u11(), region.v11(),
-				rect.getEndX() + x, rect.getSrcY() + y, region.u10(), region.v10()
+				rect.getEndX() + x, rect.getSrcY() + y, region.u01(), region.v01()
 		);
 	}
 
 	inline void quad(const TextureRegion& region, const Geom::Shape::OrthoRectFloat& rect){
 		vert_monochromeAll(
-				*region.data, contextColor, contextMixColor,
+				*region.getData(), contextColor, contextMixColor,
 				rect.getSrcX(), rect.getSrcY(), region.u00(), region.v00(),
-				rect.getSrcX(), rect.getEndY(), region.u01(), region.v01(),
+				rect.getSrcX(), rect.getEndY(), region.u10(), region.v10(),
 				rect.getEndX(), rect.getEndY(), region.u11(), region.v11(),
-				rect.getEndX(), rect.getSrcY(), region.u10(), region.v10()
+				rect.getEndX(), rect.getSrcY(), region.u01(), region.v01()
 		);
 	}
 
@@ -498,11 +517,11 @@ export namespace Graphic::Draw{
 			const float x4, const float y4
 	) {
 		vert_monochromeAll(
-				*defaultTexture->data, contextColor, contextMixColor,
+				*defaultTexture->getData(), contextColor, contextMixColor,
 				x1, y1, defaultTexture->u00(), defaultTexture->v00(),
-				x2, y2, defaultTexture->u01(), defaultTexture->v01(),
+				x2, y2, defaultTexture->u10(), defaultTexture->v10(),
 				x3, y3, defaultTexture->u11(), defaultTexture->v11(),
-				x4, y4, defaultTexture->u10(), defaultTexture->v10()
+				x4, y4, defaultTexture->u01(), defaultTexture->v01()
 		);
 	}
 

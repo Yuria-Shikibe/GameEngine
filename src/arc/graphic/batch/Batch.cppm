@@ -13,6 +13,7 @@ import GL.Constants;
 import GL.Mesh;
 import GL.Shader;
 import GL.Texture.Texture2D;
+import RuntimeException;
 
 import Geom.Matrix3D;
 
@@ -35,7 +36,14 @@ export namespace Core{
 
 		const Blending* blending = &Blendings::NORMAL;
 
+		/**
+		 * \brief From Viewport Size to normalized [-1, 1]
+		 */
 		const Geom::Matrix3D* projection = nullptr;
+
+		// const Geom::Matrix3D*
+
+		const Geom::Matrix3D* projectionFallback = nullptr;
 
 		GLsizei index = 0;
 
@@ -114,6 +122,28 @@ export namespace Core{
 
 		void setProjection(const Geom::Matrix3D& porj){
 			projection = &porj;
+		}
+
+		void beginProjection(const Geom::Matrix3D& porj) {
+			if(&porj == projection || porj == *projection)return;
+
+			if(projectionFallback != nullptr) {
+				throw ext::IllegalArguments{"Cannot begin porjection before end the former one!"};
+			}
+
+			flush();
+
+			projectionFallback = projection;
+			projection = &porj;
+		}
+
+		void endProjection() {
+			if(projectionFallback == nullptr)return;
+
+			flush();
+
+			projection = projectionFallback;
+			projectionFallback = nullptr;
 		}
 
 		[[nodiscard]] const Geom::Matrix3D* getProjection() const{
