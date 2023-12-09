@@ -116,6 +116,7 @@ export namespace Assets{
 			delete gaussian;
 			delete bloom;
 			delete blit;
+			delete threshold_light;
 		}
 	}
 

@@ -73,6 +73,7 @@ export namespace Graphic::Draw{
 		draw->bind(GL::FrameBuffer::DRAW);
 
 		if(shader) {
+
 			shader->bind();
 			shader->applyDynamic(f);
 		}
@@ -101,7 +102,7 @@ export namespace Graphic::Draw{
 	}
 
 
-	inline void color(const Color& color){
+	inline void color(const Color& color = Colors::WHITE){
 		contextColor = color;
 	}
 

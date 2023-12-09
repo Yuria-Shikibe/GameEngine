@@ -11,6 +11,6 @@ import <functional>;
 export namespace ext{
 	template <typename T>
 	std::function<void(const T&)> bindVoid(const T& object, std::function<void()>&& func){
-		return std::bind(func, object);
+		return std::bind(std::forward<std::function<void()>>(func), object);
 	}
 }

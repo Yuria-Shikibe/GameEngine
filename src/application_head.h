@@ -7,7 +7,7 @@
 #include <Windows.h>
 
 extern "C" {
-// inline _declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+   inline _declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 }
 
 #endif //APPLICATION_HEAD_H

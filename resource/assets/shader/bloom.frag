@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 uniform lowp sampler2D texture0;
 uniform lowp sampler2D texture1;

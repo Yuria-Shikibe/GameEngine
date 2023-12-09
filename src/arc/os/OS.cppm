@@ -15,8 +15,12 @@ import File;
 import StackTrace;
 import Concepts;
 import OS.ApplicationListener;
+import <future>;
+import <utility>;
 
 namespace OS{
+	bool loopBegin = false;
+
 	inline float _deltaTime = 0.0f;    //InTick
 	inline float _deltaTick = 0.0f;    //InTick
 
@@ -28,6 +32,11 @@ namespace OS{
 
 	inline float _updateTime = 0.0f;     //Sec   | No Pause
 	inline float _updateTick = 0.0f;     //Tick  | NO Pause
+
+	std::vector<ApplicationListener*> applicationListeners;
+	std::vector<std::function<void()>> postTasks;
+	std::vector<std::pair<std::function<void()>, std::promise<void>>> postAsyncTasks;
+
 }
 
 inline void exit_(int s, const std::string& what);
@@ -41,24 +50,30 @@ inline bool paused = false;
 export namespace OS{
 	std::vector<std::string> args{};
 
+	enum class LoopSignal {
+		begin, end,
+		maxCount
+	};
 
-	// extern inline int width, height;
-	Event::ApplicationMainLoop_Pre preEvent;
-	Event::ApplicationMainLoop_After afterEvent;
+	Event::SignalManager<LoopSignal, LoopSignal::maxCount> updateSignalManager{};
+
 
 	//Should Be Done In Application Launcher
 	std::function<void(float&)> deltaSetter = nullptr;
 	std::function<void(float&)> globalTimeSetter = nullptr;
-
 	std::function<File()> crashFileGetter = nullptr;
 
+
+/**\brief READ ONLY*/
 	int refreshRate = 60;
+/**\brief READ ONLY*/
 	int screenWidth = 60;
+/**\brief READ ONLY*/
 	int screenHeight = 60;
 
 	constexpr float TicksPerSecond = 60.0f;
 
-	void reset() {
+	void resetTimer() {
 		_globalTime = _globalTick = _updateTime = _updateTick = 0;
 	}
 
@@ -96,13 +111,22 @@ export namespace OS{
 		return _updateTick;
 	}
 
-	inline std::vector<ApplicationListener*> applicationListeners;
-
-	inline std::vector<std::function<void()>> postTasks;
-
 	template <Concepts::Invokable<void()> Func>
 	void post(const Func& func) {
 		postTasks.push_back(&func);
+	}
+
+	template <Concepts::Invokable<void()> Func>
+	std::future<void> postAsync(Func&& func) {
+		std::promise<void> promise;
+		std::future<void>&& fu = promise.get_future();
+		postAsyncTasks.emplace_back(std::forward<Func>(func), std::move(promise));
+		return fu;
+	}
+
+	template <Concepts::Invokable<void()> Func>
+	void postAsync(Func&& func, std::promise<void>&& promise) {
+		postAsyncTasks.emplace_back(std::forward<Func>(func), std::move(promise));
 	}
 
 	inline void registerListener(ApplicationListener* listener){
@@ -141,6 +165,18 @@ export namespace OS{
 		return !glfwWindowShouldClose(window);
 	}
 
+	void setupLoop() {
+		loopBegin = true;
+	}
+
+	bool getLoop() {
+		return loopBegin;
+	}
+
+	void terminateLoop() {
+		loopBegin = false;
+	}
+
 	inline void poll(GLFWwindow* window){
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -165,15 +201,24 @@ export namespace OS{
 
 		postTasks.clear();
 
-		Event::generalUpdateEvents.fire(preEvent);
+		for(auto& [task, promise] : postAsyncTasks){
+#ifdef DEBUG_LOCAL
+			try {task();}catch(...) {promise.set_exception(std::current_exception());}
+#else
+			task();
+#endif
+			promise.set_value();
+		}
+
+		postAsyncTasks.clear();
+
+		updateSignalManager.fire(LoopSignal::begin);
 
 		for(const auto & listener : applicationListeners){
 			listener->update(_deltaTick);
 		}
 
-//		getRenderer().draw();
-
-		Event::generalUpdateEvents.fire(afterEvent);
+		updateSignalManager.fire(LoopSignal::end);
 	}
 }
 

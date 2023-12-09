@@ -19,7 +19,8 @@ using namespace GL;
 export namespace Graphic {
 	class BloomProcessor : public PostProcessor {
 	protected:
-		mutable FrameBuffer temp{2, 2};
+		mutable FrameBuffer temp1{2, 2};
+		mutable FrameBuffer temp2{2, 2};
 
 		ShaderProcessor thresHolder{};
 		P4Processor blur{};
@@ -28,7 +29,7 @@ export namespace Graphic {
 
 	public:
 		[[nodiscard]] BloomProcessor(PostProcessor* const blurProcessor1, PostProcessor* const blurProcessor2, const GL::Shader* const bloomShader, const GL::Shader* const thresHoldShader)
-			: thresHolder(thresHolder), blur(blurProcessor1, blurProcessor2, 2), bloomRenderer(bloomShader)
+			: thresHolder(thresHoldShader), blur(blurProcessor1, blurProcessor2, 2), bloomRenderer(bloomShader)
 		{
 			setTargetState(GL_DEPTH_TEST, false);
 			setTargetState(GL_BLEND, false);
@@ -38,30 +39,34 @@ export namespace Graphic {
 			blur.setScale(scale);
 
 			thresHolder.shaderHandler = [threshold = this->threshold](const Shader& shader) {
-				shader.setVec2("threshold", threshold, 1.0f / (1.0f - threshold));
+				shader.setFloat("threshold", threshold);
 			};
 		}
 
 		float threshold = 0.35f;
 
-		float intensity_blo = 0.85f;
-		float intensity_ori = 1.185f;
+		float intensity_blo = 0.9f;
+		float intensity_ori = 1.225f;
 		float scale = 0.25f;
 
 		bool blending = true;
 
 		void begin() const override {
-			temp.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
-			Draw::blit(&temp);
+			temp1.clear();
+			temp2.clear();
+
+			temp1.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
+			temp2.resize(toProcess->getWidth(), toProcess->getHeight());
+			thresHolder.apply(toProcess, &temp2);
 		}
 
 		void process() const override {
-			blur.apply(&temp, &temp);
+			blur.apply(&temp2, &temp1);
 		}
 
 		void end(FrameBuffer* target) const override {
 			toProcess->getTexture().active(0);
-			temp.getTexture().active(1);
+			temp1.getTexture().active(1);
 
 			GL::enable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

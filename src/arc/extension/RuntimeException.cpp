@@ -7,6 +7,6 @@ import RuntimeException;
 
 void ext::RuntimeException::postToLog() const {
 	if(Core::log) {
-		Core::log->generateCrash(what());
+		Core::log->generateCrash(what(), "RUNTIME");
 	}
 }

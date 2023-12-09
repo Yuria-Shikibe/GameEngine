@@ -6,6 +6,7 @@ import <functional>;
 import <typeindex>;
 import <unordered_map>;
 import <set>;
+import <array>;
 import RuntimeException;
 import Concepts;
 
@@ -15,10 +16,6 @@ export namespace Event {
 	struct Draw_After                   final : EventType {};
 	struct Draw_Post                    final : EventType {};
 	struct Draw_Prepare                 final : EventType {};
-	struct AssertLoad_Prepare           final : EventType {};
-	struct AssertLoad_Completed         final : EventType {};
-	struct ApplicationMainLoop_Pre      final : EventType {};
-	struct ApplicationMainLoop_After    final : EventType {};
 
 	template<Concepts::Derived<EventType> T>
 	constexpr std::type_index indexOf() {
@@ -66,13 +63,17 @@ export namespace Event {
 			: registered(std::move(registered)) {
 		}
 
+		[[nodiscard]] explicit EventManager(std::initializer_list<std::type_index> registeredList)
+			: registered(registeredList) {
+		}
+
 		[[nodiscard]] EventManager() = default;
 	};
 
 
 	template <Concepts::Enum T, T maxsize>
 	class SignalManager {
-		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events;
+		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events{};
 
 	public:
 		void fire(const T event) {
@@ -91,12 +92,10 @@ export namespace Event {
 	inline EventManager generalCheckEvents{{
 
 	}};
-	inline EventManager generalUpdateEvents{{
+	inline EventManager generalUpdateEvents{
 		indexOf<Draw_After>(),
 		indexOf<Draw_Post>(),
-		indexOf<Draw_Prepare>(),
-		indexOf<ApplicationMainLoop_Pre>(),
-		indexOf<ApplicationMainLoop_After>()
-	}};
+		indexOf<Draw_Prepare>()
+	};
 }
 

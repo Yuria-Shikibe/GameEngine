@@ -37,8 +37,8 @@ export namespace Core{
 			return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		}
 
-		[[nodiscard]] OS::File generateCrashFile(const std::string& suffix = std::to_string(getCurrentSystemTime()) + ".txt") const{
-			const OS::File crash = crahsDir.subFile(static_cast<std::string>(CRASH) + suffix);
+		[[nodiscard]] OS::File generateCrashFile(const std::string& stem = "", const std::string& suffix = std::to_string(getCurrentSystemTime())) const{
+			const OS::File crash = crahsDir.subFile(static_cast<std::string>(CRASH) +  stem + "-" + suffix + ".txt");
 
 			if(auto&& subs = crahsDir.subs(); subs.size() > maxCrashCache) {
 				const auto& file = subs.back();
@@ -52,8 +52,8 @@ export namespace Core{
 			return crash;
 		}
 
-		void generateCrash(const std::string& what) const{
-			const OS::File crash = generateCrashFile();
+		void generateCrash(const std::string& what, const std::string& type = "") const{
+			const OS::File crash = generateCrashFile(type);
 			crash.writeString(what);
 		}
 	};

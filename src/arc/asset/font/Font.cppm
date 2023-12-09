@@ -107,10 +107,10 @@ export namespace Font {
 
 	enum class FontLoadState {
 		begin, end,
-		max
+		maxCount
 	};
 
-	Event::SignalManager<FontLoadState, FontLoadState::max> fontLoadListeners{};
+	Event::SignalManager<FontLoadState, FontLoadState::maxCount> fontLoadListeners{};
 
 	struct FontData {
 		struct CharData {

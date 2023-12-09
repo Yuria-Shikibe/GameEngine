@@ -12,6 +12,11 @@ namespace GL {
     std::unordered_set<GLenum> currentState;
 
     int maxTexSize = 4096;
+
+    int viewport_x{0};
+    int viewport_y{0};
+    int viewport_w{0};
+    int viewport_h{0};
 }
 
 export namespace GL {
@@ -51,7 +56,12 @@ export namespace GL {
     }
 
     void viewport(const GLsizei x, const GLsizei y, const GLsizei width, const GLsizei height) {
+        if(x == viewport_x && y == viewport_y && viewport_w == width && viewport_h == height)return;
         glViewport(x, y, width, height);
+        viewport_x = x;
+        viewport_y = y;
+        viewport_w = width;
+        viewport_h = height;
     }
 
     void viewport(const GLsizei width, const GLsizei height) {

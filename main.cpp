@@ -144,111 +144,123 @@ int main(int argc, char* argv[]){
 	Graphic::TexturePackPage page{Assets::texCacheDir, "test"};
 
 	Assets::textureDir.subFile("test").forAllSubs([&page](OS::File&& file) {
-		page.push(file);
+		page.pushRequest(file);
 	});
+	//page.load();
 
-	page.load();
+		const GL::Texture2D bottomLeftTex{ Assets::textureDir.subFile("ui").find("bottom-left.png") };
+		const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
 
-	const GL::Texture2D bottomLeftTex{ Assets::textureDir.subFile("ui").find("bottom-left.png") };
+		GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
+		GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 
-	const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
+		GL::TextureNineRegion uiTest{&bottomLeftTex, {0, 0, 256, 256}, {64, 64, 32, 64}};
 
-	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
-	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
+		Core::renderer->registerSynchronizedObject(&multiSample);
+		Core::renderer->registerSynchronizedObject(&frameBuffer);
 
-	GL::TextureNineRegion uiTest{&bottomLeftTex, {0, 0, 256, 256}, {64, 64, 32, 64}};
+		auto&& file = Assets::assetsDir.subFile("test.txt");
+		const auto coordCenter = std::make_shared<Font::GlyphLayout>();
+		const auto layout = std::make_shared<Font::GlyphLayout>();
+		layout->maxWidth = 720;
+		Font::glyphParser->parse(layout.get(), file.readString());
+		layout->setAlign(Font::TypeSettingAlign::bottom_left);
+		layout->move(80, 30);
 
+		Graphic::ShaderProcessor blurX{Assets::Shaders::gaussian, [](const Shader& shader) {
+			shader.setVec2("direction", {1.32f, 0});
+		}};
 
-	Core::renderer->registerSynchronizedObject(&multiSample);
-	Core::renderer->registerSynchronizedObject(&frameBuffer);
+		Graphic::ShaderProcessor blurY{Assets::Shaders::gaussian, [](const Shader& shader) {
+			shader.setVec2("direction", {0, 1.32f});
+		}};
 
+		Graphic::BloomProcessor bloom{&blurX, &blurY, Assets::Shaders::bloom, Assets::Shaders::threshold_light};
 
-	auto&& file = Assets::assetsDir.subFile("test.txt");
-	const auto coordCenter = std::make_shared<Font::GlyphLayout>();
-	const auto layout = std::make_shared<Font::GlyphLayout>();
-	layout->maxWidth = 720;
-	Font::glyphParser->parse(layout.get(), file.readString());
-	layout->setAlign(Font::TypeSettingAlign::bottom_left);
-	layout->move(80, 30);
+		Graphic::ShaderProcessor blend{Draw::blitter};
+		// Graphic::P4Processor processor{&blurX, &blurY};
+		Graphic::PipeProcessor multiBlend{};
+		multiBlend << Assets::PostProcessors::multiToBasic << &blend;
 
-	Graphic::ShaderProcessor blurX{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", {1.32f, 0});
-	}};
+		Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
+			Draw::meshBegin(Assets::Meshes::coords);
+			Draw::meshEnd(true);
 
-	Graphic::ShaderProcessor blurY{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", {0, 1.32f});
-	}};
+			if(bloomTest)Core::renderer->frameBegin(frameBuffer);
+			Core::renderer->frameBegin(multiSample);
 
-	Graphic::BloomProcessor bloom{&blurX, &blurY, Assets::Shaders::bloom, Assets::Shaders::threshold_light};
+			const Geom::Vector2D c = Core::camera->screenCenter();
+			Draw::meshBegin(Core::batch->getMesh());
 
-	Graphic::ShaderProcessor blend{Draw::blitter};
-	// Graphic::P4Processor processor{&blurX, &blurY};
-	Graphic::PipeProcessor multiBlend{};
-	multiBlend << Assets::PostProcessors::multiToBasic << &blend;
+			Draw::stroke(3);
+			Draw::color(Colors::WHITE);
 
-	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
-		Draw::meshBegin(Assets::Meshes::coords);
-		Draw::meshEnd(true);
+			Draw::lineAngleCenter(c.getX(), c.getY(), 135.0f, 50.0f);
 
-	    if(bloomTest)Core::renderer->frameBegin(frameBuffer);
-	    Core::renderer->frameBegin(multiSample);
+			Draw::lineAngleCenter(c.getX(), c.getY(), 45, 50);
 
-		const Geom::Vector2D c = Core::camera->screenCenter();
-		Draw::meshBegin(Core::batch->getMesh());
+			Draw::color();
 
-		Draw::stroke(3);
-		Draw::color(Colors::WHITE);
-
-		Draw::lineAngleCenter(c.getX(), c.getY(), 135.0f, 50.0f);
-
-		Draw::lineAngleCenter(c.getX(), c.getY(), 45, 50);
-
-		//const auto& t = page.find("pester-full")->textureRegion;
-		//Draw::rect(t, 200, 500, -45);
-
-		layout->render();
-
-		std::stringstream ss{};
-
-		Geom::Matrix3D mat{};
-		mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
-
-		Core::batch->beginProjection(mat);
-
-		uiTest.render_RelativeExter(100, 100, 500, 800);
-
-		Core::batch->endProjection();
+			if(page.done) {
+				const auto& tex = page.findPackData("pester-full")->textureRegion;
+				Draw::rect(tex, 200, 500, -45);
+			}else {
+				Draw::stroke(5);
+				Draw::color(Colors::GRAY);
+				Draw::lineAngleCenter(100, 100, 0, 800);
+				Draw::color(Colors::SKY);
+				Draw::lineAngleCenter(100, 100, 0, 800 * page.getProgress());
+			}
 
 
-		ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << c.getX() << ", " << c.getY() << ")";
+			layout->render();
 
-		Font::glyphParser->parse(coordCenter.get(), ss.str());
+			std::stringstream ss{};
 
-		coordCenter->offset.set(c).add(155, 35);
-		coordCenter->setAlign(Font::TypeSettingAlign::bottom_left);
-		coordCenter->render();
+			Geom::Matrix3D mat{};
+			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
 
-		Draw::stroke(3);
-		Draw::color(Colors::BLUE, Colors::SKY, 0.745f);
+			Core::batch->beginProjection(mat);
 
-		Draw::rect_line(layout->bound, true, layout->offset);
+			uiTest.render_RelativeExter(100, 100, 500, 800);
 
-		Draw::stroke(5);
-		Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
-		    { Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
-		);
+			Core::batch->endProjection();
 
-		Draw::flush();
-		Draw::meshEnd(Core::batch->getMesh());
-	    Core::renderer->frameEnd(&multiBlend);
-	    if(bloomTest)Core::renderer->frameEnd(&bloom);
-	});
+
+			ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << c.getX() << ", " << c.getY() << ")";
+
+			Font::glyphParser->parse(coordCenter.get(), ss.str());
+
+			coordCenter->offset.set(c).add(155, 35);
+			coordCenter->setAlign(Font::TypeSettingAlign::bottom_left);
+			coordCenter->render();
+
+			Draw::stroke(3);
+			Draw::color(Colors::BLUE, Colors::SKY, 0.745f);
+
+			Draw::rect_line(layout->bound, true, layout->offset);
+
+			Draw::stroke(5);
+			Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
+				{ Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
+			);
+
+			Draw::flush();
+			Draw::meshEnd(Core::batch->getMesh());
+			Core::renderer->frameEnd(&multiBlend);
+			if(bloomTest)Core::renderer->frameEnd(&bloom);
+		});
+
+	OS::setupLoop();
+
+	auto fu = page.launch();
 
 	while (OS::continueLoop(Core::window)){
 		/*Main Loop*/
 
 		OS::update();
 
+		//TODO move this to other place!
 		Core::camera->setOrtho(static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
 
 		Core::renderer->draw();
@@ -257,6 +269,8 @@ int main(int argc, char* argv[]){
 
 		OS::poll(Core::window);
 	}
+
+	OS::terminateLoop();
 
 	Assets::dispose();
 

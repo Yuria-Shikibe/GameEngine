@@ -14,41 +14,37 @@ import <functional>;
 import <numeric>;
 import <unordered_set>;
 
-
-
 export namespace Math {
-    template <typename Cont, typename T>
-		requires Concepts::Number<T> && std::is_integral_v<T>
+    template <typename Cont, Concepts::Number T>
 	struct Packer {
+    protected:
 		using Rect = Geom::Shape::Rect_Orthogonal<T>;
     	using obtainer = std::function<Rect&(Cont&)>;
     	using subRectArr = std::array<Rect, 3>;
 
     	obtainer trans{nullptr};
 
+    	Rect& obtain(Cont& cont) {return trans(cont);}
+
+    	[[nodiscard]] bool contains(Cont* const cont) const {return all.contains(cont);}
+
     	std::vector<Cont*> boxes_widthAscend{};
     	std::vector<Cont*> boxes_heightAscend{};
-
     	std::unordered_set<Cont*> all{};
 
+    public:
     	std::vector<Cont*> packed{};
 
-    	T currentWidth{0}, currentHeight{0};
-    	T maxWidth {2750};
-    	T maxHeight{2750};
+    	T rstWidth{0}, rstHeight{0};
+    	T maxWidth{2750}, maxHeight{2750};
 
     	void setMaxSize(const T maxWidth, const T maxHeight) {
     		this->maxHeight = maxHeight;
     		this->maxWidth = maxWidth;
     	}
 
-    	Rect& obtain(Cont& cont) {
-    		return trans(cont);
-    	}
-
-		[[nodiscard]] explicit Packer(::Math::Packer<Cont, T>::obtainer trans)
-			: trans(std::move(trans)) {
-		}
+		[[nodiscard]] explicit Packer(obtainer trans)
+    		: trans(std::move(trans)) {}
 
     	template <Concepts::Iterable<Cont*> Range>
     		requires requires (Range range){std::is_same_v<size_t, decltype(range.size())>;}
@@ -62,11 +58,11 @@ export namespace Math {
     			boxes_heightAscend.push_back(element);
     		}
 
-    		packed.clear();
+    		packed.reserve(all.size());
     	}
 
-		void begin() {
-    		std::ranges::sort(boxes_widthAscend, [this](Cont* r1, Cont* r2) {
+		void sortDatas() {
+    		std::ranges::sort(boxes_widthAscend , [this](Cont* r1, Cont* r2) {
     			return obtain(*r1).getWidth() > obtain(*r2).getWidth();
     		});
 
@@ -75,49 +71,30 @@ export namespace Math {
 			});
     	}
 
-    	Rect& getLargest(std::vector<Cont*>& which) {
-    		Cont* back = which.back();
-    		Rect& rect = obtain(back);
-    		all.erase(back);
-
-    		return rect;
+    	void process() {
+    		tryPlace({subRectArr{Rect{}, Rect{}, Rect{maxWidth, maxHeight}}});
     	}
 
-    	void reset() {
-    		boxes_heightAscend.clear();
-    		boxes_widthAscend.clear();
-    		currentHeight = currentWidth = 0;
-    	}
+    	Rect resultBound() const {return Rect{0, 0, rstWidth, rstHeight};}
 
-    	[[nodiscard]] bool contains(Cont* const cont) const {
-    		return all.contains(cont);
-    	}
+    	std::unordered_set<Cont*>& remains() {return all;}
 
-
-    	/**
-		 * \brief The Source Of The Params Must Be Aligned
-		 * \param bound
-		 * \param box
-		 * \return
-		 */
-    	static bool canPlace(const Rect& bound, const Rect& box){
-    		return box.getEndX() <= bound.getEndX() && box.getEndY() <= bound.getEndY();
-    	}
-
-    	bool shouldStop() {
-    		return all.empty();
-    	}
+    protected:
+    	bool shouldStop() const {return all.empty();}
 
     	Rect* tryPlace(const Rect& bound, std::vector<Cont*>& which) {
     		for(auto itr = which.begin(); itr != which.end(); ++itr){
-    			if(!contains(*itr))continue;
+    			if(!this->contains(*itr))continue;
     			Rect& rect = obtain(**itr);
     			rect.setSrc(bound.getSrcX(), bound.getSrcY());
-    			if(canPlace(bound, rect)) {
+    			if(
+    				rect.getEndX() <= bound.getEndX() &&
+    				rect.getEndY() <= bound.getEndY()
+    			){
     				all.erase(*itr);
     				packed.push_back(*itr);
-    				currentWidth = std::max(rect.getEndX(), currentWidth);
-    				currentHeight = std::max(rect.getEndY(), currentHeight);
+    				rstWidth = std::max(rect.getEndX(), rstWidth);
+    				rstHeight = std::max(rect.getEndY(), rstHeight);
 
     				return &rect;
     			}
@@ -125,6 +102,7 @@ export namespace Math {
 
     		return nullptr;
     	}
+
 
 	    /**
     	 * \brief 
@@ -139,10 +117,9 @@ export namespace Math {
     	 * @endcode 
     	 */
     	subRectArr splitQuad(const Rect& bound, const Rect& box) {
-    		if(bound.getSrcX() != box.getSrcX() || box.getSrcY() != box.getSrcY()) {
-    			throw ext::IllegalArguments{"The source of the box and the bound doesn't match"};
-    		}
-
+#ifdef DEBUG_LOCAL
+    		if(bound.getSrcX() != box.getSrcX() || box.getSrcY() != box.getSrcY())throw ext::IllegalArguments{"The source of the box and the bound doesn't match"};
+#endif
     		return subRectArr{
     			Rect{bound.getSrcX(), box.getEndY(), box.getWidth(), bound.getHeight() - box.getHeight()},
     			Rect{box.getEndX(), bound.getSrcY(), bound.getWidth() - box.getWidth(), box.getHeight()},
@@ -153,54 +130,23 @@ export namespace Math {
     	void tryPlace(std::vector<subRectArr>&& bounds) {
 			if(shouldStop())return;
 
-    		std::vector<subRectArr> next{bounds.size() * 3};
+    		std::vector<subRectArr> next{};
+    		next.reserve(bounds.size() * 3);
 
 			for(const subRectArr& currentBound : bounds) {
-				const Rect& bound_Left     = currentBound[0];
-				const Rect& bound_Bottom   = currentBound[1];
-				const Rect& bound_Diagonal = currentBound[2];
-
-				if(bound_Bottom.area() > 0) {
-					if(const Rect* const result = tryPlace(bound_Bottom, boxes_widthAscend)){
-						//if(result != nullptr)
-						next.emplace_back(splitQuad(bound_Bottom, *result));
-					}
-				}
-
-				if(bound_Diagonal.area() > 0) {
-					if(const Rect* const result = tryPlace(bound_Diagonal, boxes_heightAscend)){
-						//if(result != nullptr)
-						next.emplace_back(splitQuad(bound_Diagonal, *result));
-					}
-				}
-
-				if(bound_Left.area() > 0) {
-					if(const Rect* const result = tryPlace(bound_Left, boxes_heightAscend)){
-						//if(result != nullptr)
-						next.emplace_back(splitQuad(bound_Left, *result));
+				for(int i = 0; i < currentBound.size(); ++i) {
+					if(const Rect& bound = currentBound[i]; bound.area() > 0) {
+						if(const Rect* const result = tryPlace(bound, (i & 1) ? boxes_widthAscend : boxes_heightAscend)){
+							//if(result != nullptr)
+							auto arr = splitQuad(bound, *result);
+							if(arr[0].area() == 0 && arr[1].area() == 0 && arr[2].area() == 0)continue;
+							next.push_back(std::move(arr));
+						}
 					}
 				}
 			}
 
-    		bounds.clear();
-    		std::erase_if(next, [](const subRectArr& arr) {
-    			return arr[0].area() == 0 && arr[1].area() == 0 && arr[2].area() == 0;
-    		});
-
     		if(!next.empty())tryPlace(std::move(next));
-    	}
-
-    	void process() {
-    		std::vector<subRectArr> arr{std::array<Rect, 3>{Rect{}, Rect{}, Rect{maxWidth, maxHeight}}};
-    		tryPlace(std::move(arr));
-    	}
-
-    	Rect resultBound() const {
-    		return Rect{0, 0, currentWidth, currentHeight};
-    	}
-
-    	std::unordered_set<Cont*>& remains() {
-    		return all;
     	}
     };
 }
