@@ -10,6 +10,10 @@ cmake-build-release-visual-studio/
 resource/logs/crashes/*.txt
 resource/screenshots/*.png
 
+resource/assets/texture/test
+resource/assets/texture/test2
+resource/assets/tex-cache
+
 out/
 .vs/
 # User ================================
@@ -140,3 +144,12 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 /resource/assets/fonts/cache/
+/resource/assets/texture/test2/
+/resource/assets/texture/test/
+/resource/logs/crashes/
+/resource/assets/texture/test/
+/resource/assets/texture/test2/
+/resource/assets/texture/ui/
+/resource/assets/texture/testTex.png
+/resource/assets/texture/white.png
+/resource/assets/texture/yyz.png
