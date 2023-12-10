@@ -10,9 +10,6 @@ cmake-build-release-visual-studio/
 resource/logs/crashes/*.txt
 resource/screenshots/*.png
 
-resource/assets/texture/test
-resource/assets/texture/test2
-resource/assets/tex-cache
 
 out/
 .vs/
@@ -147,9 +144,4 @@ CTestTestfile.cmake
 /resource/assets/texture/test2/
 /resource/assets/texture/test/
 /resource/logs/crashes/
-/resource/assets/texture/test/
-/resource/assets/texture/test2/
-/resource/assets/texture/ui/
-/resource/assets/texture/testTex.png
-/resource/assets/texture/white.png
-/resource/assets/texture/yyz.png
+/resource/assets/tex-cache/
