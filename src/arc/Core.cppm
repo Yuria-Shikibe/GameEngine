@@ -10,8 +10,8 @@ import Graphic;
 import Geom.Shape.Rect_Orthogonal;
 
 import Core.Audio;
-import Core.AssetsLoader;
-import Core.Bundle;
+import Assets.Loader;
+import Assets.Bundle;
 import Core.Settings;
 import Core.Log;
 
@@ -53,7 +53,7 @@ export namespace Core{
 	/* Almost Done */
 	inline Input* input = nullptr;
 	/* Basically Done */
-	inline Camera* camera = nullptr;
+	inline Camera2D* camera = nullptr;
 	/* Basically Done */
 	inline Batch* batch = nullptr;
 	/* Basically Done */
@@ -66,13 +66,13 @@ export namespace Core{
 	/* 0.00% */
 	inline Audio* audio = nullptr;
 	/* 0.00% */
-	inline AssetsLoader* assetsLoader = nullptr;
+	inline Assets::AssetsLoader* assetsLoader = nullptr;
 	/* 0.00% */
 	inline Settings* settings = nullptr;
 	/* 0.00% */
 	inline UI::Root* uiRoot = nullptr;
 	/* 0.00% */
-	inline Bundle* bundle = nullptr;
+	inline Assets::Bundle* bundle = nullptr;
 	/* 0.00% */
 	inline Log* log = nullptr;
 
@@ -116,13 +116,18 @@ export namespace Core{
 
 	inline void initFileSystem() {
 #ifdef DEBUG_LOCAL
-#ifdef ASSETS_DIR
+	#ifdef ASSETS_DIR
 		rootFileTree = new OS::FileTree{ASSETS_DIR};
-#else
+	#else
 		rootFileTree = new OS::FileTree{OS::args[0]};
-#endif
+	#endif
 #else
+		//TODO release build assets pacakge
+	#ifdef ASSETS_DIR
+		rootFileTree = new OS::FileTree{ASSETS_DIR};
+	#else
 		rootFileTree = new OS::FileTree{OS::args[0]};
+	#endif
 #endif
 		OS::crashFileGetter = [] {
 			return log->generateCrashFile();
@@ -145,7 +150,7 @@ export namespace Core{
 
 		{
 			if(!input)input = new Input(window);
-			if(!camera)camera = new Camera();
+			if(!camera)camera = new Camera2D();
 			if(!log)log = new Log{rootFileTree->findDir("logs")};
 		}
 	}

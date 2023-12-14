@@ -1,7 +1,8 @@
 module;
 
-export module Graphic.TexturePacker;
+export module Assets.TexturePacker;
 
+import Assets.Loader;
 import Math.StripPacker2D;
 import Graphic.Pixmap;
 import Geom.Shape.Rect_Orthogonal;
@@ -9,6 +10,7 @@ import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
 import GL;
 import Async;
+import OS.Handler;
 import RuntimeException;
 import File;
 import OS;
@@ -23,8 +25,9 @@ import <unordered_map>;
 import <unordered_set>;
 
 using Geom::Shape::OrthoRectUInt;
+using namespace Graphic;
 
-export namespace Graphic {
+export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
 	struct  TexturePackData{
 		OrthoRectUInt bound{};
@@ -68,7 +71,7 @@ export namespace Graphic {
 			return pixmap.valid();
 		}
 
-		[[nodiscard]] bool loadPixmap(const int margin = 0){ // NOLINT(*-make-member-function-const)
+		[[nodiscard]] bool loadPixmap(){ // NOLINT(*-make-member-function-const)
 			if(hasFile()) {
 				pixmap.loadFrom(sourceFile);
 			}
@@ -77,14 +80,9 @@ export namespace Graphic {
 				if(modifer)modifer(pixmap);
 			}
 
-			bound.set(margin, margin, pixmap.getWidth() + margin * 2, pixmap.getHeight() + margin * 2);
+			bound.set(0, 0, pixmap.getWidth(), pixmap.getHeight());
 
 			return hasPixelData();
-		}
-
-		void correctMargin(const int margin) {
-			bound.move(margin, margin);
-			bound.addSize(-margin * 2, -margin * 2);
 		}
 
 		[[nodiscard]] explicit TexturePackData(const OS::File& source, const PixmapModifer& modifer = nullptr)
@@ -104,30 +102,27 @@ export namespace Graphic {
 		polling, loading, packing, savingCache, readingCache, done
 	};
 
-	class TexturePackPage : public ext::ProgressTask<>{
+
+	class TexturePackPage : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 	protected:
 		static constexpr int TotalWeight = 10;
 
 		std::vector<Graphic::Pixmap> mergedMaps{};
-		int margin = 0;
 		OS::File cacheDir{};
-		std::string pageName{};
-		std::unordered_map<std::string, TexturePackData> datas{};
+		std::unordered_map<std::string, TexturePackData> packData{};
 		PackState state{PackState::polling};
 
 	public:
 		OrthoRectUInt texMaxBound{2048, 2048};
+		std::string_view pageName{};
 
 		std::vector<std::unique_ptr<GL::Texture2D>> textures{};
 
 		bool forcePack = false;
-		bool requiresCache = false;
 
 		bool dynamic{false};
 
-		bool done{false};
-
-		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string& pageName,
+		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string_view pageName,
 			const OrthoRectUInt& texMaxBound, const bool forcePack)
 			: cacheDir(cacheDir),
 			pageName(pageName),
@@ -135,12 +130,20 @@ export namespace Graphic {
 			forcePack(forcePack) {
 		}
 
-		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string& pageName,
-			const OrthoRectUInt& texMaxBound)
+		[[nodiscard]] const std::unordered_map<std::string, TexturePackData>& getData() const {
+			return packData;
+		}
+
+		[[nodiscard]] std::unordered_map<std::string, TexturePackData>& getData() {
+			return packData;
+		}
+
+		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string_view pageName,
+		                              const OrthoRectUInt& texMaxBound)
 			: TexturePackPage(cacheDir, pageName, texMaxBound, false){
 		}
 
-		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string& pageName) :
+		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string_view pageName) :
 			TexturePackPage(cacheDir, pageName, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}, false){
 		}
 
@@ -148,34 +151,40 @@ export namespace Graphic {
 			return state;
 		}
 
-		bool pushRequest(const OS::File& file, const PixmapModifer& modifer = nullptr) {
-			return datas.try_emplace(file.stem(), file, modifer).second;
+		GL::TextureRegionRect* pushRequest(const OS::File& file, const PixmapModifer& modifer = nullptr) {
+			return &packData.try_emplace(file.stem(), file, modifer).first->second.textureRegion;
 		}
 
-		bool pushRequest(const std::string& name, const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr) {
-			return datas.try_emplace(name, pixmap, modifer).second;
+		GL::TextureRegionRect* pushRequest(const std::string& name, const OS::File& file, const PixmapModifer& modifer = nullptr) {
+			return &packData.try_emplace(name, file, modifer).first->second.textureRegion;
 		}
 
-		bool pushRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
-			return datas.try_emplace(name, std::move(pixmap), modifer).second;
+		GL::TextureRegionRect* pushRequest(const std::string& name, const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr) {
+			return &packData.try_emplace(name, pixmap, modifer).first->second.textureRegion;
 		}
 
-		void overwriteRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
-			datas.insert_or_assign(name, TexturePackData{std::move(pixmap), modifer});
+		GL::TextureRegionRect* pushRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
+			return &packData.try_emplace(name, std::move(pixmap), modifer).first->second.textureRegion;
+		}
+
+		GL::TextureRegionRect* overwriteRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
+			TexturePackData data{std::move(pixmap), modifer};
+			packData.insert_or_assign(name, data);
+			return &data.textureRegion;
 		}
 
 		TexturePackData* findPackData(const std::string& name) {
-			const auto itr = datas.find(name);
-			return itr == datas.end() ? nullptr : &itr->second;
+			const auto itr = packData.find(name);
+			return itr == packData.end() ? nullptr : &itr->second;
 		}
 
 		[[nodiscard]] const TexturePackData* findPackData(const std::string& name) const {
-			const auto itr =  datas.find(name);
-			return itr == datas.end() ? nullptr : &itr->second;
+			const auto itr =  packData.find(name);
+			return itr == packData.end() ? nullptr : &itr->second;
 		}
 
 		[[nodiscard]] OS::File getDataFile() const {
-			return cacheDir.subFile(pageName + ".bin");
+			return cacheDir.subFile(static_cast<std::string>(pageName) + ".bin");
 		}
 
 		[[nodiscard]] bool hasCache() const {
@@ -183,8 +192,8 @@ export namespace Graphic {
 		}
 
 		void loadRequest() {
-			for(auto& [name, data] : datas) {
-				if(!data.loadPixmap(margin)) {
+			for(auto& [name, data] : packData) {
+				if(!data.loadPixmap()) {
 					throw ext::RuntimeException{"Cannot Read Pixmap Data: " + name};
 				}
 			}
@@ -199,7 +208,6 @@ export namespace Graphic {
 				forcePack || !(hasCache() && readCache())
 			) {
 				taskProgress = 0;
-				requiresCache = true;
 
 				setProgress(TotalWeight, 0, 0);
 
@@ -227,11 +235,15 @@ export namespace Graphic {
 			mergedMaps.clear();
 		}
 
-		[[nodiscard]] std::future<void> launch() override {
-			return std::async(std::launch::async, &TexturePackPage::load, this);
+		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
+			return std::async(policy, &TexturePackPage::load, this);
 		}
 
-		[[nodiscard]] std::string getTaskName() const override {
+		[[nodiscard]] std::future<void> launch() override {
+			return launch(std::launch::async);
+		}
+
+		[[nodiscard]] std::string_view getTaskName() const override {
 			switch(state) {
 				case PackState::readingCache : return "Reading Cache";
 				case PackState::loading : return "Loading Pixmaps";
@@ -247,30 +259,38 @@ export namespace Graphic {
 				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), map.release()));
 			}
 
-			for(auto& data : datas | std::views::values) {
+			for(auto& data : packData | std::views::values) {
 				data.textureRegion.setData(textures[data.pageID].get());
 
-				//Margin Has Been Corrected In saveCache()
 				data.textureRegion.fetchIntoCurrent(data.bound);
 			}
 		}
 
 		void saveCache() { // NOLINT(*-make-member-function-const)
-			if(!requiresCache)return;
+			const size_t pageSize = mergedMaps.size();
+			const size_t dataSize = packData.size();
+
+			std::vector<std::future<void>> texSaveFutures{};
+			texSaveFutures.reserve(pageSize);
+
+			for(int i = 0; i < pageSize; ++i) {
+				texSaveFutures.emplace_back(std::async([&pixmap = mergedMaps[i], file = cacheDir.subFile(static_cast<std::string>(pageName) + std::to_string(i) + ".png")] {
+					pixmap.write(file, true);
+				}));
+			}
+
 			std::ofstream stream{getDataFile().path(), std::ios::binary | std::ios::out};
 
-			const size_t pageSize = mergedMaps.size();
-			const size_t dataSize = datas.size();
+
 			stream.write(reinterpret_cast<const char*>(&pageSize), sizeof(pageSize));
 			stream.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize));
 
-			for(auto& data : datas | std::views::values) {
-				data.correctMargin(margin);
+			for(auto& data : packData | std::views::values) {
 				data.write(stream);
 			}
 
-			for(int i = 0; i < mergedMaps.size(); ++i) {
-				mergedMaps[i].write(cacheDir.subFile(pageName + std::to_string(i) + ".png"), true);
+			for (std::future<void>& future : texSaveFutures) {
+				future.get();
 			}
 		}
 
@@ -285,19 +305,29 @@ export namespace Graphic {
 			stream.read(reinterpret_cast<char*>(&pageSize), sizeof(pageSize));
 			stream.read(reinterpret_cast<char*>(&dataSize), sizeof(dataSize));
 
+			std::vector<std::future<GL::Texture2D>> texFutures{};
+			texFutures.reserve(pageSize);
 
-			 postToHandler([this, pageSize] {
+			for(int i = 0; i < pageSize; ++i) {
+				texFutures.emplace_back(std::async([file = cacheDir.subFile(static_cast<std::string>(pageName) + std::to_string(i) + ".png")] {
+					return GL::Texture2D{file, false};
+				}));
+			}
+
+			for(int i = 0; i < pageSize; ++i) {
+				textures.emplace_back(std::make_unique<GL::Texture2D>(texFutures[i].get()));
+				setProgress(0.5f * static_cast<float>(i) / static_cast<float>(pageSize));
+			}
+
+			postToHandler([this, pageSize] {
 				for(int i = 0; i < pageSize; ++i) {
-					textures.emplace_back(std::make_unique<GL::Texture2D>(cacheDir.subFile(pageName + std::to_string(i) + ".png")));
-
+					textures[i]->init();
 				}
 			}).get();
 
-			if(dataSize != datas.size())return false;
+			if(dataSize != packData.size())return false;
 
-			setProgress(0.5f);
-
-			for(auto& data : datas | std::views::values) {
+			for(auto& data : packData | std::views::values) {
 				if(!data.read(stream, textures)) {
 					return false;
 				}
@@ -312,7 +342,7 @@ export namespace Graphic {
 		void pack() {
 			std::vector<TexturePackData*> all{};
 
-			std::ranges::transform(datas | std::ranges::views::values, std::back_inserter(all),
+			std::ranges::transform(packData | std::ranges::views::values, std::back_inserter(all),
 			                       [](auto& data)->TexturePackData*{ return &data; });
 
 			loadRemains(std::move(all), 0);
@@ -327,9 +357,11 @@ export namespace Graphic {
 		template <Concepts::Iterable<TexturePackData*> Range>
 		void loadRemains(Range&& remains, const int currentID) {
 			if(remains.empty())return;
-			setProgress(TotalWeight, 2, 1, datas.size() - remains.size(), datas.size());
+			setProgress(TotalWeight, 2, 1, packData.size() - remains.size(), packData.size());
 
-			Math::Packer<TexturePackData, unsigned int> packer{transformBound};
+			const std::function obtainer = &TexturePackPage::transformBound;
+
+			Math::StripPacker2D<TexturePackData, unsigned int> packer{obtainer};
 
 			packer.push(remains);
 

@@ -16,7 +16,6 @@ import <vector>;
 import <functional>;
 import <string>;
 import <execution>;
-import <ostream>;
 
 using namespace std::filesystem;
 
@@ -175,16 +174,22 @@ export namespace OS{
 			return File{ path().parent_path() };
 		}
 
+		[[nodiscard]] File subFile(const std::string_view& name) const {
+			if(!isDir())throw ext::RuntimeException{};
+
+			return File{ absolutePath().append(name) };
+		}
+
 		[[nodiscard]] File subFile(const std::string& name) const {
 			if(!isDir())throw ext::RuntimeException{};
 
-			return File{ absolutePath().string().append("\\").append(name) };
+			return File{ absolutePath().append(name) };
 		}
 
 		[[nodiscard]] File subFile(const char* name) const {
 			if(!isDir())throw ext::RuntimeException{};
 
-			return File{ absolutePath().string().append("\\").append(name) };
+			return File{ absolutePath().append(name) };
 		}
 
 		[[nodiscard]] File find(const std::string& name) const{

@@ -26,6 +26,7 @@ import GL.Texture.Texture2D;
 import GL.Uniform;
 
 import Graphic.Color;
+import <ranges>;
 
 export namespace GL {
 	enum class ShaderType : GLuint {
@@ -38,7 +39,7 @@ export namespace GL {
 		comp = GL_COMPUTE_SHADER
 	};
 
-	std::string shaderTypeStr(const ShaderType shaderType) {
+	std::string_view shaderTypeStr(const ShaderType shaderType) {
 		switch (shaderType) {
 			case ShaderType::glsl:
 				return "GENERAL";
@@ -88,7 +89,9 @@ export namespace GL {
 	protected:
 		mutable std::unordered_map <std::string, GLint> uniformLocationMap{};
 		mutable std::unordered_map <std::string, GLint> attribuLocationMap{};
-		mutable std::unordered_map<ShaderType, std::string> typeList{};
+		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
+
+		bool valid{false};
 
 		GLuint programID = 0;
 
@@ -97,7 +100,7 @@ export namespace GL {
 		std::function<void(const Shader &)> drawer = [](const Shader&) {};
 
 		template<typename... GLuint>
-		static unsigned int attachShaders(GLuint... args) {
+		[[nodiscard]] static unsigned int attachShaders(GLuint... args) {
 			int success;
 			// link shaders
 			const unsigned int shaderProgram = glCreateProgram();
@@ -117,7 +120,7 @@ export namespace GL {
 			return shaderProgram;
 		}
 
-		static unsigned int attachShadersAll(const std::span<GLuint> &programs) {
+		[[nodiscard]] static unsigned int attachShadersAll(const std::span<GLuint> &programs) {
 			int success;
 			// link shaders
 			const unsigned int shaderProgram = glCreateProgram();
@@ -139,7 +142,7 @@ export namespace GL {
 			return shaderProgram;
 		}
 
-		static GLuint compile(const std::string &src, const ShaderType shaderType) {
+		static GLuint compileCode(const std::string &src, const ShaderType shaderType) {
 			const GLuint shader = glCreateShader(typeID(shaderType));
 			const char *vert = src.c_str();
 
@@ -154,7 +157,7 @@ export namespace GL {
 				char infoLog[exceptionLength];
 				glGetShaderInfoLog(shader, exceptionLength, nullptr, infoLog);
 				throw ext::RuntimeException(
-					"ERROR::" + shaderTypeStr(shaderType) +
+					"ERROR::" + static_cast<std::string>(shaderTypeStr(shaderType)) +
 					"::COMPILATION_FAILED\n" +
                     std::string(infoLog)
 				);
@@ -183,41 +186,28 @@ export namespace GL {
 		using compileTypeList = std::pair<ShaderType, std::string>;
 
 		explicit Shader(const OS::File& directory, std::span<compileTypeList> list) : shaderDir{&directory}{
-			std::vector<unsigned int> programs;
-
 			for (const auto& [type, name] : list) {
-				programs.push_back(compile(type, name));
+				pushSource(type, name);
 			}
-
-			programID = attachShadersAll(programs);
-			bindLoaction();
 		}
 
 		Shader(const OS::File& directory, std::initializer_list<compileTypeList> list) : shaderDir{&directory}{
 			std::vector<unsigned int> programs;
 
 			for (const auto& [type, name] : list) {
-				programs.push_back(compile(type, name));
+				pushSource(type, name);
 			}
-
-			programID = attachShadersAll(programs);
-			bindLoaction();
 		}
 
 		Shader(const OS::File& directory, const std::string& name, const std::initializer_list<ShaderType> list) : shaderDir{&directory}{
-			std::vector<unsigned int> programs;
-
-			for (const auto& t : list) {
-				programs.push_back(compile(t, name));
+			for (const auto& type : list) {
+				pushSource(type, name);
 			}
-
-			programID = attachShadersAll(programs);
-			bindLoaction();
 		}
 
 		explicit Shader(const OS::File& directory, const std::string& name) : shaderDir{&directory}{
-			programID = attachShaders(compile(ShaderType::vert, name), compile(ShaderType::frag, name));
-			bindLoaction();
+			pushSource(ShaderType::vert, name);
+			pushSource(ShaderType::frag, name);
 		}
 
 		~Shader(){ // NOLINT(*-use-equals-default)
@@ -268,69 +258,41 @@ export namespace GL {
 		/**
 		 * \brief Compile Methods:
 		 * */
-		[[nodiscard]] unsigned int compileVertShader(const std::string& name) const{
-			typeList.insert_or_assign(ShaderType::vert, name + suffix(ShaderType::vert));
-			return compile(shaderDir->find(name + suffix(ShaderType::vert)).readString(multiParser), ShaderType::vert);
+		void pushSource(const ShaderType type, const std::string& name) const{
+			typeList.insert_or_assign(type, std::make_pair(name + suffix(type), std::string{}));
 		}
 
-		[[nodiscard]] unsigned int compileFragShader(const std::string& name) const{
-			typeList.insert_or_assign(ShaderType::frag, name + suffix(ShaderType::frag));
-			return compile(shaderDir->find(name + suffix(ShaderType::frag)).readString(uniformParser), ShaderType::frag);
-		}
-
-		[[nodiscard]] unsigned int compileGeomShader(const std::string& stemName) const{
-			typeList.insert_or_assign(ShaderType::geom, stemName + suffix(ShaderType::geom));
-			return compile(shaderDir->find(stemName + suffix(ShaderType::geom)).readString(), ShaderType::geom);
-		}
-
-		[[nodiscard]] unsigned int compileTeseShader(const std::string& stemName) const{
-			typeList.insert_or_assign(ShaderType::tese, stemName + suffix(ShaderType::tese));
-			return compile(shaderDir->find(stemName + suffix(ShaderType::tese)).readString(), ShaderType::tese);
-		}
-
-		[[nodiscard]] unsigned int compileTescShader(const std::string& stemName) const{
-			typeList.insert_or_assign(ShaderType::tesc, stemName + suffix(ShaderType::tesc));
-			return compile(shaderDir->find(stemName + suffix(ShaderType::tesc)).readString(), ShaderType::tesc);
-		}
-
-		[[nodiscard]] unsigned int compileCompShader(const std::string& stemName) const{
-			typeList.insert_or_assign(ShaderType::comp, stemName + suffix(ShaderType::comp));
-			return compile(shaderDir->find(stemName + suffix(ShaderType::comp)).readString(), ShaderType::comp);
-		}
-
-		[[nodiscard]] unsigned int compile(const ShaderType type, const std::string& stemName) const{
-			switch (type) {
-				case ShaderType::vert:
-					return compileVertShader(stemName);
-				case ShaderType::frag:
-					return compileFragShader(stemName);
-				case ShaderType::geom:
-					return compileGeomShader(stemName);
-				case ShaderType::tesc:
-					return compileTescShader(stemName);
-				case ShaderType::tese:
-					return compileTeseShader(stemName);
-				case ShaderType::comp:
-					return compileCompShader(stemName);
-				default:
-					return 0;
+		void readSource() const {
+			for(auto& [file, source] : typeList | std::views::values) {
+				source = shaderDir->find(file).readString(uniformParser);
 			}
+		}
+
+		void compile(const bool freeSource = true) {
+			std::vector<GLuint> code{};
+			code.reserve(typeList.size());
+
+			for(const auto& [type, data] : typeList) {
+				code.push_back(compileCode(data.second, type));
+			}
+
+			programID = attachShadersAll(code);
+			bindLoaction();
+
+			if(freeSource)typeList.clear();
+
+			valid = true;
+		}
+
+		[[nodiscard]] bool isValid() const {
+			return valid;
 		}
 
 		void bind() const {
 			glUseProgram(programID);
 		}
 
-		[[nodiscard]] std::unique_ptr<Shader> copy() const {
-			std::vector<std::pair<ShaderType, std::string>> list;
-
-			for (const auto& pair : typeList) {
-				list.emplace_back(pair);
-			}
-
-			return std::make_unique<Shader>(*shaderDir, list);
-		}
-
+		// ReSharper disable once CppMemberFunctionMayBeStatic
 		void unbind() const {
 			glUseProgram(0);
 		}
@@ -399,6 +361,10 @@ export namespace GL {
 		void applyDynamic(const func& f) const {
 			drawer(*this);
 			f(*this);
+		}
+
+		[[nodiscard]] const std::function<void(const Shader&)>& getDrawer() const {
+			return drawer;
 		}
 
 		[[nodiscard]] GLuint getID() const {

@@ -63,14 +63,14 @@ export namespace GL{
 		}
 
 		virtual void bind() const{
-			// vertexBuffer->bind();
+			vertexBuffer->bind();
 
 			vertexArray->bind();
 			indexBuffer->bind();
 		}
 
 		virtual void unbind() const{
-			// vertexBuffer->unbind();
+			vertexBuffer->unbind();
 
 			vertexArray->unbind();
 			indexBuffer->unbind();

@@ -154,6 +154,10 @@ inline void maximizeCallback(GLFWwindow* window, const int maximized) {
 }
 
 export namespace OS{
+	inline void setApplicationIcon(GLFWwindow* window, std::shared_ptr<GLFWimage> image) {
+		glfwSetWindowIcon(window, 1, image.get());
+	}
+
 	void loadListeners(GLFWwindow* window) {
 
 		glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);

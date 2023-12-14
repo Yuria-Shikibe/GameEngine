@@ -4,6 +4,7 @@ export module OS.FileTree;
 
 import Platform;
 import File;
+import RuntimeException;
 import <iostream>;
 import <unordered_map>;
 import <string>;
@@ -14,7 +15,7 @@ import <ranges>;
 import <sstream>;
 
 export namespace OS{
-	//TODO use a struct to wrap the data structure of just directly use vector?
+	//dTODO use a struct to wrap the data structure of just directly use vector?
 
 	/**
 	 * \brief Uses to operate frequently used `readonly` files, static!
@@ -32,6 +33,12 @@ export namespace OS{
 		 * \brief Key - directory name | Value - File
 		 * */
 		std::unordered_map<std::string, std::vector<File>> files{};
+
+
+		/**
+		 * \brief This need to be called to enable it.
+		 */
+		std::unordered_map<std::string, File> mappedFiles{};
 
 		File root{};
 
@@ -127,6 +134,20 @@ export namespace OS{
 			requires (std::is_same_v<T, File::sortPred> && ...)
 		void registerConcentration(T... args){
 			(concentration.push_back(args), ...);
+		}
+
+		/**
+		 * \brief Avoid using this if posssible!
+		 * \param prefix
+		 */
+		void mapSubFiles(const std::string& prefix = std::string{}) {
+			for(auto& element : files | std::ranges::views::values) {
+				for(auto& file : element) {
+					if(const auto [itr, success] = mappedFiles.emplace(prefix + file.stem(), file); !success) {
+						throw ext::RuntimeException{"It's illegal to map file tree that has files with the same stem name!"};
+					}
+				}
+			}
 		}
 
 		void reDirect(const File& rootFile){

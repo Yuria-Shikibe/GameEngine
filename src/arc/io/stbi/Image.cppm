@@ -9,8 +9,23 @@ module;
 export module Image;
 import File;
 import <string>;
+import <memory>;
+import <GLFW/glfw3.h>;
+
+namespace Graphic {
+class Pixmap;
+}
 
 export namespace stbi{
+	std::shared_ptr<GLFWimage> obtain_GLFWimage(const Graphic::Pixmap& pixmap);
+
+	std::shared_ptr<GLFWimage> obtain_GLFWimage(const OS::File& file, const int requiredBpp = 4) {
+		GLFWimage image{};
+		int b;
+		image.pixels = stbi_load(file.absolutePath().string().data(), &image.width, &image.height, &b, requiredBpp);
+		return std::make_shared<GLFWimage>(image);
+	}
+
 	int writePng(char const *filename, const int x, const int y, const int comp, const void *data, const int stride_bytes) {
 		return stbi_write_png(filename, x, y, comp, data, stride_bytes);
 	}

@@ -24,14 +24,14 @@ export namespace ext{
 
 			data = ss.str();
 
-			RuntimeException::postToLog();
+			RuntimeException::postProcess();
 		}
 
 		[[nodiscard]] char const* what() const override {
 			return data.data();
 		}
 
-		virtual void postToLog() const;
+		virtual void postProcess() const;
 
 		RuntimeException() : RuntimeException("Crashed At...") {
 

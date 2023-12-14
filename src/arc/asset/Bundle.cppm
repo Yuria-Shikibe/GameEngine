@@ -4,9 +4,9 @@
 
 module ;
 
-export module Core.Bundle;
+export module Assets.Bundle;
 
-export namespace Core{
+export namespace Assets{
 	class Bundle{
 
 	};

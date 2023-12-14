@@ -792,6 +792,9 @@ export namespace Graphic{
 		const Color ROYAL{ 0x4169e1ff };
 		const Color SLATE{ 0x708090ff };
 		const Color SKY{ 0x87ceebff };
+
+		const Color AQUA{ 0x85A2F3ff };
+
 		const Color CYAN{ 0, 1, 1, 1 };
 		const Color TEAL{ 0, 0.5f, 0.5f, 1 };
 

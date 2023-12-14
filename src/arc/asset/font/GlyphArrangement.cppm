@@ -12,8 +12,10 @@ import Graphic.Draw;
 import Graphic.Color;
 import Container.Pool;
 import Geom.Shape.Rect_Orthogonal;
-import Geom.Vector2D;
 import GL.Texture.TextureRegionRect;
+
+import Geom.Vector2D;
+
 import <vector>;
 import <string>;
 import <algorithm>;
@@ -53,19 +55,19 @@ export namespace Font {
 		return static_cast<char>(align);
 	}
 
-	std::unordered_map<std::string, const FontFlags*> parserableFonts{};
-	std::unordered_map<std::string, Graphic::Color> parserableColors{};
+	std::unordered_map<std::string_view, const FontFlags*> parserableFonts{};
+	std::unordered_map<std::string_view, Graphic::Color> parserableColors{};
 
 	void registerParserableFont(const Font::FontFlags* const flag) {
 		parserableFonts.insert_or_assign(flag->fullname(), flag);
 	}
 
-	void registerParserableFont(const std::string& name, const Font::FontFlags* const flag) {
+	void registerParserableFont(const std::string_view name, const Font::FontFlags* const flag) {
 		parserableFonts.insert_or_assign(name, flag);
 	}
 
 //TODO color managements
-	void registerParserableColor(const std::string& name, const Graphic::Color& color) {
+	void registerParserableColor(const std::string_view name, const Graphic::Color& color) {
 		parserableColors.insert_or_assign(name, color);
 	}
 
@@ -99,13 +101,13 @@ export namespace Font {
 		}
 	};
 
-	struct GlyphLayout {
+	struct GlyphLayout { // NOLINT(*-pro-type-member-init)
+		Geom::Vector2D offset{};
 		std::vector<GlyphVertData> toRender{};
 
-		float maxWidth = std::numeric_limits<float>::max();
+		float maxWidth{std::numeric_limits<float>::max()};
 
 		Geom::Shape::OrthoRectFloat bound{};
-		Geom::Vector2D offset{};
 
 		std::string last{};
 
@@ -147,7 +149,7 @@ export namespace Font {
 		void render() const {
 			std::ranges::for_each(toRender, [this](const GlyphVertData& glyph) {
 				Graphic::Draw::vert_monochromeAll(
-					*glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
+					glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
 					glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0, glyph.region->v0,
 					glyph.u0 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u0, glyph.region->v1,
 					glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u1, glyph.region->v1,
@@ -160,7 +162,7 @@ export namespace Font {
 			for(size_t i = 0; i < static_cast<size_t>(progress * static_cast<float>(toRender.size())); ++i) {
 				const GlyphVertData& glyph = toRender.at(i);
 				Graphic::Draw::vert_monochromeAll(
-					*glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
+					glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
 					glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0, glyph.region->v0,
 					glyph.u0 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u0, glyph.region->v1,
 					glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u1, glyph.region->v1,
@@ -172,13 +174,14 @@ export namespace Font {
 		[[nodiscard]] GlyphLayout() = default;
 	};
 
-	/*struct GlyphLayoutCache {
+	//TODO cache support. maybe?
+	struct GlyphLayoutCache {
 		size_t frequency{0};
 
 		std::shared_ptr<GlyphLayout> data{nullptr};
 	};
 
-	std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);*/
+	std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);
 
 	struct ModifierableData;
 
@@ -383,7 +386,7 @@ namespace ParserFunctions {
 
 		}
 
-		virtual void parse(GlyphLayout* const layout, const std::string& text) const {
+		virtual void parse(std::shared_ptr<GlyphLayout> layout, const std::string& text) const {
 			constexpr auto npos = std::string::npos;
 
 			if(layout->last == text)return;
@@ -441,10 +444,7 @@ namespace ParserFunctions {
 				const auto* charData = context.currentFont->getCharData(currentChar);
 
 				if(charData) {
-					bool forceRow = false;
-
 					if(currentPosition.x + normalize(lastCharData->matrices.width + lastCharData->matrices.horiBearingX) * context.currentScale > layout->maxWidth) {
-						forceRow = true;
 						currentPosition.x = layout->maxWidth - normalize(lastCharData->matrices.horiAdvance) * context.currentScale;
 						ParserFunctions::endLine({context, currentPosition, lastCharData, *layout});
 					}
@@ -497,7 +497,7 @@ namespace ParserFunctions {
 		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string& text) const {
 			const auto layout = std::make_shared<GlyphLayout>();
 
-			parse(layout.get(), text);
+			parse(layout, text);
 
 			return layout;
 		}
@@ -522,7 +522,7 @@ namespace ParserFunctions {
 
 	GlyphParser* glyphParser = nullptr;
 
-	void loadParser(const FontFlags* const defFont) {
+	void initParser(const FontFlags* const defFont) {
 		glyphParser = new GlyphParser{defFont};
 
 		glyphParser->charParser->modifier[' '] = [](const ModifierableData& data) {
@@ -556,7 +556,7 @@ namespace ParserFunctions {
 				}else {
 					data.context.fallbackFont = data.context.currentFont;
 					try {
-						data.context.currentFont = Font::manager->obtain(std::stoi(sub));
+						data.context.currentFont = Font::defaultManager->obtain(std::stoi(sub));
 					}catch(std::invalid_argument e) {
 						//TODO maybe ?
 					}

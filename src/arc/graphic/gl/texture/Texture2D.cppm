@@ -12,7 +12,7 @@ import <glad/glad.h>;
 import Image;
 
 export namespace GL{
-	class Texture2D : virtual public Graphic::ResizeableInt
+	class Texture2D : virtual public Graphic::ResizeableUInt
 	{
 
 	protected:
@@ -41,7 +41,7 @@ export namespace GL{
 		}
 
 		~Texture2D() override{ // NOLINT(*-use-equals-default)
-			glDeleteTextures(1, &textureID);
+			if(textureID > 0)glDeleteTextures(1, &textureID);
 		}
 
 		/**
@@ -63,8 +63,9 @@ export namespace GL{
 
 		}
 
-		explicit Texture2D(const OS::File& file){
-			loadFromFile(file);
+		explicit Texture2D(const OS::File& file, const bool initInstantly = true){
+			localData.reset(loadFromFile(file));
+			if(initInstantly)init();
 			texName = file.stem();
 		}
 
@@ -100,6 +101,7 @@ export namespace GL{
 		                                       bpp(other.bpp),
 		                                       texName(std::move(other.texName)),
 		                                       localData(std::move(other.localData)){
+			textureID = 0;
 		}
 
 		Texture2D& operator=(Texture2D&& other) noexcept{
@@ -110,8 +112,12 @@ export namespace GL{
 			width = other.width;
 			height = other.height;
 			bpp = other.bpp;
+
+			other.textureID = 0;
 			return *this;
 		}
+
+		Texture2D& operator=(const Texture2D& other) = delete;
 
 		void free() {
 			localData.reset(nullptr);
@@ -141,9 +147,9 @@ export namespace GL{
 			return height;
 		}
 
-		void loadFromFile(const OS::File& file){
+		unsigned char* loadFromFile(const OS::File& file){
 			//TODO File Support
-			init(stbi::loadPng(file, width, height, bpp));
+			return stbi::loadPng(file, width, height, bpp);
 		}
 
 
@@ -152,7 +158,7 @@ export namespace GL{
 		 * \param data
 		 */
 		void init(unsigned char*&& data) {
-			localData.reset(data);
+			if(data != localData.get())localData.reset(data);
 
 			if(bpp != 4) {
 				throw ext::RuntimeException{"Illegal Bpp Size: " + bpp};
@@ -169,6 +175,10 @@ export namespace GL{
 
 			setParametersDef();
 			free();
+		}
+
+		void init() {
+			init(localData.get());
 		}
 
 		void updateData() { // NOLINT(*-make-member-function-const)

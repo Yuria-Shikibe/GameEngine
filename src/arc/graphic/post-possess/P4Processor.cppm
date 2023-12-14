@@ -13,8 +13,6 @@ import RuntimeException;
 import Graphic.Draw;
 import Concepts;
 
-import Assets;
-
 using namespace GL;
 
 export namespace Graphic {
@@ -51,9 +49,9 @@ export namespace Graphic {
 		}
 
 		[[nodiscard]] P4Processor(PostProcessor* const ping2Pong, PostProcessor* const pong2Ping, const unsigned processTimes)
-			: ping2pong(ping2Pong),
-			pong2ping(pong2Ping),
-			processTimes(processTimes) {
+			: processTimes(processTimes),
+			ping2pong(ping2Pong),
+			pong2ping(pong2Ping) {
 		}
 
 		[[nodiscard]] unsigned getProcessTimes() const {

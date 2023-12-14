@@ -24,7 +24,7 @@ export namespace Graphic{
 		Resizeable& operator=(Resizeable&& other) noexcept = default;
 	};
 
-	using ResizeableInt = Resizeable<unsigned int>;
+	using ResizeableUInt = Resizeable<unsigned int>;
 }
 
 

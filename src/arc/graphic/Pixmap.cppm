@@ -180,10 +180,9 @@ export namespace Graphic{
             }else if(ext == ".bmp") {
                 stbi::writeBmp(file, width, height, Channels, data.get());
             }
-
-
         }
 
+        //TODO fix these two function!
         [[nodiscard]] GL::Texture2D genTex() const {
             return GL::Texture2D{width, height, copyData()};
         }
@@ -308,7 +307,6 @@ export namespace Graphic{
         void draw(const Pixmap& pixmap, const unsigned int x, const unsigned int y, const unsigned int srcx, const unsigned int srcy, const unsigned int srcWidth, const unsigned int srcHeight) const {
             draw(pixmap, srcx, srcy, srcWidth, srcHeight, x, y, srcWidth, srcHeight);
         }
-
 
         void draw(const Pixmap& pixmap, const unsigned int srcx, const unsigned int srcy, const unsigned int srcWidth, const unsigned int srcHeight, const unsigned int dstx, const unsigned int dsty, const unsigned int dstWidth, const unsigned int dstHeight, const bool filtering = false, const bool blending = true) const {
             const unsigned int owidth = pixmap.width;
@@ -437,10 +435,28 @@ export namespace Graphic{
                 const auto indexDst =  this->dataIndex(dstx, dsty + y);
                 const auto indexSrc = pixmap.dataIndex(0   ,        y);
 
-                // std::copy_n(pixmap.data.get() + indexSrc, rowDataCount, data.get() + indexDst);
-                // std::memcpy(pixmap.data.get() + indexSrc, data.get() + indexDst, rowDataCount);
                 std::memcpy(data.get() + indexDst, pixmap.data.get() + indexSrc, rowDataCount);
             }
+        }
+
+        [[nodiscard]] Pixmap subMap(const unsigned int srcx, const unsigned int srcy, const unsigned int width, const unsigned int height) const{
+            if(!valid())throw ext::RuntimeException{"Resource Released!"};
+            if(srcx + width > this->width || srcy + height > this->height) {
+                throw ext::IllegalArguments{"Sub Region Larger Than Source Pixmap!"};
+            }
+
+            const unsigned int rowDataCount = width * Channels;
+
+            Pixmap newMap{width, height};
+
+            for(unsigned int y = 0; y < height; ++y) {
+                const auto indexDst = newMap.dataIndex(0   ,        y);
+                const auto indexSrc =  this->dataIndex(srcx, srcy + y);
+
+                std::memcpy(newMap.data.get() + indexDst, data.get() + indexSrc, rowDataCount);
+            }
+
+            return newMap;
         }
     };
 }

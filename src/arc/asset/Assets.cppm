@@ -19,10 +19,17 @@ import Geom.Vector2D;
 
 import Graphic.Color;
 import Graphic.PostProcessor.MultiSampleBliter;
+import Graphic.PostProcessor.ShaderProcessor;
+import Graphic.PostProcessor.BloomProcessor;
+import Graphic.PostProcessor.P4Processor;
+import Graphic.PostProcessor.PipeProcessor;
 import Graphic.PostProcessor;
+
+import GL.Shader.Manager;
 
 import File;
 import Core;
+import <future>;
 import <iostream>;
 import <memory>;
 import <span>;
@@ -58,30 +65,19 @@ export namespace Assets{
 		inline Shader* gaussian = nullptr;
 		inline Shader* bloom = nullptr;
 		inline Shader* blit = nullptr;
+		
+		inline Shader* sildeLines = nullptr;
 
-		void load() {
-			texPost = new Shader{ shaderDir, "tex-std" };
-			texPost->setUniformer([]([[maybe_unused]] const Shader& shader) {});
-
-			stdPost = new Shader{ shaderDir, "std" };
-			stdPost->setUniformer([]([[maybe_unused]] const Shader& shader) {
-				// GL::uniformColor(0, Graphic::Colors::WHITE);
+		void loadPrevious() {
+			blit = new Shader(shaderDir, "blit");
+			blit->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("texture", 0);
 			});
 
-			screenSpace = new Shader(shaderDir, "screenspace");
-
-			coordAxis = new Shader(shaderDir, "coordinate-axis");
-			coordAxis->setUniformer([]([[maybe_unused]] const Shader& shader) {
-				shader.setFloat("width", 3.0f);
-				shader.setFloat("spacing", 100);
-				shader.setFloat("scale", Core::camera->getScale());
-				shader.setVec2("screenSize", Core::renderer->getWidth(), Core::renderer->getHeight());
-				shader.setVec2("cameraPos", Core::camera->getPosition());
-			});
-
-			filter = new Shader(shaderDir, "filter");
-			filter->setUniformer([](const Shader& shader) {
-				shader.setTexture2D("tex");
+			sildeLines = new Shader(shaderDir, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
+			sildeLines->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("u_texture", 0);
+				shader.setFloat("time", OS::globalTick());
 			});
 
 			threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
@@ -101,37 +97,99 @@ export namespace Assets{
 				shader.setTexture2D("texture1", 1);
 			});
 
-			blit = new Shader(shaderDir, "blit");
-			blit->setUniformer([](const Shader& shader) {
-				shader.setTexture2D("texture", 0);
-			});
+			screenSpace = new Shader(shaderDir, "screenspace");
+
+			blit->readSource();
+			blit->compile();
+
+			sildeLines->readSource();
+			sildeLines->compile();
+
+			threshold_light->readSource();
+			threshold_light->compile();
+
+			gaussian->readSource();
+			gaussian->compile();
+
+			bloom->readSource();
+			bloom->compile();
+
+			screenSpace->readSource();
+			screenSpace->compile();
 		}
 
-		void dispose() {
-			delete texPost;
-			delete stdPost;
-			delete screenSpace;
-			delete coordAxis;
-			delete filter;
-			delete gaussian;
-			delete bloom;
-			delete blit;
-			delete threshold_light;
+		void load(GL::ShaderManager* manager) { // NOLINT(*-non-const-parameter)
+			texPost = manager->registerShader(new Shader{ shaderDir, "tex-std" });
+			texPost->setUniformer([]([[maybe_unused]] const Shader& shader) {});
+
+			stdPost = manager->registerShader(new Shader{ shaderDir, "std" });
+			stdPost->setUniformer([]([[maybe_unused]] const Shader& shader) {
+				// GL::uniformColor(0, Graphic::Colors::WHITE);
+			});
+
+			coordAxis = manager->registerShader(new Shader(shaderDir, "coordinate-axis"));
+			coordAxis->setUniformer([]([[maybe_unused]] const Shader& shader) {
+				shader.setFloat("width", 3.0f);
+				shader.setFloat("spacing", 100);
+				shader.setFloat("scale", Core::camera->getScale());
+				shader.setVec2("screenSize", Core::renderer->getWidth(), Core::renderer->getHeight());
+				shader.setVec2("cameraPos", Core::camera->screenCenter());
+			});
+
+			filter = manager->registerShader(new Shader(shaderDir, "filter"));
+			filter->setUniformer([](const Shader& shader) {
+				shader.setTexture2D("tex");
+			});
+
+
+			manager->registerShader(screenSpace);
+			manager->registerShader(threshold_light);
+			manager->registerShader(gaussian);
+			manager->registerShader(bloom);
+			manager->registerShader(blit);
+			manager->registerShader(sildeLines);
 		}
 	}
 
 	namespace PostProcessors {
 		Graphic::PostProcessor
-			*multiToBasic{nullptr}
-
+			*multiToBasic{nullptr},
+			*blendMulti{nullptr}
 		;
+
+		Graphic::ShaderProcessor
+			*blurX{nullptr},
+			*blurY{nullptr},
+			*blend{nullptr};
+
+		Graphic::BloomProcessor* bloom{nullptr};
 
 		void load() {
 			multiToBasic = new Graphic::MultiSampleBliter{};
+
+			blurX = new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+				shader.setVec2("direction", Geom::Vector2D{1.32f, 0});
+			}};
+
+			blurY = new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+				shader.setVec2("direction", Geom::Vector2D{0, 1.32f});
+			}};
+
+			bloom = new Graphic::BloomProcessor{blurX, blurY, Shaders::bloom, Shaders::threshold_light};
+
+			blend = new Graphic::ShaderProcessor{Shaders::blit};
+			// Graphic::P4Processor processor{&blurX, &blurY};
+			blendMulti = new Graphic::PipeProcessor{Assets::PostProcessors::multiToBasic, blend};
 		}
 
 		void dispose() {
 			delete multiToBasic;
+
+			delete blurX;
+			delete blurY;
+			delete blend;
+			delete bloom;
+			delete blendMulti;
 		}
 	}
 
@@ -154,6 +212,8 @@ export namespace Assets{
 		OS::File cacheDir;
 		// Font::FontsManager
 
+		const std::vector<CharCode> targetChars {' ' + 1, '~'};
+
 		const Font::FontFlags
 			*consola_Regular{nullptr},
 			*consola_Italic{nullptr},
@@ -174,51 +234,58 @@ export namespace Assets{
 			*telegrama{nullptr}
 		;
 
-		const Font::FontsManager* manager{nullptr};
+		void loadPreivous(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter)
+			cacheDir = fontDir.subFile("cache-load");
+			if(!cacheDir.exist())cacheDir.createDirQuiet();
+			
+			loader->rootCacheDir = cacheDir;
+			
+			telegrama =
+				 loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
 
+			loader->load();
 
-		void load() {
+			Font::initParser(telegrama);
+		}
+
+		void load(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter)
 			constexpr int DefFlag = 1L << 2;
 
 			cacheDir = fontDir.subFile("cache");
 			if(!cacheDir.exist())cacheDir.createDirQuiet();
-			// Font::FT::loadLib();
-;
-			const std::vector<CharCode> targetChars {' ' + 1, '~'};
 
-			Font::rootCacheDir = cacheDir;
+			loader->rootCacheDir = cacheDir;
 			consola_Regular =
-				Font::registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
 			consola_Italic =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
 			consola_Bold =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
 			consola_Bold_Italic =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
 
 			times_Regular =
-				Font::registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ), cacheDir,  targetChars});
 			times_Italic =
-				Font::registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"), cacheDir,  targetChars});
 			times_Bold =
-				Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"), cacheDir,  targetChars});
 			times_Bold_Italic =
-				Font::registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"), cacheDir,  targetChars});
 
 			josefinSans_Regular =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
 			josefinSans_Bold =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars});
 
 			josefinSans_Regular_Large =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars, DefFlag, 90});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars, DefFlag, 90});
 			josefinSans_Bold_Large =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars, DefFlag, 90});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars, DefFlag, 90});
 
 			telegrama =
-			 	Font::registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
 
-			Font::load();
 
 			Font::registerParserableFont("tms-R" , times_Regular);
 			Font::registerParserableFont("tms-B" , times_Bold);
@@ -237,14 +304,6 @@ export namespace Assets{
 			Font::registerParserableFont("jfsL-R", josefinSans_Regular_Large);
 
 			Font::registerParserableFont("tele", telegrama);
-
-			manager = Font::manager.get();
-
-			Font::loadParser(consola_Regular);
-		}
-
-		void dispose() {
-
 		}
 	}
 
@@ -254,10 +313,8 @@ export namespace Assets{
 			*coords{nullptr}
 		;
 
-		void load() {
+		void loadPrevious() {
 			raw = new Mesh{[](const Mesh& mesh) {
-				mesh.getIndexBuffer().bind();
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 				mesh.getVertexBuffer().bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f, 0.0f, 0.0f,
@@ -266,15 +323,20 @@ export namespace Assets{
 					-1.0f,  1.0f, 0.0f, 1.0f
 				}, GL_STATIC_DRAW);
 
+				mesh.getIndexBuffer().bind();
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
+
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
 				layout.addFloat(2);
 				mesh.getVertexArray().active();
-			}};
 
+				mesh.unbind();
+			}};
+		}
+
+		void load() {
 			coords = new GL::RenderableMesh(Assets::Shaders::coordAxis, [](const GL::RenderableMesh& mesh) {
-				mesh.getIndexBuffer().bind();
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 				mesh.getVertexBuffer().bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f,
@@ -282,10 +344,14 @@ export namespace Assets{
 					 1.0f,  1.0f,
 					-1.0f,  1.0f
 				}, GL_STATIC_DRAW);
+				mesh.getIndexBuffer().bind();
+				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
 				mesh.getVertexArray().active();
+
+				mesh.unbind();
 			});
 		}
 
@@ -295,7 +361,7 @@ export namespace Assets{
 		}
 	}
 
-	inline void load() {
+	inline void loadBasic() {
 		OS::FileTree& mainTree = *Core::rootFileTree;
 
 		assetsDir = mainTree.findDir("assets");
@@ -308,17 +374,23 @@ export namespace Assets{
 
 		screenshotDir = mainTree.find("screenshots"); //TODO move this to other places, it doesn't belong to assets!
 
-		Shaders::load();
+		Font::loadLib();
+
+		//TODO uses this if showing text during load is needed.
+		//Fonts::loadPreivous();
+
+		Shaders::loadPrevious();
+		Meshes::loadPrevious();
 		Textures::load();
-		Fonts::load();
-		Meshes::load();
 		PostProcessors::load();
 	}
 
+	inline void loadAfter() {
+		Meshes::load();
+	}
+
 	inline void dispose() {
-		Shaders::dispose();
 		Textures::dispose();
-		Fonts::dispose();
 		Meshes::dispose();
 		PostProcessors::dispose();
 	}

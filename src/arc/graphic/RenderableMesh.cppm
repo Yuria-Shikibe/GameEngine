@@ -27,14 +27,10 @@ export namespace GL {
 		using Mesh::render;
 
 		void bind() const override {
-			shader->bind();
-
 			Mesh::bind();
 		}
 
 		void unbind() const override {
-			shader->bind();
-
 			Mesh::unbind();
 		}
 

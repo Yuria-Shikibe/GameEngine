@@ -96,7 +96,7 @@ export namespace Core{
 		void flush() override{
 			if(index == 0)return;
 
-			glDepthMask(false);
+			// glDepthMask(false);
 
 			mesh->bind();
 			mesh->getVertexBuffer().setDataRaw(cachedVertices.get(), sizeof(float) * index);
@@ -109,17 +109,17 @@ export namespace Core{
 			index = 0;
 		}
 
-		void post(const Texture2D& texture, float* vertices, const int length, const int offset, const int count) override{
-			if(lastTexture != &texture){
+		void post(const Texture2D* texture, float* vertices, const int length, const int offset, const int count) override{
+			if(lastTexture != texture){
 				flush();
-				lastTexture = &texture;
+				lastTexture = texture;
 			}
 
 			if(index + count > maxSize){
 				flush();
 			}
 
-			std::copy_n(vertices + offset, count, cachedVertices.get() + index);
+			std::memcpy(cachedVertices.get() + index, vertices + offset, count * sizeof(float));
 
 			index += count;
 		}

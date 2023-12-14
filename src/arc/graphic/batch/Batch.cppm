@@ -49,7 +49,7 @@ export namespace Core{
 
 	public:
 		Batch() {
-			blending->apply();
+			setupBlending();
 		}
 
 		Batch(const Batch& other) = delete;
@@ -72,25 +72,27 @@ export namespace Core{
 			return customShader;
 		}
 
-		[[nodiscard]] Shader& getGeneralShader() const {
-			return *generalShader;
+		[[nodiscard]] Shader* getGeneralShader() const {
+			return generalShader;
 		}
 
 		[[nodiscard]] const Texture2D* getTexture() const{
 			return lastTexture;
 		}
 
-		void setCustomShader(Shader& shader) {
-			customShader = &shader;
-			customShader->bind();
+		void setCustomShader(Shader* shader) {
+			customShader = shader;
 		}
 
 		void setCustomShader() {
 			customShader = nullptr;
-			generalShader->bind();
 		}
 
-		void switchShader(Shader& shader) {
+		void setupBlending() const {
+			blending->apply();
+		}
+
+		void switchShader(Shader* shader) {
 			flush();
 
 			setCustomShader(shader);
@@ -160,7 +162,7 @@ export namespace Core{
 
 		void applyShader() const{
 			if(applyCustomShader()){
-				customShader->apply();
+				customShader->applyDynamic(generalShader->getDrawer());
 			}else{
 				generalShader->apply();
 			}
@@ -170,7 +172,7 @@ export namespace Core{
 
 		virtual void flush() = 0;
 
-		virtual void post(const Texture2D& texture, float* vertices, int length, int offset, int count) = 0;
+		virtual void post(const Texture2D* texture, float* vertices, int length, int offset, int count) = 0;
 
 		virtual void post(const std::function<void()>& drawPost){
 			drawPost();

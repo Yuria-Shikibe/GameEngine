@@ -1,6 +1,11 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.27)
 
 message(STATUS "Preparing Env...")
+
+#Using Cpp-23
+set(CMAKE_CXX_STANDARD 23)
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (CMAKE_VERSION EQUAL 3.25)
     set(CMAKE_EXPERIMENTAL_CXX_MODULE_CMAKE_API "3c375311-a3c9-4396-a187-3227ef642046")
@@ -20,17 +25,10 @@ message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmodules-ts")
-#set(CMAKE_EXPERIMENTAL_CXX_MODULE_DYNDEP ON)
-
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DDEBUG_LOCAL)
+    message(STATUS "Debuging...")
 endif ()
-
-#Using Cpp-23
-set(CMAKE_CXX_STANDARD 23)
-
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SRC_DIR src)
 set(RES_DIR resource)
@@ -101,3 +99,24 @@ target_sources(${PROJECT_NAME}
 )
 
 message(STATUS "Compile Complete...")
+
+
+#if(0#[[CMAKE_CXX_COMPILER_ID STREQUAL "GNU"]])
+#
+#    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmodules-ts")
+#    set(CMAKE_EXPERIMENTAL_CXX_MODULE_DYNDEP ON)
+#
+#    #    string(CONCAT CMAKE_EXPERIMENTAL_CXX_SCANDEP_SOURCE
+#    #            "<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -E -x c++ <SOURCE>"
+#    #            " -MT <DYNDEP_FILE> -MD -MF <DEP_FILE>"
+#    #            " -fmodules-ts -fdep-file=<DYNDEP_FILE> -fdep-output=<OBJECT>"
+#    #            " -fdep-format=trtbd")
+#
+#    #    set(CMAKE_EXPERIMENTAL_CXX_MODULE_MAP_FLAG
+#    #            " -fmodules-ts -fmodule-mapper=<MODULE_MAP_FILE>"
+#    #            " -fdep-format=trtbd -x c++")
+#
+#    #    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fmodules-ts")
+#
+#    message(STATUS "Flags: ${CMAKE_CXX_FLAGS}")
+#endif()

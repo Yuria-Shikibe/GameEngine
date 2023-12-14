@@ -12,7 +12,7 @@ import Graphic.Resizeable;
 import Graphic.Color;
 
 export namespace GL{
-	class FrameBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableInt
+	class FrameBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableUInt
 	{
 	protected:
 		unsigned int width = 0, height = 0;

@@ -55,7 +55,7 @@ export namespace Event {
 		}
 
 		template <Concepts::Derived<EventType> ...T>
-		void registerType(T... args) {
+		void registerType() {
 			(registered.insert(std::type_index(typeid(T))), ...);
 		}
 
@@ -70,6 +70,10 @@ export namespace Event {
 		[[nodiscard]] EventManager() = default;
 	};
 
+	enum class CycleSignalState {
+		begin, end,
+		maxCount
+	};
 
 	template <Concepts::Enum T, T maxsize>
 	class SignalManager {
@@ -97,5 +101,7 @@ export namespace Event {
 		indexOf<Draw_Post>(),
 		indexOf<Draw_Prepare>()
 	};
+
+	using CycleSignalManager = Event::SignalManager<Event::CycleSignalState, Event::CycleSignalState::maxCount>;
 }
 

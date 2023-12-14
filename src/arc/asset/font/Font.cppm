@@ -20,6 +20,9 @@ import <functional>;
 import <iostream>;
 import <set>;
 
+import Async;
+import Assets.Loader;
+
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureRegion;
@@ -39,15 +42,38 @@ void exitLoad(const std::string& fontName) {
 using namespace Geom;
 using Graphic::Pixmap;
 
-export namespace Font {
-	/**
-	 * \brief @link FontFlags @endlink Shuold be created by user and pass it to FontManager by its internal ID !
-	 *
-	 *
-	 *
-	 */
-	struct FontFlags;
+namespace Font {
+std::fstream obtainStream(const OS::File& file) {
+	return std::fstream{file.absolutePath(), std::ios::binary | std::ios::in | std::ios::out};
+}
 
+void readCacheVersion(std::istream& stream, unsigned char& version) {
+	stream.read(reinterpret_cast<char*>(&version), sizeof(version));
+}
+
+void readCacheVersion(std::istream&& stream, unsigned char& version) {
+	stream.read(reinterpret_cast<char*>(&version), sizeof(version));
+}
+
+void saveCacheVersion(std::ostream& stream, const unsigned char& version) {
+	stream.write(reinterpret_cast<const char*>(&version), sizeof(version));
+}
+
+//Just use 'size', not EOF, just my preference...
+void readCacheData(std::istream& stream, FT_UInt& width, FT_UInt& height, size_t& size) {
+	stream.read(reinterpret_cast<char*>(&width ), sizeof(width ));
+	stream.read(reinterpret_cast<char*>(&height), sizeof(height));
+	stream.read(reinterpret_cast<char*>(&size  ), sizeof(size  ));
+}
+
+void saveCacheData(std::ostream& stream, const FT_UInt width, const FT_UInt height, const size_t size) {
+	stream.write(reinterpret_cast<const char*>(&width ), sizeof(width ));
+	stream.write(reinterpret_cast<const char*>(&height), sizeof(height));
+	stream.write(reinterpret_cast<const char*>(&size  ), sizeof(size  ));
+}
+}
+
+export namespace Font {
 	FT_Library freeTypeLib;
 
 	enum class Style : unsigned char{
@@ -84,12 +110,6 @@ export namespace Font {
 	constexpr std::string_view data_suffix = ".bin";
 	constexpr std::string_view tex_suffix  = ".png";
 
-	std::vector<std::unique_ptr<FontFlags>> loadFlags{};
-
-	OS::File rootCacheDir{};
-
-	std::unordered_map<std::string, unsigned char> familys{};
-
 	void writeIntoPixmap(const FT_Bitmap& map, unsigned char* data) {
 		for(size_t size = 0; size < map.width * map.rows; ++size) {
 			//Normal
@@ -97,11 +117,6 @@ export namespace Font {
 			data[size * 4 + 1] = 0xff;
 			data[size * 4 + 2] = 0xff;
 			data[size * 4 + 3] = map.buffer[size];
-
-			// data[size * 4 + 0] = map.buffer[size];
-			// data[size * 4 + 1] = 0x6f;
-			// data[size * 4 + 2] = 0xff;
-			// data[size * 4 + 3] = 0xef;
 		}
 	}
 
@@ -109,8 +124,6 @@ export namespace Font {
 		begin, end,
 		maxCount
 	};
-
-	Event::SignalManager<FontLoadState, FontLoadState::maxCount> fontLoadListeners{};
 
 	struct FontData {
 		struct CharData {
@@ -340,21 +353,18 @@ export namespace Font {
 	protected:
 		std::unique_ptr<GL::Texture2D> fontTexture{nullptr};
 		std::unordered_map<FT_UInt, std::set<FT_UInt>> supportedFonts{};
-		std::unordered_map<FT_UInt, FontFlags*> fonts{}; //Access it by FontFlags.internalID
+		std::unordered_map<FT_UInt, std::unique_ptr<FontFlags>> fonts{}; //Access it by FontFlags.internalID
 
 	public:
 		[[nodiscard]] FontsManager() = default;
 
-		[[nodiscard]] explicit FontsManager(Graphic::Pixmap& texture, const std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
+		[[nodiscard]] explicit FontsManager(Graphic::Pixmap& texture, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
 			fontTexture.reset(new GL::Texture2D(texture.getWidth(), texture.getHeight(), texture.release()));
 
 			const Shape::OrthoRectUInt bound{fontTexture->getWidth(), fontTexture->getHeight()};
 
 			fonts.reserve(fontsRaw.size());
-			for(const auto& value: fontsRaw) {
-				//Register fonts by id
-				fonts[value->internalID] = value.get();
-
+			for(auto& value: fontsRaw) {
 				//Register valid chars
 				for(size_t t = 0; t < value->segments.size() / 2; ++t) {
 					for(FT_ULong i = value->segments[t * 2]; i <= value->segments[t * 2 + 1]; ++i) {
@@ -376,7 +386,16 @@ export namespace Font {
 				//The pixmap data for a single font wont be needed anymore in all cases, release it if possible;
 				if(value->data->fontPixmap)value->data->fontPixmap->free();
 
-				if(value->data->spaceSpacing < 0)value->data->spaceSpacing = static_cast<float>(contains(value->internalID, '_') ? getCharData(value->internalID, '_')->charBox.getWidth() : 15);
+				const auto fontValue = value.get();
+				fonts[value->internalID] = std::move(value);
+
+
+				if(fontValue->data->spaceSpacing < 0) {
+					fontValue->data->spaceSpacing =
+						static_cast<float>(contains(fontValue->internalID, '_') ?
+						getCharData(fontValue->internalID, '_')->charBox.getWidth() : 15
+					);
+				}
 			}
 		}
 
@@ -390,7 +409,7 @@ export namespace Font {
 
 		[[nodiscard]] const FontFlags* obtain(const FT_UInt id) const {
 			if(const auto itr = fonts.find(id); itr != fonts.end()) {
-				return itr->second;
+				return itr->second.get();
 			}
 
 			return nullptr;
@@ -437,344 +456,354 @@ export namespace Font {
 		}
 	};
 
-
-	std::unique_ptr<FontsManager> manager{nullptr};
-
-	inline bool valid() {
-		return manager != nullptr;
-	}
-
-	std::fstream obtainStream(const OS::File& file) {
-		return std::fstream{file.absolutePath(), std::ios::binary | std::ios::in | std::ios::out};
-	}
-
-	void readCacheVersion(std::istream& stream, unsigned char& version) {
-		stream.read(reinterpret_cast<char*>(&version), sizeof(version));
-	}
-
-	void readCacheVersion(std::istream&& stream, unsigned char& version) {
-		stream.read(reinterpret_cast<char*>(&version), sizeof(version));
-	}
-
-	void saveCacheVersion(std::ostream& stream, const unsigned char& version) {
-		stream.write(reinterpret_cast<const char*>(&version), sizeof(version));
-	}
-	
-	//Just use 'size', not EOF, just my preference...
-	void readCacheData(std::istream& stream, FT_UInt& width, FT_UInt& height, size_t& size) {
-		stream.read(reinterpret_cast<char*>(&width ), sizeof(width ));
-		stream.read(reinterpret_cast<char*>(&height), sizeof(height));
-		stream.read(reinterpret_cast<char*>(&size  ), sizeof(size  ));
-	}
-
-	void saveCacheData(std::ostream& stream, const FT_UInt width, const FT_UInt height, const size_t size) {
-		stream.write(reinterpret_cast<const char*>(&width ), sizeof(width ));
-		stream.write(reinterpret_cast<const char*>(&height), sizeof(height));
-		stream.write(reinterpret_cast<const char*>(&size  ), sizeof(size  ));
-	}
-
-
-	void loadFont(FontFlags& params) {
-		const std::string fontFullName = params.fullname();
-
-		if(!params.face)exitLoad(fontFullName);
-
-		const auto fontCacheDir = params.fontCacheDir();
-
-		bool needCache = false;
-
-		if(!fontCacheDir.exist()) {
-			needCache = true;
-			fontCacheDir.createDirQuiet();
-		}
-
-		OS::File dataFile = params.dataFile(fontCacheDir);
-		OS::File texFile  = params.texFile (fontCacheDir);
-
-		std::fstream fstream;
-
-		if(dataFile.exist()) {
-			unsigned char version = 0;
-			fstream = obtainStream(dataFile);
-			readCacheVersion(fstream, version);
-
-			if(version != params.expectedVersion) {
-				needCache = true;
-			}
-		}else {
-			dataFile.createFileQuiet();
-			needCache = true;
-			fstream = obtainStream(dataFile);
-		}
-
-		std::vector<FontData_Preload> fontDatas{};
-		FT_UInt width = 0;
-		FT_UInt height = 0;
-		size_t size = 0;
-
-		Graphic::Pixmap maxMap{};
-
-		if(needCache){
-			FT_UInt currentWidth = 0;
-			FT_UInt maxHeight = 0;
-
-			for(size_t t = 0; t < params.segments.size() / 2; ++t) {
-				for(FT_ULong i = params.segments[t * 2]; i <= params.segments[t * 2 + 1]; ++i) {
-					const FontFlags& valid = * params.tryLoad(i);
-
-					if(!valid.face->glyph) {
-						exitLoad(fontFullName);
-					}
-
-					if (params.loader && valid.face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-						if (params.loader(valid.face)) {
-							exitLoad(fontFullName);
-						}
-					}
-
-					fontDatas.emplace_back(i, valid.face->glyph);
-					fontDatas.back().box.move(currentWidth, 0);
-
-					maxHeight = std::max(maxHeight, valid.face->glyph->bitmap.rows);
-					currentWidth += valid.face->glyph->bitmap.width + TexturePackGap;
-				}
-			}
-
-			size = fontDatas.size();
-			width = currentWidth;
-			height = maxHeight;
-
-			saveCacheVersion(fstream, params.version);
-			saveCacheData(fstream, width, height, size);
-
-			maxMap.create(width, height);
-
-			currentWidth = 0;
-			for(const auto& data : fontDatas) {
-				data.write(fstream);
-
-				maxMap.set(data.pixmap, currentWidth, 0);
-				currentWidth += data.pixmap.getWidth() + TexturePackGap;
-			}
-
-			maxMap.write(texFile, true);
-		}else{ //Load from cache
-			//The version has been read during the check!
-			readCacheData(fstream, width, height, size);
-
-			fontDatas.resize(size);
-
-			for(size_t i = 0; i < size; ++i) {
-				fontDatas[i].read(fstream);
-			}
-
-			maxMap.loadFrom(texFile);
-		}
-
-		params.data.reset(new FontData{{maxMap.getWidth(), maxMap.getHeight()}, size, std::move(maxMap)});
-
-		for(auto& data: fontDatas) {
-			params.data->charDatas.emplace(data.charCode, FontData::CharData{data.matrices, data.box});
-
-			//Dont init it right now, the regions should be set at last!
-		}
-	}
-
-	bool checkCahce(){
-		bool requiresRecache = false;
-
-		for(const auto& params: loadFlags) {
-			if(!params->face) {
-				FT_Face face;
-
-				if(FT_New_Face(freeTypeLib, params->fontFile.absolutePath().string().data(), 0, &face)) {
-					exitLoad(params->fullname());
-				}
-
-				params->face = face;
-
-				//Correct the style name if necessary
-				params->familyName = params->face->family_name;
-				params->styleName = params->face->style_name;
-			}
-
-			if(requiresRecache)continue;
-
-			const auto&& cacheDir = params->fontCacheDir();
-			cacheDir.createDirQuiet();
-			// ReSharper disable once CppTooWideScopeInitStatement
-			const auto&& dataFile = params->dataFile(cacheDir);
-
-			if(!dataFile.exist()) {
-				requiresRecache = true;
-			}else{
-				unsigned char version = 0;
-				readCacheVersion(obtainStream(dataFile), version);
-				if(version != params->expectedVersion) {
-					requiresRecache = true;
-				}
-			}
-		}
-
-		return requiresRecache;
-	}
-
-	Graphic::Pixmap merge(bool requiresRecache) {
-		Graphic::Pixmap mergedMap{};
-
-		const OS::File dataFile = rootCacheDir.subFile("merged.bin");
-		const OS::File texFile  = rootCacheDir.subFile("merged.png");
-
-		FT_UInt totalWidth = 0, totalHeight = 0;
-		size_t size = 0;
-		size_t totalCharCount = 0; //This is inaccurate!
-		if(!dataFile.exist())dataFile.createFileQuiet(true);
-		auto&& stream = obtainStream(dataFile);
-		constexpr std::hash<std::string> hasher{};
-
-		//If a font doesn't have cache, then cache it; or if the cache is too old, then recache;
-		cache:
-		if(requiresRecache) {
-			size = loadFlags.size();
-			saveCacheData(stream, totalWidth, totalHeight, size);
-
-			//Generate FontDatas from loadTargets
-			for(const auto& params : loadFlags) {
-				loadFont(*params);
-
-				totalWidth = std::max(params->data->box.getWidth(), totalWidth);
-				totalHeight += params->data->box.getHeight() + TexturePackGap;
-				const size_t hash = hasher(params->fullname());
-				stream.write(reinterpret_cast<const char*>(&hash), sizeof(hash));
-			}
-
-			//Resize the merge map
-			mergedMap.create(totalWidth, totalHeight);
-
-			FT_UInt currentHeightOffset = 0;
-			for(const auto& flag : loadFlags) {
-				const auto& data = flag->data;
-
-				mergedMap.set(*data->fontPixmap, 0, currentHeightOffset);
-
-				data->box.setSrcY(currentHeightOffset);
-				for(auto& charData : data->charDatas | std::ranges::views::values) {
-					charData.charBox.move(0, currentHeightOffset);
-				}
-
-				currentHeightOffset += data->box.getHeight() + TexturePackGap;
-
-				totalCharCount = std::max(totalCharCount, data->charDatas.size());
-
-				data->write(stream);
-			}
-
-			mergedMap.write(texFile, true);
-		}else{
-			//
-			readCacheData(stream, totalWidth, totalHeight, size);
-
-			//Check cache is right
-			if(size != loadFlags.size()) {
-				requiresRecache = true;
-				goto cache; //Recache if the size cannot match...
-			}
-
-			for(size_t i = 0; i < size; ++i) {
-				size_t hash = 0;
-				stream.read(reinterpret_cast<char*>(&hash), sizeof(hash));
-				if(hasher(loadFlags[i]->fullname()) != hash) {
-					requiresRecache = true;
-					goto cache; //Recache if the font cannot match...
-				}
-			}
-			//End Chec
-
-			//Load font data from bin file
-			for(size_t i = 0; i < size; ++i) {
-				auto& data = loadFlags[i]->data;
-				data.reset(new FontData);
-				data->read(stream);
-				totalCharCount = std::max(totalCharCount, data->charDatas.size());
-			}
-
-			//Load font tex from png file
-			mergedMap.loadFrom(texFile);
-		}
-
-		return mergedMap;
-	}
-
-	void assignID() {
-		std::vector<std::string> loadedFamily;
-		for(size_t i = 0; i < loadFlags.size(); ++i) {
-			// ReSharper disable once CppUseStructuredBinding
-			auto& flag = *loadFlags[i];
-
-			const auto itr = std::find(loadedFamily.begin(), loadedFamily.end(), flag.familyName);
-			const size_t dst = itr - loadedFamily.cbegin();
-
-			if(itr == loadedFamily.end()){
-				loadedFamily.push_back(flag.familyName);
-			}
-
-			flag.internalID |= static_cast<unsigned char>(i) << FontFlags::fontOffset;
-			flag.internalID |= static_cast<unsigned char>(dst) << FontFlags::familyOffset;
-			flag.internalID |= getStyleID(flag.styleName) << FontFlags::styleOffset;
-		}
-
-	}
-
 	void loadLib() {
 		if(FT_Init_FreeType(&freeTypeLib)) {
 			throw ext::RuntimeException{"Unable to initialize FreeType Library!"};
 		}
 	}
 
-	void load() { //Dose not support hot load!
-		stbi::setFlipVertically_write(false);
-		stbi::setFlipVertically_load(false);
+	FontsManager* defaultManager{nullptr};
 
-		//FT Lib init;
-		loadLib();
+	struct FontLoader final : ext::ProgressTask<void, Assets::AssetsTaskHandler>{
+		bool quickInit = false;
+		std::vector<std::unique_ptr<FontFlags>> flags{};
+		Event::SignalManager<FontLoadState, FontLoadState::maxCount> fontLoadListeners{};
+		OS::File rootCacheDir{};
+		std::unique_ptr<FontsManager> manager{nullptr};
 
-		//User Customized fonts to load;
-		fontLoadListeners.fire(FontLoadState::begin);
+		[[nodiscard]] FontLoader() = default;
 
-		//Init face data;
-		const bool requiresRecache = checkCahce();
-
-		//Cache prepare
-		Graphic::Pixmap&& mergedMap = merge(requiresRecache);
-
-		assignID();
-
-		//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
-		//FontsManager obtain the texture from the total cache; before this no texture should be generated!
-		manager = std::make_unique<FontsManager>(mergedMap, loadFlags);
-
-		//FontsManager init its member's TextureRegion data;
-
-		//...
-
-		//Release resouces
-
-		fontLoadListeners.fire(FontLoadState::end);
-
-		//Load End
-
-		stbi::setFlipVertically_load(true);
-		stbi::setFlipVertically_write(true);
-
-		//TODO delete all datas wont be used?
-
-		for (const auto& flags : loadFlags) {
-			flags->free();
+		[[nodiscard]] explicit FontLoader(const OS::File& root_cache_dir) :
+			rootCacheDir(root_cache_dir) {
 		}
-	}
 
-	const FontFlags* registerFont(FontFlags* flag){
-		loadFlags.push_back(std::unique_ptr<FontFlags>(flag));
-		return flag;
-	}
+		FontFlags* registerFont(FontFlags* fontFlags) {
+			flags.emplace_back(fontFlags);
+			return fontFlags;
+		}
+
+		[[nodiscard]] bool valid() const {
+			return manager != nullptr;
+		}
+
+	protected:
+		static void loadFont(FontFlags& params) {
+			const std::string fontFullName = params.fullname();
+
+			if(!params.face)exitLoad(fontFullName);
+
+			const auto fontCacheDir = params.fontCacheDir();
+
+			bool needCache = false;
+
+			if(!fontCacheDir.exist()) {
+				needCache = true;
+				fontCacheDir.createDirQuiet();
+			}
+
+			OS::File dataFile = params.dataFile(fontCacheDir);
+			OS::File texFile  = params.texFile (fontCacheDir);
+
+			std::fstream fstream;
+
+			if(dataFile.exist()) {
+				unsigned char version = 0;
+				fstream = obtainStream(dataFile);
+				readCacheVersion(fstream, version);
+
+				if(version != params.expectedVersion) {
+					needCache = true;
+				}
+			}else {
+				dataFile.createFileQuiet();
+				needCache = true;
+				fstream = obtainStream(dataFile);
+			}
+
+			std::vector<FontData_Preload> fontDatas{};
+			FT_UInt width = 0;
+			FT_UInt height = 0;
+			size_t size = 0;
+
+			Graphic::Pixmap maxMap{};
+
+			if(needCache){
+				FT_UInt currentWidth = 0;
+				FT_UInt maxHeight = 0;
+
+				for(size_t t = 0; t < params.segments.size() / 2; ++t) {
+					for(FT_ULong i = params.segments[t * 2]; i <= params.segments[t * 2 + 1]; ++i) {
+						const FontFlags& valid = * params.tryLoad(i);
+
+						if(!valid.face->glyph) {
+							exitLoad(fontFullName);
+						}
+
+						if (params.loader && valid.face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+							if (params.loader(valid.face)) {
+								exitLoad(fontFullName);
+							}
+						}
+
+						fontDatas.emplace_back(i, valid.face->glyph);
+						fontDatas.back().box.move(currentWidth, 0);
+
+						maxHeight = std::max(maxHeight, valid.face->glyph->bitmap.rows);
+						currentWidth += valid.face->glyph->bitmap.width + TexturePackGap;
+					}
+				}
+
+				size = fontDatas.size();
+				width = currentWidth;
+				height = maxHeight;
+
+				saveCacheVersion(fstream, params.version);
+				saveCacheData(fstream, width, height, size);
+
+				maxMap.create(width, height);
+
+				currentWidth = 0;
+				for(const auto& data : fontDatas) {
+					data.write(fstream);
+
+					maxMap.set(data.pixmap, currentWidth, 0);
+					currentWidth += data.pixmap.getWidth() + TexturePackGap;
+				}
+
+				maxMap.write(texFile, true);
+			}else{ //Load from cache
+				//The version has been read during the check!
+				readCacheData(fstream, width, height, size);
+
+				fontDatas.resize(size);
+
+				for(size_t i = 0; i < size; ++i) {
+					fontDatas[i].read(fstream);
+				}
+
+				maxMap.loadFrom(texFile);
+			}
+
+			params.data.reset(new FontData{{maxMap.getWidth(), maxMap.getHeight()}, size, std::move(maxMap)});
+
+			for(auto& data: fontDatas) {
+				params.data->charDatas.emplace(data.charCode, FontData::CharData{data.matrices, data.box});
+
+				//Dont init it right now, the regions should be set at last!
+			}
+		}
+
+		[[nodiscard]] bool checkCahce() const {
+			bool requiresRecache = false;
+
+			for(const auto& params: flags) {
+				if(!params->face) {
+					FT_Face face;
+
+					if(FT_New_Face(freeTypeLib, params->fontFile.absolutePath().string().data(), 0, &face)) {
+						exitLoad(params->fullname());
+					}
+
+					params->face = face;
+
+					//Correct the style name if necessary
+					params->familyName = params->face->family_name;
+					params->styleName = params->face->style_name;
+				}
+
+				if(requiresRecache)continue;
+
+				const auto&& cacheDir = params->fontCacheDir();
+				cacheDir.createDirQuiet();
+				// ReSharper disable once CppTooWideScopeInitStatement
+				const auto&& dataFile = params->dataFile(cacheDir);
+
+				if(!dataFile.exist()) {
+					requiresRecache = true;
+				}else{
+					unsigned char version = 0;
+					readCacheVersion(obtainStream(dataFile), version);
+					if(version != params->expectedVersion) {
+						requiresRecache = true;
+					}
+				}
+			}
+
+			return requiresRecache;
+		}
+
+		[[nodiscard]] Graphic::Pixmap merge(bool requiresRecache) const {
+			Graphic::Pixmap mergedMap{};
+
+			const OS::File dataFile = rootCacheDir.subFile("merged.bin");
+			const OS::File texFile  = rootCacheDir.subFile("merged.png");
+
+			FT_UInt totalWidth = 0, totalHeight = 0;
+			size_t size = 0;
+			size_t totalCharCount = 0; //This is inaccurate!
+			if(!dataFile.exist())dataFile.createFileQuiet(true);
+			auto&& stream = obtainStream(dataFile);
+			constexpr std::hash<std::string> hasher{};
+
+			//If a font doesn't have cache, then cache it; or if the cache is too old, then recache;
+			cache:
+			if(requiresRecache) {
+				size = flags.size();
+				saveCacheData(stream, totalWidth, totalHeight, size);
+
+				//Generate FontDatas from loadTargets
+				for(const auto& params : flags) {
+					loadFont(*params);
+
+					totalWidth = std::max(params->data->box.getWidth(), totalWidth);
+					totalHeight += params->data->box.getHeight() + TexturePackGap;
+					const size_t hash = hasher(params->fullname());
+					stream.write(reinterpret_cast<const char*>(&hash), sizeof(hash));
+				}
+
+				//Resize the merge map
+				mergedMap.create(totalWidth, totalHeight);
+
+				FT_UInt currentHeightOffset = 0;
+				for(const auto& flag : flags) {
+					const auto& data = flag->data;
+
+					mergedMap.set(*data->fontPixmap, 0, currentHeightOffset);
+
+					data->box.setSrcY(currentHeightOffset);
+					for(auto& charData : data->charDatas | std::ranges::views::values) {
+						charData.charBox.move(0, currentHeightOffset);
+					}
+
+					currentHeightOffset += data->box.getHeight() + TexturePackGap;
+
+					totalCharCount = std::max(totalCharCount, data->charDatas.size());
+
+					data->write(stream);
+				}
+
+				mergedMap.write(texFile, true);
+			}else{
+				//
+				readCacheData(stream, totalWidth, totalHeight, size);
+
+				//Check cache is right
+				if(size != flags.size()) {
+					requiresRecache = true;
+					goto cache; //Recache if the size cannot match...
+				}
+
+				for(size_t i = 0; i < size; ++i) {
+					size_t hash = 0;
+					stream.read(reinterpret_cast<char*>(&hash), sizeof(hash));
+					if(hasher(flags[i]->fullname()) != hash) {
+						requiresRecache = true;
+						goto cache; //Recache if the font cannot match...
+					}
+				}
+				//End Chec
+
+				//Load font data from bin file
+				for(size_t i = 0; i < size; ++i) {
+					auto& data = flags[i]->data;
+					data.reset(new FontData);
+					data->read(stream);
+					totalCharCount = std::max(totalCharCount, data->charDatas.size());
+				}
+
+				//Load font tex from png file
+				mergedMap.loadFrom(texFile);
+			}
+
+			return mergedMap;
+		}
+
+		void assignID() const {
+			std::vector<std::string> loadedFamily;
+			for(size_t i = 0; i < flags.size(); ++i) {
+				// ReSharper disable once CppUseStructuredBinding
+				auto& flag = *flags[i];
+
+				const auto itr = std::find(loadedFamily.begin(), loadedFamily.end(), flag.familyName);
+				const size_t dst = itr - loadedFamily.cbegin();
+
+				if(itr == loadedFamily.end()){
+					loadedFamily.push_back(flag.familyName);
+				}
+
+				flag.internalID |= static_cast<unsigned char>(i) << FontFlags::fontOffset;
+				flag.internalID |= static_cast<unsigned char>(dst) << FontFlags::familyOffset;
+				flag.internalID |= getStyleID(flag.styleName) << FontFlags::styleOffset;
+			}
+		}
+
+	public:
+		void load() { //Dose not support hot load!
+			//User Customized fonts to load;
+			fontLoadListeners.fire(FontLoadState::begin);
+
+			//Init face data;
+			const bool requiresRecache = checkCahce();
+			setProgress(0.15f);
+
+			//Cache prepare
+			Graphic::Pixmap&& mergedMap = merge(requiresRecache);
+			setProgress(0.65f);
+
+			assignID();
+			setProgress(0.8f);
+
+			for (const auto& flag : flags) {
+				flag->free();
+			}
+
+			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
+			//FontsManager obtain the texture from the total cache; before this no texture should be generated!
+			if(quickInit) {
+				manager = std::make_unique<FontsManager>(mergedMap, flags);
+			}else {
+				postToHandler([&mergedMap, this] {
+					manager = std::make_unique<FontsManager>(mergedMap, flags);
+				}).get();
+			}
+
+
+			setProgress(0.95f);
+
+
+			//FontsManager init its member's TextureRegion data;
+
+			//...
+
+			//Release resouces
+
+			fontLoadListeners.fire(FontLoadState::end);
+			setProgress(1.0f);
+
+			setDone();
+
+			//Load End
+		}
+
+	public:
+		std::unique_ptr<FontsManager> getManager() && {
+			return std::move(manager);
+		}
+
+		[[nodiscard]] std::future<void> launch(const std::launch policy) override{
+			return std::async(policy, std::bind(&FontLoader::load, this));
+		}
+
+		[[nodiscard]] std::string_view getTaskName() const override {
+			return "Loading Fonts.";
+		}
+
+		FontLoader(const FontLoader& other) = delete;
+
+		FontLoader(FontLoader&& other) noexcept = delete;
+
+		FontLoader& operator=(const FontLoader& other) = delete;
+
+		FontLoader& operator=(FontLoader&& other) noexcept = delete;
+	};
 }

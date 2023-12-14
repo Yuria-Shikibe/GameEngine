@@ -22,18 +22,18 @@ export namespace Core{
 	inline Event::Draw_Prepare draw_prepare;
 	inline Event::Draw_After draw_after;
 
-class Renderer : virtual public ResizeableInt {
+class Renderer : virtual public ResizeableUInt {
 	protected:
-		std::vector<ResizeableInt*> synchronizedSizedObjects;
+		std::vector<ResizeableUInt*> synchronizedSizedObjects{};
 	unsigned int width{4}, height{4};
 
 	public:
 		std::unique_ptr<FrameBuffer> defaultFrameBuffer = nullptr;
-		FrameBuffer* contextFrameBuffer = nullptr; //TODO uses stack to impl multi layer
+		FrameBuffer* contextFrameBuffer = nullptr;
 
-		std::stack<FrameBuffer*> frameStack;
+		std::stack<FrameBuffer*> frameStack{};
 
-		Renderer(const unsigned int w, const unsigned int h): width(w), height(h){
+		[[nodiscard]] Renderer(const unsigned int w, const unsigned int h): width(w), height(h){
 			defaultFrameBuffer = std::make_unique<FrameBuffer>(w, h);
 
 			contextFrameBuffer = defaultFrameBuffer.get();
@@ -59,13 +59,13 @@ class Renderer : virtual public ResizeableInt {
 			return height;
 		}
 
-		virtual void frameBegin(FrameBuffer& frameBuffer, bool resize, const Color& initColor, GLbitfield mask) = 0;
+		virtual void frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask) = 0;
 
-		virtual void frameBegin(FrameBuffer& frameBuffer){
-			frameBegin(frameBuffer, false, Colors::CLEAR, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		virtual void frameBegin(FrameBuffer* frameBuffer){
+			frameBegin(frameBuffer, false, Colors::CLEAR);
 		}
 
-		virtual void frameBegin(FrameBuffer& frameBuffer, const bool resize, const Color& initColor){
+		virtual void frameBegin(FrameBuffer* frameBuffer, const bool resize, const Color& initColor){
 			frameBegin(frameBuffer, resize, initColor, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
@@ -94,8 +94,9 @@ class Renderer : virtual public ResizeableInt {
 		}
 
 		virtual void draw(){
+
 			defaultFrameBuffer->bind();
-			GL::viewport(defaultFrameBuffer->getWidth(), defaultFrameBuffer->getHeight());
+			GL::viewport(width, height);
 
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -136,11 +137,11 @@ class Renderer : virtual public ResizeableInt {
 			return frame;
 		}
 
-		virtual void registerSynchronizedObject(Resizeable* obj){
+		virtual void registerSynchronizedResizableObject(Resizeable* obj){
 			synchronizedSizedObjects.push_back(obj);
 		}
 
-		virtual void removeSizeSynchronizedObject(Resizeable* obj){
+		virtual void removeSizeSynchronizedResizableObject(Resizeable* obj){
 			std::erase(synchronizedSizedObjects, obj);
 		}
 

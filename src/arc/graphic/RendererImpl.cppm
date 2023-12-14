@@ -17,21 +17,21 @@ import Graphic.Draw;
 using namespace GL;
 
 export namespace Graphic {
-	class RendererImpl final : public virtual Core::Renderer {
+	class RendererImpl : public Core::Renderer {
 	public:
-		RendererImpl(const int w, const int h)
+		RendererImpl(const unsigned int w, const unsigned int h)
 			: Renderer(w, h) {
 		}
 
-		void frameBegin(GL::FrameBuffer& frameBuffer, const bool resize = false, const Color& initColor = Colors::CLEAR, const GLbitfield mask = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) override {
+		void frameBegin(GL::FrameBuffer* frameBuffer, const bool resize, const Color& initColor, const GLbitfield mask) override {
 			{
-				if (frameStack.top() == &frameBuffer)throw GL_Exception{ "Illegally Begin Twice!" };
+				if (frameStack.top() == frameBuffer)throw GL_Exception{ "Illegally Begin Twice!" };
 
 				Draw::flush();
 
 				frameStack.push(contextFrameBuffer);
 
-				contextFrameBuffer = &frameBuffer;
+				contextFrameBuffer = frameBuffer;
 
 				if(resize){
 					contextFrameBuffer->resize(width, height);

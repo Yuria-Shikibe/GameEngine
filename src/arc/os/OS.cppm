@@ -37,15 +37,15 @@ namespace OS{
 	std::vector<std::function<void()>> postTasks;
 	std::vector<std::pair<std::function<void()>, std::promise<void>>> postAsyncTasks;
 
+	std::thread::id mainThreadID{};
+
+	inline bool paused = false;
+
+	void exit_(int s, const std::string& what);
+
+	void exit_(const int s) {exit_(s, "");}
 }
 
-inline void exit_(int s, const std::string& what);
-
-inline void exit_(const int s) {
-	exit_(s, "");
-}
-
-inline bool paused = false;
 
 export namespace OS{
 	std::vector<std::string> args{};
@@ -79,6 +79,10 @@ export namespace OS{
 
 	inline float delta(){
 		return _deltaTime;
+	}
+
+	unsigned int getFPS() {
+		return static_cast<unsigned int>(1.0f / _deltaTime);
 	}
 
 	// ReSharper disable once CppDFAConstantFunctionResult
@@ -155,6 +159,12 @@ export namespace OS{
 		globalTimeSetter = [](float& f){
 			f = static_cast<float>(glfwGetTime());
 		};
+
+		mainThreadID = std::this_thread::get_id();
+	}
+
+	std::thread::id getMainThreadID() {
+		return mainThreadID;
 	}
 
 	inline void exitWith(const std::string& what) {
@@ -223,7 +233,7 @@ export namespace OS{
 }
 
 
-void exit_(const int s, const std::string& what = "") {
+void OS::exit_(const int s, const std::string& what = "") {
 	std::stringstream ss;
 
 	if(!what.empty()) {

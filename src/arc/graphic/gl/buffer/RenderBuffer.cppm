@@ -8,7 +8,7 @@ export import GL.Buffer;
 export import Graphic.Resizeable;
 
 export namespace GL{
-class RenderBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableInt{
+class RenderBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableUInt{
 	protected:
 		unsigned int width, height;
 	public:

@@ -40,7 +40,12 @@ export namespace GL {
 
     void init() {
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-
+        // glDepthFunc(GL_ALWAYS);
+        //
+        // enable(GL_DEPTH_TEST);
+        // enable(GL_STENCIL_TEST);
+        // disable(GL_STENCIL_TEST);
+        // disable(GL_DEPTH_TEST);
     }
 
     bool getState(const GLenum cap) {

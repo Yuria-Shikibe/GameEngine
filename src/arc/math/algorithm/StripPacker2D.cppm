@@ -16,15 +16,17 @@ import <unordered_set>;
 
 export namespace Math {
     template <typename Cont, Concepts::Number T>
-	struct Packer {
+	struct StripPacker2D {
     protected:
 		using Rect = Geom::Shape::Rect_Orthogonal<T>;
     	using obtainer = std::function<Rect&(Cont&)>;
     	using subRectArr = std::array<Rect, 3>;
 
-    	obtainer trans{nullptr};
+    	const obtainer& trans;
 
-    	Rect& obtain(Cont& cont) {return trans(cont);}
+    	Rect& obtain(Cont& cont) {
+    		return trans(cont);
+    	}
 
     	[[nodiscard]] bool contains(Cont* const cont) const {return all.contains(cont);}
 
@@ -43,8 +45,12 @@ export namespace Math {
     		this->maxWidth = maxWidth;
     	}
 
-		[[nodiscard]] explicit Packer(obtainer trans)
-    		: trans(std::move(trans)) {}
+		[[nodiscard]] explicit StripPacker2D(const obtainer& trans)
+    		: trans(trans) {
+#ifdef DEBUG_LOCAL
+    		if(!trans)throw ext::RuntimeException{"Empty Obtainer!!"};
+#endif
+    	}
 
     	template <Concepts::Iterable<Cont*> Range>
     		requires requires (Range range){std::is_same_v<size_t, decltype(range.size())>;}
@@ -91,6 +97,7 @@ export namespace Math {
     				rect.getEndX() <= bound.getEndX() &&
     				rect.getEndY() <= bound.getEndY()
     			){
+
     				all.erase(*itr);
     				packed.push_back(*itr);
     				rstWidth = std::max(rect.getEndX(), rstWidth);
@@ -121,9 +128,9 @@ export namespace Math {
     		if(bound.getSrcX() != box.getSrcX() || box.getSrcY() != box.getSrcY())throw ext::IllegalArguments{"The source of the box and the bound doesn't match"};
 #endif
     		return subRectArr{
-    			Rect{bound.getSrcX(), box.getEndY(), box.getWidth(), bound.getHeight() - box.getHeight()},
-    			Rect{box.getEndX(), bound.getSrcY(), bound.getWidth() - box.getWidth(), box.getHeight()},
-    			Rect{box.getEndX(), box.getEndY(), bound.getWidth() - box.getWidth(), bound.getHeight() - box.getHeight()}
+    			Rect{bound.getSrcX(),   box.getEndY(),   box.getWidth()                 , bound.getHeight() - box.getHeight()},
+    			Rect{  box.getEndX(), bound.getSrcY(), bound.getWidth() - box.getWidth(),   box.getHeight()                  },
+    			Rect{  box.getEndX(),   box.getEndY(), bound.getWidth() - box.getWidth(), bound.getHeight() - box.getHeight()}
     		};
     	}
 

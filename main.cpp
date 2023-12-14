@@ -7,6 +7,8 @@ import <functional>;
 import <sstream>;
 import <unordered_set>;
 
+import Assets.LoaderRenderer;
+
 import Platform;
 import File;
 import Concepts;
@@ -17,17 +19,25 @@ import StackTrace;
 import Graphic.Draw;
 import Graphic.Pixmap;
 import Graphic.RendererImpl;
+import Graphic.Viewport.Viewport_OrthoRect;
+import Graphic.Viewport;
 
 import Graphic.PostProcessor.BloomProcessor;
 import Graphic.PostProcessor.ShaderProcessor;
 import Graphic.PostProcessor.PipeProcessor;
 import Graphic.PostProcessor.P4Processor;
+import Graphic.TextureAtlas;
+
+import Font;
+
 
 import Math;
 import Math.StripPacker2D;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import Geom.Shape.Rect_Orthogonal;
+
+import Async;
 
 import OS;
 import OS.ApplicationListenerSetter;
@@ -52,16 +62,21 @@ import GL.Texture.TextureNineRegion;
 import GL.Blending;
 import Event;
 import GlyphArrangement;
-import Graphic.TexturePacker;
+
+import GL.Shader.Manager;
+
+import Assets.TexturePacker;
+import Assets.Loader;
+
+import TimeMark;
 
 using namespace std;
 using namespace Graphic;
 using namespace Draw;
 using namespace GL;
+using Geom::Vector2D;
 
 
-
-bool screenShotRequest = false;
 bool bloomTest = true;
 
 void init() {
@@ -72,7 +87,9 @@ void init() {
 
 	OS::loadListeners(Core::window);
 
-	Assets::load();
+	Assets::loadBasic();
+
+	OS::setApplicationIcon(Core::window, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")));
 
 	Core::initCore_Post([] {
 		Core::batch = new Core::SpriteBatch([](const Core::SpriteBatch& self) {
@@ -91,62 +108,90 @@ void init() {
 		int w, h;
 
 		glfwGetWindowSize(Core::window, &w, &h);
-
-		Core::renderer = new Graphic::RendererImpl{w, h};
+		Core::renderer = new Graphic::RendererImpl{static_cast<unsigned>(w), static_cast<unsigned>(h)};
 
 		Ctrl::registerCommands(Core::input);
 
-		Core::input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
-			Geom::Vector2D pos = Core::input->getMousePos();
-			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f).scl(1.0f, -1.0f);
-			pos *= Core::camera->getScreenToWorld();
-			Core::camera->setPosition(pos);
-		});
+		Core::renderer->registerSynchronizedResizableObject(Core::camera);
+		Core::camera->resize(w, h);
 	});
 
-	{//TODO pack this into a class like screen shot manager
-		Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, []() mutable  {
-			screenShotRequest = true;
-		});
-
-		Core::input->registerKeyBind(Ctrl::KEY_F2, Ctrl::Act_Press, []() mutable  {
-			bloomTest = !bloomTest;
-		});
-
-		Event::generalUpdateEvents.on<Event::Draw_After>([](const Event::Draw_After& a){
-			if(screenShotRequest) {
-				const Graphic::Pixmap pixmap{Core::renderer->getWidth(), Core::renderer->getHeight(), Core::renderer->defaultFrameBuffer->readPixelsRaw()};
-				//
-				auto&& f = Assets::screenshotDir.subFile("lastShot.png");
-				//
-				pixmap.write(f, true);
-
-				screenShotRequest = false;
-			}
-		});
-	}
-
-	Graphic::Draw::defTexture(*Assets::Textures::whiteRegion);
+	Graphic::Draw::defTexture(Assets::Textures::whiteRegion);
 	Graphic::Draw::texture();
 	Graphic::Draw::rawMesh = Assets::Meshes::raw;
 	Graphic::Draw::blitter = Assets::Shaders::blit;
+
+	Core::batch->setupBlending();
 }
 
-int main(int argc, char* argv[]){
+int main(const int argc, char* argv[]) {
+	//Register Cmd
 	OS::args.reserve(argc);
+	for(int i = 0; i < argc; ++i)OS::args.emplace_back(argv[0]);
 
-	for(int i = 0; i < argc; ++i) {
-		OS::args.emplace_back(argv[0]);
-	}
-
+	//Init
 	::init();
 
-	Graphic::TexturePackPage page{Assets::texCacheDir, "test"};
+	//Test
+	Graphic::TextureAtlas atlas{};
+	Assets::TexturePackPage* testPage = atlas.registerPage(Assets::TexturePackPage{Assets::texCacheDir, "test"});
 
-	Assets::textureDir.subFile("test").forAllSubs([&page](OS::File&& file) {
-		page.pushRequest(file);
+	atlas.setContextPage("test");
+	Assets::textureDir.subFile("test").forAllSubs([&atlas](OS::File&& file) {
+		atlas.load(file);
 	});
-	//page.load();
+
+	Assets::AssetsLoader loader{};
+
+	ShaderManager shaderManager{};
+	Font::FontLoader fontLoader{};
+
+
+	{
+		Assets::Shaders::load(&shaderManager);
+
+		Font::FontLoader tempFontLoader{};
+		tempFontLoader.quickInit = true;
+		Assets::Fonts::loadPreivous(&tempFontLoader);
+		Assets::Fonts::load(&fontLoader);
+
+		auto chores = ext::create<Assets::AssetsTaskHandler>([]{
+
+		});
+
+		loader.push(testPage);
+		loader.push(&shaderManager);
+		loader.push(&fontLoader);
+		// loader.push(&chores);
+
+		loader.begin();
+		// loader.forceGet();
+
+		auto loadRenderer = Assets::LoaderRenderer{Core::renderer->getWidth(), Core::renderer->getHeight(), &loader};
+		while (true){
+			if(loader.finished()) {
+				if(loadRenderer.lastProgress > 0.999f) {
+					break;
+				}
+			}else{
+				loader.processRequests();
+			}
+
+			loadRenderer.draw();
+
+			OS::poll(Core::window);
+
+
+		}
+
+		atlas.flush();
+		Assets::loadAfter();
+
+		Font::glyphParser->context.defaultFont = Assets::Fonts::telegrama;
+		Font::defaultManager = fontLoader.manager.get();
+	}
+
+	const auto& tex = atlas.getContextPage()->findPackData("pester-full")->textureRegion;
 
 		const GL::Texture2D bottomLeftTex{ Assets::textureDir.subFile("ui").find("bottom-left.png") };
 		const GL::Texture2D texture{ Assets::textureDir.find("yyz.png") };
@@ -156,66 +201,56 @@ int main(int argc, char* argv[]){
 
 		GL::TextureNineRegion uiTest{&bottomLeftTex, {0, 0, 256, 256}, {64, 64, 32, 64}};
 
-		Core::renderer->registerSynchronizedObject(&multiSample);
-		Core::renderer->registerSynchronizedObject(&frameBuffer);
+		Core::renderer->registerSynchronizedResizableObject(&multiSample);
+		Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 
 		auto&& file = Assets::assetsDir.subFile("test.txt");
 		const auto coordCenter = std::make_shared<Font::GlyphLayout>();
+		std::stringstream ss{};
+
 		const auto layout = std::make_shared<Font::GlyphLayout>();
 		layout->maxWidth = 720;
-		Font::glyphParser->parse(layout.get(), file.readString());
+
+		Font::glyphParser->parse(layout, file.readString());
 		layout->setAlign(Font::TypeSettingAlign::bottom_left);
 		layout->move(80, 30);
-
-		Graphic::ShaderProcessor blurX{Assets::Shaders::gaussian, [](const Shader& shader) {
-			shader.setVec2("direction", {1.32f, 0});
-		}};
-
-		Graphic::ShaderProcessor blurY{Assets::Shaders::gaussian, [](const Shader& shader) {
-			shader.setVec2("direction", {0, 1.32f});
-		}};
-
-		Graphic::BloomProcessor bloom{&blurX, &blurY, Assets::Shaders::bloom, Assets::Shaders::threshold_light};
-
-		Graphic::ShaderProcessor blend{Draw::blitter};
-		// Graphic::P4Processor processor{&blurX, &blurY};
-		Graphic::PipeProcessor multiBlend{};
-		multiBlend << Assets::PostProcessors::multiToBasic << &blend;
 
 		Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
 			Draw::meshBegin(Assets::Meshes::coords);
 			Draw::meshEnd(true);
-
-			if(bloomTest)Core::renderer->frameBegin(frameBuffer);
-			Core::renderer->frameBegin(multiSample);
-
-			const Geom::Vector2D c = Core::camera->screenCenter();
+			//
+			if(bloomTest)Core::renderer->frameBegin(&frameBuffer);
+			Core::renderer->frameBegin(&multiSample);
+			//
+			const auto center = Core::camera->screenCenter();
+			//
 			Draw::meshBegin(Core::batch->getMesh());
-
-			Draw::stroke(3);
+			//
+			Draw::setLineStroke(3);
 			Draw::color(Colors::WHITE);
 
-			Draw::lineAngleCenter(c.getX(), c.getY(), 135.0f, 50.0f);
+			Draw::lineAngleCenter(center.getX(), center.getY(), 135.0f, 50.0f);
 
-			Draw::lineAngleCenter(c.getX(), c.getY(), 45, 50);
-
+			Draw::lineAngleCenter(center.getX(), center.getY(), 45, 50);
+			//
 			Draw::color();
 
-			if(page.done) {
-				const auto& tex = page.findPackData("pester-full")->textureRegion;
-				Draw::rect(tex, 200, 500, -45);
+			if(atlas.getContextPage()->finished()) {
+				const auto texTest = atlas.find("test-pester");
+
+				Draw::rect(texTest, 200, 500, -45);
 			}else {
-				Draw::stroke(5);
+
+				Draw::setLineStroke(10);
 				Draw::color(Colors::GRAY);
 				Draw::lineAngleCenter(100, 100, 0, 800);
 				Draw::color(Colors::SKY);
-				Draw::lineAngleCenter(100, 100, 0, 800 * page.getProgress());
+				Draw::lineAngleCenter(100, 100, 0, 800 * atlas.getContextPage()->getProgress());
 			}
-
 
 			layout->render();
 
-			std::stringstream ss{};
+			ss.str("");
 
 			Geom::Matrix3D mat{};
 			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
@@ -227,49 +262,42 @@ int main(int argc, char* argv[]){
 			Core::batch->endProjection();
 
 
-			ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << c.getX() << ", " << c.getY() << ")";
+			ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << center.getX() << ", " << center.getY() << " | " << std::to_string(OS::getFPS()) << ")";
 
-			Font::glyphParser->parse(coordCenter.get(), ss.str());
+			Font::glyphParser->parse(coordCenter, ss.str());
 
-			coordCenter->offset.set(c).add(155, 35);
+			coordCenter->offset.set(center).add(155, 35);
+
 			coordCenter->setAlign(Font::TypeSettingAlign::bottom_left);
 			coordCenter->render();
 
-			Draw::stroke(3);
+			Draw::rect_line(layout->bound, true, layout->offset);
+			//
+			Draw::setLineStroke(3);
 			Draw::color(Colors::BLUE, Colors::SKY, 0.745f);
 
-			Draw::rect_line(layout->bound, true, layout->offset);
-
-			Draw::stroke(5);
-			Draw::poly(c.getX(), c.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
+			Draw::setLineStroke(5);
+			Draw::poly(center.getX(), center.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
 				{ Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
 			);
 
 			Draw::flush();
-			Draw::meshEnd(Core::batch->getMesh());
-			Core::renderer->frameEnd(&multiBlend);
-			if(bloomTest)Core::renderer->frameEnd(&bloom);
+			Draw::meshEnd(Core::batch->getMesh(), false);
+			Core::renderer->frameEnd(Assets::PostProcessors::blendMulti);
+			if(bloomTest)Core::renderer->frameEnd(Assets::PostProcessors::bloom);
 		});
 
 	OS::setupLoop();
 
-	auto fu = page.launch();
-
 	while (OS::continueLoop(Core::window)){
-		/*Main Loop*/
-
 		OS::update();
 
-		//TODO move this to other place!
-		Core::camera->setOrtho(static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
-
 		Core::renderer->draw();
-
-		// Draw::blit()
 
 		OS::poll(Core::window);
 	}
 
+	//Application Exit
 	OS::terminateLoop();
 
 	Assets::dispose();

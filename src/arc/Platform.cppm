@@ -14,7 +14,7 @@ import File;
 
 export namespace ext{
 	OS::File getSelf_runTime(){
-		std::string pathName;
+		std::string pathName{};
 #if defined(_WIN64) || defined(_WIN32)
 		char absolutePath[MAX_PATH] = {};
 		GetModuleFileNameA(nullptr, absolutePath, MAX_PATH);
