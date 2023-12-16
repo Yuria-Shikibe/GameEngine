@@ -29,31 +29,7 @@ export namespace Font {
 	constexpr int MAX_CAHCE = 1000;
 	typedef signed long FT_ULong;
 
-	enum class TypeSettingAlign : char{
-		left = 0b0000'0001,
-		right = 0b0000'0010,
-		center_x = 0b0000'0100,
 
-		top = 0b0000'1000,
-		bottom = 0b0001'0000,
-		center_y = 0b0010'0000,
-
-		top_left   = top + left,
-		top_center = top + center_x,
-		top_right  = top + right,
-
-		center_left   = center_y + left,
-		center_center = center_y + center_x,
-		center_right  = center_y + right,
-
-		bottom_left   = bottom + left,
-		bottom_center = bottom + center_x,
-		bottom_right  = bottom + right,
-	};
-
-	inline char codeOf(TypeSettingAlign align) {
-		return static_cast<char>(align);
-	}
 
 	std::unordered_map<std::string_view, const FontFlags*> parserableFonts{};
 	std::unordered_map<std::string_view, Graphic::Color> parserableColors{};
