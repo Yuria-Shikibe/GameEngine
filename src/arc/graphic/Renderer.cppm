@@ -88,6 +88,8 @@ class Renderer : virtual public ResizeableUInt {
 			defaultFrameBuffer->resize(w, h);
 			contextFrameBuffer->resize(w, h);
 
+			GL::viewport(w, h);
+
 			for(const auto & resizeable : synchronizedSizedObjects){
 				resizeable->resize(w, h);
 			}

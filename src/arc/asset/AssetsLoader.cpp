@@ -4,7 +4,6 @@ import <future>;
 
 
 void Assets::AssetsTaskHandler::operator()(std::function<void()>&& task, std::promise<void>&& promise) const {
-
 	std::lock_guard guard{this->lock};
 
 	target->postedTasks.emplace(

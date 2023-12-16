@@ -61,7 +61,7 @@ export namespace Graphic {
 		}
 
 		Assets::TexturePackPage* registerPage(const std::string_view pageName, const OS::File& cacheDir) {
-			const auto [itr, success] = pages.try_emplace(pageName, cacheDir, pageName);
+			const auto [itr, success] = pages.try_emplace(pageName, pageName, cacheDir);
 
 			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(pageName)};
 
@@ -72,6 +72,15 @@ export namespace Graphic {
 			const auto [itr, success] = pages.try_emplace(page.pageName, std::forward<Assets::TexturePackPage>(page));
 
 			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(page.pageName)};
+
+			return &itr->second;
+		}
+
+		template <typename ...Args>
+		Assets::TexturePackPage* registerPage(const std::string_view pageName, Args&&... args) {
+			const auto [itr, success] = pages.try_emplace(pageName, pageName, args...);
+
+			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(pageName)};
 
 			return &itr->second;
 		}

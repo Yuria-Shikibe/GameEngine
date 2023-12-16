@@ -10,7 +10,7 @@ import <vector>;
 
 export namespace GL {
 	class ShaderManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
-		std::vector<std::unique_ptr<GL::Shader>> shaders;
+		std::vector<std::unique_ptr<GL::Shader>> shaders{};
 
 	public:
 		GL::Shader* registerShader(GL::Shader* shader) {

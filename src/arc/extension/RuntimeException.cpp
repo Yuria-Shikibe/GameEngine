@@ -13,6 +13,6 @@ void ext::RuntimeException::postProcess() const {
 	}
 
 	if(std::this_thread::get_id() != OS::getMainThreadID()) {
-		std::terminate();
+		OS::exitApplication(3, what());
 	}
 }

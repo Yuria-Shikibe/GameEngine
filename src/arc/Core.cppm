@@ -10,7 +10,7 @@ import Graphic;
 import Geom.Shape.Rect_Orthogonal;
 
 import Core.Audio;
-import Assets.Loader;
+import Assets.Manager;
 import Assets.Bundle;
 import Core.Settings;
 import Core.Log;
@@ -48,7 +48,7 @@ export namespace Core{
 	}
 
 	inline const GLFWvidmode* mainScreenMode = nullptr;
-	//using unique ptr?
+	//TODO using unique ptr?
 
 	/* Almost Done */
 	inline Input* input = nullptr;
@@ -58,22 +58,22 @@ export namespace Core{
 	inline Batch* batch = nullptr;
 	/* Basically Done */
 	inline Renderer* renderer = nullptr;
-	/* 68.00% */
+	/* 88.00% */
 	inline OS::FileTree* rootFileTree = nullptr;
 
 	//TODO main components... maybe more
 
 	/* 0.00% */
 	inline Audio* audio = nullptr;
-	/* 0.00% */
-	inline Assets::AssetsLoader* assetsLoader = nullptr;
+	/* 90.00% */
+	inline Assets::Manager* assetsManager = nullptr;
 	/* 0.00% */
 	inline Settings* settings = nullptr;
-	/* 0.00% */
+	/* 3.00% */
 	inline UI::Root* uiRoot = nullptr;
 	/* 0.00% */
 	inline Assets::Bundle* bundle = nullptr;
-	/* 0.00% */
+	/* 30.00% */
 	inline Log* log = nullptr;
 
 	//TODO maybe some objects for task management, if necessary
@@ -167,6 +167,15 @@ export namespace Core{
 
 		OS::registerListener(input);
 		OS::registerListener(camera);
+
+		assetsManager = new Assets::Manager{};
+	}
+
+	void loadAssets() {
+		assetsManager->pullRequest();
+		assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), window, renderer);
+		assetsManager->loadPost();
+		assetsManager->loadEnd();
 	}
 
 	inline void dispose(){
@@ -179,7 +188,7 @@ export namespace Core{
 		delete rootFileTree;
 
 		delete audio;
-		delete assetsLoader;
+		delete assetsManager;
 		delete settings;
 		delete uiRoot;
 		delete bundle;

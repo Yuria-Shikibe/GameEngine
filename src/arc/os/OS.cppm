@@ -40,10 +40,6 @@ namespace OS{
 	std::thread::id mainThreadID{};
 
 	inline bool paused = false;
-
-	void exit_(int s, const std::string& what);
-
-	void exit_(const int s) {exit_(s, "");}
 }
 
 
@@ -54,6 +50,10 @@ export namespace OS{
 		begin, end,
 		maxCount
 	};
+
+	void exitApplication(int s, const std::string& what);
+
+	void exitApplication(const int s) {exitApplication(s, "");}
 
 	Event::SignalManager<LoopSignal, LoopSignal::maxCount> updateSignalManager{};
 
@@ -146,11 +146,11 @@ export namespace OS{
 	}
 
 	inline void launch(){
-		std::signal(SIGABRT, exit_);
-		std::signal(SIGILL, exit_);
-		std::signal(SIGSEGV, exit_);
-		std::signal(SIGINT, exit_);
-		std::signal(SIGTERM, exit_);
+		std::signal(SIGABRT, exitApplication);
+		std::signal(SIGILL, exitApplication);
+		std::signal(SIGSEGV, exitApplication);
+		std::signal(SIGINT, exitApplication);
+		std::signal(SIGTERM, exitApplication);
 
 		deltaSetter = [](float& f){
 			f = static_cast<float>(glfwGetTime()) - _globalTime;
@@ -168,7 +168,7 @@ export namespace OS{
 	}
 
 	inline void exitWith(const std::string& what) {
-		exit_(SIGTERM, what);
+		exitApplication(SIGTERM, what);
 	}
 
 	inline bool continueLoop(GLFWwindow* window){
@@ -230,27 +230,6 @@ export namespace OS{
 
 		updateSignalManager.fire(LoopSignal::end);
 	}
-}
-
-
-void OS::exit_(const int s, const std::string& what = "") {
-	std::stringstream ss;
-
-	if(!what.empty()) {
-		ss << what << "\n\n";
-	}
-
-	ss << "Crashed! : Code-" << s << '\n';
-
-	ext::getStackTraceBrief(ss);
-
-	const OS::File& file = OS::crashFileGetter();
-
-	file.writeString(ss.str());
-
-	// t.join();
-
-	std::exit(s);
 }
 
 

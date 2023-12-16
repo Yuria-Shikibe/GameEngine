@@ -122,12 +122,21 @@ export namespace Assets {
 
 		bool dynamic{false};
 
-		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string_view pageName,
+		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
 			const OrthoRectUInt& texMaxBound, const bool forcePack)
 			: cacheDir(cacheDir),
 			pageName(pageName),
 			texMaxBound(texMaxBound),
 			forcePack(forcePack) {
+		}
+
+		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
+									  const OrthoRectUInt& texMaxBound)
+			: TexturePackPage(pageName, cacheDir, texMaxBound, false){
+		}
+
+		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir) :
+			TexturePackPage(pageName, cacheDir, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}){
 		}
 
 		[[nodiscard]] const std::unordered_map<std::string, TexturePackData>& getData() const {
@@ -136,15 +145,6 @@ export namespace Assets {
 
 		[[nodiscard]] std::unordered_map<std::string, TexturePackData>& getData() {
 			return packData;
-		}
-
-		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string_view pageName,
-		                              const OrthoRectUInt& texMaxBound)
-			: TexturePackPage(cacheDir, pageName, texMaxBound, false){
-		}
-
-		[[nodiscard]] TexturePackPage(const OS::File& cacheDir, const std::string_view pageName) :
-			TexturePackPage(cacheDir, pageName, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}, false){
 		}
 
 		[[nodiscard]] PackState getState() const {
@@ -184,6 +184,7 @@ export namespace Assets {
 		}
 
 		[[nodiscard]] OS::File getDataFile() const {
+
 			return cacheDir.subFile(static_cast<std::string>(pageName) + ".bin");
 		}
 
@@ -197,6 +198,38 @@ export namespace Assets {
 					throw ext::RuntimeException{"Cannot Read Pixmap Data: " + name};
 				}
 			}
+		}
+
+		TexturePackPage(const TexturePackPage& other) = delete;
+
+		TexturePackPage(TexturePackPage&& other) noexcept
+			: ext::ProgressTask<void, Assets::AssetsTaskHandler>{ std::move(other) },
+			mergedMaps{ std::move(other.mergedMaps) },
+			cacheDir{ std::move(other.cacheDir) },
+			packData{ std::move(other.packData) },
+			state{ other.state },
+			texMaxBound{ std::move(other.texMaxBound) },
+			pageName{ std::move(other.pageName) },
+			textures{ std::move(other.textures) },
+			forcePack{ other.forcePack },
+			dynamic{ other.dynamic } {
+		}
+
+		TexturePackPage& operator=(const TexturePackPage& other) = delete;
+
+		TexturePackPage& operator=(TexturePackPage&& other) noexcept {
+			if(this == &other) return *this;
+			ext::ProgressTask<void, Assets::AssetsTaskHandler>::operator =(std::move(other));
+			mergedMaps = std::move(other.mergedMaps);
+			cacheDir = std::move(other.cacheDir);
+			packData = std::move(other.packData);
+			state = other.state;
+			texMaxBound = std::move(other.texMaxBound);
+			pageName = std::move(other.pageName);
+			textures = std::move(other.textures);
+			forcePack = other.forcePack;
+			dynamic = other.dynamic;
+			return *this;
 		}
 
 		void load() {

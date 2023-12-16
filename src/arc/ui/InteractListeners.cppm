@@ -48,7 +48,7 @@ export namespace UI {
 		}
 	};
 
-	enum TouchbilityFlags : unsigned char{
+	enum class TouchbilityFlags : unsigned char{
 		disabled = 0,
 		enabled = 1,
 		childrenOnly = 2

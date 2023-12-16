@@ -111,12 +111,16 @@ inline void color(const Color& color = Colors::WHITE) {
 	contextColor = color;
 }
 
-inline void mixColor(const Color& color) {
+inline void mixColor(const Color& color = Colors::CLEAR) {
 	contextMixColor = color;
 }
 
-inline void alpha(const float a) {
+inline void alpha(const float a = 1.0f) {
 	contextColor.setA(a);
+}
+
+inline void mixAlpha(const float a) {
+	contextMixColor.setA(a);
 }
 
 inline void color(const Color& c1, const Color& c2, const float t) {

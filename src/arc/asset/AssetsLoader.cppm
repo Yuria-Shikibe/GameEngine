@@ -9,6 +9,7 @@ import Concepts;
 import Async;
 import TimeMark;
 import RuntimeException;
+import <sstream>;
 import <numeric>;
 import <queue>;
 import <stack>;
@@ -51,6 +52,8 @@ class AssetsLoader;
 
 		std::unique_ptr<Handler> postHandler{nullptr};
 
+		mutable std::stringstream sstream{};
+
 		float taskProgress{0};
 		bool done{false};
 
@@ -58,6 +61,8 @@ class AssetsLoader;
 		[[nodiscard]] AssetsLoader() : postHandler(std::make_unique<Handler>(this)) {
 
 		}
+
+		~AssetsLoader()  = default;
 
 		std::queue<std::pair<std::function<void()>, std::promise<void>>> postedTasks{};
 
@@ -67,6 +72,19 @@ class AssetsLoader;
 			}
 		}
 
+		void interrupt() {
+			forceGet();
+		}
+
+		void reset() {
+			taskProgress = 0;
+			done = false;
+		}
+
+		void setDone() {
+			done = true;
+			tasks.clear();
+		}
 
 		[[nodiscard]] bool finished() const {
 			return done;
@@ -91,7 +109,7 @@ class AssetsLoader;
 			}
 
 			if(doneCount == tasks.size()) {
-				done = true;
+				setDone();
 				return;
 			}
 
@@ -134,6 +152,23 @@ class AssetsLoader;
 		void push(Task const task) {
 			task->setHandler(this->postHandler.get());
 			tasks.try_emplace(task, TaskFuture{});
+		}
+
+		[[nodiscard]] std::string_view getTaskNames(const std::string_view prefix = "", const std::string_view linePrefix = "") const {
+			sstream.str("");
+
+			sstream << prefix;
+
+			for(auto& task : tasks | std::ranges::views::keys) {
+				if(task->finished())continue;
+				sstream << linePrefix << task->getTaskName() << '\n';
+			}
+
+			if(!postedTasks.empty()) {
+				sstream << linePrefix << "Posted Tasks: " << postedTasks.size() << '\n';
+			}
+
+			return sstream.view();
 		}
 	};
 }

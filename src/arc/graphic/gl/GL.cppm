@@ -9,6 +9,8 @@ import <unordered_set>;
 import <glad/glad.h>;
 
 namespace GL {
+    GLuint lastProgram{0};
+
     std::unordered_set<GLenum> currentState;
 
     int maxTexSize = 4096;
@@ -20,6 +22,14 @@ namespace GL {
 }
 
 export namespace GL {
+    GLuint useProgram(const GLuint program) {
+        if(program != lastProgram) {
+            glUseProgram(program);
+        }
+
+        return lastProgram;
+    }
+
     void enable(const GLenum cap) {
         if(!currentState.contains(cap)) {
             currentState.insert(cap);
@@ -40,12 +50,12 @@ export namespace GL {
 
     void init() {
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-        // glDepthFunc(GL_ALWAYS);
-        //
-        // enable(GL_DEPTH_TEST);
-        // enable(GL_STENCIL_TEST);
-        // disable(GL_STENCIL_TEST);
-        // disable(GL_DEPTH_TEST);
+        glDepthFunc(GL_ALWAYS);
+
+        enable(GL_DEPTH_TEST);
+        enable(GL_STENCIL_TEST);
+        disable(GL_STENCIL_TEST);
+        disable(GL_DEPTH_TEST);
     }
 
     bool getState(const GLenum cap) {

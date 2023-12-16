@@ -16,6 +16,8 @@ import GL.Texture.TextureRegionRect;
 
 import Geom.Vector2D;
 
+import Align;
+
 import <vector>;
 import <string>;
 import <algorithm>;
@@ -102,20 +104,20 @@ export namespace Font {
 			move(vec.x, vec.y);
 		}
 
-		void setAlign(const TypeSettingAlign align) {
+		void setAlign(const Align::Mode align) {
 			const char code = codeOf(align);
 
-			if(code & codeOf(TypeSettingAlign::top)) {
+			if(code & Align::codeOf(Align::Mode::top)) {
 				bound.setSrcY(-bound.getHeight());
-			}else if(code & codeOf(TypeSettingAlign::bottom)){
+			}else if(code & Align::codeOf(Align::Mode::bottom)){
 				bound.setSrcY(0.0f);
 			}else { //centerY
 				bound.setSrcY(-bound.getHeight() * 0.5f);
 			}
 
-			if(code & codeOf(TypeSettingAlign::right)) {
+			if(code & Align::codeOf(Align::Mode::right)) {
 				bound.setSrcX(-bound.getWidth());
-			}else if(code & codeOf(TypeSettingAlign::left)){
+			}else if(code & Align::codeOf(Align::Mode::left)){
 				bound.setSrcX(0.0f);
 			}else { //centerX
 				bound.setSrcX(-bound.getWidth() * 0.5f);
@@ -362,10 +364,11 @@ namespace ParserFunctions {
 
 		}
 
-		virtual void parse(std::shared_ptr<GlyphLayout> layout, const std::string& text) const {
+		virtual void parse(std::shared_ptr<GlyphLayout> layout, const std::string_view text) const {
 			constexpr auto npos = std::string::npos;
 
 			if(layout->last == text)return;
+			layout->last = text;
 
 			context.reset();
 			layout->reset();
@@ -378,6 +381,10 @@ namespace ParserFunctions {
 			std::string token{};
 			Geom::Vector2D currentPosition{0, -context.lineSpacing};
 
+			if(text.empty()) {
+				layout->bound.set(0, 0,0 , 0);
+				return;
+			}
 			for(size_t index = 0; index < text.size(); ++index) {
 				const char currentChar = text.at(index);
 				//Token Check
@@ -461,6 +468,7 @@ namespace ParserFunctions {
 			layout->bound.addSize(0, -2 * context.currentLineBound.getHeight());
 
 			layout->bound.setLargerWidth(currentPosition.getX() + normalize(lastCharData->matrices.horiAdvance));
+			layout->bound.setWidth(std::min(layout->bound.getWidth(), layout->maxWidth));
 
 			//TODO should this really work?
 			float offsetY = layout->bound.getHeight() + context.currentLineBound.getHeight() * 0.255f;
@@ -470,7 +478,7 @@ namespace ParserFunctions {
 			});
 		}
 
-		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string& text) const {
+		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string_view text) const {
 			const auto layout = std::make_shared<GlyphLayout>();
 
 			parse(layout, text);
@@ -502,7 +510,7 @@ namespace ParserFunctions {
 		glyphParser = new GlyphParser{defFont};
 
 		glyphParser->charParser->modifier[' '] = [](const ModifierableData& data) {
-			data.cursorPos.add(data.context.spaceSpaceing, 0);
+			data.cursorPos.add(data.context.spaceSpaceing * data.context.currentScale, 0);
 		};
 
 		glyphParser->charParser->modifier['\n'] = [](const ModifierableData& data) {
@@ -607,6 +615,20 @@ namespace ParserFunctions {
 					}
 				}
 			}
+		};
+
+		glyphParser->tokenParser->modifier["alp"] = [](const std::string& command, const ModifierableData& data) {
+			if(command.front() == '[' && command.back() == ']') {
+				if(std::string&& sub = command.substr(1, command.size() - 2); !sub.empty()){
+					float alpha = 1.0f;
+					try {alpha = std::stof(sub);}catch(std::invalid_argument e) {}
+
+					data.context.currentColor.setA(alpha);
+					return;
+				}
+			}
+
+			data.context.currentColor.setA(1.0f);
 		};
 
 		//SuperScript Begin

@@ -13,10 +13,6 @@ import Concepts;
 export namespace Event {
 	struct EventType {};
 
-	struct Draw_After                   final : EventType {};
-	struct Draw_Post                    final : EventType {};
-	struct Draw_Prepare                 final : EventType {};
-
 	template<Concepts::Derived<EventType> T>
 	constexpr std::type_index indexOf() {
 		return std::type_index(typeid(T));
@@ -63,7 +59,7 @@ export namespace Event {
 			: registered(std::move(registered)) {
 		}
 
-		[[nodiscard]] explicit EventManager(std::initializer_list<std::type_index> registeredList)
+		[[nodiscard]] explicit EventManager(const std::initializer_list<std::type_index> registeredList)
 			: registered(registeredList) {
 		}
 
@@ -72,9 +68,15 @@ export namespace Event {
 
 	enum class CycleSignalState {
 		begin, end,
+		/** \brief Internal Index Count Usage*/
 		maxCount
 	};
 
+	/**
+	 * \brief THE VALUE OF THE ENUM MEMBERS MUST BE CONTINUOUS
+	 * \tparam T Used Enum Type
+	 * \tparam maxsize How Many Items This Enum Contains
+	 */
 	template <Concepts::Enum T, T maxsize>
 	class SignalManager {
 		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events{};
@@ -93,9 +95,9 @@ export namespace Event {
 	};
 
 	//TODO Move these to other places
-	inline EventManager generalCheckEvents{{
-
-	}};
+	struct Draw_After   final : EventType {};
+	struct Draw_Post    final : EventType {};
+	struct Draw_Prepare final : EventType {};
 	inline EventManager generalUpdateEvents{
 		indexOf<Draw_After>(),
 		indexOf<Draw_Post>(),

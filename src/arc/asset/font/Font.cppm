@@ -33,7 +33,6 @@ import RuntimeException;
 import File;
 import Image;
 import Event;
-import Core;
 
 void exitLoad(const std::string& fontName) {
 	throw ext::RuntimeException{"Font Load Failed : " + fontName};

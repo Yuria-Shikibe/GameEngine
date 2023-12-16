@@ -209,6 +209,8 @@ export namespace Assets{
 	}
 
 	namespace Fonts {
+		constexpr int DefFlag = 1L << 2;
+
 		OS::File cacheDir;
 		// Font::FontsManager
 
@@ -235,21 +237,21 @@ export namespace Assets{
 		;
 
 		void loadPreivous(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter)
+			loader->quickInit = true;
 			cacheDir = fontDir.subFile("cache-load");
 			if(!cacheDir.exist())cacheDir.createDirQuiet();
 			
 			loader->rootCacheDir = cacheDir;
 			
 			telegrama =
-				 loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
+				 loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars, DefFlag, 120});
 
 			loader->load();
 
 			Font::initParser(telegrama);
 		}
 
-		void load(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter)
-			constexpr int DefFlag = 1L << 2;
+		void load(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter
 
 			cacheDir = fontDir.subFile("cache");
 			if(!cacheDir.exist())cacheDir.createDirQuiet();

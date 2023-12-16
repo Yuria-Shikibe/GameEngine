@@ -38,12 +38,12 @@ export namespace Graphic {
 			scale = 0.25f;
 			blur.setScale(scale);
 
-			thresHolder.shaderHandler = [threshold = this->threshold](const Shader& shader) {
+			thresHolder.shaderHandler = [this](const Shader& shader) {
 				shader.setFloat("threshold", threshold);
 			};
 		}
 
-		float threshold = 0.35f;
+		float threshold = 0.3f;
 
 		float intensity_blo = 0.9f;
 		float intensity_ori = 1.225f;

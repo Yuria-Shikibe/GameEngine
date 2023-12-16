@@ -15,6 +15,7 @@ import <span>;
 import <set>;
 import <utility>;
 
+import GL;
 import File;
 
 import RuntimeException;
@@ -289,12 +290,12 @@ export namespace GL {
 		}
 
 		void bind() const {
-			glUseProgram(programID);
+			GL::useProgram(programID);
 		}
 
 		// ReSharper disable once CppMemberFunctionMayBeStatic
 		void unbind() const {
-			glUseProgram(0);
+			GL::useProgram(0);
 		}
 
 		//TODO Automatize this function during initialization

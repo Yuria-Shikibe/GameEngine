@@ -4,6 +4,8 @@ module;
 
 export module Assets.LoaderRenderer;
 
+import Align;
+
 import Graphic.RendererImpl;
 
 import Graphic.Draw;
@@ -23,6 +25,7 @@ import GlyphArrangement;
 import TimeMark;
 
 import <glad/glad.h>;
+import <GLFW/glfw3.h>;
 import <memory>;
 import <sstream>;
 import GL;
@@ -36,13 +39,16 @@ export namespace Assets {
 		Geom::Matrix3D mat{};
 		const Geom::Matrix3D* defaultMat{nullptr};
 
-		const std::shared_ptr<Font::GlyphLayout> coordCenter = std::make_shared<Font::GlyphLayout>();
+		const std::shared_ptr<Font::GlyphLayout> loadStatus = std::make_shared<Font::GlyphLayout>();
+		const std::shared_ptr<Font::GlyphLayout> loadTasks = std::make_shared<Font::GlyphLayout>();
+
 		std::stringstream ss{};
 
 		ext::Timestamper interval{};
 
 	public:
 		float lastProgress = 0.0f;
+		float lastThreshold = 0.0f;
 
 		[[nodiscard]] LoaderRenderer(const unsigned int w, const unsigned int h, Assets::AssetsLoader* const loader)
 			: RendererImpl(w, h), loader(loader), drawFBO(w, h) {
@@ -53,6 +59,11 @@ export namespace Assets {
 			Core::batch->setProjection(mat);
 
 			interval.mark();
+
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+			lastThreshold = Assets::PostProcessors::bloom->threshold;
+			Assets::PostProcessors::bloom->threshold = 0.0f;
 		}
 
 		~LoaderRenderer() override { // NOLINT(*-use-equals-default)
@@ -60,45 +71,135 @@ export namespace Assets {
 			Draw::shader(false);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+
+			Assets::PostProcessors::bloom->threshold = lastThreshold;
 		}
 
 		void drawMain() override {
-			lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
-
-			constexpr float stroke = 15.0f;
+			constexpr float stroke = 10.0f;
 			const float y = static_cast<float>(getHeight()) * 0.5f;
 			const auto w = static_cast<float>(getWidth());
 			const float x = w * 0.25f;
 			const float barWidth = w * 0.5f;
 
+			constexpr float slideLineSize = 12.0f;
+			constexpr float preBlockWidth = 32.0f;
+
 			Draw::shader();
+			glStencilMask(0x00);
 
-			Draw::color(Colors::WHITE);
-			Draw::line(x - 7, y, x, y);
+			Draw::mixColor(Colors::DARK_GRAY);
 
-			ss.str("");
-			ss << "${scl#[0.72]}(" << std::fixed << std::setprecision(2) << lastProgress << "${scl#[0.65]}%${scl#[0.72]})";
-			ss << "\n${scl#[0.62]}" << static_cast<float>(interval.toMark().count()) / 1000.0f << "sec.";
+			if(!loader->finished()) {
+				Font::glyphParser->parse(loadTasks, loader->getTaskNames("${alp#[0.3]}${scl#[1.5]}", ">> "));
+				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
+			}else {
+				Font::glyphParser->parse(loadTasks, "${alp#[0.3]}${scl#[1.8]}LOAD DONE");
+				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.15f);
+			}
 
-			Font::glyphParser->parse(coordCenter, ss.str());
-			coordCenter->offset.set(x, y - stroke);
+			loadTasks->setAlign(Align::Mode::bottom_left);
+			loadTasks->offset.set(w * 0.05f, y * 0.1f);
+			loadTasks->render();
 
-			coordCenter->setAlign(Font::TypeSettingAlign::top_left);
-			coordCenter->render();
+			Draw::mixColor();
+
+			Draw::color(Colors::DARK_GRAY);
+
+			Draw::alpha(0.177f);
+			Draw::setLineStroke((stroke + slideLineSize) * 2.0f);
+			Draw::line(0, y, w, y);
+
+
+			Draw::alpha();
+			Draw::quad(
+				x - preBlockWidth, y - stroke - slideLineSize,
+				x + slideLineSize, y - stroke - slideLineSize,
+				x + slideLineSize, y + stroke,
+				x - preBlockWidth, y + stroke
+			);
+
+			Draw::quad(
+				x - preBlockWidth, y + stroke,
+				x + slideLineSize, y + stroke,
+				x + slideLineSize, y + stroke + slideLineSize,
+				x - preBlockWidth + slideLineSize, y + stroke + slideLineSize
+			);
 
 			Draw::shader(Assets::Shaders::sildeLines, true);
 			Draw::setLineStroke(stroke);
 			Draw::color(Colors::GRAY);
-			Draw::line(x, y, x + barWidth, y);
-
-			Draw::color(Colors::AQUA, Colors::SKY, 0.5f);
-			Draw::line(x, y, x + barWidth * lastProgress, y);
 
 			Draw::flush();
-		}
 
+			GL::enable(GL_STENCIL_TEST);
+
+			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilMask(0xFF);
+
+			Draw::quad(
+				Draw::defaultTexture,
+				x, y - stroke - slideLineSize, Colors::DARK_GRAY,
+				x + barWidth - slideLineSize, y - stroke - slideLineSize, Colors::GRAY,
+				x + barWidth, y - stroke, Colors::GRAY,
+				x, y + stroke, Colors::DARK_GRAY
+			);
+
+			Draw::quad(
+				Draw::defaultTexture,
+				x, y + stroke, Colors::DARK_GRAY,
+				x + barWidth, y - stroke, Colors::GRAY,
+				x + barWidth, y + stroke + slideLineSize, Colors::GRAY,
+				x + slideLineSize, y + stroke + slideLineSize, Colors::DARK_GRAY
+			);
+
+			// Draw::shader();
+			Draw::flush();
+
+			glStencilFunc(GL_EQUAL, 1, 0xFF);
+			glStencilMask(0x00);
+
+			Draw::setLineStroke(stroke * 4);
+			Draw::alpha(0.9f);
+
+			const Color& begin = loader->postedTasks.empty() ? Colors::ROYAL : Colors::RED;
+			Color end = begin;
+			end.lerp(loader->postedTasks.empty() ? Colors::SKY : Colors::ORANGE, lastProgress);
+
+			Draw::quad(
+				Draw::defaultTexture,
+				x, y - stroke, begin,
+				x + barWidth * lastProgress, y - stroke, end,
+				x + barWidth * lastProgress, y + stroke + slideLineSize, end,
+				x, y + stroke + slideLineSize, begin
+			);
+
+			Draw::quad(
+				Draw::defaultTexture,
+				x, y - stroke - slideLineSize, begin,
+				x + barWidth * lastProgress - slideLineSize, y - stroke - slideLineSize, end,
+				x + barWidth * lastProgress, y - stroke, end,
+				x, y - stroke, begin
+			);
+
+			Draw::flush();
+			GL::disable(GL_STENCIL_TEST);
+
+			Draw::shader();
+
+			ss.str("");
+			ss << "${scl#[0.4]}Loading${scl#[0.3]}: (${color#[" << end << "]}"<< std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";
+			ss << "\n${scl#[0.3]}${color#[" << end << "]}" << static_cast<float>(interval.toMark().count()) / 1000.0f << "${color#[]}sec.";
+
+			Font::glyphParser->parse(loadStatus, ss.str());
+			loadStatus->offset.set(x, y - stroke - slideLineSize * 2.0f);
+
+			loadStatus->setAlign(Align::Mode::top_left);
+			loadStatus->render();
+		}
 
 		void draw() override {
 			defaultFrameBuffer->bind();
@@ -107,7 +208,7 @@ export namespace Assets {
 
 			drawFBO.bind();
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			drawMain();
 
