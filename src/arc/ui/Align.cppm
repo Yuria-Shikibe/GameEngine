@@ -28,4 +28,8 @@ export namespace Align {
 	inline char codeOf(Mode align) {
 		return static_cast<char>(align);
 	}
+
+	bool operator &(const Mode l, const Mode r) {
+		return codeOf(l) & codeOf(r);
+	}
 }

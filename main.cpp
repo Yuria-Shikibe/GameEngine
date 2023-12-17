@@ -69,10 +69,11 @@ import GL.Shader.Manager;
 
 import Assets.TexturePacker;
 import Assets.Loader;
-
 import Assets.Manager;
 
 import TimeMark;
+
+import UI.Root;
 
 using namespace std;
 using namespace Graphic;
@@ -123,6 +124,11 @@ void init(const int argc, char* argv[]) {
 
 		Core::renderer->registerSynchronizedResizableObject(Core::camera);
 		Core::camera->resize(w, h);
+
+		Core::uiRoot = new UI::Root{};
+		Core::uiRoot->resize(w, h);
+		Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
+		OS::registerListener(Core::uiRoot);
 	});
 
 	Graphic::Draw::defTexture(Assets::Textures::whiteRegion);
@@ -145,6 +151,32 @@ int main(const int argc, char* argv[]) {
 	//Init
 	::init(argc, argv);
 
+	//UI Test
+	auto& cell = Core::uiRoot->root->add(new UI::Elem{});
+	cell.setAlign(Align::Mode::top_left).setSizeScale(0.35f, 0.2f);
+	cell.marginLeft = cell.marginRight = cell.marginBottom = cell.marginTop = 10;
+	cell.item->color = Colors::RED;
+	cell.clearRelativeMove();
+
+	auto& cell2 = Core::uiRoot->root->add(new UI::Table{});
+	cell2.item->color = Colors::GREEN;
+	cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.3f, 0.3f);
+	cell2.clearRelativeMove();
+
+	UI::Table& table = cell2.as<UI::Table>();
+
+	table.add(new UI::Elem{});
+
+	table.endRow();
+
+	table.add(new UI::Elem{});
+	table.add(new UI::Elem{});
+
+
+	Core::uiRoot->root->add(new UI::Elem{}).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
+
+
+	//Draw Test
 	auto tex = Core::assetsManager->getAtlas().find("test-pester-full");
 
 	const GL::Texture2D bottomLeftTex{ Assets::textureDir.subFile("ui").find("bottom-left.png") };
@@ -214,7 +246,7 @@ int main(const int argc, char* argv[]) {
 		coordCenter->setAlign(Align::Mode::bottom_left);
 		coordCenter->render();
 
-		Draw::rect_line(layout->bound, true, layout->offset);
+		Draw::rectLine(layout->bound, true, layout->offset);
 		//
 		Draw::setLineStroke(3);
 		Draw::color(Colors::BLUE, Colors::SKY, 0.745f);

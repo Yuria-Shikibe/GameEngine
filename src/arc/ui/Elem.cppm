@@ -8,9 +8,12 @@ export module UI.Elem;
 
 export import UI.Flags;
 import Event;
+import Geom.Vector2D;
 import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
+
+import UI.ElemDrawer;
 
 import <algorithm>;
 import <execution>;
@@ -21,9 +24,13 @@ import <unordered_set>;
 using Rect = Geom::Shape::OrthoRectFloat;
 
 export namespace UI {
-	class Elem {
+class Root;
+
+class Elem {
 	public:
 		virtual ~Elem() = default;
+
+		[[nodiscard]] Elem() = default;
 
 	protected:
 		/**
@@ -31,9 +38,10 @@ export namespace UI {
 		 */
 		Rect bound{};
 		Elem* parent{nullptr};
+		Root* root{nullptr};
 
 		//TODO abstact this if possible
-		std::vector<Elem*> children{};
+		std::vector<std::unique_ptr<Elem>> children{};
 		std::vector<Elem*> toRemove{};
 
 		std::unordered_set<Elem*> focusTarget{};
@@ -43,9 +51,13 @@ export namespace UI {
 
 		std::function<bool()> visibilityChecker{nullptr};
 
-		bool layoutChanged{false};
+		mutable bool layoutChanged{false};
 		bool endRow{false};
 		bool visiable{true};
+
+		Geom::Vector2D absoluteSrc{};
+
+		ElemDrawer* drawer{UI::defDrawer.get()};
 
 	public:
 		std::string_view name{"undefind elem"};
@@ -56,9 +68,23 @@ export namespace UI {
 			return visiable;
 		}
 
-		virtual void layout() = 0;
+		virtual void layout() {
 
-		virtual void draw() const = 0;
+		}
+
+		virtual void draw() const {
+			drawBackground();
+			drawChildren();
+		}
+
+		virtual void addChildren(Elem* elem) {
+			children.emplace_back(elem);
+			layoutChanged = true;
+		}
+
+		virtual void drawBackground() const {
+			drawer->drawBackground(absoluteSrc.x, absoluteSrc.y, getBound().getWidth(), getBound().getHeight(), color, maskOpacity);
+		}
 
 		virtual void drawChildren() const {
 			for(const auto& elem : children) {
@@ -72,6 +98,10 @@ export namespace UI {
 			return parent;
 		}
 
+		void setDrawer(ElemDrawer* drawer) {
+			this->drawer = drawer;
+		}
+
 		Elem* setParent(Elem* const parent) {
 			Elem* former = parent;
 			this->parent = parent;
@@ -83,7 +113,7 @@ export namespace UI {
 			if(parent == nullptr) {
 				throw ext::NullPointerException{"This Elem: " + static_cast<std::string>(name) + " Doesn't Have A Parent!"};
 			}
-			parent->toRemove.push_back(this);
+			parent->toRemove.emplace_back(this);
 
 			return *this;
 		}
@@ -149,16 +179,25 @@ export namespace UI {
 			return bound;
 		}
 
-		virtual std::vector<Elem*>& getChildren() {
+		[[nodiscard]] Rect& getBound() {
+			return bound;
+		}
+
+
+		virtual std::vector<std::unique_ptr<Elem>>& getChildren() {
 			return children;
+		}
+
+		virtual void calAbsolute(Elem* parent) {
+			absoluteSrc.set(parent->absoluteSrc).add(bound.getSrcX(), bound.getSrcY());
+		}
+
+		Geom::Vector2D& getAbsSrc() {
+			return absoluteSrc;
 		}
 
 		virtual int elemSerializationID() {
 			return 0;
-		}
-
-		virtual bool deletable() {
-			return parent == nullptr;
 		}
 
 		[[nodiscard]] bool hasChanged() const {
@@ -169,17 +208,25 @@ export namespace UI {
 			//TODO tree print support
 		}
 
-		virtual void update(float delta) = 0;
+		virtual void update(float delta){
+			updateChildren(delta);
+		}
 
 		virtual void updateChildren(const float delta) {
 			while(!toRemove.empty()) {
-				std::erase(children, toRemove.back());
+				std::erase_if(children, [data = toRemove.back()](const std::unique_ptr<Elem>& ptr) {
+					return ptr.get() == data;
+				});
 				toRemove.pop_back();
 			}
 
-			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [delta](Elem* elem) {
-				elem->updateChildren(delta);
+			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [delta](const std::unique_ptr<Elem>& elem) {
+				elem->update(delta);
 			});
 		}
+
+		bool isFocused() const;
+
+		void setFocused(bool focus);
 	};
 }

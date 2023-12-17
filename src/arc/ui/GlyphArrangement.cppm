@@ -105,19 +105,17 @@ export namespace Font {
 		}
 
 		void setAlign(const Align::Mode align) {
-			const char code = codeOf(align);
-
-			if(code & Align::codeOf(Align::Mode::top)) {
+			if(align & Align::Mode::top) {
 				bound.setSrcY(-bound.getHeight());
-			}else if(code & Align::codeOf(Align::Mode::bottom)){
+			}else if(align & Align::Mode::bottom){
 				bound.setSrcY(0.0f);
 			}else { //centerY
 				bound.setSrcY(-bound.getHeight() * 0.5f);
 			}
 
-			if(code & Align::codeOf(Align::Mode::right)) {
+			if(align & Align::Mode::right) {
 				bound.setSrcX(-bound.getWidth());
-			}else if(code & Align::codeOf(Align::Mode::left)){
+			}else if(align & Align::Mode::left){
 				bound.setSrcX(0.0f);
 			}else { //centerX
 				bound.setSrcX(-bound.getWidth() * 0.5f);

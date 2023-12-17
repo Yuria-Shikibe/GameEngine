@@ -14,6 +14,8 @@ import Graphic.PostProcessor;
 import Graphic.Color;
 import Graphic.Draw;
 
+import Core;
+
 using namespace GL;
 
 export namespace Graphic {
@@ -67,6 +69,14 @@ export namespace Graphic {
 
 				contextFrameBuffer = beneathFrameBuffer;
 			}
+		}
+
+		void renderUI() const override {
+			Core::batch->beginProjection(Core::uiRoot->getPorj());
+
+			Core::uiRoot->render();
+
+			Core::batch->endProjection();
 		}
 	};
 }

@@ -47,38 +47,6 @@ export namespace Geom::Shape{
 
 		~Rect_Orthogonal() = default;
 
-		Rect_Orthogonal(const Rect_Orthogonal& other)
-			: srcX(other.srcX),
-			  srcY(other.srcY),
-			  width(other.width),
-			  height(other.height){
-		}
-
-		Rect_Orthogonal(Rect_Orthogonal&& other) noexcept
-			: srcX(other.srcX),
-			srcY(other.srcY),
-			width(other.width),
-			height(other.height) {
-		}
-
-		Rect_Orthogonal& operator=(const Rect_Orthogonal& other){
-			if(this == &other) return *this;
-			srcX = other.srcX;
-			srcY = other.srcY;
-			width = other.width;
-			height = other.height;
-			return *this;
-		}
-
-		Rect_Orthogonal& operator=(Rect_Orthogonal&& other) noexcept {
-			if (this == &other) return *this;
-			srcX = other.srcX;
-			srcY = other.srcY;
-			width = other.width;
-			height = other.height;
-			return *this;
-		}
-
 		friend bool operator==(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
 			return lhs.srcX == rhs.srcX
 			       && lhs.srcY == rhs.srcY
@@ -152,9 +120,7 @@ export namespace Geom::Shape{
 			};
 		}
 
-
-		template<typename U = T>
-		void setWidth(const T w)requires Concepts::Signed<U>{
+		void setWidth(const T w)requires Concepts::Signed<T>{
 			if(w >= 0){
 				this->width = w;
 			} else{
@@ -164,13 +130,11 @@ export namespace Geom::Shape{
 			}
 		}
 
-		template<typename U = T>
-		void setWidth(const T w)requires Concepts::NonNegative<U>{
+		void setWidth(const T w)requires Concepts::NonNegative<T>{
 			this->width = w;
 		}
 
-		template<typename U = T>
-		void setHeight(const T h)requires Concepts::Signed<U>{
+		void setHeight(const T h)requires Concepts::Signed<T>{
 			if (h >= 0) {
 				this->height = h;
 			}
@@ -181,8 +145,7 @@ export namespace Geom::Shape{
 			}
 		}
 
-		template<typename U = T>
-		void setHeight(const T h)requires Concepts::NonNegative<U>{
+		void setHeight(const T h)requires Concepts::NonNegative<T>{
 			this->height = h;
 		}
 
@@ -274,6 +237,13 @@ export namespace Geom::Shape{
 		Rect_Orthogonal& move(const T x, const T y) {
 			srcX += x;
 			srcY += y;
+
+			return *this;
+		}
+
+		Rect_Orthogonal& setSrc(const Rect_Orthogonal& other) {
+			srcX = other.srcX;
+			srcY = other.srcY;
 
 			return *this;
 		}

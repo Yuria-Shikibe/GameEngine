@@ -585,6 +585,13 @@ inline void setLineStroke(const float s) {
 	contextStroke = s;
 }
 
+inline void reset() {
+	contextStroke = 1.0f;
+	color();
+	mixColor();
+	texture();
+}
+
 inline void lineAngleCenter(const float x, const float y, const float angle, const float length,
                             const bool cap = true) {
 	vec2_0.setPolar(angle, length * 0.5f);
@@ -612,7 +619,7 @@ void rectLine(const float srcx, const float srcy, const float width, const float
 	line(defaultTexture, srcx + width, srcy, srcx + contextStroke, srcy, cap);
 }
 
-void rect_line(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vector2D& offset = Geom::ZERO) {
+void rectLine(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vector2D& offset = Geom::ZERO) {
 	rectLine(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(), rect.getHeight(), cap);
 }
 

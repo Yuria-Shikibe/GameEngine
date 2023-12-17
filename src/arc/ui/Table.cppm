@@ -1,8 +1,7 @@
 module;
 
-export module UI.Group;
-
-import UI.Elem;
+export module UI.Table;
+import UI.Group;
 import <vector>;
 import <algorithm>;
 import Geom.Shape.Rect_Orthogonal;
@@ -23,6 +22,9 @@ export namespace UI {
 	 * @endcode
 	 */
 	struct LayoutCell {
+	protected:
+		Align::Mode align = Align::Mode::bottom_left;
+	public:
 		//Weak Reference Object
 		Elem* item{nullptr};
 
@@ -70,8 +72,6 @@ export namespace UI {
 		bool scaleRelativeToParentX{true};
 		bool scaleRelativeToParentY{true};
 
-		Align::Mode align = Align::Mode::center;
-
 		[[nodiscard]] bool endRow() const {
 			return item->endingRow();
 		}
@@ -82,12 +82,76 @@ export namespace UI {
 			return *this;
 		}
 
+		LayoutCell& setSrcScale(const float xScl, const float yScl) {
+			srcxScale = xScl;
+			srcyScale = yScl;
+
+			return *this;
+		}
+
+		LayoutCell& setEndScale(const float xScl, const float yScl) {
+			endxScale = xScl;
+			endyScale = yScl;
+
+			return *this;
+		}
+
+		LayoutCell& setSizeScale(const float xScl, const float yScl, Align::Mode align = Align::Mode::center) {
+			if(align & Align::Mode::top) {
+				srcyScale = endyScale - yScl;
+			}else if(align & Align::Mode::bottom){
+				endyScale = srcyScale + yScl;
+			}else { //centerY
+				endyScale = 0.5f + yScl * 0.5f;
+				srcyScale = 0.5f - yScl * 0.5f;
+			}
+
+			if(align & Align::Mode::right) {
+				srcxScale = endxScale - xScl;
+			}else if(align & Align::Mode::left){
+				endxScale = srcxScale + xScl;
+			}else { //centerX
+				endxScale = 0.5f + xScl * 0.5f;
+				srcxScale = 0.5f - xScl * 0.5f;
+			}
+
+			return *this;
+		}
+
+		LayoutCell& clearRelativeMove() {
+			endxScale -= srcxScale;
+			endyScale -= srcyScale;
+
+			srcxScale = srcyScale = 0;
+
+			return *this;
+		}
+
+		void applyAlign(const Rect& bound) const {
+			Rect& itemBound = item->getBound();
+			if(align & Align::Mode::top) {
+				itemBound.setSrcY(bound.getEndY() - itemBound.getHeight());
+			}else if(align & Align::Mode::bottom){
+				itemBound.setSrcY(bound.getSrcY());
+			}else { //centerY
+				itemBound.setSrcY(bound.getSrcY() + (bound.getHeight() - itemBound.getHeight()) * 0.5f);
+			}
+
+			if(align & Align::Mode::right) {
+				itemBound.setSrcX(bound.getEndX() - itemBound.getWidth());
+			}else if(align & Align::Mode::left){
+				itemBound.setSrcX(bound.getSrcX());
+			}else { //centerX
+				itemBound.setSrcY(bound.getSrcX() + (bound.getWidth() - itemBound.getWidth()) * 0.5f);
+			}
+		}
+
 		[[nodiscard]] explicit LayoutCell(Elem* const item)
 			: item(item) {
 		}
 
-		[[nodiscard]] float getWidth() const {return allocatedBound.getWidth();}
-		[[nodiscard]] float getHeight() const {return allocatedBound.getHeight();}
+		[[nodiscard]] float getCellWidth() const {return allocatedBound.getWidth();}
+		[[nodiscard]] float getCellHeight() const {return allocatedBound.getHeight();}
 
 		[[nodiscard]] float widthScale() const {return endxScale - srcxScale;}
 		[[nodiscard]] float heightScale() const {return endyScale - srcyScale;}
@@ -119,8 +183,24 @@ export namespace UI {
 
 		//Invoke this after all cell bound has been arranged.
 		void applyPos(Elem* parent) const {
-			item->getBound().setSrc(allocatedBound);
-			item->getBound().move(allocatedBound.getWidth() * srcxScale + padLeft + marginLeft, allocatedBound.getHeight() * srcyScale + padBottom + marginBottom);
+			applyAlign(allocatedBound);
+
+			float xSign = 0;
+			float ySign = 0;
+
+			if(align & Align::Mode::top) {
+				ySign = -1;
+			}else if(align & Align::Mode::bottom){
+				ySign = 1;
+			}
+
+			if(align & Align::Mode::right) {
+				xSign = -1;
+			}else if(align & Align::Mode::left){
+				xSign = 1;
+			}
+
+			item->getBound().move((getCellWidth() * srcxScale + padLeft + marginLeft) * xSign, (getCellHeight() * srcyScale + padBottom + marginBottom) * ySign);
 
 			//TODO align...
 
@@ -133,14 +213,16 @@ export namespace UI {
 		}
 	};
 
-	class LayoutableGroup : public Elem{
+	class Table : public Group{
 	public:
 		size_t rowsCount = 0;
 		size_t maxElemPerRow = 0;
 
 		std::vector<LayoutCell> cells{};
 
-		void layout() override {
+		bool relativeLayoutFormat = true;
+
+		void layoutRelative() {
 			if(cells.empty())return;
 
 			if(!children.back()->endingRow()) {
@@ -184,8 +266,8 @@ export namespace UI {
 
 				cell.applySize();
 
-				maxColumnWidth[curX] = std::max(maxColumnWidth[curX], cell.getWidth());
-				maxRowHeight[curY] = std::max(maxRowHeight[curX], cell.getHeight());
+				maxColumnWidth[curX] = std::max(maxColumnWidth[curX], cell.getCellWidth());
+				maxRowHeight[curY] = std::max(maxRowHeight[curX], cell.getCellHeight());
 
 				curX++;
 				if(cell.endRow()) {
@@ -210,7 +292,23 @@ export namespace UI {
 
 			delete[] maxColumnWidth;
 			delete[] maxRowHeight;
-			//Cell Allocation Done
+		}
+
+		void layoutIrrelative() {
+			for(auto& cell : cells) {
+				cell.allocatedBound = bound;
+
+				cell.applySize();
+				cell.applyPos(this);
+			}
+		}
+
+		void layout() override {
+			if(relativeLayoutFormat) {
+				layoutRelative();
+			}else {
+				layoutIrrelative();
+			}
 		}
 
 		[[nodiscard]] size_t rows() const {
@@ -228,7 +326,7 @@ export namespace UI {
 		}
 
 		void endRow() {
-			if(children.empty())return;
+			if(!relativeLayoutFormat || children.empty())return;
 
 			rowsCount++;
 			children.back()->setEndingRow(true);

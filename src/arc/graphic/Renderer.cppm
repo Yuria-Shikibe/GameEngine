@@ -75,6 +75,9 @@ class Renderer : virtual public ResizeableUInt {
 
 		virtual void frameEnd() = 0;
 
+		virtual void renderUI() const {
+		}
+
 		[[nodiscard]] bool sustainSize(const unsigned int w, const unsigned int h) const {
 			return w == width && h == height;
 		}
@@ -110,6 +113,8 @@ class Renderer : virtual public ResizeableUInt {
 			Event::generalUpdateEvents.fire(draw_post);
 
 			Event::generalUpdateEvents.fire(draw_after);
+
+			renderUI();
 
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer->getID());
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

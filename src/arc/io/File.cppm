@@ -24,46 +24,42 @@ export namespace OS{
 	public:
 		static constexpr std::string_view EMPTY_EXTENSION = "[empty]";
 
-		directory_entry entry{};
+		path filePath{};
 
 		File() = default;
 
-		explicit File(const path& p) : entry{p}{
+		explicit File(const path& p) : filePath{p}{
 
 		}
 
-		explicit File(const directory_entry& p) : entry(p){
+		explicit File(const directory_entry& p) : filePath(p){
 
 		}
 
-		explicit File(directory_entry&& p) : entry(std::move(p)){
+		explicit File(directory_entry&& p) : filePath(std::move(p)){
 
 		}
 
 		File(const File& other) = default;
 
 		File(File&& other) noexcept
-			: entry(std::move(other.entry)) {
+			: filePath(std::move(other.filePath)) {
 		}
 
 		File& operator=(const File& other) {
 			if(this == &other) return *this;
-			entry = other.entry;
+			filePath = other.filePath;
 			return *this;
 		}
 
 		File& operator=(File&& other) noexcept {
 			if(this == &other) return *this;
-			entry = std::move(other.entry);
+			filePath = std::move(other.filePath);
 			return *this;
 		}
 
-		directory_entry& raw() {
-			return entry;
-		}
-
 		explicit operator directory_entry() const{
-			return entry;
+			return directory_entry{filePath};
 		}
 
 		explicit operator path() const{
@@ -71,7 +67,7 @@ export namespace OS{
 		}
 
 		bool operator==(const File &rhs) const {
-			return entry == rhs.entry;
+			return filePath == rhs.filePath;
 		}
 
 		bool operator!=(const File &rhs) const {
@@ -83,36 +79,40 @@ export namespace OS{
 		}
 
 		[[nodiscard]] std::string extension() const {
-			return entry.path().extension().string();
+			return filePath.extension().string();
 		}
 
 		[[nodiscard]] std::string stem() const {
-			return entry.path().stem().string();
+			return filePath.stem().string();
 		}
 
 		[[nodiscard]] std::string filename() const {
-			return entry.path().filename().string();
+			return filePath.filename().string();
 		}
 
 		[[nodiscard]] std::string filename_full() const {
-			return (isDir() ? "<Dir>" : "") + entry.path().filename().string();
+			return (isDir() ? "<Dir>" : "") + filePath.filename().string();
 		}
 
 		[[nodiscard]] path path() const {
-			return entry.path();
+			return filePath;
 		}
 
 		[[nodiscard]] bool exist() const {
-			return entry.exists();
+			return std::filesystem::exists(filePath);
 		}
 
 		[[maybe_unused]] bool deleteFile() const {  // NOLINT(*-use-nodiscard)
-			return exist() && remove(entry);
+			return exist() && (isDir() ? remove(path()) : std::filesystem::remove_all(path()));
+		}
+
+		[[maybe_unused]] void deleteFileQuiet() const {  // NOLINT(*-use-nodiscard)
+			isDir() ? remove(path()) : std::filesystem::remove_all(path());
 		}
 
 		[[nodiscard]] bool copy(const std::filesystem::path& dest) const {
 			try {
-				std::filesystem::copy(entry, dest);
+				std::filesystem::copy(path(), dest);
 				return true;
 			}
 			catch ([[maybe_unused]] std::error_code& ignore) {
@@ -125,11 +125,11 @@ export namespace OS{
 		}
 
 		[[nodiscard]] bool isDir() const {
-			return is_directory(entry);
+			return is_directory(path());
 		}
 
 		[[nodiscard]] bool isRegular() const {
-			return is_regular_file(entry);
+			return is_regular_file(path());
 		}
 
 		[[nodiscard]] bool isHidden() const {
@@ -141,7 +141,7 @@ export namespace OS{
 		}
 
 		[[maybe_unused]] bool createDir(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
-			return  autoCreateParents ? create_directories(entry) : create_directory(entry);
+			return  autoCreateParents ? create_directories(path()) : create_directory(path());
 		}
 
 		void createDirQuiet(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
@@ -217,7 +217,7 @@ export namespace OS{
 
 		[[nodiscard]] std::vector<File> subs() const{
 			std::vector<File> files;
-			for (const auto& item : directory_iterator(entry)){
+			for (const auto& item : directory_iterator(path())){
 				files.emplace_back(item);
 			}
 
@@ -227,14 +227,14 @@ export namespace OS{
 
 		template<Concepts::Invokable<void(File&&)> T>
 		void forSubs(const T& consumer) const{
-			for (const auto& item : directory_iterator(entry)){
+			for (const auto& item : directory_iterator(path())){
 				consumer(File{item});
 			}
 		}
 
 		template<Concepts::Invokable<void(File&&)> T>
 		void forAllSubs(const T& consumer, const bool careDirs = false) const{
-			for (const auto& item : directory_iterator(entry)){
+			for (const auto& item : directory_iterator(path())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
 				}else{
@@ -247,7 +247,7 @@ export namespace OS{
 		}
 
 		void allSubs(std::vector<File>& container, const bool careDirs = false) const{
-			for (const auto& item : directory_iterator(entry)){
+			for (const auto& item : directory_iterator(path())){
 				if(File f{item}; f.isRegular()){
 					container.emplace_back(std::move(f));
 				}else{

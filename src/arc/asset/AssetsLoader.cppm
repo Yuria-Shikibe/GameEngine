@@ -9,6 +9,7 @@ import Concepts;
 import Async;
 import TimeMark;
 import RuntimeException;
+import <iostream>;
 import <sstream>;
 import <numeric>;
 import <queue>;
@@ -59,7 +60,7 @@ class AssetsLoader;
 
 	public:
 		[[nodiscard]] AssetsLoader() : postHandler(std::make_unique<Handler>(this)) {
-
+			timer.mark();
 		}
 
 		~AssetsLoader()  = default;
@@ -67,9 +68,15 @@ class AssetsLoader;
 		std::queue<std::pair<std::function<void()>, std::promise<void>>> postedTasks{};
 
 		void begin() {
+			// std::cout << "Assets Load Begin" << std::endl;
+
 			for(auto& [task, future] : tasks) {
 				future = task->launch();
 			}
+		}
+
+		[[nodiscard]] ext::Timestamper& getTimer() {
+			return timer;
 		}
 
 		void interrupt() {
@@ -84,6 +91,8 @@ class AssetsLoader;
 		void setDone() {
 			done = true;
 			tasks.clear();
+
+			// std::cout << "Assets Load End: Costs" << std::chrono::duration_cast<std::chrono::seconds>(timer.toMark()).count() << "sec." << std::endl;
 		}
 
 		[[nodiscard]] bool finished() const {
@@ -98,7 +107,7 @@ class AssetsLoader;
 		 * \brief Run This In Main Loop Until ProgressTask.finished()
 		 */
 		void processRequests() {
-			timer.mark();
+			timer.mark(1);
 
 			size_t doneCount = 0;
 			taskProgress = 0.0f;
@@ -115,7 +124,7 @@ class AssetsLoader;
 
 			if(postedTasks.empty() || done)return;
 
-			auto duration = timer.toMark();
+			auto duration = timer.toMark(1);
 
 			while(duration < maxLoadSpacing) {
 				this->postHandler->lock.lock();
@@ -139,7 +148,7 @@ class AssetsLoader;
 
 				promise.set_value();
 
-				duration = timer.toMark();
+				duration = timer.toMark(1);
 			}
 		}
 

@@ -22,8 +22,6 @@ import Assets;
 
 import GlyphArrangement;
 
-import TimeMark;
-
 import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 import <memory>;
@@ -44,8 +42,6 @@ export namespace Assets {
 
 		std::stringstream ss{};
 
-		ext::Timestamper interval{};
-
 	public:
 		float lastProgress = 0.0f;
 		float lastThreshold = 0.0f;
@@ -57,8 +53,6 @@ export namespace Assets {
 
 			defaultMat = Core::batch->getProjection();
 			Core::batch->setProjection(mat);
-
-			interval.mark();
 
 			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
@@ -192,7 +186,7 @@ export namespace Assets {
 
 			ss.str("");
 			ss << "${scl#[0.4]}Loading${scl#[0.3]}: (${color#[" << end << "]}"<< std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";
-			ss << "\n${scl#[0.3]}${color#[" << end << "]}" << static_cast<float>(interval.toMark().count()) / 1000.0f << "${color#[]}sec.";
+			ss << "\n${scl#[0.3]}${color#[" << end << "]}" << static_cast<float>(loader->getTimer().toMark().count()) / 1000.0f << "${color#[]}sec.";
 
 			Font::glyphParser->parse(loadStatus, ss.str());
 			loadStatus->offset.set(x, y - stroke - slideLineSize * 2.0f);

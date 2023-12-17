@@ -3,14 +3,18 @@
 
 module ;
 
+
 export module Core.Log;
 
 import <utility>;
+
 import <chrono>;
 import <string>;
 import <sstream>;
+import <fstream>;
 import <utility>;
 export import File;
+import <iostream>;
 
 export namespace Core{
 	class Log{
@@ -22,29 +26,51 @@ export namespace Core{
 	protected:
 		OS::File logDir{};
 		OS::File crahsDir{};
-		OS::File runtimeLogFile{};
+
+
+		OS::File logFile{};
+
+		mutable std::ofstream logOfStream{};
 
 	public:
 		//TODO redirect cout
 		[[nodiscard]] explicit Log(OS::File dir)
 			: logDir(std::move(dir)) {
+
+
+
+
 			crahsDir = logDir.subFile("crashes");
 			crahsDir.createDirQuiet();
-			runtimeLogFile = logDir.subFile(static_cast<std::string>(INFO) + std::to_string(getCurrentSystemTime()));
+
+#ifdef DEBUG_LOCAL
+			logOfStream.open(logFile.absolutePath(), std::ios::out);
+			logFile = logDir.subFile(static_cast<std::string>(INFO) + getCurrentSystemTime());
+			logFile.createFileQuiet();
+			std::cout.rdbuf(logOfStream.rdbuf());
+#endif
 		}
 
-		static long long getCurrentSystemTime() {
-			return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		void log(const std::string_view message) {
+#ifndef DEBUG_LOCAL
+			logOfStream << message << std::endl; //Flush after message;
+#endif
 		}
 
-		[[nodiscard]] OS::File generateCrashFile(const std::string& stem = "", const std::string& suffix = std::to_string(getCurrentSystemTime())) const{
+		static std::string getCurrentSystemTime() {
+			const auto systemTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+			return std::to_string(systemTime);
+		}
+
+		[[nodiscard]] OS::File generateCrashFile(const std::string& stem = "", const std::string& suffix = getCurrentSystemTime()) const{
 			const OS::File crash = crahsDir.subFile(static_cast<std::string>(CRASH) +  stem + "-" + suffix + ".txt");
 
 			if(auto&& subs = crahsDir.subs(); subs.size() > maxCrashCache) {
 				const auto& file = subs.back();
 				subs.pop_back();
 
-				file.deleteFile();
+				file.deleteFileQuiet();
 			}
 
 			// ReSharper disable once CppExpressionWithoutSideEffects
