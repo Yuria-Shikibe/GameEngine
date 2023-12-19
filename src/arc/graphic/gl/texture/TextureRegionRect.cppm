@@ -116,6 +116,12 @@ export namespace GL{
 			return std::abs(v1 - v0) * data->getHeight();
 		}
 
+		void shrinkEdge(const float margin) {
+			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
+			newBound.move(margin, margin).addSize(-margin * 2.0f, -margin * 2.0f);
+			fetchIntoCurrent(newBound);
+		}
+
 		template<Concepts::Number N0, Concepts::Number N1>
 		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const Geom::Shape::Rect_Orthogonal<N1>& external) {
 			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(external.getWidth());

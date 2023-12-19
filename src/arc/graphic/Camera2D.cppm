@@ -35,6 +35,9 @@ export namespace Core{
 		float scale{1.0f};
 		float targetScale{1.0f};
 
+		float minScale = std::log(0.2f);
+		float maxScale = std::log(3.0f);
+
 	public:
 		Camera2D() = default;
 
@@ -120,11 +123,15 @@ export namespace Core{
 		}
 
 		[[nodiscard]] float getTargetScale() const {
-			return targetScale;
+			return std::log(targetScale);
 		}
 
 		void setTargetScale(const float targetScale) {
-			this->targetScale = std::clamp(targetScale, 0.2f, 10.0f);
+			this->targetScale = std::exp(std::clamp(targetScale, minScale, maxScale));
+		}
+
+		void setTargetScaleDef() {
+			this->targetScale = 1.0f;
 		}
 	};
 }

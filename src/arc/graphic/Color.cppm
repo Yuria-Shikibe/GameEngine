@@ -92,7 +92,7 @@ export namespace Graphic{
 			return !lhs.equals(rhs);
 		}
 
-		static Color valueOf(const std::string& hex){
+		static Color valueOf(const std::string_view hex){
 			const int offset = hex[0] == '#' ? 1 : 0;
 
 			const int r = parseHex(hex, offset, offset + 2);
@@ -102,7 +102,7 @@ export namespace Graphic{
 			return Color{static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f};
 		}
 
-		static Color& valueOf(Color& color, const std::string& hex){
+		static Color& valueOf(Color& color, const std::string_view hex){
 			const int offset = hex[0] == '#' ? 1 : 0;
 
 			const int r = parseHex(hex, offset, offset + 2);
@@ -112,7 +112,7 @@ export namespace Graphic{
 			return color.set(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
 		}
 
-		static int parseHex(const std::string& string, const int from, const int to){
+		static int parseHex(const std::string_view string, const int from, const int to){
 			int total = 0;
 			for (int i = from; i < to; i++) {
 				total += Math::charToDigitValue(string[i], 16) * (i == from ? 16 : 1);
@@ -438,6 +438,14 @@ export namespace Graphic{
 			this->g *= tg;
 			this->b *= tb;
 			this->a *= ta;
+			return clamp();
+		}
+
+		Color& mul(const float val){
+			this->r *= val;
+			this->g *= val;
+			this->b *= val;
+			this->a *= val;
 			return clamp();
 		}
 

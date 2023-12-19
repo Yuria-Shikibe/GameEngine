@@ -15,6 +15,7 @@ import Graphic.Color;
 import Graphic.Draw;
 
 import Core;
+import Geom.Matrix3D;
 
 using namespace GL;
 
@@ -72,11 +73,14 @@ export namespace Graphic {
 		}
 
 		void renderUI() const override {
-			Core::batch->beginProjection(Core::uiRoot->getPorj());
+			const Geom::Matrix3D* mat = Core::batch->getProjection();
+
+			Core::batch->setProjection(Core::uiRoot->getPorj());
 
 			Core::uiRoot->render();
+			Core::batch->flush();
 
-			Core::batch->endProjection();
+			Core::batch->setProjection(mat);
 		}
 	};
 }

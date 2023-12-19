@@ -27,7 +27,10 @@ message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DDEBUG_LOCAL)
-    message(STATUS "Debuging...")
+    message(STATUS "Debug Mode")
+else()
+    message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
+    message(STATUS "Release Mode")
 endif ()
 
 set(SRC_DIR src)
@@ -52,7 +55,7 @@ file(GLOB_RECURSE SOURCE_FILES
 # Header Files...
 file(GLOB_RECURSE CURRENT_HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.h
-#        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.hpp
 #        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 #        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
 )

@@ -215,10 +215,14 @@ export namespace OS{
 			}
 		}
 
-		[[nodiscard]] std::vector<File> subs() const{
+		[[nodiscard]] std::vector<File> subs(const bool careDirs = false) const{
 			std::vector<File> files;
 			for (const auto& item : directory_iterator(path())){
-				files.emplace_back(item);
+				if(item.is_directory()) {
+					if(careDirs)files.emplace_back(item);
+				}else {
+					files.emplace_back(item);
+				}
 			}
 
 			return files;

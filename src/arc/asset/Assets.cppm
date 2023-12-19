@@ -194,17 +194,16 @@ export namespace Assets{
 	}
 
 	namespace Textures {
-		inline Texture2D* whiteTex = nullptr;
-		inline TextureRegion* whiteRegion = nullptr;
+		inline const Texture2D* whiteTex = nullptr;
+		inline TextureRegionRect whiteRegion{};
 
 		void load() {
 			whiteTex = new Texture2D{textureDir.find("white.png")};
-			whiteRegion = new TextureRegionRect{whiteTex};
+			whiteRegion = TextureRegionRect{whiteTex};
 		}
 
 		void dispose() {
 			delete whiteTex;
-			delete whiteRegion;
 		}
 	}
 

@@ -173,7 +173,7 @@ export namespace GL{
 
 			glGenerateMipmap(targetFlag);
 
-			setParametersDef();
+			setParameters();
 			free();
 		}
 
@@ -193,12 +193,12 @@ export namespace GL{
 			unbind();
 		}
 
-		void setParametersDef() const{
+		void setParameters(const GLint downScale = GL_LINEAR, const GLint upScale = GL_LINEAR, const GLint clampX = GL_CLAMP_TO_EDGE, const GLint clampY = GL_CLAMP_TO_EDGE) const{
 			bind();
-			glTexParameteri(targetFlag, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(targetFlag, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(targetFlag, GL_TEXTURE_MIN_FILTER, downScale);
+			glTexParameteri(targetFlag, GL_TEXTURE_MAG_FILTER, upScale);
+			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_S, clampX);
+			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_T, clampY);
 			unbind();
 		}
 

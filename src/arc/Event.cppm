@@ -25,7 +25,7 @@ export namespace Event {
 	public:
 		template <Concepts::Derived<EventType> T>
 			requires std::is_final_v<T>
-		void fire(const T& event) {
+		void fire(const T& event) const {
 #ifdef DEBUG_LOCAL
 			if(!registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif

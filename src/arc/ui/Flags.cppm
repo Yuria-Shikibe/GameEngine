@@ -12,25 +12,75 @@ export namespace UI {
 		inbound = 1, outbound = 0
 	};
 
-	struct Click final : EventType, Geom::Vector2D {
+	struct MouseAction : EventType, Geom::Vector2D {
 		using Vector2D::x;
 		using Vector2D::y;
 
-		[[nodiscard]] Click() = default;
+		unsigned int buttonID{0};
 
-		[[nodiscard]] Click(const float x, const float y)
+		[[nodiscard]] MouseAction() = default;
+
+		[[nodiscard]] MouseAction(const float x, const float y)
 			: Vector2D(x, y) {
+		}
+
+		void set(const float x, const float y, const int id) {
+			this->x = x;
+			this->y = y;
+			buttonID = id;
+		}
+
+		void set(const Vector2D& pos, const int id) {
+			Geom::Vector2D::operator=(pos);
+			buttonID = id;
 		}
 	};
 
-	struct DoubleClick final : EventType, Geom::Vector2D  {
-		using Vector2D::x;
-		using Vector2D::y;
+	struct MouseActionDrug final : MouseAction  {
+		[[nodiscard]] MouseActionDrug() = default;
 
-		[[nodiscard]] DoubleClick() = default;
+		[[nodiscard]] MouseActionDrug(const float x, const float y)
+			: MouseAction(x, y) {
+		}
+	};
 
-		[[nodiscard]] DoubleClick(const float x, const float y)
-			: Vector2D(x, y) {
+	struct MouseActionPress final : MouseAction  {
+		[[nodiscard]] MouseActionPress() = default;
+
+		[[nodiscard]] MouseActionPress(const float x, const float y)
+			: MouseAction(x, y) {
+		}
+	};
+
+	struct MouseActionRelease final : MouseAction  {
+		[[nodiscard]] MouseActionRelease() = default;
+
+		[[nodiscard]] MouseActionRelease(const float x, const float y)
+			: MouseAction(x, y) {
+		}
+	};
+
+	struct MouseActionDoubleClick final : MouseAction  {
+		[[nodiscard]] MouseActionDoubleClick() = default;
+
+		[[nodiscard]] MouseActionDoubleClick(const float x, const float y)
+			: MouseAction(x, y) {
+		}
+	};
+
+	struct CurosrInbound final : Event::EventType, Geom::Vector2D {
+		[[nodiscard]] CurosrInbound() = default;
+
+		[[nodiscard]] CurosrInbound(const float x, const float y)
+			: Geom::Vector2D(x, y) {
+		}
+	};
+
+	struct CurosrExbound final : Event::EventType, Geom::Vector2D {
+		[[nodiscard]] CurosrExbound() = default;
+
+		[[nodiscard]] CurosrExbound(const float x, const float y)
+			: Geom::Vector2D(x, y) {
 		}
 	};
 

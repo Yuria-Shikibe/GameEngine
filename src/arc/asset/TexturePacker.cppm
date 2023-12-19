@@ -9,6 +9,7 @@ import Geom.Shape.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
 import GL;
+// import GL.Constants;
 import Async;
 import OS.Handler;
 import RuntimeException;
@@ -290,6 +291,7 @@ export namespace Assets {
 		void apply() {
 			for(auto& map : mergedMaps) {
 				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), map.release()));
+				// textures.back()->setScale(GL_NEAREST, GL_NEAREST);
 			}
 
 			for(auto& data : packData | std::views::values) {

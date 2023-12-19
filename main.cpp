@@ -1,4 +1,4 @@
-#include <iomanip>
+import <iomanip>;
 
 import <iostream>;
 import <GLFW/glfw3.h>;
@@ -74,6 +74,7 @@ import Assets.Manager;
 import TimeMark;
 
 import UI.Root;
+import UI.Label;
 
 using namespace std;
 using namespace Graphic;
@@ -95,11 +96,11 @@ void init(const int argc, char* argv[]) {
 
 	Core::initCore();
 
-	OS::loadListeners(Core::window);
+	OS::loadListeners(Core::mainWindow);
 
 	Assets::loadBasic();
 
-	OS::setApplicationIcon(Core::window, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")));
+	OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")));
 
 	Core::initCore_Post([] {
 		Core::batch = new Core::SpriteBatch([](const Core::SpriteBatch& self) {
@@ -117,7 +118,7 @@ void init(const int argc, char* argv[]) {
 
 		int w, h;
 
-		glfwGetWindowSize(Core::window, &w, &h);
+		glfwGetWindowSize(Core::mainWindow, &w, &h);
 		Core::renderer = new Graphic::RendererImpl{static_cast<unsigned>(w), static_cast<unsigned>(h)};
 
 		Ctrl::registerCommands(Core::input);
@@ -126,12 +127,13 @@ void init(const int argc, char* argv[]) {
 		Core::camera->resize(w, h);
 
 		Core::uiRoot = new UI::Root{};
+		Core::uiRoot->root->setRoot(Core::uiRoot);
 		Core::uiRoot->resize(w, h);
 		Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
 		OS::registerListener(Core::uiRoot);
 	});
 
-	Graphic::Draw::defTexture(Assets::Textures::whiteRegion);
+	Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
 	Graphic::Draw::texture();
 	Graphic::Draw::rawMesh = Assets::Meshes::raw;
 	Graphic::Draw::blitter = Assets::Shaders::blit;
@@ -141,7 +143,20 @@ void init(const int argc, char* argv[]) {
 		Assets::textureDir.subFile("test").forAllSubs([&testPage](OS::File&& file) {
 			testPage->pushRequest(file);
 		});
+
+		testPage->pushRequest(Assets::textureDir.find("white.png"));
 	});
+
+	Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const auto& event) {
+
+		Assets::Textures::whiteRegion = *event.manager->getAtlas().find("test-white");
+
+		Assets::Textures::whiteRegion.shrinkEdge(4.0f);
+
+		Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
+		Graphic::Draw::texture();
+	});
+
 
 	//Majority Load
 	Core::loadAssets();
@@ -152,11 +167,22 @@ int main(const int argc, char* argv[]) {
 	::init(argc, argv);
 
 	//UI Test
-	auto& cell = Core::uiRoot->root->add(new UI::Elem{});
+	auto& cell = Core::uiRoot->root->add(new UI::Label{});
 	cell.setAlign(Align::Mode::top_left).setSizeScale(0.35f, 0.2f);
 	cell.marginLeft = cell.marginRight = cell.marginBottom = cell.marginTop = 10;
 	cell.item->color = Colors::RED;
+	cell.item->color.mul(0.6f);
 	cell.clearRelativeMove();
+	cell.as<UI::Label>().setText("test 1231231231");
+
+	cell.item->getInputListener().on<UI::MouseActionPress>([item = cell.item](auto& e) {
+		if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
+		if(e.buttonID == Ctrl::RMB) {
+			item->color = Colors::RED;
+			item->color.mul(0.6f);
+		}
+	});
+
 
 	auto& cell2 = Core::uiRoot->root->add(new UI::Table{});
 	cell2.item->color = Colors::GREEN;
@@ -191,10 +217,10 @@ int main(const int argc, char* argv[]) {
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 
 	auto&& file = Assets::assetsDir.subFile("test.txt");
-	const auto coordCenter = std::make_shared<Font::GlyphLayout>();
+	const auto coordCenter = Font::obtainLayoutPtr();
 	std::stringstream ss{};
 
-	const auto layout = std::make_shared<Font::GlyphLayout>();
+	const auto layout = Font::obtainLayoutPtr();
 	layout->maxWidth = 720;
 
 	Font::glyphParser->parse(layout, file.readString());
@@ -264,12 +290,12 @@ int main(const int argc, char* argv[]) {
 
 	OS::setupLoop();
 
-	while (OS::continueLoop(Core::window)){
+	while (OS::continueLoop(Core::mainWindow)){
 		OS::update();
 
 		Core::renderer->draw();
 
-		OS::poll(Core::window);
+		OS::poll(Core::mainWindow);
 	}
 
 	//Application Exit

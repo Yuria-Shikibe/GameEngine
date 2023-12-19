@@ -53,23 +53,23 @@ export namespace OS{
 		disabled = GLFW_CURSOR_DISABLED
 	};
 
-	inline void setInputMode_Cursor(const CursorMode value, GLFWwindow* window = Core::window) {
+	inline void setInputMode_Cursor(const CursorMode value, GLFWwindow* window = Core::mainWindow) {
 		glfwSetInputMode(window, GLFW_CURSOR, static_cast<int>(value));
 	}
 
-	inline void setInputMode_StickyKeys(const bool value, GLFWwindow* window = Core::window) {
+	inline void setInputMode_StickyKeys(const bool value, GLFWwindow* window = Core::mainWindow) {
 		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, value);
 	}
 
-	inline void setInputMode_StickyMouseButtons(const bool value, GLFWwindow* window = Core::window) {
+	inline void setInputMode_StickyMouseButtons(const bool value, GLFWwindow* window = Core::mainWindow) {
 		glfwSetInputMode(window, GLFW_STICKY_KEYS, value);
 	}
 
-	inline void setInputMode_LockKeyMods(const bool value, GLFWwindow* window = Core::window) {
+	inline void setInputMode_LockKeyMods(const bool value, GLFWwindow* window = Core::mainWindow) {
 		glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, value);
 	}
 
-	inline void setInputMode_RawMouse(const bool value, GLFWwindow* window = Core::window) {
+	inline void setInputMode_RawMouse(const bool value, GLFWwindow* window = Core::mainWindow) {
 		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, value);
 	}
 }
@@ -103,7 +103,7 @@ inline void mouseBottomCallBack(GLFWwindow* window, const int button, const int 
 }
 
 inline void cursorPosCallback(GLFWwindow* window, const double xPos, const double yPos) {
-	Core::input->setPos(static_cast<float>(xPos), static_cast<float>(yPos));
+	Core::input->setPos(static_cast<float>(xPos), static_cast<float>(Core::renderer->getHeight() - yPos));
 }
 
 inline void dropCallback(GLFWwindow* window, int path_count, const char* paths[]) {

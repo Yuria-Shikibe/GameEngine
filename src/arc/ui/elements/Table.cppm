@@ -3,11 +3,13 @@ module;
 export module UI.Table;
 import UI.Group;
 import <vector>;
+import <memory_resource>;
+import <array>;
 import <algorithm>;
+
 import Geom.Shape.Rect_Orthogonal;
 import Align;
 import Concepts;
-
 
 using Rect = Geom::Shape::OrthoRectFloat;
 
@@ -215,9 +217,13 @@ export namespace UI {
 			item->calAbsolute(parent);
 		}
 
+		[[nodiscard]] bool ignore() const {
+			return item->ignoreLayout();
+		}
+
 		template <Concepts::Derived<Elem> T>
 		T& as() {
-			return reinterpret_cast<T&>(*item);
+			return dynamic_cast<T&>(*item);
 		}
 	};
 
@@ -226,25 +232,43 @@ export namespace UI {
 		size_t rowsCount = 0;
 		size_t maxElemPerRow = 0;
 
+		[[nodiscard]] Table() {
+			touchbility = TouchbilityFlags::childrenOnly;
+		}
+
 		std::vector<LayoutCell> cells{};
 
 		bool relativeLayoutFormat = true;
 
+		//TODO mess
 		void layoutRelative() {
-			if(cells.empty())return;
+			static std::array<float, 80> buffer{};
+			static std::pmr::monotonic_buffer_resource pool{buffer.data(), buffer.size()};
 
-			if(!children.back()->endingRow()) {
-				endRow();
-			}
+			if(cells.empty() || std::ranges::all_of(std::as_const(cells), [](const LayoutCell& cell) {
+				return cell.ignore();
+			}))return;
 
-			if(rows() == 0) {
-				rowsCount++;
-				children.back()->setEndingRow(true);
+			size_t curLayoutRows = rows();
+
+			if(!cells.back().endRow()) {
+				curLayoutRows++;
 			}
 
 			//Register Row Max width / height
 			size_t curElemPerRow = 0;
 			for(const auto& cell : cells) {
+				if(cell.ignore()) {
+					if(cell.endRow()) {
+						if(curElemPerRow > maxElemPerRow) {
+							maxElemPerRow = curElemPerRow;
+						}
+
+						curElemPerRow = 0;
+					}
+					continue;
+				}
+
 				curElemPerRow++;
 
 				if(cell.endRow()) {
@@ -256,26 +280,38 @@ export namespace UI {
 				}
 			}
 
+			if(curElemPerRow > maxElemPerRow) {
+				maxElemPerRow = curElemPerRow;
+			}
+
 			//Split all into boxes
 			//TODO should cells have their own column or row data?
 			int curX{0};
 			int curY{0};
 
-			auto* maxColumnWidth = new float[columns()]{0};
-			auto* maxRowHeight = new float[rows()]{0};
+			//TODO
+			std::pmr::vector<float> maxSizeArr{columns() + curLayoutRows, &pool};
 
 			const float spacingX = bound.getWidth()  / static_cast<float>(columns());
-			const float spacingY = bound.getHeight() / static_cast<float>(rows());
+			const float spacingY = bound.getHeight() / static_cast<float>(curLayoutRows);
 
 			for(auto& cell : cells) {
+				if(cell.ignore()) {
+					if(cell.endRow()) {
+						curY++;
+						curX = 0;
+					}
+					continue;
+				}
+
 				cell.allocatedBound.setSize(spacingX, spacingY);
 
-				cell.allocatedBound.setSrc(spacingX * curX, spacingY * (rows() - curY - 1));
+				cell.allocatedBound.setSrc(spacingX * curX, spacingY * (curLayoutRows - curY - 1));
 
 				cell.applySize();
 
-				maxColumnWidth[curX] = std::max(maxColumnWidth[curX], cell.getCellWidth());
-				maxRowHeight[curY] = std::max(maxRowHeight[curX], cell.getCellHeight());
+				maxSizeArr[curLayoutRows + curX] = std::max(maxSizeArr[curLayoutRows + curX], cell.getCellWidth());
+				maxSizeArr[curY] = std::max(maxSizeArr[curY], cell.getCellHeight());
 
 				curX++;
 				if(cell.endRow()) {
@@ -287,7 +323,15 @@ export namespace UI {
 			curX = curY = 0;
 
 			for(auto& cell : cells) {
-				cell.allocatedBound.setSrc(maxColumnWidth[curX] * curX, maxRowHeight[curX] * (rows() - curY - 1));
+				if(cell.ignore()) {
+					if(cell.endRow()) {
+						curY++;
+						curX = 0;
+					}
+					continue;
+				}
+
+				cell.allocatedBound.setSrc(maxSizeArr[curLayoutRows + curX] * curX, maxSizeArr[curY] * (curLayoutRows - curY - 1));
 
 				cell.applyPos(this);
 
@@ -297,13 +341,12 @@ export namespace UI {
 					curX = 0;
 				}
 			}
-
-			delete[] maxColumnWidth;
-			delete[] maxRowHeight;
 		}
 
 		void layoutIrrelative() {
 			for(auto& cell : cells) {
+				if(cell.ignore())continue;
+
 				cell.allocatedBound = bound;
 
 				cell.applySize();
@@ -317,6 +360,10 @@ export namespace UI {
 			}else {
 				layoutIrrelative();
 			}
+
+			layoutChildren();
+
+			Elem::layout();
 		}
 
 		[[nodiscard]] size_t rows() const {
@@ -325,6 +372,30 @@ export namespace UI {
 
 		[[nodiscard]] size_t columns() const {
 			return maxElemPerRow;
+		}
+
+		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func = nullptr_t>
+		LayoutCell& add(Func&& func = nullptr) {
+			T* elem = new T;
+			LayoutCell& cell = add(elem);
+
+			if(func) {
+				func(elem);
+			}
+
+			return cell;
+		}
+
+		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func = nullptr_t>
+		LayoutCell& add(const size_t depth = std::numeric_limits<size_t>::max(), Func&& func = nullptr) {
+			T* elem = new T;
+			LayoutCell& cell = add(elem, depth);
+
+			if(func) {
+				func(elem);
+			}
+
+			return cell;
 		}
 
 		LayoutCell& add(Elem* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
@@ -343,11 +414,10 @@ export namespace UI {
 		void update(const float delta) override {
 			//TODO move this into listener
 			if(layoutChanged) {
-				layoutChanged = false;
 				layout();
 			}
 
-			updateChildren(delta);
+			Elem::update(delta);
 		}
 	};
 }

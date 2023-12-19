@@ -27,7 +27,6 @@ export namespace Core{
 		OS::File logDir{};
 		OS::File crahsDir{};
 
-
 		OS::File logFile{};
 
 		mutable std::ofstream logOfStream{};
@@ -37,13 +36,10 @@ export namespace Core{
 		[[nodiscard]] explicit Log(OS::File dir)
 			: logDir(std::move(dir)) {
 
-
-
-
 			crahsDir = logDir.subFile("crashes");
 			crahsDir.createDirQuiet();
 
-#ifdef DEBUG_LOCAL
+#ifndef DEBUG_LOCAL
 			logOfStream.open(logFile.absolutePath(), std::ios::out);
 			logFile = logDir.subFile(static_cast<std::string>(INFO) + getCurrentSystemTime());
 			logFile.createFileQuiet();

@@ -6,6 +6,7 @@ module;
 
 export module GlyphArrangement;
 
+import Container.Pool;
 import RuntimeException;
 import Font;
 import Graphic.Draw;
@@ -25,13 +26,12 @@ import <iostream>;
 import <execution>;
 import <functional>;
 import <memory>;
+import <memory_resource>;
 import <unordered_map>;
 
 export namespace Font {
 	constexpr int MAX_CAHCE = 1000;
 	typedef signed long FT_ULong;
-
-
 
 	std::unordered_map<std::string_view, const FontFlags*> parserableFonts{};
 	std::unordered_map<std::string_view, Graphic::Color> parserableColors{};
@@ -44,7 +44,7 @@ export namespace Font {
 		parserableFonts.insert_or_assign(name, flag);
 	}
 
-//TODO color managements
+	//TODO color managements
 	void registerParserableColor(const std::string_view name, const Graphic::Color& color) {
 		parserableColors.insert_or_assign(name, color);
 	}
@@ -78,10 +78,17 @@ export namespace Font {
 			v1 += y;
 		}
 	};
+}
 
+namespace Font {
+	std::array<GlyphVertData, 2500> vertPool;
+	std::pmr::monotonic_buffer_resource pool{vertPool.data(), vertPool.size()};
+}
+
+export namespace Font{
 	struct GlyphLayout { // NOLINT(*-pro-type-member-init)
 		Geom::Vector2D offset{};
-		std::vector<GlyphVertData> toRender{};
+		std::pmr::vector<GlyphVertData> toRender{&pool};
 
 		float maxWidth{std::numeric_limits<float>::max()};
 
@@ -90,6 +97,15 @@ export namespace Font {
 		std::string last{};
 
 		void reset() {
+			last.clear();
+			maxWidth = std::numeric_limits<float>::max();
+			toRender.clear();
+			bound.setSize(0, 0);
+			bound.setSrc(0, 0);
+			offset.setZero();
+		}
+
+		void clear() {
 			toRender.clear();
 			bound.setSize(0, 0);
 			bound.setSrc(0, 0);
@@ -123,7 +139,7 @@ export namespace Font {
 		}
 
 		void render() const {
-			std::ranges::for_each(toRender, [this](const GlyphVertData& glyph) {
+			for(auto& glyph : toRender) {
 				Graphic::Draw::vert_monochromeAll(
 					glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
 					glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0, glyph.region->v0,
@@ -131,7 +147,7 @@ export namespace Font {
 					glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u1, glyph.region->v1,
 					glyph.u1 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u1, glyph.region->v0
 				);
-			});
+			}
 		}
 
 		void render(const float progress) const {
@@ -151,13 +167,21 @@ export namespace Font {
 	};
 
 	//TODO cache support. maybe?
-	struct GlyphLayoutCache {
-		size_t frequency{0};
+	// struct GlyphLayoutCache {
+	// 	size_t frequency{0};
+	//
+	// 	std::shared_ptr<GlyphLayout> data{nullptr};
+	// };
+	//
+	// std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);
 
-		std::shared_ptr<GlyphLayout> data{nullptr};
-	};
+	Containers::Pool<GlyphLayout> layoutPool{250, [](GlyphLayout* item) {
+		item->reset();
+	}};
 
-	std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);
+	std::shared_ptr<GlyphLayout> obtainLayoutPtr() {
+		return layoutPool.obtainShared();
+	}
 
 	struct ModifierableData;
 
@@ -300,12 +324,12 @@ namespace ParserFunctions {
 	public:
 		virtual ~TokenParser() = default;
 
-		std::unordered_map<std::string, std::function<void(const std::string&, const ModifierableData& data)>> modifier{};
+		std::unordered_map<std::string_view, std::function<void(const std::string_view, const ModifierableData& data)>> modifier{};
 
-		virtual void parse(const std::string& token, const ModifierableData& data) const {
+		virtual void parse(const std::string_view token, const ModifierableData& data) const {
 			const int hasType = token.find('#');
 
-			if(hasType != std::string::npos) {
+			if(hasType != std::string_view::npos) {
 				if(const auto itr = modifier.find(token.substr(0, hasType)); itr != modifier.end()) {
 					itr->second(token.substr(hasType + 1), data);
 				}
@@ -362,21 +386,21 @@ namespace ParserFunctions {
 
 		}
 
-		virtual void parse(std::shared_ptr<GlyphLayout> layout, const std::string_view text) const {
+		virtual void parse(const std::shared_ptr<GlyphLayout> layout, const std::string_view text) const {
 			constexpr auto npos = std::string::npos;
 
 			if(layout->last == text)return;
 			layout->last = text;
 
 			context.reset();
-			layout->reset();
+			layout->clear();
 			auto& datas = layout->toRender;
 			datas.reserve(text.length());
 
 			const Font::FontData::CharData* lastCharData = &Font::emptyCharData;
 			bool tokenState = false;
 			size_t tokenBegin = npos;
-			std::string token{};
+			std::string_view token{};
 			Geom::Vector2D currentPosition{0, -context.lineSpacing};
 
 			if(text.empty()) {
@@ -403,7 +427,7 @@ namespace ParserFunctions {
 						tokenBegin = index + 1;
 					}else if(currentChar == TokenEndCode) {
 						if(tokenBegin != npos) {
-							token = text.substr(tokenBegin, index - tokenBegin);
+							token = (text.substr(tokenBegin, index - tokenBegin));
 
 							tokenParser->parse(token, {context, currentPosition, lastCharData, *layout});
 						}
@@ -515,9 +539,9 @@ namespace ParserFunctions {
 			ParserFunctions::endLine(data);
 		};
 
-		glyphParser->tokenParser->modifier["color"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["color"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']' ) {
-				if(std::string&& sub = command.substr(1, command.size() - 2); sub.empty()) {
+				if(auto sub = command.substr(1, command.size() - 2); sub.empty()) {
 					data.context.currentColor = data.context.fallbackColor;
 				}else {
 					data.context.fallbackColor = data.context.currentColor;
@@ -531,14 +555,14 @@ namespace ParserFunctions {
 			}
 		};
 
-		glyphParser->tokenParser->modifier["font"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["font"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']' ) {
-				if(std::string&& sub = command.substr(1, command.size() - 2); sub.empty()) {
+				if(std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
 					data.context.set(data.context.fallbackFont);
 				}else {
 					data.context.fallbackFont = data.context.currentFont;
 					try {
-						data.context.currentFont = Font::defaultManager->obtain(std::stoi(sub));
+						data.context.currentFont = Font::defaultManager->obtain(std::stoi(static_cast<std::string>(sub)));
 					}catch(std::invalid_argument e) {
 						//TODO maybe ?
 					}
@@ -558,21 +582,21 @@ namespace ParserFunctions {
 		};
 
 		//igl for Ignore Line, used for a line for token.
-		glyphParser->tokenParser->modifier["igl"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["igl"] = [](const std::string_view command, const ModifierableData& data) {
 			data.context.endlineOperation.push_back([](const ModifierableData& d) {
 				d.context.currentLineBound.setHeight(0);
 			});
 		};
 
-		glyphParser->tokenParser->modifier["tab"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["tab"] = [](const std::string_view command, const ModifierableData& data) {
 			data.cursorPos.add(30, 0);
 		};
 
-		glyphParser->tokenParser->modifier["scl"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["scl"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']') {
-				if(std::string&& sub = command.substr(1, command.size() - 2); !sub.empty()){
+				if(std::string_view sub = command.substr(1, command.size() - 2); !sub.empty()){
 					float scl = 1.0f;
-					try {scl = std::stof(sub);}catch(std::invalid_argument e) {}
+					try {scl = std::stof(static_cast<std::string>(sub));}catch(std::invalid_argument e) {}
 
 					ParserFunctions::setScl(data, scl);
 					return;
@@ -582,16 +606,16 @@ namespace ParserFunctions {
 			ParserFunctions::resetScl(data);
 		};
 
-		glyphParser->tokenParser->modifier["off"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["off"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']' ) {
-				if(std::string&& sub = command.substr(1, command.size() - 2); sub.empty()) {
+				if(std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
 					data.context.offset.setZero();
 				}else {
 					const auto splitIndex = sub.find_first_of(',');
 
 					try {
-						const float moveX = std::stof(sub.substr(0, splitIndex));
-						const float moveY = std::stof(sub.substr(splitIndex + 1));
+						const float moveX = std::stof(static_cast<std::string>(sub.substr(0, splitIndex)));
+						const float moveY = std::stof(static_cast<std::string>(sub.substr(splitIndex + 1)));
 
 						data.context.offset.set(moveX, moveY);
 					}catch(std::invalid_argument e) {
@@ -601,13 +625,13 @@ namespace ParserFunctions {
 			}else {
 				if(std::tolower(command.front()) == 'x') {
 					try {
-						data.context.offset.set(std::stof(command.substr(1)), 0);
+						data.context.offset.set(std::stof(static_cast<std::string>(command.substr(1))), 0);
 					}catch(std::invalid_argument e) {
 						//TODO maybe ?
 					}
 				}else if(std::tolower(command.front()) == 'y') {
 					try {
-						data.context.offset.set(0, std::stof(command.substr(1)));
+						data.context.offset.set(0, std::stof(static_cast<std::string>(command.substr(1))));
 					}catch(std::invalid_argument e) {
 						//TODO maybe ?
 					}
@@ -615,11 +639,11 @@ namespace ParserFunctions {
 			}
 		};
 
-		glyphParser->tokenParser->modifier["alp"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["alp"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']') {
-				if(std::string&& sub = command.substr(1, command.size() - 2); !sub.empty()){
+				if(auto sub = command.substr(1, command.size() - 2); !sub.empty()){
 					float alpha = 1.0f;
-					try {alpha = std::stof(sub);}catch(std::invalid_argument e) {}
+					try {alpha = std::stof(static_cast<std::string>(sub));}catch(std::invalid_argument e) {}
 
 					data.context.currentColor.setA(alpha);
 					return;
@@ -630,36 +654,36 @@ namespace ParserFunctions {
 		};
 
 		//SuperScript Begin
-		glyphParser->tokenParser->modifier["sut"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["sut"] = [](const std::string_view command, const ModifierableData& data) {
 			ParserFunctions::setScl(data, 0.5f);
 			data.context.offset.set(-normalize(data.charData->matrices.horiAdvance) * 0.05f, normalize(data.charData->matrices.horiBearingY + 45));
 		};
 
 		//SuperScript End
-		glyphParser->tokenParser->modifier["\\sut"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["\\sut"] = [](const std::string_view command, const ModifierableData& data) {
 			ParserFunctions::resetScl(data);
 			data.context.offset.setZero();
 		};
 
 		//SubScript Begin
-		glyphParser->tokenParser->modifier["sbt"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["sbt"] = [](const std::string_view command, const ModifierableData& data) {
 			ParserFunctions::setScl(data, 0.5f);
 			data.context.offset.set(-normalize(data.charData->matrices.horiAdvance) * 0.05f, -normalize(-data.charData->matrices.horiBearingY + data.charData->matrices.height + 65));
 		};
 
 		//SubScript End
-		glyphParser->tokenParser->modifier["\\sbt"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["\\sbt"] = [](const std::string_view command, const ModifierableData& data) {
 			ParserFunctions::resetScl(data);
 			data.context.offset.setZero();
 		};
 
 		//Script End
-		glyphParser->tokenParser->modifier["\\spt"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["\\spt"] = [](const std::string_view command, const ModifierableData& data) {
 			ParserFunctions::resetScl(data);
 			data.context.offset.setZero();
 		};
 
-		glyphParser->tokenParser->modifier["rst"] = [](const std::string& command, const ModifierableData& data) {
+		glyphParser->tokenParser->modifier["rst"] = [](const std::string_view command, const ModifierableData& data) {
 			data.context.currentColor = Graphic::Colors::WHITE;
 
 			ParserFunctions::resetScl(data);

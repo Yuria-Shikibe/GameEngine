@@ -1,7 +1,5 @@
 module;
 
-#include <iomanip>
-
 export module Assets.LoaderRenderer;
 
 import Align;
@@ -25,6 +23,7 @@ import GlyphArrangement;
 import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 import <memory>;
+import <iomanip>;
 import <sstream>;
 import GL;
 
@@ -37,8 +36,8 @@ export namespace Assets {
 		Geom::Matrix3D mat{};
 		const Geom::Matrix3D* defaultMat{nullptr};
 
-		const std::shared_ptr<Font::GlyphLayout> loadStatus = std::make_shared<Font::GlyphLayout>();
-		const std::shared_ptr<Font::GlyphLayout> loadTasks = std::make_shared<Font::GlyphLayout>();
+		const std::shared_ptr<Font::GlyphLayout> loadStatus = Font::obtainLayoutPtr();
+		const std::shared_ptr<Font::GlyphLayout> loadTasks = Font::obtainLayoutPtr();
 
 		std::stringstream ss{};
 

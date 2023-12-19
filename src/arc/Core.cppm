@@ -36,13 +36,13 @@ import <iostream>;
 export namespace Core{
 	const std::string title = APPLICATION_NAME;
 
-	inline GLFWwindow* window = nullptr;
+	inline GLFWwindow* mainWindow = nullptr;
 	inline GLFWmonitor* mainMonitor = nullptr;
 	inline GLFWmonitor* currentMonitor = nullptr;
 
 	inline Geom::Shape::OrthoRectInt lastScreenBound{};
 	inline bool maximizedWin = true;
-	inline void setScreenBound(GLFWwindow* win = window) {
+	inline void setScreenBound(GLFWwindow* win = mainWindow) {
 		glfwGetWindowSize(win, lastScreenBound.getWidthRaw(), lastScreenBound.getHeightRaw());
 		glfwGetWindowPos(win, lastScreenBound.getSrcXRaw(), lastScreenBound.getSrcYRaw());
 	}
@@ -92,15 +92,15 @@ export namespace Core{
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-		window = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
+		mainWindow = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
 
 		if(maximizedWin) {
-			glfwSetWindowSizeCallback(window, [](GLFWwindow* win, const int width, const int height){
+			glfwSetWindowSizeCallback(mainWindow, [](GLFWwindow* win, const int width, const int height){
 				Core::lastScreenBound.setSize(width, height);
 			});
 
 			// Graphic::fullScreen(window, currentMonitor, title);
-			glfwMaximizeWindow(window);
+			glfwMaximizeWindow(mainWindow);
 			setScreenBound();
 
 			glViewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
@@ -109,7 +109,7 @@ export namespace Core{
 
 			lastScreenBound.set(100, 100, OS::screenWidth * 0.75f, OS::screenHeight * 0.75f);
 
-			glfwSetWindowSizeCallback(window, nullptr);
+			glfwSetWindowSizeCallback(mainWindow, nullptr);
 		}
 
 	}
@@ -149,7 +149,7 @@ export namespace Core{
 		}
 
 		{
-			if(!input)input = new Input(window);
+			if(!input)input = new Input(mainWindow);
 			if(!camera)camera = new Camera2D();
 			if(!log)log = new Log{rootFileTree->findDir("logs")};
 		}
@@ -173,7 +173,7 @@ export namespace Core{
 
 	void loadAssets() {
 		assetsManager->pullRequest();
-		assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), window, renderer);
+		assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), mainWindow, renderer);
 		assetsManager->loadPost();
 		assetsManager->loadEnd();
 	}

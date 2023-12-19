@@ -1,9 +1,12 @@
 module;
 
-export module OS.KeyListener;
+export module OS.InputListener;
 
 export namespace OS {
-	class KeyListener {
-		virtual void inform(int keyCode, int action, const int mods)
+	class InputListener {
+	public:
+		virtual ~InputListener() = default;
+
+		virtual void inform(int keyCode, int action, int mods) = 0;
 	};
 }

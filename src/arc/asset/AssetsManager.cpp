@@ -78,7 +78,7 @@ void Assets::Manager::loadPost() {
 
 void Assets::Manager::loadEnd() {
 	loadEvents.fire(AssetsLoadEnd{this});
-	tempFontLoader.release();
+	tempFontLoader.reset(nullptr);
 }
 
 GL::ShaderManager& Assets::Manager::getShaders() {

@@ -24,7 +24,7 @@ static float baseMoveSpeed = 60;
 //TODO finish this shit
 export namespace Ctrl{
 	void registerCommands(Input* const input) { // NOLINT(*-non-const-parameter)
-		input->scrollListener.emplace_back([]([[maybe_unused]] float x, const float y) -> void {
+		input->scrollListeners.emplace_back([]([[maybe_unused]] float x, const float y) -> void {
 			camera->setTargetScale(camera->getTargetScale() + y * 0.05f);
 		});
 
@@ -40,25 +40,56 @@ export namespace Ctrl{
 
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_F11, GLFW_PRESS, [] {
 			if(currentMonitor == mainMonitor) {
-				Graphic::windowize(window, currentMonitor, lastScreenBound, title);
+				Graphic::windowize(mainWindow, currentMonitor, lastScreenBound, title);
 				renderer->resize(lastScreenBound.getWidth(), lastScreenBound.getHeight());
 			}else {
-				Graphic::fullScreen(window, currentMonitor, title);
+				Graphic::fullScreen(mainWindow, currentMonitor, title);
 				renderer->resize(mainScreenMode->width, mainScreenMode->height);
 			}
 		}));
 
 		auto keys = std::array{OS::KeyBind(GLFW_KEY_LEFT_SHIFT, Act_Continuous), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) };
-		input->registerKeyBindMulti(keys, []() {camera->setTargetScale(1.0f);});
+		input->registerKeyBindMulti(keys, []() {camera->setTargetScaleDef();});
 
 		input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
-
 			auto pos = Core::input->getMousePos();
-			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f).scl(1.0f, -1.0f);
+			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
 			pos *= Core::camera->getScreenToWorld();
 
 			Core::camera->setPosition(pos);
 		});
+
+		input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
+			auto pos = Core::input->getMousePos();
+			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
+			pos *= Core::camera->getScreenToWorld();
+
+			Core::camera->setPosition(pos);
+		});
+
+		for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {
+			Core::input->registerMouseBind(i, Ctrl::Act_Press, [i] {
+				Core::uiRoot->onPress(i);
+			});
+
+			Core::input->registerMouseBind(i, Ctrl::Act_Release, [i] {
+				Core::uiRoot->onRelease(i);
+			});
+
+			Core::input->registerMouseBind(i, Ctrl::Act_DoubleClick, [i] {
+				Core::uiRoot->onDoubleClick(i);
+			});
+		}
+
+
+		Core::input->cursorListeners.emplace_back([](const float x, const float y) {
+			Core::uiRoot->cursorPos.set(x, y);
+		});
+
+		Core::input->velocityListeners.emplace_back([](const float x, const float y) {
+			Core::uiRoot->cursorVel.set(x, y);
+		});
+
 
 		{//TODO pack this into a class like screen shot manager
 			// Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, []() mutable  {

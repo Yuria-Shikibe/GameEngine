@@ -30,7 +30,8 @@ class Elem {
 	public:
 		virtual ~Elem() = default;
 
-		[[nodiscard]] Elem() = default;
+		// ReSharper disable once CppFunctionIsNotImplemented
+		[[nodiscard]] Elem();
 
 	protected:
 		/**
@@ -46,7 +47,16 @@ class Elem {
 
 		std::unordered_set<Elem*> focusTarget{};
 
-		Event::EventManager eventListener{};
+		Event::EventManager inputListener{
+			Event::indexOf<MouseActionPress>(),
+			Event::indexOf<MouseActionRelease>(),
+			Event::indexOf<MouseActionDrug>(),
+			Event::indexOf<MouseActionDoubleClick>(),
+
+			Event::indexOf<CurosrInbound>(),
+			Event::indexOf<CurosrExbound>(),
+		};
+
 		TouchbilityFlags touchbility = TouchbilityFlags::enabled;
 
 		std::function<bool()> visibilityChecker{nullptr};
@@ -54,14 +64,18 @@ class Elem {
 		mutable bool layoutChanged{false};
 		bool endRow{false};
 		bool visiable{true};
+		bool requiresLayout{false};
 
 		Geom::Vector2D absoluteSrc{};
 
-		ElemDrawer* drawer{UI::defDrawer.get()};
+		//TODO pool support
+		std::unique_ptr<ElemDrawer> drawer{std::make_unique<EdgeDrawer>()};
 
 	public:
-		std::string_view name{"undefind"};
+		std::string name{"undefind"};
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
+		mutable Graphic::Color tempColor{1.0f, 1.0f, 1.0f, 1.0f};
+
 		mutable float maskOpacity = 1.0f;
 
 		[[nodiscard]] virtual bool isVisiable() const {
@@ -69,7 +83,17 @@ class Elem {
 		}
 
 		virtual void layout() {
+			layoutChanged = false;
+		}
 
+		virtual void layoutChildren() {
+			for(const auto& child : children) {
+				if(child->layoutChanged && !child->ignoreLayout())child->layout();
+			}
+		}
+
+		virtual bool ignoreLayout() const {
+			return !visiable;
 		}
 
 		virtual void draw() const {
@@ -77,20 +101,47 @@ class Elem {
 			drawChildren();
 		}
 
+		void modifyAddedChildren(Elem* elem) {
+			childrenCheck(elem);
+			elem->parent = this;
+			elem->layout();
+			changed();
+			elem->setRoot(root);
+		}
+
+		void setRoot(Root* const elem) {
+			root = elem;
+		}
+
 		virtual void addChildren(Elem* elem) {
-			nullPointerCheck(elem);
+			modifyAddedChildren(elem);
 			children.emplace_back(elem);
-			layoutChanged = true;
 		}
 
 		virtual void addChildren(Elem* elem, const size_t depth) {
-			nullPointerCheck(elem);
-			children.insert(children.begin() + std::clamp(depth, 0ull, children.size()), std::unique_ptr<Elem>(elem));
-			layoutChanged = true;
+			if(depth >= children.size()) {
+				addChildren(elem);
+			}else {
+				modifyAddedChildren(elem);
+				children.insert(children.begin() + depth, std::unique_ptr<Elem>(elem));
+			}
+		}
+
+		[[nodiscard]] bool touchDisabled() const {
+			return touchbility == TouchbilityFlags::disabled;
+		}
+
+		[[nodiscard]] TouchbilityFlags getTouchbility() const {
+			return touchbility;
+		}
+
+		void setTouchbility(const TouchbilityFlags flag) {
+			this->touchbility = flag;
 		}
 
 		virtual void drawBackground() const {
-			drawer->drawBackground(absoluteSrc.x, absoluteSrc.y, getBound().getWidth(), getBound().getHeight(), color, maskOpacity);
+			tempColor = color;
+			drawer->drawBackground(absoluteSrc.x, absoluteSrc.y, getBound().getWidth(), getBound().getHeight(), tempColor, maskOpacity);
 		}
 
 		virtual void drawChildren() const {
@@ -106,7 +157,7 @@ class Elem {
 		}
 
 		void setDrawer(ElemDrawer* drawer) {
-			this->drawer = drawer;
+			this->drawer.reset(drawer);
 		}
 
 		Elem* setParent(Elem* const parent) {
@@ -118,7 +169,7 @@ class Elem {
 
 		virtual Elem& prepareRemove() {
 			if(parent == nullptr) {
-				throw ext::NullPointerException{"This Elem: " + static_cast<std::string>(name) + " Doesn't Have A Parent!"};
+				throw ext::NullPointerException{"This Elem: " + name + " Doesn't Have A Parent!"};
 			}
 			parent->toRemove.emplace_back(this);
 
@@ -150,28 +201,33 @@ class Elem {
 		}
 
 		void setSrc(const float x, const float y) {
+			if(bound.getSrcX() == x && bound.getSrcY() == y)return;
 			bound.setSrc(x, y);
-			layoutChanged = true;
+			changed();
 		}
 
 		virtual void setWidth(const float w) {
+			if(bound.getWidth() == w)return;
 			bound.setWidth(w);
-			layoutChanged = true;
+			changed();
 		}
 
 		virtual void setHeight(const float h) {
+			if(bound.getHeight() == h)return;
 			bound.setHeight(h);
-			layoutChanged = true;
+			changed();
 		}
 
 		virtual void setSize(const float w, const float h) {
+			if(bound.getWidth() == w && bound.getHeight() == h)return;
 			bound.setSize(w, h);
-			layoutChanged = true;
+			changed();
 		}
 
 		virtual void setSize(const float s) {
+			if(bound.getWidth() == s && bound.getHeight() == s)return;
 			bound.setSize(s, s);
-			layoutChanged = true;
+			changed();
 		}
 
 		virtual float getIdealWidth() {
@@ -207,8 +263,34 @@ class Elem {
 			return 0;
 		}
 
+		bool hasChildren() const {
+			return !children.empty();
+		}
+
+		[[nodiscard]] Event::EventManager& getInputListener() {
+			return inputListener;
+		}
+
+		[[nodiscard]] const Event::EventManager& getInputListener() const {
+			return inputListener;
+		}
+
+		template <Concepts::Invokable<bool(Elem*)> Func>
+		void iterateAll(const Func& func) {
+			if(func(this))return;
+
+			for (const auto& child : getChildren()) {
+				child->iterateAll(func);
+			}
+		}
+
 		[[nodiscard]] bool hasChanged() const {
 			return layoutChanged;
+		}
+
+		virtual void changed() const {
+			layoutChanged = true;
+			if(parent)parent->changed();
 		}
 
 		void toString(std::ostream& os, const int depth) const {
@@ -232,11 +314,22 @@ class Elem {
 			});
 		}
 
+		bool interactive() const {
+			return touchbility == TouchbilityFlags::enabled && visiable;
+		}
+
+		bool inbound(const Geom::Vector2D& screenPos) const {
+			if(touchbility != TouchbilityFlags::enabled)return false;
+			return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
+		}
+
 		bool isFocused() const;
+
+		bool cursorInbound() const;
 
 		void setFocused(bool focus);
 
-		static void nullPointerCheck(const void* ptr) {
+		virtual void childrenCheck(const Elem* ptr) {
 #ifdef  DEBUG_LOCAL
 			if(!ptr)throw ext::NullPointerException{"Empty Elem"};
 #else

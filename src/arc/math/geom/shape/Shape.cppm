@@ -19,10 +19,10 @@ export namespace Geom::Shape{
 	public:
 		virtual std::vector<Vector2D>& vertices(std::vector<Vector2D>& collector) const = 0;
 
-		[[nodiscard]] virtual bool inBound_edgeExclusive(const Vector2D& v) const = 0;
-		[[nodiscard]] virtual bool inBound_edgeInclusive(const Vector2D& v) const = 0;
-		[[nodiscard]] virtual bool inbound(const Vector2D& v)const {
-			return inBound_edgeExclusive(v);
+		[[nodiscard]] virtual bool containsPos_edgeExclusive(const Vector2D& v) const = 0;
+		[[nodiscard]] virtual bool containsPos_edgeInclusive(const Vector2D& v) const = 0;
+		[[nodiscard]] virtual bool containsPos(const Vector2D& v)const {
+			return containsPos_edgeExclusive(v);
 		}
 
 		[[nodiscard]] virtual bool contains(const T& other) const = 0;

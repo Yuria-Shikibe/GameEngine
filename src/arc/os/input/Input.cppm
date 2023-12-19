@@ -18,6 +18,7 @@ import Concepts;
 import Ctrl.Constants;
 import OS.Key;
 import OS.Mouse;
+import OS.InputListener;
 import OS.ApplicationListener;
 import <algorithm>;
 import <execution>;
@@ -34,13 +35,17 @@ export namespace Core{
 	using std::array;
 	using std::unique_ptr;
 
-	class Input final : public virtual ApplicationListener {
+	class Input final : public ApplicationListener {
 	public:
-		unsigned int refreshRate = 60;
-		vector<function<void(float, float)>> scrollListener{};
-		vector<function<void(float, float)>> cursorListener{};
+		using PosListener = function<void(float, float)>;
+		vector<PosListener> scrollListeners{};
+		vector<PosListener> cursorListeners{};
+		vector<PosListener> velocityListeners{};
 
-		template <typename T, size_t total = 0>
+		vector<InputListener*> inputKeyListeners{};
+		vector<InputListener*> inputMouseListeners{};
+
+		template <typename T, size_t total>
 		struct PressedChecker {
 			virtual ~PressedChecker() = default;
 
@@ -49,7 +54,7 @@ export namespace Core{
 			virtual void operator()(const array<vector<unique_ptr<T>>, total>& range) = 0;
 		};
 
-		template <typename T, size_t total = 0>
+		template <typename T, size_t total>
 		struct ArrayChecker final : PressedChecker<T, total>{
 			array<bool, total> pressed{};
 
@@ -72,7 +77,7 @@ export namespace Core{
 			}
 		};
 
-		template <typename T, size_t total = 0>
+		template <typename T, size_t total>
 		struct SetChecker final : PressedChecker<T, total>{
 			std::unordered_set<int> pressed{};
 
@@ -95,13 +100,13 @@ export namespace Core{
 
 		template <typename T, size_t total, Concepts::Derived<PressedChecker<T, total>> Checker>
 			requires requires(T t){t.state();t.code();t.tryRun(0);t.act();} && Concepts::HasDefConstructor<Checker>
-		struct InputGroup {
+		struct InputGroup final : OS::InputListener{
 			array<vector<unique_ptr<T>>, total> binds{};
 			array<vector<unique_ptr<T>>, total> continuous{};
 			array<float, total> doubleClick{};
 			Checker pressed{};
 
-			void inform(const int code, int action, const int mods) {
+			void inform(const int code, int action, const int mods) override {
 				switch(action) { // NOLINT(*-multiway-paths-covered)
 					case Ctrl::Act_Press : {
 						pressed.insert(code);
@@ -167,7 +172,13 @@ export namespace Core{
 	protected:
 		GLFWwindow* window{nullptr};
 		bool isInbound{false};
+
+		//TODO calculate mousePos velocity
 		Geom::Vector2D mousePos{};
+		Geom::Vector2D lastMousePos{};
+
+		Geom::Vector2D mouseVelocity{};
+
 		Geom::Vector2D scrollOffset{};
 
 	public:
@@ -226,18 +237,27 @@ export namespace Core{
 		 */
 		void informMouseAction(const GLFWwindow* targetWin, const int button, const int action, [[maybe_unused]] const int mods) {
 			mouseGroup.inform(button, action, mods);
+
+			std::for_each(std::execution::par_unseq, inputMouseListeners.begin(), inputMouseListeners.end(), [button, action, mods](InputListener* listener) {
+				listener->inform(button, action, mods);
+			});
 		}
 
 		void informKeyAction(const GLFWwindow* targetWin, const int key, [[maybe_unused]] int scanCode, const int action, [[maybe_unused]] const int mods) {
 			keyGroup.inform(key, action, mods);
+
+			std::for_each(std::execution::par_unseq, inputKeyListeners.begin(), inputKeyListeners.end(), [key, action, mods](InputListener* listener) {
+				listener->inform(key, action, mods);
+			});
 		}
 
 		void setPos(const float x, const float y) {
+			lastMousePos = mousePos;
 			mousePos.set(x, y);
 
-			for (const auto& listener : cursorListener) {
+			std::for_each(std::execution::par_unseq, cursorListeners.begin(), cursorListeners.end(), [x, y](const PosListener& listener) {
 				listener(x, y);
-			}
+			});
 		}
 
 		Geom::Vector2D& getMousePos() {
@@ -251,9 +271,9 @@ export namespace Core{
 		void setScrollOffset(const float x, const float y) {
 			scrollOffset.set(x, y);
 
-			for (const auto& listener : scrollListener) {
+			std::for_each(std::execution::par_unseq, scrollListeners.begin(), scrollListeners.end(), [x, y](const PosListener& listener) {
 				listener(x, y);
-			}
+			});
 		}
 
 		[[nodiscard]] bool inbound() const {
@@ -271,6 +291,14 @@ export namespace Core{
 
 			keyGroup.update(delta);
 			mouseGroup.update(delta);
+
+			mouseVelocity = mousePos;
+			mouseVelocity -= lastMousePos;
+			mouseVelocity /= delta;
+
+			std::for_each(std::execution::par_unseq, velocityListeners.begin(), velocityListeners.end(), [this](const PosListener& listener) {
+				listener(mouseVelocity.x, mouseVelocity.y);
+			});
 		}
 
 	};

@@ -1,10 +1,4 @@
-//
-// Created by Matrix on 2023/11/19.
-//
-
 module ;
-
-#include <iostream>
 
 export module OS.Key;
 

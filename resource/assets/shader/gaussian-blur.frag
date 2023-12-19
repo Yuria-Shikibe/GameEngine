@@ -14,7 +14,7 @@ in vec2 v_texCoords4;
 
 const float center = 0.2370270270;
 const float close = 0.3362162162;
-const float far = 0.0802702703;
+const float far = 0.0822702703;
 
 void main(){
 	gl_FragColor = far * texture2D(u_texture, v_texCoords0)

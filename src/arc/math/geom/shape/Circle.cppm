@@ -56,10 +56,10 @@ export namespace Geom::Shape{
 			return true;
 		}
 
-		[[nodiscard]] bool inBound_edgeExclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeExclusive(const Vector2D& v) const override{
 			return true;
 		}
-		[[nodiscard]] bool inBound_edgeInclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeInclusive(const Vector2D& v) const override{
 			return true;
 		}
 		T maxDiagonalLen() const override{

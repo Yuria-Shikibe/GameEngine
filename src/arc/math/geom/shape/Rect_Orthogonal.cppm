@@ -193,11 +193,11 @@ export namespace Geom::Shape{
 			);
 		}
 
-		[[nodiscard]] bool inBound_edgeExclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeExclusive(const Vector2D& v) const override{
 			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
 		}
 
-		[[nodiscard]] bool inBound_edgeInclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeInclusive(const Vector2D& v) const override{
 			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
@@ -230,6 +230,13 @@ export namespace Geom::Shape{
 		Rect_Orthogonal& setSize(const T x, const T y) {
 			this->setWidth(x);
 			this->setHeight(y);
+
+			return *this;
+		}
+
+		Rect_Orthogonal& setSize(const Rect_Orthogonal& other) {
+			this->setWidth(other.width);
+			this->setHeight(other.height);
 
 			return *this;
 		}
