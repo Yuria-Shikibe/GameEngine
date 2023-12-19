@@ -76,6 +76,14 @@ export namespace UI {
 			return item->endingRow();
 		}
 
+		LayoutCell& applyLayout(const LayoutCell& other) {
+			if(this == &other) return *this;
+			const auto cur = item;
+			*this = other;
+			item = cur;
+			return *this;
+		}
+
 		LayoutCell& setAlign(const Align::Mode align = Align::Mode::center) {
 			this->align = align;
 
@@ -319,8 +327,8 @@ export namespace UI {
 			return maxElemPerRow;
 		}
 
-		LayoutCell& add(Elem* elem) {
-			addChildren(elem);
+		LayoutCell& add(Elem* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
+			addChildren(elem, depth);
 			if(elem->endingRow())rowsCount++;
 			return cells.emplace_back(elem);
 		}

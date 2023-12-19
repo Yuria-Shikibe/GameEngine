@@ -119,15 +119,12 @@ export namespace ext {
 			: func(std::forward<Func>(func)) {
 		}
 
-		template<typename U = T>
-		requires std::same_as<U, void>
+		template<typename _T = T> requires std::same_as<_T, void>
 		void run() {
 			func();
 			ProgressTask<T, Handler>::setDone();
 		}
 
-		template<typename U = T>
-		requires !std::same_as<U, void>
 		T run() {
 			T ret = func();
 			ProgressTask<T, Handler>::setDone();

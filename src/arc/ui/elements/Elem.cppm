@@ -60,7 +60,7 @@ class Elem {
 		ElemDrawer* drawer{UI::defDrawer.get()};
 
 	public:
-		std::string_view name{"undefind elem"};
+		std::string_view name{"undefind"};
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
 		mutable float maskOpacity = 1.0f;
 
@@ -78,7 +78,14 @@ class Elem {
 		}
 
 		virtual void addChildren(Elem* elem) {
+			nullPointerCheck(elem);
 			children.emplace_back(elem);
+			layoutChanged = true;
+		}
+
+		virtual void addChildren(Elem* elem, const size_t depth) {
+			nullPointerCheck(elem);
+			children.insert(children.begin() + std::clamp(depth, 0ull, children.size()), std::unique_ptr<Elem>(elem));
 			layoutChanged = true;
 		}
 
@@ -228,5 +235,13 @@ class Elem {
 		bool isFocused() const;
 
 		void setFocused(bool focus);
+
+		static void nullPointerCheck(const void* ptr) {
+#ifdef  DEBUG_LOCAL
+			if(!ptr)throw ext::NullPointerException{"Empty Elem"};
+#else
+			return;
+#endif
+		}
 	};
 }
