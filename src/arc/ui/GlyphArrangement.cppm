@@ -82,13 +82,14 @@ export namespace Font {
 
 namespace Font {
 	std::array<GlyphVertData, 2500> vertPool;
-	std::pmr::monotonic_buffer_resource pool{vertPool.data(), vertPool.size()};
+	std::pmr::unsynchronized_pool_resource pool{};
 }
 
 export namespace Font{
 	struct GlyphLayout { // NOLINT(*-pro-type-member-init)
 		Geom::Vector2D offset{};
-		std::pmr::vector<GlyphVertData> toRender{&pool};
+		//TODO uses pools!
+		std::vector<GlyphVertData> toRender{};
 
 		float maxWidth{std::numeric_limits<float>::max()};
 
@@ -96,20 +97,20 @@ export namespace Font{
 
 		std::string last{};
 
+		size_t count = 0;
+
 		void reset() {
 			last.clear();
 			maxWidth = std::numeric_limits<float>::max();
-			toRender.clear();
 			bound.setSize(0, 0);
 			bound.setSrc(0, 0);
 			offset.setZero();
 		}
 
 		void clear() {
-			toRender.clear();
 			bound.setSize(0, 0);
 			bound.setSrc(0, 0);
-			offset.setZero();
+			count = 0;
 		}
 
 		void move(const float x, const float y) {
@@ -139,7 +140,7 @@ export namespace Font{
 		}
 
 		void render() const {
-			for(auto& glyph : toRender) {
+			std::ranges::for_each_n(toRender.begin(), count, [this](const auto& glyph) {
 				Graphic::Draw::vert_monochromeAll(
 					glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
 					glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0, glyph.region->v0,
@@ -147,11 +148,11 @@ export namespace Font{
 					glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u1, glyph.region->v1,
 					glyph.u1 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u1, glyph.region->v0
 				);
-			}
+			});
 		}
 
 		void render(const float progress) const {
-			for(size_t i = 0; i < static_cast<size_t>(progress * static_cast<float>(toRender.size())); ++i) {
+			for(size_t i = 0; i < static_cast<size_t>(progress * static_cast<float>(count)); ++i) {
 				const GlyphVertData& glyph = toRender.at(i);
 				Graphic::Draw::vert_monochromeAll(
 					glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
@@ -389,13 +390,14 @@ namespace ParserFunctions {
 		virtual void parse(const std::shared_ptr<GlyphLayout> layout, const std::string_view text) const {
 			constexpr auto npos = std::string::npos;
 
+			//TODO maxWidth may changed!
 			if(layout->last == text)return;
 			layout->last = text;
 
 			context.reset();
 			layout->clear();
 			auto& datas = layout->toRender;
-			datas.reserve(text.length());
+			datas.resize(std::max(text.size(), datas.capacity()));
 
 			const Font::FontData::CharData* lastCharData = &Font::emptyCharData;
 			bool tokenState = false;
@@ -404,9 +406,11 @@ namespace ParserFunctions {
 			Geom::Vector2D currentPosition{0, -context.lineSpacing};
 
 			if(text.empty()) {
-				layout->bound.set(0, 0,0 , 0);
+				layout->bound.set(0, 0, 0, 0);
 				return;
 			}
+
+			size_t count = 0;
 			for(size_t index = 0; index < text.size(); ++index) {
 				const char currentChar = text.at(index);
 				//Token Check
@@ -444,11 +448,12 @@ namespace ParserFunctions {
 					continue;
 				}
 
-				datas.emplace_back();
-				auto& data = datas.back();
+				// datas.emplace_back();
 				const auto* charData = context.currentFont->getCharData(currentChar);
 
 				if(charData) {
+					auto& data = datas.at(count++);
+
 					if(currentPosition.x + normalize(lastCharData->matrices.width + lastCharData->matrices.horiBearingX) * context.currentScale > layout->maxWidth) {
 						currentPosition.x = layout->maxWidth - normalize(lastCharData->matrices.horiAdvance) * context.currentScale;
 						ParserFunctions::endLine({context, currentPosition, lastCharData, *layout});
@@ -483,6 +488,8 @@ namespace ParserFunctions {
 				}
 			}
 
+			layout->count = count;
+
 			if(text.back() != '\n' && charParser->contains('\n')){
 				charParser->parse('\n', {context, currentPosition, lastCharData, *layout});
 			}
@@ -495,7 +502,7 @@ namespace ParserFunctions {
 			//TODO should this really work?
 			float offsetY = layout->bound.getHeight() + context.currentLineBound.getHeight() * 0.255f;
 
-			std::for_each(std::execution::par_unseq, datas.begin(), datas.end(), [offsetY](GlyphVertData& data) {
+			std::for_each_n(std::execution::par_unseq, datas.begin(), text.size(), [offsetY](GlyphVertData& data) {
 				data.moveY(offsetY);
 			});
 		}

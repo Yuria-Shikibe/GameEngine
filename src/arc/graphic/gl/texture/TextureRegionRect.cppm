@@ -116,10 +116,26 @@ export namespace GL{
 			return std::abs(v1 - v0) * data->getHeight();
 		}
 
-		void shrinkEdge(const float margin) {
+		void shrinkEdgeX(const float marginX) {
 			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
-			newBound.move(margin, margin).addSize(-margin * 2.0f, -margin * 2.0f);
+			newBound.move(marginX, 0).addSize(-marginX * 2.0f, 0);
 			fetchIntoCurrent(newBound);
+		}
+
+		void shrinkEdgeY(const float marginY) {
+			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
+			newBound.move(0, marginY).addSize(0, -marginY * 2.0f);
+			fetchIntoCurrent(newBound);
+		}
+
+		void shrinkEdge(const float marginX, const float marginY) {
+			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
+			newBound.move(marginX, marginY).addSize(-marginX * 2.0f, -marginY * 2.0f);
+			fetchIntoCurrent(newBound);
+		}
+
+		void shrinkEdge(const float margin) {
+			shrinkEdge(margin, margin);
 		}
 
 		template<Concepts::Number N0, Concepts::Number N1>

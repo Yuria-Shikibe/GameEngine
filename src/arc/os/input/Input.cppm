@@ -39,7 +39,7 @@ export namespace Core{
 	public:
 		using PosListener = function<void(float, float)>;
 		vector<PosListener> scrollListeners{};
-		vector<PosListener> cursorListeners{};
+		vector<PosListener> cursorMoveListeners{};
 		vector<PosListener> velocityListeners{};
 
 		vector<InputListener*> inputKeyListeners{};
@@ -173,7 +173,6 @@ export namespace Core{
 		GLFWwindow* window{nullptr};
 		bool isInbound{false};
 
-		//TODO calculate mousePos velocity
 		Geom::Vector2D mousePos{};
 		Geom::Vector2D lastMousePos{};
 
@@ -251,11 +250,10 @@ export namespace Core{
 			});
 		}
 
-		void setPos(const float x, const float y) {
-			lastMousePos = mousePos;
+		void cursorMoveInform(const float x, const float y) {
 			mousePos.set(x, y);
 
-			std::for_each(std::execution::par_unseq, cursorListeners.begin(), cursorListeners.end(), [x, y](const PosListener& listener) {
+			std::for_each(std::execution::par_unseq, cursorMoveListeners.begin(), cursorMoveListeners.end(), [x, y](const PosListener& listener) {
 				listener(x, y);
 			});
 		}
@@ -295,6 +293,8 @@ export namespace Core{
 			mouseVelocity = mousePos;
 			mouseVelocity -= lastMousePos;
 			mouseVelocity /= delta;
+
+			lastMousePos = mousePos;
 
 			std::for_each(std::execution::par_unseq, velocityListeners.begin(), velocityListeners.end(), [this](const PosListener& listener) {
 				listener(mouseVelocity.x, mouseVelocity.y);

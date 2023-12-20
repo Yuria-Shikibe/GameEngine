@@ -11,14 +11,23 @@ import <string>;
 
 export namespace UI {
 	class Label : public Elem {
+		using TextView = std::string_view;
 	protected:
 		bool dynamic{false};
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{Font::obtainLayoutPtr()};
 		Align::Mode textAlignMode{Align::Mode::top_left};
 
-		std::string_view text = "";
+		//TODO Support characters apart from ASCII
+		TextView text = "";
+		std::shared_ptr<TextView::value_type> dataSource{nullptr};
+
+		bool textChanged = false;
 
 	public:
+		void textUpdated() {
+			textChanged = true;
+		}
+
 		void updateTextLayout() const {
 			glyphLayout->maxWidth = bound.getWidth();
 			Font::glyphParser->parse(glyphLayout, text);
@@ -29,9 +38,27 @@ export namespace UI {
 			glyphLayout = layoutPtr;
 		}
 
-		void setText(const std::string_view text) {
+		void setText(const TextView text) {
 			this->text = text;
+			textUpdated();
 			changed();
+		}
+
+		void setText(const TextView::const_pointer text) {
+			this->text = std::string_view{text};
+			textUpdated();
+			changed();
+		}
+
+		void setText(std::shared_ptr<TextView::value_type> text) {
+			dataSource = std::move(text);
+			this->text = std::string_view{dataSource.get()};
+			textUpdated();
+			changed();
+		}
+
+		TextView& getView() {
+			return text;
 		}
 
 		void draw() const override {
@@ -42,14 +69,28 @@ export namespace UI {
 		}
 
 		void layout() override {
-			updateTextLayout();
+
 			Elem::layout();
 		}
 
 		void update(float delta) override {
-			if(layoutChanged || dynamic) {
+			if(dynamic)updateTextLayout();
+			else if(textChanged) {
+				updateTextLayout();
+				textChanged = false;
+			}
+
+			if(layoutChanged) {
 				layout();
 			}
+		}
+
+		[[nodiscard]] bool isDynamic() const {
+			return dynamic;
+		}
+
+		void setDynamic(const bool dynamic) {
+			this->dynamic = dynamic;
 		}
 
 		void childrenCheck(const Elem* ptr) override {

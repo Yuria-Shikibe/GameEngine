@@ -103,7 +103,7 @@ inline void mouseBottomCallBack(GLFWwindow* window, const int button, const int 
 }
 
 inline void cursorPosCallback(GLFWwindow* window, const double xPos, const double yPos) {
-	Core::input->setPos(static_cast<float>(xPos), static_cast<float>(Core::renderer->getHeight() - yPos));
+	Core::input->cursorMoveInform(static_cast<float>(xPos), static_cast<float>(Core::renderer->getHeight() - yPos));
 }
 
 inline void dropCallback(GLFWwindow* window, int path_count, const char* paths[]) {
@@ -154,9 +154,14 @@ inline void maximizeCallback(GLFWwindow* window, const int maximized) {
 }
 
 export namespace OS{
-	inline void setApplicationIcon(GLFWwindow* window, std::shared_ptr<GLFWimage> image) {
-		glfwSetWindowIcon(window, 1, image.get());
+	inline void setApplicationIcon(GLFWwindow* window, const GLFWimage* image) {
+		glfwSetWindowIcon(window, 1, image);
 	}
+
+	// inline void setCursorIcon(GLFWwindow* window, const GLFWimage* image) {
+	// 	glfwCursorI
+	// 	glfwSetWindowIcon(window, 1, image);
+	// }
 
 	void loadListeners(GLFWwindow* window) {
 
@@ -176,7 +181,7 @@ export namespace OS{
 		glfwSetWindowMaximizeCallback(window, maximizeCallback);
 		glfwSetWindowRefreshCallback(window, windowRefreshCallback);
 		glfwSetMouseButtonCallback(window, mouseBottomCallBack);
-		// setInputMode_Cursor(OS::CursorMode::hidden);
+		// setInputMode_Cursor(OS::CursorMode::disabled);
 		// OS::setInputMode_StickyKeys(true);
 		// OS::setInputMode_LockKeyMods(true);
 	}

@@ -7,6 +7,11 @@ module;
 export module Ctrl.ControlCommands;
 
 import Ctrl.Constants;
+import GL.Constants;
+
+import Core.Camera;
+import Core.Renderer;
+import UI.Root;
 
 import Core.Input;
 import OS;
@@ -82,7 +87,7 @@ export namespace Ctrl{
 		}
 
 
-		Core::input->cursorListeners.emplace_back([](const float x, const float y) {
+		Core::input->cursorMoveListeners.emplace_back([](const float x, const float y) {
 			Core::uiRoot->cursorPos.set(x, y);
 		});
 

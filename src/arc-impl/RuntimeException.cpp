@@ -1,10 +1,10 @@
-//
-// Created by Matrix on 2023/11/29.
-//
+module;
 
 #include <thread>
+
+module OS;
+
 import Core;
-import OS;
 import RuntimeException;
 
 void ext::RuntimeException::postProcess() const {

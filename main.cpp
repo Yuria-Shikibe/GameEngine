@@ -75,6 +75,7 @@ import TimeMark;
 
 import UI.Root;
 import UI.Label;
+import UI.ScrollPane;
 
 using namespace std;
 using namespace Graphic;
@@ -82,8 +83,6 @@ using namespace Draw;
 using namespace GL;
 using Geom::Vector2D;
 
-
-bool bloomTest = true;
 
 void init(const int argc, char* argv[]) {
 	//TODO move these into application loader
@@ -100,7 +99,7 @@ void init(const int argc, char* argv[]) {
 
 	Assets::loadBasic();
 
-	OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")));
+	OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")).get());
 
 	Core::initCore_Post([] {
 		Core::batch = new Core::SpriteBatch([](const Core::SpriteBatch& self) {
@@ -174,6 +173,9 @@ int main(const int argc, char* argv[]) {
 	cell.item->color.mul(0.6f);
 	cell.clearRelativeMove();
 	cell.as<UI::Label>().setText("test 1231231231");
+	cell.as<UI::Label>().setDynamic(true);
+
+	auto& view = cell.as<UI::Label>().getView();
 
 	cell.item->getInputListener().on<UI::MouseActionPress>([item = cell.item](auto& e) {
 		if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
@@ -182,7 +184,6 @@ int main(const int argc, char* argv[]) {
 			item->color.mul(0.6f);
 		}
 	});
-
 
 	auto& cell2 = Core::uiRoot->root->add(new UI::Table{});
 	cell2.item->color = Colors::GREEN;
@@ -199,8 +200,8 @@ int main(const int argc, char* argv[]) {
 	table.add(new UI::Elem{});
 
 
-	Core::uiRoot->root->add(new UI::Elem{}).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
-
+	auto& cellp = Core::uiRoot->root->add(new UI::ScrollPane{}).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
+	cellp.marginLeft = cellp.marginRight = cellp.marginBottom = cellp.marginTop = 50;
 
 	//Draw Test
 	auto tex = Core::assetsManager->getAtlas().find("test-pester-full");
@@ -227,11 +228,13 @@ int main(const int argc, char* argv[]) {
 	layout->setAlign(Align::Mode::bottom_left);
 	layout->move(80, 30);
 
+	std::string str;
+
 	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
 		Draw::meshBegin(Assets::Meshes::coords);
 		Draw::meshEnd(true);
 		//
-		if(bloomTest)Core::renderer->frameBegin(&frameBuffer);
+		Core::renderer->frameBegin(&frameBuffer);
 		Core::renderer->frameBegin(&multiSample);
 		//
 		const auto center = Core::camera->screenCenter();
@@ -265,7 +268,9 @@ int main(const int argc, char* argv[]) {
 
 		ss.str("");
 		ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << center.getX() << ", " << center.getY() << " | " << std::to_string(OS::getFPS()) << ")";
-		Font::glyphParser->parse(coordCenter, ss.str());
+		str = ss.str();
+		view = std::string_view{str};
+		Font::glyphParser->parse(coordCenter, view);
 
 		coordCenter->offset.set(center).add(155, 35);
 
@@ -285,7 +290,7 @@ int main(const int argc, char* argv[]) {
 		Draw::flush();
 		Draw::meshEnd(Core::batch->getMesh(), false);
 		Core::renderer->frameEnd(Assets::PostProcessors::blendMulti);
-		if(bloomTest)Core::renderer->frameEnd(Assets::PostProcessors::bloom);
+		Core::renderer->frameEnd(Assets::PostProcessors::bloom);
 	});
 
 	OS::setupLoop();

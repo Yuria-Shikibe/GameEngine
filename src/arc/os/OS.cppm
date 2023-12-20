@@ -11,7 +11,6 @@ import <functional>;
 import <iostream>;
 import <vector>;
 import Event;
-import File;
 import StackTrace;
 import Concepts;
 import OS.ApplicationListener;
@@ -61,7 +60,7 @@ export namespace OS{
 	//Should Be Done In Application Launcher
 	std::function<void(float&)> deltaSetter = nullptr;
 	std::function<void(float&)> globalTimeSetter = nullptr;
-	std::function<File()> crashFileGetter = nullptr;
+	std::function<std::filesystem::path()> crashFileGetter = nullptr;
 
 
 /**\brief READ ONLY*/
@@ -81,7 +80,7 @@ export namespace OS{
 		return _deltaTime;
 	}
 
-	unsigned int getFPS() {
+	inline unsigned int getFPS() {
 		return static_cast<unsigned int>(1.0f / _deltaTime);
 	}
 
@@ -133,19 +132,19 @@ export namespace OS{
 		postAsyncTasks.emplace_back(std::forward<Func>(func), std::move(promise));
 	}
 
-	inline void registerListener(ApplicationListener* listener){
+	void registerListener(ApplicationListener* listener){
 		applicationListeners.push_back(listener);
 	}
 
-	inline void removeListener(ApplicationListener* listener){
+	void removeListener(ApplicationListener* listener){
 		std::erase(applicationListeners, listener);
 	}
 
-	inline void clearListeners(){
+	void clearListeners(){
 		applicationListeners.clear();
 	}
 
-	inline void launch(){
+	void launch(){
 		std::signal(SIGABRT, exitApplication);
 		std::signal(SIGILL, exitApplication);
 		std::signal(SIGSEGV, exitApplication);
@@ -167,11 +166,11 @@ export namespace OS{
 		return mainThreadID;
 	}
 
-	inline void exitWith(const std::string& what) {
+	void exitWith(const std::string& what) {
 		exitApplication(SIGTERM, what);
 	}
 
-	inline bool continueLoop(GLFWwindow* window){
+	bool continueLoop(GLFWwindow* window){
 		return !glfwWindowShouldClose(window);
 	}
 
@@ -187,7 +186,7 @@ export namespace OS{
 		loopBegin = false;
 	}
 
-	inline void poll(GLFWwindow* window){
+	void poll(GLFWwindow* window){
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
@@ -204,7 +203,7 @@ export namespace OS{
 		_updateTick = _updateTime * TicksPerSecond;
 	}
 
-	inline void update(){
+	void update(){
 		for(const auto task : postTasks){
 			task();
 		}

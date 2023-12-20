@@ -54,18 +54,24 @@ export namespace Graphic{
 
 		Color(const float r, const float g, const float b): Color(r, g, b, 1){}
 
-		Color(Color&& color) = default;
+		Color(Color&& other) noexcept {
+			std::memcpy(this, &other, sizeof(Color));
+		}
 
-		Color(const Color& other) = default;
+		Color(const Color& other){
+			std::memcpy(this, &other, sizeof(Color));
+		}
 
 		Color& operator=(const Color& other){
 			if (this == &other) return *this;
-			return set(other);  // NOLINT(misc-unconventional-assign-operator)
+			std::memcpy(this, &other, sizeof(Color));
+			return *this;  // NOLINT(misc-unconventional-assign-operator)
 		}
 
 		Color& operator=(Color&& other) noexcept{
 			if (this == &other) return *this;
-			return set(other);  // NOLINT(misc-unconventional-assign-operator)
+			std::memcpy(this, &other, sizeof(Color));
+			return *this;  // NOLINT(misc-unconventional-assign-operator)
 		}
 
 		static size_t hash_value(const Color& obj){

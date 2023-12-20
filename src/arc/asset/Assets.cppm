@@ -29,6 +29,7 @@ import GL.Shader.Manager;
 
 import File;
 import Core;
+import OS;
 import <future>;
 import <iostream>;
 import <memory>;
@@ -168,11 +169,11 @@ export namespace Assets{
 			multiToBasic = new Graphic::MultiSampleBliter{};
 
 			blurX = new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vector2D{1.32f, 0});
+				shader.setVec2("direction", Geom::Vector2D{1.12f, 0});
 			}};
 
 			blurY = new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vector2D{0, 1.32f});
+				shader.setVec2("direction", Geom::Vector2D{0, 1.12f});
 			}};
 
 			bloom = new Graphic::BloomProcessor{blurX, blurY, Shaders::bloom, Shaders::threshold_light};

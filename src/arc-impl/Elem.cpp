@@ -1,9 +1,14 @@
+module UI.Elem;
+
+import UI.ElemDrawer;
 import UI.Root;
-import UI.Elem;
 import Core;
+
+using UI::Root;
 
 UI::Elem::Elem() {
 	// setRoot(Core::uiRoot);
+	if(!drawer)drawer = UI::defDrawer.get();
 }
 
 void UI::Elem::drawBackground() const {

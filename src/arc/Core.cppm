@@ -1,12 +1,10 @@
-module;
-
 export module Core;
 
+import <string>;
 import <functional>;
 import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 
-import Graphic;
 import Geom.Shape.Rect_Orthogonal;
 
 import Core.Audio;
@@ -16,20 +14,11 @@ import Core.Settings;
 import Core.Log;
 
 import UI.Root;
-
-import RuntimeException;
-
-export import Core.Batch.Batch_Sprite;
-export import Core.Batch;
-export import Core.Input;
-export import Core.Camera;
-export import Core.Renderer;
-export import GL;
-export import GL.Constants;
-export import OS.FileTree;
-export import OS.Key;
-export import OS;
-import <iostream>;
+import Core.Batch;
+import Core.Input;
+import Core.Camera;
+import Core.Renderer;
+import OS.FileTree;
 
 export namespace Core{
 	const std::string title = APPLICATION_NAME;

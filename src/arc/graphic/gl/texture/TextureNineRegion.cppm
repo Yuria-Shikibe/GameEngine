@@ -45,14 +45,14 @@ export namespace GL {
 	 */
 	class TextureNineRegion {
 	public:
-		static constexpr int ID_center = 0;
-		static constexpr int ID_right = 1;
-		static constexpr int ID_top = 2;
-		static constexpr int ID_left = 3;
-		static constexpr int ID_bottom = 4;
-		static constexpr int ID_topRight = 5;
-		static constexpr int ID_topLeft = 6;
-		static constexpr int ID_bottomLeft = 7;
+		static constexpr int ID_center      = 0;
+		static constexpr int ID_right       = 1;
+		static constexpr int ID_top         = 2;
+		static constexpr int ID_left        = 3;
+		static constexpr int ID_bottom      = 4;
+		static constexpr int ID_topRight    = 5;
+		static constexpr int ID_topLeft     = 6;
+		static constexpr int ID_bottomLeft  = 7;
 		static constexpr int ID_bottomRight = 8;
 
 		static constexpr int TotalRegions = 9;
@@ -112,20 +112,23 @@ export namespace GL {
 				topRight_W = totalBound.getEndX() - innerBound.getEndX(),
 				topRight_H = totalBound.getEndY() - innerBound.getEndY();
 
-			regions[ID_center].fetchInto(innerBound, totalBound);
+			regions[ID_center     ].fetchInto(innerBound, totalBound);
 
-			regions[ID_right].fetchInto(innerBound.getEndX(), bottomLeft_H + srcY, topRight_W, inner_H, totalBound);
-			regions[ID_top].fetchInto(bottomLeft_W + srcX, innerBound.getEndY(), inner_W, topRight_H, totalBound);
-			regions[ID_left].fetchInto(srcX, bottomLeft_H, bottomLeft_W, inner_H, totalBound);
-			regions[ID_bottom].fetchInto(bottomLeft_W + srcX, srcY, inner_W, bottomLeft_H, totalBound);
+			regions[ID_right      ].fetchInto(innerBound.getEndX(), bottomLeft_H + srcY, topRight_W, inner_H, totalBound);
+			regions[ID_top        ].fetchInto(bottomLeft_W + srcX, innerBound.getEndY(), inner_W, topRight_H, totalBound);
+			regions[ID_left       ].fetchInto(srcX, bottomLeft_H, bottomLeft_W, inner_H, totalBound);
+			regions[ID_bottom     ].fetchInto(bottomLeft_W + srcX, srcY, inner_W, bottomLeft_H, totalBound);
 
-			regions[ID_topRight].fetchInto(innerBound.getEndX(), innerBound.getEndY(), topRight_W, topRight_H, totalBound);
-			regions[ID_topLeft].fetchInto(srcX, innerBound.getEndY(), bottomLeft_W, topRight_H, totalBound);
-			regions[ID_bottomLeft].fetchInto(srcX, srcY, bottomLeft_W, bottomLeft_H, totalBound);
+			regions[ID_topRight   ].fetchInto(innerBound.getEndX(), innerBound.getEndY(), topRight_W, topRight_H, totalBound);
+			regions[ID_topLeft    ].fetchInto(srcX, innerBound.getEndY(), bottomLeft_W, topRight_H, totalBound);
+			regions[ID_bottomLeft ].fetchInto(srcX, srcY, bottomLeft_W, bottomLeft_H, totalBound);
 			regions[ID_bottomRight].fetchInto(innerBound.getEndX(), srcY, topRight_W, bottomLeft_H, totalBound);
 
 			for(TextureRegionRect& region : regions) {
 				region.setData(rect);
+				if(region.getWidth() * region.getHeight() < 0.2f) {
+					region.setData(nullptr);
+				}
 			}
 
 			innerSize.set(inner_W, inner_H);
@@ -173,17 +176,17 @@ export namespace GL {
 		 * \param height  Inner Height
 		 */
 		void render_RelativeInner(const float x, const float y, const float width, const float height) const{
-			Draw::rect(&regions[ID_center], x, y, width, height);
+			if(regions[ID_center     ].getData())Draw::rect(&regions[ID_center], x, y, width, height);
 
-			Draw::rect(&regions[ID_right], x + width, y, topRightSize.x, height);
-			Draw::rect(&regions[ID_top], x, y + height, width, topRightSize.y);
-			Draw::rect(&regions[ID_left], x - bottomLeftSize.x, y, bottomLeftSize.x, height);
-			Draw::rect(&regions[ID_bottom], x, y - bottomLeftSize.y, width, bottomLeftSize.y);
+			if(regions[ID_right      ].getData())Draw::rect(&regions[ID_right], x + width, y, topRightSize.x, height);
+			if(regions[ID_top        ].getData())Draw::rect(&regions[ID_top], x, y + height, width, topRightSize.y);
+			if(regions[ID_left       ].getData())Draw::rect(&regions[ID_left], x - bottomLeftSize.x, y, bottomLeftSize.x, height);
+			if(regions[ID_bottom     ].getData())Draw::rect(&regions[ID_bottom], x, y - bottomLeftSize.y, width, bottomLeftSize.y);
 
-			Draw::rect(&regions[ID_topRight], x + width, y + height, topRightSize.x, topRightSize.y);
-			Draw::rect(&regions[ID_topLeft], x - bottomLeftSize.x, y + height, bottomLeftSize.x, topRightSize.y);
-			Draw::rect(&regions[ID_bottomLeft], x - bottomLeftSize.x, y - bottomLeftSize.y, bottomLeftSize.x, bottomLeftSize.y);
-			Draw::rect(&regions[ID_bottomRight], x + width, y - bottomLeftSize.y, topRightSize.x, bottomLeftSize.y);
+			if(regions[ID_topRight   ].getData())Draw::rect(&regions[ID_topRight], x + width, y + height, topRightSize.x, topRightSize.y);
+			if(regions[ID_topLeft    ].getData())Draw::rect(&regions[ID_topLeft], x - bottomLeftSize.x, y + height, bottomLeftSize.x, topRightSize.y);
+			if(regions[ID_bottomLeft ].getData())Draw::rect(&regions[ID_bottomLeft], x - bottomLeftSize.x, y - bottomLeftSize.y, bottomLeftSize.x, bottomLeftSize.y);
+			if(regions[ID_bottomRight].getData())Draw::rect(&regions[ID_bottomRight], x + width, y - bottomLeftSize.y, topRightSize.x, bottomLeftSize.y);
 		}
 
 		void render_RelativeInner(const Rect& rect) const{
@@ -198,17 +201,17 @@ export namespace GL {
 		 * \param height  Exter Height
 		 */
 		void render_RelativeExter(const float x, const float y, const float width, const float height) const{
-			Draw::rect(&regions[ID_center], x + bottomLeftSize.x, y + bottomLeftSize.y, width - bottomLeftSize.x - topRightSize.x, height - bottomLeftSize.y - topRightSize.y);
+			if(regions[ID_center     ].getData())Draw::rect(&regions[ID_center], x + bottomLeftSize.x, y + bottomLeftSize.y, width - bottomLeftSize.x - topRightSize.x, height - bottomLeftSize.y - topRightSize.y);
 
-			Draw::rect(&regions[ID_right], x + width - topRightSize.x, y + bottomLeftSize.y, topRightSize.x, height - bottomLeftSize.y - topRightSize.y);
-			Draw::rect(&regions[ID_top], x + bottomLeftSize.x, y + height - topRightSize.y, width - bottomLeftSize.x - topRightSize.x, topRightSize.y);
-			Draw::rect(&regions[ID_left], x, y + bottomLeftSize.y, bottomLeftSize.x,  height - bottomLeftSize.y - topRightSize.y);
-			Draw::rect(&regions[ID_bottom], x + bottomLeftSize.x, y, width - bottomLeftSize.x - topRightSize.x,  bottomLeftSize.y);
+			if(regions[ID_right      ].getData())Draw::rect(&regions[ID_right], x + width - topRightSize.x, y + bottomLeftSize.y, topRightSize.x, height - bottomLeftSize.y - topRightSize.y);
+			if(regions[ID_top        ].getData())Draw::rect(&regions[ID_top], x + bottomLeftSize.x, y + height - topRightSize.y, width - bottomLeftSize.x - topRightSize.x, topRightSize.y);
+			if(regions[ID_left       ].getData())Draw::rect(&regions[ID_left], x, y + bottomLeftSize.y, bottomLeftSize.x,  height - bottomLeftSize.y - topRightSize.y);
+			if(regions[ID_bottom     ].getData())Draw::rect(&regions[ID_bottom], x + bottomLeftSize.x, y, width - bottomLeftSize.x - topRightSize.x,  bottomLeftSize.y);
 
-			Draw::rect(&regions[ID_topRight], x + width - topRightSize.x, y + height - topRightSize.y, topRightSize.x, topRightSize.y);
-			Draw::rect(&regions[ID_topLeft], x, y + height - topRightSize.y, bottomLeftSize.x, topRightSize.y);
-			Draw::rect(&regions[ID_bottomLeft], x, y, bottomLeftSize.x, bottomLeftSize.y);
-			Draw::rect(&regions[ID_bottomRight], x + width - topRightSize.x, y, topRightSize.x, bottomLeftSize.y);
+			if(regions[ID_topRight   ].getData())Draw::rect(&regions[ID_topRight], x + width - topRightSize.x, y + height - topRightSize.y, topRightSize.x, topRightSize.y);
+			if(regions[ID_topLeft    ].getData())Draw::rect(&regions[ID_topLeft], x, y + height - topRightSize.y, bottomLeftSize.x, topRightSize.y);
+			if(regions[ID_bottomLeft ].getData())Draw::rect(&regions[ID_bottomLeft], x, y, bottomLeftSize.x, bottomLeftSize.y);
+			if(regions[ID_bottomRight].getData())Draw::rect(&regions[ID_bottomRight], x + width - topRightSize.x, y, topRightSize.x, bottomLeftSize.y);
 		}
 
 		void render_RelativeExter(const Rect& rect) const{

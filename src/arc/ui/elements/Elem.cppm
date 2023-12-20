@@ -1,7 +1,3 @@
-//
-// Created by Matrix on 2023/12/3.
-//
-
 module;
 
 export module UI.Elem;
@@ -13,8 +9,6 @@ import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 
-import UI.ElemDrawer;
-
 import <algorithm>;
 import <execution>;
 import <functional>;
@@ -24,9 +18,10 @@ import <unordered_set>;
 using Rect = Geom::Shape::OrthoRectFloat;
 
 export namespace UI {
-class Root;
+	struct ElemDrawer;
+	class Root;
 
-class Elem {
+	class Elem {
 	public:
 		virtual ~Elem() = default;
 
@@ -39,7 +34,7 @@ class Elem {
 		 */
 		Rect bound{};
 		Elem* parent{nullptr};
-		Root* root{nullptr};
+		::UI::Root* root{nullptr};
 
 		//TODO abstact this if possible
 		std::vector<std::unique_ptr<Elem>> children{};
@@ -66,10 +61,11 @@ class Elem {
 		bool visiable{true};
 		bool requiresLayout{false};
 
+		bool quitInboundFocus = true;
+
 		Geom::Vector2D absoluteSrc{};
 
-		//TODO pool support
-		std::unique_ptr<ElemDrawer> drawer{std::make_unique<EdgeDrawer>()};
+		ElemDrawer* drawer{nullptr};
 
 	public:
 		std::string name{"undefind"};
@@ -80,6 +76,10 @@ class Elem {
 
 		[[nodiscard]] virtual bool isVisiable() const {
 			return visiable;
+		}
+
+		[[nodiscard]] bool quitMouseFocusAtOutbound() const {
+			return quitInboundFocus;
 		}
 
 		virtual void layout() {
@@ -139,10 +139,7 @@ class Elem {
 			this->touchbility = flag;
 		}
 
-		virtual void drawBackground() const {
-			tempColor = color;
-			drawer->drawBackground(absoluteSrc.x, absoluteSrc.y, getBound().getWidth(), getBound().getHeight(), tempColor, maskOpacity);
-		}
+		virtual void drawBackground() const;
 
 		virtual void drawChildren() const {
 			for(const auto& elem : children) {
@@ -157,7 +154,7 @@ class Elem {
 		}
 
 		void setDrawer(ElemDrawer* drawer) {
-			this->drawer.reset(drawer);
+			this->drawer = drawer;
 		}
 
 		Elem* setParent(Elem* const parent) {
@@ -255,6 +252,12 @@ class Elem {
 			absoluteSrc.set(parent->absoluteSrc).add(bound.getSrcX(), bound.getSrcY());
 		}
 
+		virtual void calAbsoluteChildren() {
+			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& elem) {
+				elem->calAbsolute(this);
+			});
+		}
+
 		Geom::Vector2D& getAbsSrc() {
 			return absoluteSrc;
 		}
@@ -328,6 +331,22 @@ class Elem {
 		bool cursorInbound() const;
 
 		void setFocused(bool focus);
+
+		[[nodiscard]] float drawSrcX() const {
+			return absoluteSrc.x;
+		}
+
+		[[nodiscard]] float drawSrcY() const {
+			return absoluteSrc.y;
+		}
+
+		[[nodiscard]] float getWidth() const {
+			return bound.getWidth();
+		}
+
+		[[nodiscard]] float getHeight() const {
+			return bound.getHeight();
+		}
 
 		virtual void childrenCheck(const Elem* ptr) {
 #ifdef  DEBUG_LOCAL

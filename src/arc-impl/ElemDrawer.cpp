@@ -1,4 +1,4 @@
-import UI.ElemDrawer;
+module UI.ElemDrawer;
 
 import UI.Elem;
 import Graphic.Color;

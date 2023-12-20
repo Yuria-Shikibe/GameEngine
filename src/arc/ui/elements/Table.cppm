@@ -242,9 +242,6 @@ export namespace UI {
 
 		//TODO mess
 		void layoutRelative() {
-			static std::array<float, 80> buffer{};
-			static std::pmr::monotonic_buffer_resource pool{buffer.data(), buffer.size()};
-
 			if(cells.empty() || std::ranges::all_of(std::as_const(cells), [](const LayoutCell& cell) {
 				return cell.ignore();
 			}))return;
@@ -289,8 +286,8 @@ export namespace UI {
 			int curX{0};
 			int curY{0};
 
-			//TODO
-			std::pmr::vector<float> maxSizeArr{columns() + curLayoutRows, &pool};
+			//TODO is this necessary?
+			std::vector<float> maxSizeArr(columns() + curLayoutRows);
 
 			const float spacingX = bound.getWidth()  / static_cast<float>(columns());
 			const float spacingY = bound.getHeight() / static_cast<float>(curLayoutRows);
@@ -372,6 +369,11 @@ export namespace UI {
 
 		[[nodiscard]] size_t columns() const {
 			return maxElemPerRow;
+		}
+
+		void calAbsolute(Elem* parent) override {
+			Elem::calAbsolute(parent);
+			calAbsoluteChildren();
 		}
 
 		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func = nullptr_t>

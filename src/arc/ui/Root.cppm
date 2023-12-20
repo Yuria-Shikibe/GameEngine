@@ -4,6 +4,7 @@ export module UI.Root;
 
 import <memory>;
 import <vector>;
+import <algorithm>;
 import <array>;
 import Concepts;
 import Container.Pool;
@@ -19,7 +20,6 @@ import Graphic.Resizeable;
 import OS.ApplicationListener;
 import OS.InputListener;
 
-
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{
 class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationListener, public OS::InputListener{
@@ -34,6 +34,12 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 
 	Geom::Matrix3D projection{};
 	public:
+		float width{0};
+		float height{0};
+
+		float marginX = 8.0f;
+		float marginY = 8.0f;
+
 		~Root() override = default;
 
 		[[nodiscard]] Root() : root(std::make_unique<Table>()) { // NOLINT(*-use-equals-default)
@@ -87,8 +93,16 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 			});
 
 			if(!foundInbounded) {
-				setEnter(nullptr);
+				if(currentCursorFocus != nullptr) {
+					if(currentCursorFocus->quitMouseFocusAtOutbound()) {
+						setEnter(nullptr);
+					}else if(std::ranges::none_of(pressedMouseButtons, std::identity{})){
+						setEnter(nullptr);
+					}
+				}
 			}
+
+			onDrugUpdate();
 		}
 
 		[[nodiscard]] Geom::Matrix3D& getPorj() {
@@ -96,12 +110,32 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 		}
 
 		void resize(const unsigned w, const unsigned h) override {
+			width = static_cast<float>(w);
+			height = static_cast<float>(h);
 			root->setSize(static_cast<float>(w), static_cast<float>(h));
-			constexpr float margin = 8.0f;
-			projection.setOrthogonal(-margin, -margin, static_cast<float>(w) + margin * 2.0f, static_cast<float>(h) + margin * 2.0f);
+
+			//TODO apply margin with FBO, not directly
+			// projection.setOrthogonal(-marginX, -marginY, static_cast<float>(w) + marginX * 2.0f, static_cast<float>(h) + marginY * 2.0f);
+			projection.setOrthogonal(0, 0, static_cast<float>(w), static_cast<float>(h));
 		}
 
-		virtual void render() const {
+		[[nodiscard]] float getMarginX() const {
+			return marginX;
+		}
+
+		[[nodiscard]] float getMarginY() const {
+			return marginY;
+		}
+
+		[[nodiscard]] float getWidth() const {
+			return width;
+		}
+
+		[[nodiscard]] float getHeight() const {
+			return height;
+		}
+
+	virtual void render() const {
 			root->draw();
 		}
 

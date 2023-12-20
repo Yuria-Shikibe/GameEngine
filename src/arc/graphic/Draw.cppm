@@ -16,6 +16,7 @@ import Geom.Vector2D;
 import Geom.Shape.Rect_Orthogonal;
 import Geom.Matrix3D;
 
+import GL;
 import GL.Blending;
 import GL.Shader;
 import GL.Mesh;
@@ -121,6 +122,18 @@ inline void alpha(const float a = 1.0f) {
 
 inline void mixAlpha(const float a) {
 	contextMixColor.setA(a);
+}
+
+inline const Matrix3D& getPorj() {
+	return *Core::batch->getProjection();
+}
+
+inline void beginPorj(const Matrix3D& mat) {
+	Core::batch->beginProjection(mat);
+}
+
+inline void endPorj() {
+	Core::batch->endProjection();
 }
 
 inline void color(const Color& c1, const Color& c2, const float t) {
@@ -494,6 +507,13 @@ inline void rect(const TextureRegionRect* region,
 		x + w1 + w2, y + h1 + h2, region->u11(), region->v11(),
 		x - w1 + w2, y - h1 + h2, region->u01(), region->v01()
 	);
+}
+
+void rect(
+ const float x, const float y,
+ const float w, const float h
+) {
+	rect(defaultTexture, x, y, w, h);
 }
 
 inline void quad(const TextureRegion* region, const Geom::Shape::OrthoRectFloat& rect, const float x = 0,

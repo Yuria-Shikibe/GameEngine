@@ -74,6 +74,10 @@ export namespace Core{
 			return crash;
 		}
 
+		[[nodiscard]] std::filesystem::path generateCrashFilePath() const{
+			return generateCrashFile().path();
+		}
+
 		void generateCrash(const std::string& what, const std::string& type = "") const{
 			const OS::File crash = generateCrashFile(type);
 			crash.writeString(what);

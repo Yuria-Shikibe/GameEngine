@@ -1,3 +1,5 @@
+module Assets.Manager;
+
 import Assets;
 import Assets.Loader;
 import Assets.LoaderRenderer;
@@ -14,8 +16,6 @@ import Event;
 
 import <ranges>;
 import <GLFW/glfw3.h>;
-
-import Assets.Manager;
 
 void Assets::Manager::pullRequest() {
 	loadEvents.fire(AssetsLoadPull{this});

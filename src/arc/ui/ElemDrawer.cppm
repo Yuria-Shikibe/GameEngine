@@ -5,31 +5,23 @@ import <memory>;
 import Graphic.Color;
 
 export namespace UI {
+	class Elem;
+
 	struct ElemDrawer {
 		virtual ~ElemDrawer() = default;
 
-		bool inbound{false};
-		bool click{false};
-		bool invalid{false};
-
-		void reset() {
-			inbound = click = invalid = false;
-		}
-
-		virtual void drawBackground(float x, float y, float width, float height, Graphic::Color& color, float opacity) const = 0;
+		virtual void drawBackground(const UI::Elem* elem) const = 0;
 	};
 
 	struct EdgeDrawer final : ElemDrawer{
-		void drawBackground(float x, float y, float width, float height, Graphic::Color& color, float opacity) const override;
+		void drawBackground(const UI::Elem* elem) const override;
 	};
 
 	struct EmptyDrawer final : ElemDrawer{
-		void drawBackground(const float x, const float y, const float width, const float height, Graphic::Color& color, const float opacity) const override {
+		void drawBackground(const UI::Elem* elem) const override {
 
 		}
 	};
 
-
-	std::unique_ptr<EdgeDrawer> defDrawer{new EdgeDrawer};
-	std::unique_ptr<EmptyDrawer> emptyDrawer{new EmptyDrawer};
+	std::unique_ptr defDrawer{std::make_unique<EdgeDrawer>()};
 }
