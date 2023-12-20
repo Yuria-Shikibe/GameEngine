@@ -31,8 +31,6 @@ export import OS.Key;
 export import OS;
 import <iostream>;
 
-
-
 export namespace Core{
 	const std::string title = APPLICATION_NAME;
 
@@ -42,10 +40,7 @@ export namespace Core{
 
 	inline Geom::Shape::OrthoRectInt lastScreenBound{};
 	inline bool maximizedWin = true;
-	inline void setScreenBound(GLFWwindow* win = mainWindow) {
-		glfwGetWindowSize(win, lastScreenBound.getWidthRaw(), lastScreenBound.getHeightRaw());
-		glfwGetWindowPos(win, lastScreenBound.getSrcXRaw(), lastScreenBound.getSrcYRaw());
-	}
+	void setScreenBound(GLFWwindow* win = mainWindow);
 
 	inline const GLFWvidmode* mainScreenMode = nullptr;
 	//TODO using unique ptr?
@@ -79,121 +74,18 @@ export namespace Core{
 	//TODO maybe some objects for task management, if necessary
 	//TODO Async Impl...
 
-	inline void initMainWindow() {
-		mainMonitor = glfwGetPrimaryMonitor();
+	void initMainWindow();
 
-		mainScreenMode = Graphic::getVideoMode(mainMonitor);
+	void initFileSystem();
 
-		OS::screenWidth = mainScreenMode->width;
-		OS::screenHeight = mainScreenMode->height;
-		OS::refreshRate = mainScreenMode->refreshRate;
-
-#ifdef __APPLE__
-		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-		mainWindow = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
-
-		if(maximizedWin) {
-			glfwSetWindowSizeCallback(mainWindow, [](GLFWwindow* win, const int width, const int height){
-				Core::lastScreenBound.setSize(width, height);
-			});
-
-			// Graphic::fullScreen(window, currentMonitor, title);
-			glfwMaximizeWindow(mainWindow);
-			setScreenBound();
-
-			glViewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
-			glfwSwapInterval(1);
-			GL::enable(GL_MULTISAMPLE);
-
-			lastScreenBound.set(100, 100, OS::screenWidth * 0.75f, OS::screenHeight * 0.75f);
-
-			glfwSetWindowSizeCallback(mainWindow, nullptr);
-		}
-
-	}
-
-	inline void initFileSystem() {
-#ifdef DEBUG_LOCAL
-	#ifdef ASSETS_DIR
-		rootFileTree = new OS::FileTree{ASSETS_DIR};
-	#else
-		rootFileTree = new OS::FileTree{OS::args[0]};
-	#endif
-#else
-		//TODO release build assets pacakge
-	#ifdef ASSETS_DIR
-		rootFileTree = new OS::FileTree{ASSETS_DIR};
-	#else
-		rootFileTree = new OS::FileTree{OS::args[0]};
-	#endif
-#endif
-		OS::crashFileGetter = [] {
-			return log->generateCrashFile();
-		};
-	}
-
-	inline void initCore(const std::function<void()>& initializer = nullptr){
-		Graphic::initOpenGL();
-
-		initMainWindow();
-
-		OS::launch();
-		GL::init();
-
-		initFileSystem();
-
-		if(initializer){
-			initializer();
-		}
-
-		{
-			if(!input)input = new Input(mainWindow);
-			if(!camera)camera = new Camera2D();
-			if(!log)log = new Log{rootFileTree->findDir("logs")};
-		}
-	}
+	void initCore(const std::function<void()>& initializer = nullptr);
 
 	/**
 	* \brief Invoke this after assets load!
 	**/
-	inline void initCore_Post(const std::function<void()>& initializer = nullptr) {
-		if(initializer) {
-			initializer();
-		}
+	void initCore_Post(const std::function<void()>& initializer = nullptr);
 
-		if(!batch)throw ext::NullPointerException{"Empty Default Batch!"};
+	void loadAssets();
 
-		OS::registerListener(input);
-		OS::registerListener(camera);
-
-		assetsManager = new Assets::Manager{};
-	}
-
-	void loadAssets() {
-		assetsManager->pullRequest();
-		assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), mainWindow, renderer);
-		assetsManager->loadPost();
-		assetsManager->loadEnd();
-	}
-
-	inline void dispose(){
-		OS::clearListeners();
-
-		delete input;
-		delete camera;
-		delete batch;
-		delete renderer;
-		delete rootFileTree;
-
-		delete audio;
-		delete assetsManager;
-		delete settings;
-		delete uiRoot;
-		delete bundle;
-		delete log;
-
-		glfwTerminate();
-	}
+	void dispose();
 }

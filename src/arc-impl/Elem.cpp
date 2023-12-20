@@ -4,14 +4,10 @@ import Core;
 
 UI::Elem::Elem() {
 	// setRoot(Core::uiRoot);
+}
 
-	inputListener.on<UI::CurosrInbound>([this](const auto& e) {
-		drawer->inbound = true;
-	});
-
-	inputListener.on<UI::CurosrExbound>([this](const auto& e) {
-		drawer->inbound = false;
-	});
+void UI::Elem::drawBackground() const {
+	drawer->drawBackground(this);
 }
 
 void UI::Elem::setFocused(const bool focus) {
