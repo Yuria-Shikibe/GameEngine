@@ -6,6 +6,7 @@ import <memory>;
 import <vector>;
 import <algorithm>;
 import <array>;
+import <bitset>;
 import Concepts;
 import Container.Pool;
 
@@ -27,7 +28,9 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 	mutable MouseActionPress pressAction{};
 	mutable MouseActionRelease releaseAction{};
 	mutable MouseActionDoubleClick doubleClickAction{};
-	mutable MouseActionDrug drugAction{};
+	mutable MouseActionDrag dragAction{};
+
+	mutable MouseActionScroll scrollAction{};
 
 	mutable CurosrInbound inboundAction{};
 	mutable CurosrExbound exboundAction{};
@@ -51,25 +54,37 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 
 		Geom::Vector2D cursorPos{};
 		Geom::Vector2D cursorVel{};
+		Geom::Vector2D mouseScroll{};
 
-		std::array<bool, Ctrl::MOUSE_BUTTON_COUNT> pressedMouseButtons{};
+		//TODO use bitmap or array???
+		std::bitset<Ctrl::MOUSE_BUTTON_COUNT> pressedMouseButtons{};
 
 		Elem* currentInputFocused{nullptr};
-
+		Elem* currentScrollFocused{nullptr};
 		const Elem* currentCursorFocus{nullptr};
 		// // //Focus
 		// //
 		// // //Input Listeners
 		std::unique_ptr<Table> root{nullptr};
 
+		[[nodiscard]] bool focusScroll() const {
+			return currentScrollFocused != nullptr;
+		}
+
+		[[nodiscard]] bool focusKeyInput() const {
+			return currentInputFocused != nullptr;
+		}
+
+		[[nodiscard]] bool cursorCaptured() const {
+			return currentCursorFocus != nullptr;
+		}
+
 
 		template <Concepts::Invokable<bool(Elem*)> Func>
 		void iterateAll_DFS(Elem* current, bool& shouldStop, Func&& func) {
-			if (shouldStop) {return;}
+			if (shouldStop)return;
 
-
-
-			if (!func(current) || shouldStop) {return;}
+			if (!func(current) || shouldStop)return;
 
 			for (auto& child : current->getChildren()) {
 				iterateAll_DFS(child.get(), shouldStop, func);
@@ -79,34 +94,48 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 		// //Renderers
 		//
 		void update(const float delta) override {
-			root->update(delta);
+			bool stop = false;
 
-			bool foundInbounded = false;
+			const Elem* last = nullptr;
 
-			iterateAll_DFS(root.get(), foundInbounded, [&foundInbounded, this](const Elem* elem) mutable {
-				foundInbounded = elem->interactive() && elem->inbound(cursorPos);
-				if(foundInbounded) {
-					setEnter(elem);
+			iterateAll_DFS(root.get(), stop, [this, &last](const Elem* elem) mutable {
+				if(elem->interactive() && elem->inbound(cursorPos)) {
+					last = elem;
 				}
 
 				return !elem->touchDisabled();
 			});
 
-			if(!foundInbounded) {
-				if(currentCursorFocus != nullptr) {
-					if(currentCursorFocus->quitMouseFocusAtOutbound()) {
-						setEnter(nullptr);
-					}else if(std::ranges::none_of(pressedMouseButtons, std::identity{})){
-						setEnter(nullptr);
-					}
-				}
-			}
+			determinShiftFocus(last);
 
-			onDrugUpdate();
+			onDragUpdate();
+
+			root->update(delta);
 		}
 
 		[[nodiscard]] Geom::Matrix3D& getPorj() {
 			return projection;
+		}
+
+		//TODO shit named fucntion and logic!
+		void determinShiftFocus(const Elem* newFocus) {
+			if(newFocus == nullptr) {
+				if(currentCursorFocus != nullptr) {
+					if(currentCursorFocus->quitMouseFocusAtOutbound()) {
+						setEnter(nullptr);
+					}else if(pressedMouseButtons.none()){
+						setEnter(nullptr);
+					}
+				}
+			}else {
+				if(currentCursorFocus != nullptr) {
+					if(pressedMouseButtons.none()) {
+						setEnter(newFocus);
+					}
+				}else {
+					setEnter(newFocus);
+				}
+			}
 		}
 
 		void resize(const unsigned w, const unsigned h) override {
@@ -159,16 +188,22 @@ class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationLis
 			pressedMouseButtons[id] = false;
 		}
 
-		[[nodiscard]] bool onDrug(const int id = 0) const {
+		void onScroll() const {
+			if(currentScrollFocused == nullptr)return;
+			scrollAction.set(mouseScroll);
+			currentScrollFocused->getInputListener().fire(scrollAction);
+		}
+
+		[[nodiscard]] bool onDrag(const int id = 0) const {
 			return pressedMouseButtons[id] && currentCursorFocus != nullptr;
 		}
 
-		void onDrugUpdate() const {
+		void onDragUpdate() const {
 			if(currentCursorFocus == nullptr)return;
 			for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {
-				if(onDrug(i)) {
-					drugAction.set(cursorVel, i);
-					currentCursorFocus->getInputListener().fire(drugAction);
+				if(onDrag(i)) {
+					dragAction.set(cursorVel, i);
+					currentCursorFocus->getInputListener().fire(dragAction);
 				}
 			}
 		}

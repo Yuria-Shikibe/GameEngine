@@ -6,6 +6,7 @@ import <vector>;
 import <memory_resource>;
 import <array>;
 import <algorithm>;
+import <execution>;
 
 import Geom.Shape.Rect_Orthogonal;
 import Align;
@@ -26,6 +27,11 @@ export namespace UI {
 	struct LayoutCell {
 	protected:
 		Align::Mode align = Align::Mode::bottom_left;
+		void changed() const {
+			if(item) {
+				item->changed();
+			}
+		}
 	public:
 		//Weak Reference Object
 		Elem* item{nullptr};
@@ -68,8 +74,8 @@ export namespace UI {
 		/**
 		 * \brief When true, the cell will expand parent group when the room isn't enough.
 		 */
-		bool modifyParentOnExpansionX{false};
-		bool modifyParentOnExpansionY{false};
+		bool modifyParentX{false};
+		bool modifyParentY{false};
 
 		bool scaleRelativeToParentX{true};
 		bool scaleRelativeToParentY{true};
@@ -78,21 +84,96 @@ export namespace UI {
 			return item->endingRow();
 		}
 
+		friend bool operator==(const LayoutCell& lhs, const LayoutCell& rhs) {
+			return std::tie(lhs.align, lhs.allocatedBound, lhs.marginLeft, lhs.marginRight, lhs.marginBottom,
+			                lhs.marginTop, lhs.padLeft, lhs.padRight, lhs.padBottom, lhs.padTop, lhs.srcxScale,
+			                lhs.srcyScale, lhs.endxScale, lhs.endyScale, lhs.modifyParentX, lhs.modifyParentY,
+			                lhs.scaleRelativeToParentX, lhs.scaleRelativeToParentY) == std::tie(
+				       rhs.align, rhs.allocatedBound, rhs.marginLeft, rhs.marginRight, rhs.marginBottom, rhs.marginTop,
+				       rhs.padLeft, rhs.padRight, rhs.padBottom, rhs.padTop, rhs.srcxScale, rhs.srcyScale,
+				       rhs.endxScale, rhs.endyScale, rhs.modifyParentX, rhs.modifyParentY, rhs.scaleRelativeToParentX,
+				       rhs.scaleRelativeToParentY);
+		}
+
+		friend bool operator!=(const LayoutCell& lhs, const LayoutCell& rhs) {
+			return !(lhs == rhs);
+		}
+
+		LayoutCell& wrapX() {
+			changed();
+			scaleRelativeToParentX = false;
+			return *this;
+		}
+
+		LayoutCell& wrapY() {
+			changed();
+			scaleRelativeToParentY = false;
+			return *this;
+		}
+
+		LayoutCell& wrap() {
+			changed();
+			scaleRelativeToParentX = false;
+			scaleRelativeToParentY = false;
+			return *this;
+		}
+
+		LayoutCell& fillParentX() {
+			changed();
+			scaleRelativeToParentX = true;
+			return *this;
+		}
+
+		LayoutCell& fillParentY() {
+			changed();
+			scaleRelativeToParentY = true;
+			return *this;
+		}
+
+		LayoutCell& fillParent() {
+			changed();
+			scaleRelativeToParentX = true;
+			scaleRelativeToParentY = true;
+			return *this;
+		}
+
+		LayoutCell& expandX(const bool val = true) {
+			val ? wrapX() : fillParentX();
+			modifyParentX = val;
+			return *this;
+		}
+
+		LayoutCell& expandY(const bool val = true) {
+			val ? wrapY() : fillParentY();
+			modifyParentY = true;
+			return *this;
+		}
+
+		LayoutCell& expand(const bool valX = true, const bool valY = true) {
+			expandX(valX);
+			expandY(valY);
+			return *this;
+		}
+
 		LayoutCell& applyLayout(const LayoutCell& other) {
 			if(this == &other) return *this;
+			changed();
 			const auto cur = item;
 			*this = other;
 			item = cur;
 			return *this;
 		}
 
-		LayoutCell& setAlign(const Align::Mode align = Align::Mode::center) {
+		LayoutCell& setAlign(const Align::Mode align = Align::Mode::center) {\
+			if(align == this->align)return *this;
+			changed();
 			this->align = align;
 
 			return *this;
 		}
 
 		LayoutCell& setSrcScale(const float xScl, const float yScl) {
+			changed();
 			srcxScale = xScl;
 			srcyScale = yScl;
 
@@ -100,13 +181,15 @@ export namespace UI {
 		}
 
 		LayoutCell& setEndScale(const float xScl, const float yScl) {
+			changed();
 			endxScale = xScl;
 			endyScale = yScl;
 
 			return *this;
 		}
 
-		LayoutCell& setSizeScale(const float xScl, const float yScl, Align::Mode align = Align::Mode::center) {
+		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center) {
+			changed();
 			if(align & Align::Mode::top) {
 				srcyScale = endyScale - yScl;
 			}else if(align & Align::Mode::bottom){
@@ -129,31 +212,13 @@ export namespace UI {
 		}
 
 		LayoutCell& clearRelativeMove() {
+			changed();
 			endxScale -= srcxScale;
 			endyScale -= srcyScale;
 
 			srcxScale = srcyScale = 0;
 
 			return *this;
-		}
-
-		void applyAlign(const Rect& bound) const {
-			Rect& itemBound = item->getBound();
-			if(align & Align::Mode::top) {
-				itemBound.setSrcY(bound.getEndY() - itemBound.getHeight());
-			}else if(align & Align::Mode::bottom){
-				itemBound.setSrcY(bound.getSrcY());
-			}else { //centerY
-				itemBound.setSrcY(bound.getSrcY() + (bound.getHeight() - itemBound.getHeight()) * 0.5f);
-			}
-
-			if(align & Align::Mode::right) {
-				itemBound.setSrcX(bound.getEndX() - itemBound.getWidth());
-			}else if(align & Align::Mode::left){
-				itemBound.setSrcX(bound.getSrcX());
-			}else { //centerX
-				itemBound.setSrcY(bound.getSrcX() + (bound.getWidth() - itemBound.getWidth()) * 0.5f);
-			}
 		}
 
 		[[nodiscard]] explicit LayoutCell(Elem* const item)
@@ -180,15 +245,34 @@ export namespace UI {
 			item->setSize(width * widthScale(), height * heightScale());
 
 			//Apply Expansion
-			if(modifyParentOnExpansionX) {
-				allocatedBound.setLargerWidth(item->getBound().getWidth());
+			if(modifyParentX) {
+				allocatedBound.setWidth(item->getBound().getWidth());
 			}
 
-			if(modifyParentOnExpansionY) {
-				allocatedBound.setLargerHeight(item->getBound().getHeight());
+			if(modifyParentY) {
+				allocatedBound.setHeight(item->getBound().getHeight());
 			}
 
 			allocatedBound.addSize(padHori(), padVert());
+		}
+
+		void applyAlign(const Rect& bound) const {
+			Rect& itemBound = item->getBound();
+			if(align & Align::Mode::top) {
+				itemBound.setSrcY(bound.getEndY() - itemBound.getHeight());
+			}else if(align & Align::Mode::bottom){
+				itemBound.setSrcY(bound.getSrcY());
+			}else { //centerY
+				itemBound.setSrcY(bound.getSrcY() + (bound.getHeight() - itemBound.getHeight()) * 0.5f);
+			}
+
+			if(align & Align::Mode::right) {
+				itemBound.setSrcX(bound.getEndX() - itemBound.getWidth());
+			}else if(align & Align::Mode::left){
+				itemBound.setSrcX(bound.getSrcX());
+			}else { //centerX
+				itemBound.setSrcX(bound.getSrcX() + (bound.getWidth() - itemBound.getWidth()) * 0.5f);
+			}
 		}
 
 		//Invoke this after all cell bound has been arranged.
@@ -234,7 +318,11 @@ export namespace UI {
 
 		[[nodiscard]] Table() {
 			touchbility = TouchbilityFlags::childrenOnly;
+
+			color.a = 0.5f;
 		}
+
+		LayoutCell defaultCellLayout{nullptr};
 
 		std::vector<LayoutCell> cells{};
 
@@ -254,32 +342,53 @@ export namespace UI {
 
 			//Register Row Max width / height
 			size_t curElemPerRow = 0;
-			for(const auto& cell : cells) {
-				if(cell.ignore()) {
-					if(cell.endRow()) {
-						if(curElemPerRow > maxElemPerRow) {
-							maxElemPerRow = curElemPerRow;
-						}
 
-						curElemPerRow = 0;
-					}
-					continue;
+			float currentColunmMaxWidth = 0.0f;
+
+
+			float currentRowMaxHeight = 0.0f;
+			float totalRowMaxHeight = 0.0f;
+
+			for(const auto& cell : cells) {
+				if(!cell.scaleRelativeToParentX) {
+					currentColunmMaxWidth += cell.widthScale() * cell.item->getWidth();
+				}
+
+				if(cell.ignore()) {
+					if(cell.endRow())goto endRow;
 				}
 
 				curElemPerRow++;
 
-				if(cell.endRow()) {
-					if(curElemPerRow > maxElemPerRow) {
-						maxElemPerRow = curElemPerRow;
-					}
-
-					curElemPerRow = 0;
+				if(!cell.scaleRelativeToParentY) {
+					currentRowMaxHeight = std::fmaxf(cell.heightScale() * cell.item->getHeight(), currentRowMaxHeight);
 				}
+
+				if(cell.endRow())goto endRow;
+
+				continue;
+
+				endRow:
+
+				totalRowMaxHeight += currentRowMaxHeight;
+				bound.setLargerWidth(currentColunmMaxWidth);
+				currentRowMaxHeight = currentColunmMaxWidth = 0.0f;
+
+				if(curElemPerRow > maxElemPerRow) {
+					maxElemPerRow = curElemPerRow;
+				}
+
+				curElemPerRow = 0;
 			}
 
 			if(curElemPerRow > maxElemPerRow) {
 				maxElemPerRow = curElemPerRow;
 			}
+
+			totalRowMaxHeight += currentRowMaxHeight;
+
+			bound.setLargerWidth(currentColunmMaxWidth);
+			bound.setLargerHeight(totalRowMaxHeight);
 
 			//Split all into boxes
 			//TODO should cells have their own column or row data?
@@ -307,8 +416,8 @@ export namespace UI {
 
 				cell.applySize();
 
-				maxSizeArr[curLayoutRows + curX] = std::max(maxSizeArr[curLayoutRows + curX], cell.getCellWidth());
-				maxSizeArr[curY] = std::max(maxSizeArr[curY], cell.getCellHeight());
+				maxSizeArr[curLayoutRows + curX] = std::fmaxf(maxSizeArr[curLayoutRows + curX], cell.getCellWidth());
+				maxSizeArr[curY] = std::fmaxf(maxSizeArr[curY], cell.getCellHeight());
 
 				curX++;
 				if(cell.endRow()) {
@@ -338,6 +447,11 @@ export namespace UI {
 					curX = 0;
 				}
 			}
+
+			setSize(
+				std::accumulate(maxSizeArr.begin() + curLayoutRows, maxSizeArr.end(), 0.0f),
+				std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + curLayoutRows, 0.0f)
+			);
 		}
 
 		void layoutIrrelative() {
@@ -352,6 +466,9 @@ export namespace UI {
 		}
 
 		void layout() override {
+
+			layout_fillParent();
+
 			if(relativeLayoutFormat) {
 				layoutRelative();
 			}else {
@@ -360,7 +477,7 @@ export namespace UI {
 
 			layoutChildren();
 
-			Elem::layout();
+			layoutChanged = false;
 		}
 
 		[[nodiscard]] size_t rows() const {
@@ -380,6 +497,7 @@ export namespace UI {
 		LayoutCell& add(Func&& func = nullptr) {
 			T* elem = new T;
 			LayoutCell& cell = add(elem);
+			cell.applyLayout(defaultCellLayout);
 
 			if(func) {
 				func(elem);
@@ -392,6 +510,7 @@ export namespace UI {
 		LayoutCell& add(const size_t depth = std::numeric_limits<size_t>::max(), Func&& func = nullptr) {
 			T* elem = new T;
 			LayoutCell& cell = add(elem, depth);
+			cell.applyLayout(defaultCellLayout);
 
 			if(func) {
 				func(elem);
@@ -403,7 +522,24 @@ export namespace UI {
 		LayoutCell& add(Elem* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
 			if(elem->endingRow())rowsCount++;
-			return cells.emplace_back(elem);
+			return cells.emplace_back(elem).applyLayout(defaultCellLayout);
+		}
+
+		void removePosted() override {
+			if(toRemove.empty() || children.empty())return;
+			const auto&& itrCell = std::remove_if(std::execution::par_unseq, cells.begin(), cells.end(), [this](const LayoutCell& cell) {
+				return toRemove.contains(cell.item);
+			});
+
+			if(itrCell == cells.end())return;
+
+			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
+				return toRemove.contains(ptr.get());
+			});
+
+			cells.erase(itrCell);
+			children.erase(itr);
+			toRemove.clear();
 		}
 
 		void endRow() {

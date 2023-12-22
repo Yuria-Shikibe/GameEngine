@@ -6,22 +6,23 @@ import <memory>;
 import <vector>;
 import <algorithm>;
 import <cmath>;
+#include <numbers>
 
 export namespace Math{
 	constexpr int SIGNS[2] = { -1, 1 };
 	constexpr int ZERO_ONE[2] = { 0, 1 };
 	constexpr bool BOOLEANS[2] = { true, false };
-	constexpr float FLOAT_ROUNDING_ERROR = 0.000001f; // 32 bits
-	constexpr float PI = 3.1415927f;
+	constexpr float FLOAT_ROUNDING_ERROR = 0.000001f;
+	constexpr float PI = std::numbers::pi_v<float>;
 	// ReSharper disable once CppInconsistentNaming
-	constexpr float pi = PI, HALF_PI = PI / 2;
+	constexpr float pi        = PI, HALF_PI = PI / 2.0f;
 	constexpr double PI_EXACT = 3.14159265358979323846;
-	constexpr float PI2 = PI * 2;
-	constexpr float E = 2.7182818f;
-	const float SQRT2 = sqrt(2.0f);
-	const float SQRT3 = sqrt(3.0f);
+	constexpr float PI2       = PI * 2.0f;
+	constexpr float E         = 2.7182818f;
+	constexpr float SQRT2     = std::numbers::sqrt2_v<float>;
+	constexpr float SQRT3     = std::numbers::sqrt3_v<float>;
 	/** multiply by this to convert from radians to degrees */
-	constexpr float RADIANS_TO_DEGREES = 180.0f / PI;
+	constexpr float RADIANS_TO_DEGREES = 180.0f / std::numbers::pi_v<float>;
 	constexpr float RAD_DEG = RADIANS_TO_DEGREES;
 	/** multiply by this to convert from degrees to radians */
 	constexpr float DEGREES_TO_RADIANS = PI / 180;
@@ -51,13 +52,13 @@ export namespace Math{
 
 		for (unsigned int i = 0; i < 360; i += 90){
 			const auto fi = static_cast<float>(i);
-			table[static_cast<int>(fi * DEG_TO_INDEX) & SIN_MASK] = std::sinf(fi * DEGREES_TO_RADIANS);
+			table[static_cast<unsigned int>(fi * DEG_TO_INDEX) & SIN_MASK] = std::sinf(fi * DEGREES_TO_RADIANS);
 		}
 
-		table[0                                              ] =  0.0f;
-		table[static_cast<int>( 90 * DEG_TO_INDEX) & SIN_MASK] =  1.0f;
-		table[static_cast<int>(180 * DEG_TO_INDEX) & SIN_MASK] =  0.0f;
-		table[static_cast<int>(270 * DEG_TO_INDEX) & SIN_MASK] = -1.0f;
+		table[0                                                       ] =  0.0f;
+		table[static_cast<unsigned int>( 90 * DEG_TO_INDEX) & SIN_MASK] =  1.0f;
+		table[static_cast<unsigned int>(180 * DEG_TO_INDEX) & SIN_MASK] =  0.0f;
+		table[static_cast<unsigned int>(270 * DEG_TO_INDEX) & SIN_MASK] = -1.0f;
 
 		return table;
 	}();

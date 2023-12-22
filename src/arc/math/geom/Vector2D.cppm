@@ -7,12 +7,14 @@ module ;
 export module Geom.Vector2D;
 
 import <complex>;
+import <algorithm>;
 import <type_traits>;
 
 export import Geom.Position;
 export import Geom.Vector3D;
 export import Math;
 export import Math.Bit;
+
 
 export namespace Geom{
 
@@ -32,26 +34,6 @@ export namespace Geom{
 
 		explicit Vector2D(const size_t hash) {
 			set(Math::unpackX_Float(hash), Math::unpackY_Float(hash));
-		}
-
-		Vector2D(const Vector2D& tgt) {
-			x = tgt.x;
-			y = tgt.y;
-		}
-
-		Vector2D(Vector2D&& tgt) noexcept {
-			x = tgt.x;
-			y = tgt.y;
-
-			//TODO should set tgt to NaN?
-		}
-
-		Vector2D& operator=(const Vector2D& tgt) {
-			return set(tgt.x, tgt.y);  // NOLINT(misc-unconventional-assign-operator)
-		}
-
-		Vector2D& operator=(Vector2D&& tgt) noexcept {
-			return set(tgt.x, tgt.y); // NOLINT(*-unconventional-assign-operator)
 		}
 
 		Vector2D& operator+=(const Vector2D& tgt) {
@@ -334,6 +316,40 @@ export namespace Geom{
 			return *this;
 		}
 
+		Vector2D& clampX(const float min, const float max) {
+			x = std::clamp(x, min, max);
+			return *this;
+		}
+
+		Vector2D& clampY(const float min, const float max) {
+			y = std::clamp(y, min, max);
+			return *this;
+		}
+
+		Vector2D& abs() {
+			x = std::abs(x);
+			y = std::abs(y);
+			return *this;
+		}
+
+		Vector2D& limitY(const float yAbs) {
+			const float yMax = std::fminf(std::abs(y), yAbs);
+			y = std::copysign(yMax, y);
+			return *this;
+		}
+
+		Vector2D& limitX(const float xAbs) {
+			const float xMax = std::fminf(std::abs(x), xAbs);
+			x = std::copysign(xMax, x);
+			return *this;
+		}
+
+		Vector2D& limit(const float xAbs, const float yAbs) {
+			limitX(xAbs);
+			limitY(yAbs);
+			return *this;
+		}
+
 		Vector2D& limit(const float limit) {
 			return limit2(limit * limit);
 		}
@@ -421,8 +437,7 @@ export {
 	template<>
 	struct std::hash<Geom::Vector2D>{
 		size_t operator()(const Geom::Vector2D& v) const noexcept {
-			// ReSharper disable once CppCStyleCast
-			return *(size_t*)&v.x;
+			return *reinterpret_cast<const size_t*>(&v.x);
 		}
 	};
 }

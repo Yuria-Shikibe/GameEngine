@@ -12,18 +12,19 @@ import RuntimeException;
 import <algorithm>;
 import <execution>;
 import <functional>;
+import <set>;
 import <vector>;
 import <unordered_set>;
 
-using Rect = Geom::Shape::OrthoRectFloat;
-
 export namespace UI {
+	using Rect = Geom::Shape::OrthoRectFloat;
+
 	struct ElemDrawer;
 	class Root;
 
 	class Elem {
 	public:
-		virtual ~Elem() = default;
+		virtual ~Elem();
 
 		// ReSharper disable once CppFunctionIsNotImplemented
 		[[nodiscard]] Elem();
@@ -34,19 +35,21 @@ export namespace UI {
 		 */
 		Rect bound{};
 		Elem* parent{nullptr};
-		::UI::Root* root{nullptr};
+		mutable ::UI::Root* root{nullptr};
 
 		//TODO abstact this if possible
 		std::vector<std::unique_ptr<Elem>> children{};
-		std::vector<Elem*> toRemove{};
+		std::set<Elem*> toRemove{};
 
 		std::unordered_set<Elem*> focusTarget{};
 
 		Event::EventManager inputListener{
 			Event::indexOf<MouseActionPress>(),
 			Event::indexOf<MouseActionRelease>(),
-			Event::indexOf<MouseActionDrug>(),
+			Event::indexOf<MouseActionDrag>(),
 			Event::indexOf<MouseActionDoubleClick>(),
+
+			Event::indexOf<MouseActionScroll>(),
 
 			Event::indexOf<CurosrInbound>(),
 			Event::indexOf<CurosrExbound>(),
@@ -57,6 +60,9 @@ export namespace UI {
 		std::function<bool()> visibilityChecker{nullptr};
 
 		mutable bool layoutChanged{false};
+
+		bool fillParentX{false};
+		bool fillParentY{false};
 		bool endRow{false};
 		bool visiable{true};
 		bool requiresLayout{false};
@@ -66,6 +72,7 @@ export namespace UI {
 		Geom::Vector2D absoluteSrc{};
 
 		ElemDrawer* drawer{nullptr};
+		bool pressed = false;
 
 	public:
 		std::string name{"undefind"};
@@ -73,6 +80,9 @@ export namespace UI {
 		mutable Graphic::Color tempColor{1.0f, 1.0f, 1.0f, 1.0f};
 
 		mutable float maskOpacity = 1.0f;
+
+		Geom::Vector2D margin_bottomLeft{};
+		Geom::Vector2D margin_topRight{};
 
 		[[nodiscard]] virtual bool isVisiable() const {
 			return visiable;
@@ -82,13 +92,58 @@ export namespace UI {
 			return quitInboundFocus;
 		}
 
+		[[nodiscard]] bool isPressed() const {
+			return pressed;
+		}
+
+		virtual Rect getFilledChildrenBound(Elem* elem) const {
+			Rect bound = elem->bound;
+
+			if(elem->fillParentX){
+				bound.setSrcX(margin_bottomLeft.x);
+				bound.setWidth(getWidth() - marginWidth());
+			}
+
+			if(elem->fillParentY){
+				bound.setSrcX(margin_bottomLeft.y);
+				bound.setWidth(getHeight() - marginHeight());
+			}
+
+			return bound;
+		}
+
+		virtual bool layout_fillParent() {
+			if(parent) {
+				if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
+					bound = rect;
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		[[nodiscard]] bool isFillParentX() const {
+			return fillParentX;
+		}
+
+		[[nodiscard]] bool isFillParentY() const {
+			return fillParentY;
+		}
+
 		virtual void layout() {
+			layout_fillParent();
+
 			layoutChanged = false;
+		}
+
+		virtual void applySettings() {
+
 		}
 
 		virtual void layoutChildren() {
 			for(const auto& child : children) {
-				if(child->layoutChanged && !child->ignoreLayout())child->layout();
+				if(!child->ignoreLayout())child->layout();
 			}
 		}
 
@@ -101,16 +156,53 @@ export namespace UI {
 			drawChildren();
 		}
 
-		void modifyAddedChildren(Elem* elem) {
+		virtual void modifyAddedChildren(Elem* elem) {
 			childrenCheck(elem);
 			elem->parent = this;
-			elem->layout();
+			elem->changed();
 			changed();
 			elem->setRoot(root);
 		}
 
-		void setRoot(Root* const elem) {
-			root = elem;
+		void setRoot(Root* const root) {
+			this->root = root;
+
+			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [root](auto& elem) {
+				elem->setRoot(root);
+			});
+		}
+
+		void setFillparentX(const bool val = true) {
+			if(val != fillParentX) {
+				changed();
+			}
+			fillParentX = val;
+		}
+
+		void setFillparentY(const bool val = true) {
+			if(val != fillParentY) {
+				changed();
+			}
+			fillParentY = val;
+		}
+
+		void setFillparent(const bool valX = true, const bool valY = true) {
+			setFillparentX(valX);
+			setFillparentY(valY);
+		}
+
+		virtual void addChildren(std::unique_ptr<Elem>&& elem) {
+			modifyAddedChildren(elem.get());
+			children.push_back(std::forward<std::unique_ptr<Elem>>(elem));
+		}
+
+		virtual void addChildren(std::unique_ptr<Elem>&& elem, const size_t depth) {
+			if(depth >= children.size()) {
+				addChildren(std::forward<std::unique_ptr<Elem>>(elem));
+			}else {
+				modifyAddedChildren(elem.get());
+				children.insert(children.begin() + depth, std::forward<std::unique_ptr<Elem>>(elem));
+			}
 		}
 
 		virtual void addChildren(Elem* elem) {
@@ -137,6 +229,14 @@ export namespace UI {
 
 		void setTouchbility(const TouchbilityFlags flag) {
 			this->touchbility = flag;
+		}
+
+		float marginHeight() const {
+			return margin_bottomLeft.y + margin_topRight.y;
+		}
+
+		float marginWidth() const {
+			return margin_bottomLeft.x + margin_topRight.x;
 		}
 
 		virtual void drawBackground() const;
@@ -168,7 +268,7 @@ export namespace UI {
 			if(parent == nullptr) {
 				throw ext::NullPointerException{"This Elem: " + name + " Doesn't Have A Parent!"};
 			}
-			parent->toRemove.emplace_back(this);
+			parent->toRemove.insert(this);
 
 			return *this;
 		}
@@ -249,7 +349,11 @@ export namespace UI {
 		}
 
 		virtual void calAbsolute(Elem* parent) {
-			absoluteSrc.set(parent->absoluteSrc).add(bound.getSrcX(), bound.getSrcY());
+			Geom::Vector2D vec{parent->absoluteSrc};
+			vec.add(bound.getSrcX(), bound.getSrcY());
+			if(vec == absoluteSrc)return;
+			absoluteSrc.set(vec);
+			calAbsoluteChildren();
 		}
 
 		virtual void calAbsoluteChildren() {
@@ -278,9 +382,9 @@ export namespace UI {
 			return inputListener;
 		}
 
-		template <Concepts::Invokable<bool(Elem*)> Func>
+		template <Concepts::Invokable<void(Elem*)> Func>
 		void iterateAll(const Func& func) {
-			if(func(this))return;
+			func(this);
 
 			for (const auto& child : getChildren()) {
 				child->iterateAll(func);
@@ -301,17 +405,21 @@ export namespace UI {
 		}
 
 		virtual void update(float delta){
+			removePosted();
 			updateChildren(delta);
 		}
 
-		virtual void updateChildren(const float delta) {
-			while(!toRemove.empty()) {
-				std::erase_if(children, [data = toRemove.back()](const std::unique_ptr<Elem>& ptr) {
-					return ptr.get() == data;
-				});
-				toRemove.pop_back();
-			}
+		virtual void removePosted() {
+			if(toRemove.empty() || children.empty())return;
+			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
+				return toRemove.contains(ptr.get());
+			});
+			if(itr == children.end())return;
+			children.erase(itr);
+			toRemove.clear();
+		}
 
+		virtual void updateChildren(const float delta) {
 			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [delta](const std::unique_ptr<Elem>& elem) {
 				elem->update(delta);
 			});
@@ -321,16 +429,27 @@ export namespace UI {
 			return touchbility == TouchbilityFlags::enabled && visiable;
 		}
 
-		bool inbound(const Geom::Vector2D& screenPos) const {
-			if(touchbility != TouchbilityFlags::enabled)return false;
+		virtual bool inbound_validToParent(const Geom::Vector2D& screenPos) const {
+			return inbound(screenPos);
+		}
+
+		virtual bool inbound(const Geom::Vector2D& screenPos) const {
+			if(touchbility == TouchbilityFlags::disabled)return false;
+			if(parent != nullptr && !parent->inbound_validToParent(screenPos))return false;
 			return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
 		}
 
-		bool isFocused() const;
+		bool isFocusedKey() const;
+
+		bool isFocusedScroll() const;
 
 		bool cursorInbound() const;
 
-		void setFocused(bool focus);
+		void setFocusedKey(bool focus) const;
+
+		void setFocusedScroll(bool focus) const;
+
+		void setUnfocused() const;
 
 		[[nodiscard]] float drawSrcX() const {
 			return absoluteSrc.x;

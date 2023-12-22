@@ -29,10 +29,6 @@ static float baseMoveSpeed = 60;
 //TODO finish this shit
 export namespace Ctrl{
 	void registerCommands(Input* const input) { // NOLINT(*-non-const-parameter)
-		input->scrollListeners.emplace_back([]([[maybe_unused]] float x, const float y) -> void {
-			camera->setTargetScale(camera->getTargetScale() + y * 0.05f);
-		});
-
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS, []{baseMoveSpeed = 200;}));
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_RELEASE, []{baseMoveSpeed = 60;}));
 
@@ -65,6 +61,7 @@ export namespace Ctrl{
 		});
 
 		input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
+			if(Core::uiRoot->cursorCaptured())return;
 			auto pos = Core::input->getMousePos();
 			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
 			pos *= Core::camera->getScreenToWorld();
@@ -93,6 +90,15 @@ export namespace Ctrl{
 
 		Core::input->velocityListeners.emplace_back([](const float x, const float y) {
 			Core::uiRoot->cursorVel.set(x, y);
+		});
+
+		Core::input->scrollListeners.emplace_back([](const float x, const float y) {
+			Core::uiRoot->mouseScroll.set(x, y);
+			Core::uiRoot->onScroll();
+		});
+
+		input->scrollListeners.emplace_back([]([[maybe_unused]] float x, const float y) -> void {
+			if(!Core::uiRoot->focusScroll())camera->setTargetScale(camera->getTargetScale() + y * 0.05f);
 		});
 
 

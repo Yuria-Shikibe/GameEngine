@@ -78,14 +78,7 @@ export namespace Font {
 			v1 += y;
 		}
 	};
-}
 
-namespace Font {
-	std::array<GlyphVertData, 2500> vertPool;
-	std::pmr::unsynchronized_pool_resource pool{};
-}
-
-export namespace Font{
 	struct GlyphLayout { // NOLINT(*-pro-type-member-init)
 		Geom::Vector2D offset{};
 		//TODO uses pools!
@@ -102,8 +95,7 @@ export namespace Font{
 		void reset() {
 			last.clear();
 			maxWidth = std::numeric_limits<float>::max();
-			bound.setSize(0, 0);
-			bound.setSrc(0, 0);
+			bound.set(0, 0, 0, 0);
 			offset.setZero();
 		}
 
@@ -140,6 +132,7 @@ export namespace Font{
 		}
 
 		void render() const {
+			if(count <= 0)return;
 			std::ranges::for_each_n(toRender.begin(), count, [this](const auto& glyph) {
 				Graphic::Draw::vert_monochromeAll(
 					glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
@@ -152,6 +145,7 @@ export namespace Font{
 		}
 
 		void render(const float progress) const {
+			if(count <= 0)return;
 			for(size_t i = 0; i < static_cast<size_t>(progress * static_cast<float>(count)); ++i) {
 				const GlyphVertData& glyph = toRender.at(i);
 				Graphic::Draw::vert_monochromeAll(
@@ -548,7 +542,7 @@ namespace ParserFunctions {
 
 		glyphParser->tokenParser->modifier["color"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']' ) {
-				if(auto sub = command.substr(1, command.size() - 2); sub.empty()) {
+				if(const auto sub = command.substr(1, command.size() - 2); sub.empty()) {
 					data.context.currentColor = data.context.fallbackColor;
 				}else {
 					data.context.fallbackColor = data.context.currentColor;
@@ -564,7 +558,7 @@ namespace ParserFunctions {
 
 		glyphParser->tokenParser->modifier["font"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']' ) {
-				if(std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
+				if(const std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
 					data.context.set(data.context.fallbackFont);
 				}else {
 					data.context.fallbackFont = data.context.currentFont;
@@ -601,7 +595,7 @@ namespace ParserFunctions {
 
 		glyphParser->tokenParser->modifier["scl"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']') {
-				if(std::string_view sub = command.substr(1, command.size() - 2); !sub.empty()){
+				if(const std::string_view sub = command.substr(1, command.size() - 2); !sub.empty()){
 					float scl = 1.0f;
 					try {scl = std::stof(static_cast<std::string>(sub));}catch(std::invalid_argument e) {}
 
@@ -615,7 +609,7 @@ namespace ParserFunctions {
 
 		glyphParser->tokenParser->modifier["off"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']' ) {
-				if(std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
+				if(const std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
 					data.context.offset.setZero();
 				}else {
 					const auto splitIndex = sub.find_first_of(',');
@@ -648,7 +642,7 @@ namespace ParserFunctions {
 
 		glyphParser->tokenParser->modifier["alp"] = [](const std::string_view command, const ModifierableData& data) {
 			if(command.front() == '[' && command.back() == ']') {
-				if(auto sub = command.substr(1, command.size() - 2); !sub.empty()){
+				if(const auto sub = command.substr(1, command.size() - 2); !sub.empty()){
 					float alpha = 1.0f;
 					try {alpha = std::stof(static_cast<std::string>(sub));}catch(std::invalid_argument e) {}
 

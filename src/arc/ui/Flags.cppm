@@ -36,10 +36,18 @@ export namespace UI {
 		}
 	};
 
-	struct MouseActionDrug final : MouseAction  {
-		[[nodiscard]] MouseActionDrug() = default;
+	struct MouseActionScroll final : EventType, Geom::Vector2D {
+		[[nodiscard]] MouseActionScroll() = default;
 
-		[[nodiscard]] MouseActionDrug(const float x, const float y)
+		[[nodiscard]] MouseActionScroll(const float x, const float y)
+			: Geom::Vector2D(x, y) {
+		}
+	};
+
+	struct MouseActionDrag final : MouseAction  {
+		[[nodiscard]] MouseActionDrag() = default;
+
+		[[nodiscard]] MouseActionDrag(const float x, const float y)
 			: MouseAction(x, y) {
 		}
 	};
