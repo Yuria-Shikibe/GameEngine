@@ -176,7 +176,7 @@ export namespace OS{
 			});
 
 			if(it == subDirectories.end()){
-				File file = root.subFile("name");
+				File file = root.subFile(name);
 				file.createDirQuiet();
 				return file;
 			}
