@@ -47,7 +47,7 @@ export namespace Math {
 
 		[[nodiscard]] explicit StripPacker2D(const obtainer& trans)
     		: trans(trans) {
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
     		if(!trans)throw ext::RuntimeException{"Empty Obtainer!!"};
 #endif
     	}
@@ -124,7 +124,7 @@ export namespace Math {
     	 * @endcode 
     	 */
     	subRectArr splitQuad(const Rect& bound, const Rect& box) {
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
     		if(bound.getSrcX() != box.getSrcX() || box.getSrcY() != box.getSrcY())throw ext::IllegalArguments{"The source of the box and the bound doesn't match"};
 #endif
     		return subRectArr{

@@ -13,11 +13,25 @@ UI::Elem::~Elem() {
 
 UI::Elem::Elem() {
 	setRoot(Core::uiRoot);
-	if(!drawer)drawer = UI::defDrawer.get();
+	if(!drawer)setDrawer(UI::defDrawer.get());
 }
 
 void UI::Elem::drawBackground() const {
 	drawer->drawBackground(this);
+}
+
+void Elem::setDrawer(ElemDrawer* drawer) {
+	this->drawer = drawer;
+
+	if(drawer && drawer->style) {
+		margin_bottomLeft.x = drawer->style->margin_left;
+		margin_bottomLeft.y = drawer->style->margin_bottom;
+
+		margin_topRight.x = drawer->style->margin_right;
+		margin_topRight.y = drawer->style->margin_top;
+
+		changed();
+	}
 }
 
 void UI::Elem::setFocusedKey(const bool focus) const {

@@ -4,6 +4,8 @@ export module Assets.Manager;
 
 import Assets.Loader;
 import Assets.TexturePacker;
+import Assets.Sound;
+import Assets.SoundLoader;
 import Graphic.TextureAtlas;
 import GL.Shader.Manager;
 import Font;
@@ -44,8 +46,9 @@ namespace Assets{
 	protected:
 		GL::ShaderManager shaders{};
 		Graphic::TextureAtlas atlas{};
-		Font::FontLoader fonts{};
+		Font::FontManager fonts{};
 
+		Assets::SoundLoader soundLoader{};
 		Assets::AssetsLoader loader{};
 
 		Event::EventManager loadEvents{
@@ -55,7 +58,7 @@ namespace Assets{
 			Event::indexOf<AssetsLoadEnd>()
 		};
 
-		std::unique_ptr<Font::FontLoader> tempFontLoader{std::make_unique<Font::FontLoader>()};
+		std::unique_ptr<Font::FontManager> tempFontLoader{std::make_unique<Font::FontManager>()};
 
 	public:
 		void pullRequest();
@@ -72,11 +75,13 @@ namespace Assets{
 
 		[[nodiscard]] Graphic::TextureAtlas& getAtlas();
 
-		[[nodiscard]] Font::FontsManager& getonts() const;
+		[[nodiscard]] Font::FontCache& getonts() const;
 
 		[[nodiscard]] Assets::AssetsLoader& getLoader();
 
 		[[nodiscard]] Event::EventManager& getEventTrigger();
+
+		[[nodiscard]] Assets::SoundLoader& getSoundLoader();
 	};
 }
 

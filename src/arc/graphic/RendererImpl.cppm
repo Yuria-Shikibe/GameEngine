@@ -14,6 +14,8 @@ import Graphic.PostProcessor;
 import Graphic.Color;
 import Graphic.Draw;
 
+import Assets.Graphic;
+
 import Core;
 import Geom.Matrix3D;
 
@@ -22,8 +24,12 @@ using namespace GL;
 export namespace Graphic {
 	class RendererImpl : public Core::Renderer {
 	public:
+		GL::FrameBuffer uiBuffer;
+
 		RendererImpl(const unsigned int w, const unsigned int h)
-			: Renderer(w, h) {
+			: Renderer(w, h), uiBuffer{w, h} {
+
+			Renderer::registerSynchronizedResizableObject(&uiBuffer);
 		}
 
 		void frameBegin(GL::FrameBuffer* frameBuffer, const bool resize, const Color& initColor, const GLbitfield mask) override {
@@ -72,15 +78,19 @@ export namespace Graphic {
 			}
 		}
 
-		void renderUI() const override {
+		void renderUI() override {
 			const Geom::Matrix3D* mat = Core::batch->getProjection();
 
+			Renderer::frameBegin(&uiBuffer);
 			Core::batch->setProjection(Core::uiRoot->getPorj());
 
 			Core::uiRoot->render();
 			Core::batch->flush();
 
+			Assets::PostProcessors::bloom->blur.setProcessTimes(1);
+			frameEnd(Assets::PostProcessors::bloom);
 			Core::batch->setProjection(mat);
+			Assets::PostProcessors::bloom->blur.setProcessTimes(3);
 		}
 	};
 }

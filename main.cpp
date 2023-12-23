@@ -45,11 +45,26 @@ import OS;
 import OS.ApplicationListenerSetter;
 
 import Core;
+
+import Core.Audio;
+import Assets.Manager;
+import Assets.Sound;
+import Assets.Bundle;
+import Core.Settings;
+import Core.Log;
+
+import UI.Root;
+import Core.Batch;
+import Core.Input;
+import Core.Camera;
+import Core.Renderer;
+import OS.FileTree;
+
 import Ctrl.ControlCommands;
 import Ctrl.Constants;
 import Core.Batch.Batch_Sprite;
 
-import Assets;
+import Assets.Graphic;
 import Graphic.Color;
 
 import Image;
@@ -76,6 +91,9 @@ import TimeMark;
 import UI.Root;
 import UI.Label;
 import UI.ScrollPane;
+import UI.ElemDrawer;
+
+import UI.Styles;
 
 using namespace std;
 using namespace Graphic;
@@ -83,6 +101,127 @@ using namespace Draw;
 using namespace GL;
 using Geom::Vector2D;
 
+// using Assets::Manager;
+// using Core::Camera2D;
+
+void setupUITest(){
+	/*{
+		auto& cell = Core::uiRoot->root->add(new UI::Label{});
+		cell.setAlign(Align::Mode::top_left).setSizeScale(0.35f, 0.2f);
+		cell.marginLeft = cell.marginRight = cell.marginBottom = cell.marginTop = 10;
+		cell.item->color = Colors::RED;
+		cell.item->color.mul(0.6f);
+		cell.clearRelativeMove();
+		cell.as<UI::Label>().setText("test 1231231231");
+		cell.as<UI::Label>().setDynamic(true);
+
+		auto& view = cell.as<UI::Label>().getView();
+
+		cell.item->getInputListener().on<UI::MouseActionPress>([item = cell.item](auto& e) {
+		if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
+		if(e.buttonID == Ctrl::RMB) {
+			item->color = Colors::RED;
+			item->color.mul(0.6f);
+		}
+		});
+
+		auto& cell2 = Core::uiRoot->root->add(new UI::Table{});
+		cell2.item->color = Colors::GREEN;
+		cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.3f, 0.3f);
+		cell2.clearRelativeMove();
+
+		UI::Table& table = cell2.as<UI::Table>();
+
+		table.add(new UI::Elem{});
+
+		table.endRow();
+
+		table.add(new UI::Elem{});
+		table.add(new UI::Elem{});
+	}*/
+
+	{
+		auto pane = new UI::ScrollPane{};
+
+		auto rt = new UI::Table{};
+		rt->setSize(400, 900);
+		pane->addChildren(rt);
+
+		Core::uiRoot->root->add(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
+
+		auto t = new UI::Table{};
+		t->color = Colors::RED;
+		t->name = "testT";
+		rt->add(t);
+		// rt->add(new UI::Elem);
+
+		rt->endRow();
+		rt->add(new UI::Elem);
+		rt->add(new UI::Elem);
+
+		{
+			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
+			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop= 10;
+			inner.item->setHeight(200.0f);
+		}
+
+		{
+			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
+			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
+			inner.item->setHeight(200.0f);
+		}
+
+		t->endRow();
+
+		{
+			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
+			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
+			inner.item->setHeight(200.0f);
+		}
+
+		{
+			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
+			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
+			inner.item->setHeight(200.0f);
+		}
+
+		Core::uiRoot->update(0.0f);
+	}
+
+
+	/*{
+		auto& cellp = Core::uiRoot->root->add(new UI::ScrollPane{}).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
+		cellp.marginLeft = cellp.marginRight = cellp.marginBottom = cellp.marginTop = 50;
+
+		auto t = new UI::Table{};
+
+		t->setTouchbility(UI::TouchbilityFlags::childrenOnly);
+
+		t->defaultCellLayout.expandY();
+
+		auto& cellTable = t->add(new UI::Table{});
+
+		auto& inner = cellTable.as<UI::Table>().add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::top_left);
+		inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
+
+		inner.item->name = "test";
+
+		t->endRow();
+
+		t->add(new UI::Elem{});
+		t->add(new UI::Elem{});
+
+		t->setFillparentX(true);
+
+		t->iterateAll([](UI::Elem* elem) {
+			elem->setSize(400, 500);
+		});
+
+		inner.item->setHeight(200.0f);
+
+		cellp.as<UI::ScrollPane>().addChildren(t);
+	}*/
+}
 
 void init(const int argc, char* argv[]) {
 	//TODO move these into application loader
@@ -127,6 +266,7 @@ void init(const int argc, char* argv[]) {
 
 		Core::uiRoot = new UI::Root{};
 		Core::uiRoot->root->setRoot(Core::uiRoot);
+		Core::uiRoot->root->setDrawer(UI::emptyDrawer.get());
 		Core::uiRoot->resize(w, h);
 		Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
 		OS::registerListener(Core::uiRoot);
@@ -136,6 +276,18 @@ void init(const int argc, char* argv[]) {
 	Graphic::Draw::texture();
 	Graphic::Draw::rawMesh = Assets::Meshes::raw;
 	Graphic::Draw::blitter = Assets::Shaders::blit;
+}
+
+int main(const int argc, char* argv[]) {
+	//Init
+	::init(argc, argv);
+	Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
+		Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::texCacheDir);
+		uiPage->forcePack = true;
+		Assets::textureDir.subFile("ui").forAllSubs([&uiPage](OS::File&& file) {
+			uiPage->pushRequest(file);
+		});
+	});
 
 	Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
 		Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage("test", Assets::texCacheDir);
@@ -147,141 +299,30 @@ void init(const int argc, char* argv[]) {
 	});
 
 	Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const auto& event) {
-
 		Assets::Textures::whiteRegion = *event.manager->getAtlas().find("test-white");
-
 		Assets::Textures::whiteRegion.shrinkEdge(4.0f);
+
+		for (auto& texture : event.manager->getAtlas().getPage("ui").textures) {
+			texture->setScale(GL_LINEAR, GL_LINEAR);
+		}
 
 		Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
 		Graphic::Draw::texture();
-	});
 
+		UI::Styles::load(event.manager->getAtlas());
+	});
 
 	//Majority Load
 	Core::loadAssets();
-}
-
-int main(const int argc, char* argv[]) {
-	//Init
-	::init(argc, argv);
 
 	// UI Test
-	{
-		auto& cell = Core::uiRoot->root->add(new UI::Label{});
-		cell.setAlign(Align::Mode::top_left).setSizeScale(0.35f, 0.2f);
-		cell.marginLeft = cell.marginRight = cell.marginBottom = cell.marginTop = 10;
-		cell.item->color = Colors::RED;
-		cell.item->color.mul(0.6f);
-		cell.clearRelativeMove();
-		cell.as<UI::Label>().setText("test 1231231231");
-		cell.as<UI::Label>().setDynamic(true);
+	setupUITest();
 
-		auto& view = cell.as<UI::Label>().getView();
+	auto sound = Core::audio->loadFile_delayed(Assets::soundDir.subFile("flak.mp3"));
 
-		cell.item->getInputListener().on<UI::MouseActionPress>([item = cell.item](auto& e) {
-		if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
-		if(e.buttonID == Ctrl::RMB) {
-			item->color = Colors::RED;
-			item->color.mul(0.6f);
-		}
-		});
-
-		auto& cell2 = Core::uiRoot->root->add(new UI::Table{});
-		cell2.item->color = Colors::GREEN;
-		cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.3f, 0.3f);
-		cell2.clearRelativeMove();
-
-		UI::Table& table = cell2.as<UI::Table>();
-
-		table.add(new UI::Elem{});
-
-		table.endRow();
-
-		table.add(new UI::Elem{});
-		table.add(new UI::Elem{});
-	}
-
-	{
-		auto pane = new UI::ScrollPane{};
-
-		auto rt = new UI::Table{};
-		rt->setSize(400, 900);
-		rt->name = "testT";
-		pane->addChildren(rt);
-
-		Core::uiRoot->root->add(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
-
-		auto t = new UI::Table{};
-		t->color = Colors::RED;
-		rt->add(t);
-		// rt->add(new UI::Elem);
-
-		rt->endRow();
-		rt->add(new UI::Elem);
-		rt->add(new UI::Elem);
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::top_right);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::top_right);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		t->endRow();
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::top_right);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::top_right);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		Core::uiRoot->update(0.0f);
-	}
-
-
-	{
-		auto& cellp = Core::uiRoot->root->add(new UI::ScrollPane{}).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
-		cellp.marginLeft = cellp.marginRight = cellp.marginBottom = cellp.marginTop = 50;
-
-		auto t = new UI::Table{};
-
-		t->setTouchbility(UI::TouchbilityFlags::childrenOnly);
-
-		t->defaultCellLayout.expandY();
-
-		auto& cellTable = t->add(new UI::Table{});
-
-		auto& inner = cellTable.as<UI::Table>().add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::top_left);
-		inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-
-		inner.item->name = "test";
-
-		t->endRow();
-
-		t->add(new UI::Elem{});
-		t->add(new UI::Elem{});
-
-		t->setFillparentX(true);
-
-		t->iterateAll([](UI::Elem* elem) {
-			elem->setSize(400, 500);
-		});
-
-		inner.item->setHeight(200.0f);
-
-		cellp.as<UI::ScrollPane>().addChildren(t);
-	}
+	Core::input->registerKeyBind(Ctrl::KEY_K, Ctrl::Act_Press, [] {
+		Core::audio->play(Assets::Sounds::largeExplosion);
+	});
 
 	//Draw Test
 	// auto tex = Core::assetsManager->getAtlas().find("test-pester-full");
@@ -291,8 +332,6 @@ int main(const int argc, char* argv[]) {
 	//
 	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
-
-	// GL::TextureNineRegion uiTest{&bottomLeftTex, {0, 0, 256, 256}, {64, 64, 32, 64}};
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
@@ -336,14 +375,19 @@ int main(const int argc, char* argv[]) {
 
 
 
-		// Geom::Matrix3D mat{};
-		// mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
-		//
-		// Core::batch->beginProjection(mat);
-		//
-		// uiTest.render_RelativeExter(100, 100, 500, 800);
-		//
-		// Core::batch->endProjection();
+		Geom::Matrix3D mat{};
+		mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
+
+		Core::batch->beginProjection(mat);
+
+		Draw::color(Colors::AQUA_SKY);
+
+		constexpr float size = 80;
+		constexpr float spacing = size + 10;
+
+		Draw::color();
+
+		Core::batch->endProjection();
 		//
 		//
 		// ss.str("");
@@ -364,7 +408,7 @@ int main(const int argc, char* argv[]) {
 
 		Draw::setLineStroke(5);
 		Draw::poly(center.getX(), center.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
-			{ Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY }
+			{ &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
 		);
 
 		Draw::flush();

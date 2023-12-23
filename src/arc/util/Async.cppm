@@ -88,6 +88,10 @@ export namespace ext {
 			taskProgress = std::clamp(f, 0.0f, 1.0f);
 		}
 
+		void addProgress_onePart(const size_t totalPart) {
+			taskProgress += 1 / static_cast<float>(totalPart);
+		}
+
 		void setDone() {
 			taskProgress = 1.0f;
 			done = true;

@@ -346,8 +346,8 @@ export namespace Graphic{
                     //blit with bilinear filtering
                     const float x_ratio = (static_cast<float>(srcWidth) - 1) / static_cast<float>(dstWidth);
                     const float y_ratio = (static_cast<float>(srcHeight) - 1) / static_cast<float>(dstHeight);
-                    const unsigned int rX = std::max(Math::round(x_ratio), 1);
-                    const unsigned int rY = std::max(Math::round(y_ratio), 1);
+                    const unsigned int rX = std::max(Math::round<unsigned>(x_ratio), 1u);
+                    const unsigned int rY = std::max(Math::round<unsigned>(y_ratio), 1u);
                     const unsigned int spitch = Pixmap::Channels * owidth;
 
                     for(unsigned int i = 0; i < dstHeight; i++){

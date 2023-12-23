@@ -76,13 +76,12 @@ export namespace OS{
 
 
 inline void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
-	// make sure the viewport matches the new windowMain dimensions; note that width and
-	// height will be significantly larger than specified on retina displays.
+	if(width * height == 0)return;
 
 	// std::cout << "Resized Buffer: " << width << "|" << height << '\n';
 
-	width = std::max(2, width);
-	height = std::max(2, height);
+	width = std::max(200, width);
+	height = std::max(200, height);
 
 	Core::renderer->resize(width, height);
 
@@ -181,6 +180,7 @@ export namespace OS{
 		glfwSetWindowMaximizeCallback(window, maximizeCallback);
 		glfwSetWindowRefreshCallback(window, windowRefreshCallback);
 		glfwSetMouseButtonCallback(window, mouseBottomCallBack);
+		// glfwMini
 		// setInputMode_Cursor(OS::CursorMode::disabled);
 		// OS::setInputMode_StickyKeys(true);
 		// OS::setInputMode_LockKeyMods(true);

@@ -9,6 +9,8 @@ import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 
+import UI.ElemDrawer;
+
 import <algorithm>;
 import <execution>;
 import <functional>;
@@ -19,7 +21,8 @@ import <unordered_set>;
 export namespace UI {
 	using Rect = Geom::Shape::OrthoRectFloat;
 
-	struct ElemDrawer;
+	//TODO fuck this bug!
+	// struct ElemDrawer;
 	class Root;
 
 	class Elem {
@@ -138,7 +141,6 @@ export namespace UI {
 		}
 
 		virtual void applySettings() {
-
 		}
 
 		virtual void layoutChildren() {
@@ -253,9 +255,7 @@ export namespace UI {
 			return parent;
 		}
 
-		void setDrawer(ElemDrawer* drawer) {
-			this->drawer = drawer;
-		}
+		void setDrawer(ElemDrawer* drawer);
 
 		Elem* setParent(Elem* const parent) {
 			Elem* former = parent;
@@ -468,7 +468,7 @@ export namespace UI {
 		}
 
 		virtual void childrenCheck(const Elem* ptr) {
-#ifdef  DEBUG_LOCAL
+#ifdef  _DEBUG
 			if(!ptr)throw ext::NullPointerException{"Empty Elem"};
 #else
 			return;

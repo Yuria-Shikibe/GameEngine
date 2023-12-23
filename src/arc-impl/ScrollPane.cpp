@@ -3,10 +3,13 @@ module;
 module UI.ScrollPane;
 
 import UI.Root;
+import Graphic.Color;
 
 using UI::Root;
 
 void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
+	Graphic::Draw::color(Graphic::Colors::GRAY);
+
 	if(pane->enableHorizonScroll()) {
 		Graphic::Draw::rect(
 			pane->drawSrcX() + pane->margin_bottomLeft.x + pane->horiScrollRatio() * (pane->getWidth() - pane->marginWidth() - pane->horiBarLength()),
@@ -33,7 +36,7 @@ void UI::ScrollPane::draw() const {
 
 	GL::enable(GL::Test::SCISSOR);
 
-	GL::scissor(absoluteSrc.x, absoluteSrc.y + horiBarStroke(), getWidth() - vertBarStroke(), getHeight());
+	GL::scissor(Math::round<int>(absoluteSrc.x + margin_bottomLeft.x), Math::round<int>(absoluteSrc.y + horiBarStroke() + margin_bottomLeft.y), Math::round<int>(getWidth() - vertBarStroke() - marginWidth()), Math::round<int>(getHeight() - marginHeight()));
 	drawChildren();
 
 	Graphic::Draw::flush();

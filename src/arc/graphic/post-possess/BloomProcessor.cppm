@@ -22,20 +22,19 @@ export namespace Graphic {
 		mutable FrameBuffer temp1{2, 2};
 		mutable FrameBuffer temp2{2, 2};
 
+	public:
 		ShaderProcessor thresHolder{};
 		P4Processor blur{};
 		const Shader* bloomRenderer{nullptr};
 		//Threshold
 
-	public:
 		[[nodiscard]] BloomProcessor(PostProcessor* const blurProcessor1, PostProcessor* const blurProcessor2, const GL::Shader* const bloomShader, const GL::Shader* const thresHoldShader)
-			: thresHolder(thresHoldShader), blur(blurProcessor1, blurProcessor2, 2), bloomRenderer(bloomShader)
+			: thresHolder(thresHoldShader), blur(blurProcessor1, blurProcessor2, 3), bloomRenderer(bloomShader)
 		{
 			setTargetState(GL_DEPTH_TEST, false);
 			setTargetState(GL_BLEND, false);
 
 			blur.setTargetState(this);
-			scale = 0.25f;
 			blur.setScale(scale);
 
 			thresHolder.shaderHandler = [this](const Shader& shader) {
@@ -47,7 +46,12 @@ export namespace Graphic {
 
 		float intensity_blo = 0.9f;
 		float intensity_ori = 1.225f;
-		float scale = 0.25f;
+		float scale = 0.33f;
+
+		void setScale(const float scale) {
+			this->scale = scale;
+			blur.setScale(scale);
+		}
 
 		bool blending = true;
 

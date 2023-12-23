@@ -755,9 +755,9 @@ export namespace Graphic{
 
 
 		template <int size>
-		static Color createLerp(const Color(&arr)[size], const float s) {
-			const Color& ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
-			const Color& cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+		static Color createLerp(const Color* const(&arr)[size], const float s) {
+			const Color& ca = *arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
+			const Color& cb = *arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
 
 			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
 			const float i = 1.0f - n;
@@ -775,7 +775,7 @@ export namespace Graphic{
 		}
 
 		template <int size>
-		Color& lerp(const Color*(&arr)[size], const float s) {
+		Color& lerp(const Color* const(&arr)[size], const float s) {
 			const Color* ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
 			const Color* cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
 
@@ -808,6 +808,8 @@ export namespace Graphic{
 		const Color SKY{ 0x87ceebff };
 
 		const Color AQUA{ 0x85A2F3ff };
+
+		const Color AQUA_SKY = Color::createLerp({&AQUA, &SKY}, 0.5f);
 
 		const Color CYAN{ 0, 1, 1, 1 };
 		const Color TEAL{ 0, 0.5f, 0.5f, 1 };

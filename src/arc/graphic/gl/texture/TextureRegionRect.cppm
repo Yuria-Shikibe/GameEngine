@@ -140,11 +140,18 @@ export namespace GL{
 
 		template<Concepts::Number N0, Concepts::Number N1>
 		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const Geom::Shape::Rect_Orthogonal<N1>& external) {
-			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(external.getWidth());
-			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(external.getHeight());
+			float srcx = 0.0f;
+			float srcy = 0.0f;
+			if(data != nullptr) {
+				srcx = static_cast<float>(external.getSrcX()) / static_cast<float>(data->getWidth());
+				srcy = static_cast<float>(external.getSrcY()) / static_cast<float>(data->getHeight());
+			}
 
-			u1 = static_cast<float>(internal.getEndX()) / static_cast<float>(external.getWidth());
-			v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(external.getHeight());
+			u0 = srcx + static_cast<float>(internal.getSrcX()) / static_cast<float>(external.getWidth());
+			v0 = srcy + static_cast<float>(internal.getSrcY()) / static_cast<float>(external.getHeight());
+
+			u1 = srcx + static_cast<float>(internal.getEndX()) / static_cast<float>(external.getWidth());
+			v1 = srcy + static_cast<float>(internal.getEndY()) / static_cast<float>(external.getHeight());
 		}
 
 		template<Concepts::Number N0>
@@ -167,11 +174,18 @@ export namespace GL{
 
 		template<Concepts::Number N0, Concepts::Number N1>
 		void fetchInto(const N0 srcX, const N0 srcY, const N0 width, const N0 height, const Geom::Shape::Rect_Orthogonal<N1>& external) {
-			u0 = static_cast<float>(srcX) / static_cast<float>(external.getWidth());
-			v0 = static_cast<float>(srcY) / static_cast<float>(external.getHeight());
+			float srcx = 0.0f;
+			float srcy = 0.0f;
+			if(data != nullptr) {
+				srcx = static_cast<float>(external.getSrcX()) / static_cast<float>(data->getWidth());
+				srcy = static_cast<float>(external.getSrcY()) / static_cast<float>(data->getHeight());
+			}
 
-			u1 = static_cast<float>(srcX + width) / static_cast<float>(external.getWidth());
-			v1 = static_cast<float>(srcY + height) / static_cast<float>(external.getHeight());
+			u0 = srcx + static_cast<float>(srcX) / static_cast<float>(external.getWidth());
+			v0 = srcy + static_cast<float>(srcY) / static_cast<float>(external.getHeight());
+
+			u1 = srcx + static_cast<float>(srcX + width) / static_cast<float>(external.getWidth());
+			v1 = srcy + static_cast<float>(srcY + height) / static_cast<float>(external.getHeight());
 		}
 
 		friend bool operator==(const TextureRegionRect& lhs, const TextureRegionRect& rhs) {

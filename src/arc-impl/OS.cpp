@@ -4,7 +4,7 @@ import <sstream>;
 import File;
 import StackTrace;
 import Core;
-import Assets;
+import Assets.Graphic;
 
 
 

@@ -39,16 +39,16 @@ export namespace Core{
 			crahsDir = logDir.subFile("crashes");
 			crahsDir.createDirQuiet();
 
-#ifndef DEBUG_LOCAL
-			logOfStream.open(logFile.absolutePath(), std::ios::out);
-			logFile = logDir.subFile(static_cast<std::string>(INFO) + getCurrentSystemTime());
-			logFile.createFileQuiet();
-			std::cout.rdbuf(logOfStream.rdbuf());
+#ifndef _DEBUG
+			// logOfStream.open(logFile.absolutePath(), std::ios::out);
+			// logFile = logDir.subFile(static_cast<std::string>(INFO) + getCurrentSystemTime());
+			// logFile.createFileQuiet();
+			// std::cout.rdbuf(logOfStream.rdbuf());
 #endif
 		}
 
 		void log(const std::string_view message) {
-#ifndef DEBUG_LOCAL
+#ifndef _DEBUG
 			logOfStream << message << std::endl; //Flush after message;
 #endif
 		}

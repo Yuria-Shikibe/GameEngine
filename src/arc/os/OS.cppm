@@ -211,7 +211,7 @@ export namespace OS{
 		postTasks.clear();
 
 		for(auto& [task, promise] : postAsyncTasks){
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
 			try {task();}catch(...) {promise.set_exception(std::current_exception());}
 #else
 			task();

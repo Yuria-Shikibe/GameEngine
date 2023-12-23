@@ -1,6 +1,6 @@
 module Assets.Manager;
 
-import Assets;
+import Assets.Graphic;
 import Assets.Loader;
 import Assets.LoaderRenderer;
 import Assets.TexturePacker;
@@ -25,12 +25,15 @@ void Assets::Manager::pullRequest() {
 	Assets::Fonts::loadPreivous(tempFontLoader.get());
 	Assets::Fonts::load(&fonts);
 
+	Assets::Sounds::load(Assets::soundDir, soundLoader);
+
 	for(auto& page : atlas.getPages() | std::ranges::views::values) {
 		loader.push(&page);
 	}
 
 	loader.push(&shaders);
 	loader.push(&fonts);
+	loader.push(&soundLoader);
 }
 
 void Assets::Manager::load_Visible(const unsigned width, const unsigned height, GLFWwindow* window, Core::Renderer* renderer) {
@@ -89,7 +92,7 @@ Graphic::TextureAtlas& Assets::Manager::getAtlas() {
 	return atlas;
 }
 
-Font::FontsManager& Assets::Manager::getonts() const {
+Font::FontCache& Assets::Manager::getonts() const {
 	return *fonts.manager;
 }
 
@@ -99,4 +102,8 @@ Assets::AssetsLoader& Assets::Manager::getLoader() {
 
 Event::EventManager& Assets::Manager::getEventTrigger() {
 	return loadEvents;
+}
+
+Assets::SoundLoader& Assets::Manager::getSoundLoader() {
+	return soundLoader;
 }

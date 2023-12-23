@@ -16,7 +16,7 @@ import Core;
 import GL.Constants;
 import GL.Buffer.FrameBuffer;
 import Assets.Loader;
-import Assets;
+import Assets.Graphic;
 
 import GlyphArrangement;
 

@@ -692,7 +692,7 @@ void poly(const float x, const float y, const int sides, const float radius, con
 
 template <size_t size>
 void poly(const float x, const float y, const int sides, const float radius, const float angle, const float ratio,
-          const Color (&colorGroup)[size]) {
+          const Color* const(&colorGroup)[size]) {
 	const auto fSides = static_cast<float>(sides);
 
 	const float space = 360.0f / fSides;
@@ -708,8 +708,8 @@ void poly(const float x, const float y, const int sides, const float radius, con
 	float sin2, cos2;
 
 	float progress = 0;
-	Color lerpColor1 = colorGroup[0x000000];
-	Color lerpColor2 = colorGroup[size - 1];
+	Color lerpColor1 = *colorGroup[0x000000];
+	Color lerpColor2 = *colorGroup[size - 1];
 
 	for(; progress < fSides * ratio - 1.0f; progress += 1.0f) {
 		// NOLINT(cert-flp30-c)

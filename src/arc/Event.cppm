@@ -26,7 +26,7 @@ export namespace Event {
 		template <Concepts::Derived<EventType> T>
 			requires std::is_final_v<T>
 		void fire(const T& event) const {
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
 			if(!registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
 
@@ -40,7 +40,7 @@ export namespace Event {
 		template <typename T, typename Func>
 			requires Concepts::Derived<T, EventType> && Concepts::Invokable<Func, void(const T&)> && std::is_final_v<T>
 		void on(Func&& func){
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
 			if(!registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
 

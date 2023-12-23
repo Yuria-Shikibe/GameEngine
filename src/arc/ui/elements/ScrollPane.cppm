@@ -19,8 +19,7 @@ export namespace UI {
 		virtual void operator()(const ScrollPane* pane) const;
 	};
 
-
-	std::unique_ptr defDrawer{std::make_unique<ScrollerDrawer>()};
+	std::unique_ptr defScrollBarDrawer{std::make_unique<ScrollerDrawer>()};
 
 	class ScrollPane : public Elem {
 	protected:
@@ -46,7 +45,7 @@ export namespace UI {
 
 		float accel = 0.126f;
 
-		ScrollerDrawer* scrollBarDrawer{defDrawer.get()};
+		ScrollerDrawer* scrollBarDrawer{defScrollBarDrawer.get()};
 
 		Rect itemSize;
 	public:
@@ -57,6 +56,10 @@ export namespace UI {
 				pressed = true;
 			});
 
+			inputListener.on<UI::MouseActionRelease>([this](const auto& event) {
+				pressed = false;
+			});
+
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
 				scrollTargetVelocity = static_cast<Geom::Vector2D>(event);
 				scrollTargetVelocity.scl(scrollSensitivityCoefficient, -scrollSensitivityCoefficient);
@@ -64,9 +67,6 @@ export namespace UI {
 
 			touchbility = UI::TouchbilityFlags::enabled;
 			quitInboundFocus = false;
-
-			margin_bottomLeft.set(12, 12);
-			margin_topRight.set(12, 12);
 
 			color.set(0.3f, 0.66f, 0.96f, 0.6f);
 		}
@@ -82,7 +82,7 @@ export namespace UI {
 
 			scrollTargetVelocity.setZero();
 
-			pressed = false;
+			// pressed = false;
 
 			updateChildren(delta);
 

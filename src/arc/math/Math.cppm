@@ -6,7 +6,7 @@ import <memory>;
 import <vector>;
 import <algorithm>;
 import <cmath>;
-#include <numbers>
+import <numbers>;
 
 export namespace Math{
 	constexpr int SIGNS[2] = { -1, 1 };
@@ -344,8 +344,10 @@ export namespace Math{
 	 * Returns the closest integer to the specified float. This method will only properly round floats from -(2^14) to
 	 * (Float.MAX_VALUE - 2^14).
 	 */
-	inline int round(const float value) {
-		return static_cast<int>(value + BIG_ENOUGH_ROUND) - BIG_ENOUGH_INT;
+	template <typename T>
+		requires std::is_integral_v<T>
+	T round(const float value) {
+		return static_cast<T>(value + BIG_ENOUGH_ROUND) - BIG_ENOUGH_INT;
 	}
 
 	inline int round(const int value, const int step) {

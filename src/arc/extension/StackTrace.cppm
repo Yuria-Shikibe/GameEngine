@@ -28,7 +28,7 @@ export namespace ext{
 				continue;
 			}
 
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
 			auto exePrefix = entry.description().find_first_of('!');
 
 			exePrefix = exePrefix == std::string::npos && showExec ? 0 : exePrefix + 1;

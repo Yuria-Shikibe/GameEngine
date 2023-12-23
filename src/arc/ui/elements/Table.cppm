@@ -238,8 +238,8 @@ export namespace UI {
 		[[nodiscard]] float padVert() const {return padBottom + padTop;}
 
 		void applySize(){ // NOLINT(*-make-member-function-const)
-			const float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getBound().getWidth()) - marginHori();
-			const float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getBound().getHeight()) - marginVert();
+			const float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getBound().getWidth());
+			const float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getBound().getHeight());
 
 			//Modify item size
 			item->setSize(width * widthScale(), height * heightScale());
@@ -252,6 +252,8 @@ export namespace UI {
 			if(modifyParentY) {
 				allocatedBound.setHeight(item->getBound().getHeight());
 			}
+
+			item->getBound().addSize(-marginHori(), -marginVert());
 
 			allocatedBound.addSize(padHori(), padVert());
 		}
@@ -294,7 +296,10 @@ export namespace UI {
 				xSign = 1;
 			}
 
-			item->getBound().move((getCellWidth() * srcxScale + padLeft + marginLeft) * xSign, (getCellHeight() * srcyScale + padBottom + marginBottom) * ySign);
+			const float xMove = xSign * ((xSign == 1 ? (padLeft + marginLeft) : (padRight + marginRight)) + getCellWidth() * srcxScale);
+			const float yMove = ySign * ((ySign == 1 ? (padBottom + marginBottom) : (padTop + marginTop)) + getCellHeight() * srcyScale);
+
+			item->getBound().move(xMove, yMove);
 
 			//TODO align...
 
@@ -468,6 +473,8 @@ export namespace UI {
 		void layout() override {
 
 			layout_fillParent();
+
+			layoutChanged = false;
 
 			if(relativeLayoutFormat) {
 				layoutRelative();

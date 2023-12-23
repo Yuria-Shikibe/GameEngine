@@ -348,16 +348,16 @@ export namespace Font {
 	};
 
 	//this will contain all the fonts with a single texture, for fast batch process
-	class FontsManager {
+	class FontCache {
 	protected:
 		std::unique_ptr<GL::Texture2D> fontTexture{nullptr};
 		std::unordered_map<FT_UInt, std::set<FT_UInt>> supportedFonts{};
 		std::unordered_map<FT_UInt, std::unique_ptr<FontFlags>> fonts{}; //Access it by FontFlags.internalID
 
 	public:
-		[[nodiscard]] FontsManager() = default;
+		[[nodiscard]] FontCache() = default;
 
-		[[nodiscard]] explicit FontsManager(Graphic::Pixmap& texture, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
+		[[nodiscard]] explicit FontCache(Graphic::Pixmap& texture, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
 			fontTexture.reset(new GL::Texture2D(texture.getWidth(), texture.getHeight(), texture.release()));
 
 			const Shape::OrthoRectUInt bound{fontTexture->getWidth(), fontTexture->getHeight()};
@@ -461,18 +461,18 @@ export namespace Font {
 		}
 	}
 
-	FontsManager* defaultManager{nullptr};
+	FontCache* defaultManager{nullptr};
 
-	struct FontLoader final : ext::ProgressTask<void, Assets::AssetsTaskHandler>{
+	struct FontManager final : ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 		bool quickInit = false;
 		std::vector<std::unique_ptr<FontFlags>> flags{};
 		Event::SignalManager<FontLoadState, FontLoadState::maxCount> fontLoadListeners{};
 		OS::File rootCacheDir{};
-		std::unique_ptr<FontsManager> manager{nullptr};
+		std::unique_ptr<FontCache> manager{nullptr};
 
-		[[nodiscard]] FontLoader() = default;
+		[[nodiscard]] FontManager() = default;
 
-		[[nodiscard]] explicit FontLoader(const OS::File& root_cache_dir) :
+		[[nodiscard]] explicit FontManager(const OS::File& root_cache_dir) :
 			rootCacheDir(root_cache_dir) {
 		}
 
@@ -759,10 +759,10 @@ export namespace Font {
 			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
 			//FontsManager obtain the texture from the total cache; before this no texture should be generated!
 			if(quickInit) {
-				manager = std::make_unique<FontsManager>(mergedMap, flags);
+				manager = std::make_unique<FontCache>(mergedMap, flags);
 			}else {
 				postToHandler([&mergedMap, this] {
-					manager = std::make_unique<FontsManager>(mergedMap, flags);
+					manager = std::make_unique<FontCache>(mergedMap, flags);
 				}).get();
 			}
 
@@ -785,24 +785,24 @@ export namespace Font {
 		}
 
 	public:
-		std::unique_ptr<FontsManager> getManager() && {
+		std::unique_ptr<FontCache> getManager() && {
 			return std::move(manager);
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override{
-			return std::async(policy, std::bind(&FontLoader::load, this));
+			return std::async(policy, std::bind(&FontManager::load, this));
 		}
 
 		[[nodiscard]] std::string_view getTaskName() const override {
 			return "Loading Fonts.";
 		}
 
-		FontLoader(const FontLoader& other) = delete;
+		FontManager(const FontManager& other) = delete;
 
-		FontLoader(FontLoader&& other) noexcept = delete;
+		FontManager(FontManager&& other) noexcept = delete;
 
-		FontLoader& operator=(const FontLoader& other) = delete;
+		FontManager& operator=(const FontManager& other) = delete;
 
-		FontLoader& operator=(FontLoader&& other) noexcept = delete;
+		FontManager& operator=(FontManager&& other) noexcept = delete;
 	};
 }

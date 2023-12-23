@@ -75,7 +75,7 @@ class Renderer : virtual public ResizeableUInt {
 
 		virtual void frameEnd() = 0;
 
-		virtual void renderUI() const {
+		virtual void renderUI() {
 		}
 
 		[[nodiscard]] bool sustainSize(const unsigned int w, const unsigned int h) const {

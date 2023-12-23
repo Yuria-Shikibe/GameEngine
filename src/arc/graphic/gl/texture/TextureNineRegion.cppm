@@ -7,17 +7,15 @@ module;
 export module GL.Texture.TextureNineRegion;
 
 import <array>;
+import Math;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 import Geom.Vector2D;
 
-import Graphic.Draw;
-
 using Rect = Geom::Shape::OrthoRectFloat;
 using HardRect = Geom::Shape::OrthoRectUInt;
-using namespace Graphic;
 
 export namespace GL {
 	/**
@@ -67,33 +65,25 @@ export namespace GL {
 
 		[[nodiscard]] TextureNineRegion() = default;
 
-		[[nodiscard]] TextureNineRegion(const Texture2D* const rect, const HardRect& totalBound, const HardRect& innerBound) {
-			loadFrom(rect, totalBound, innerBound);
+		[[nodiscard]] TextureNineRegion(const TextureRegionRect* const rect, HardRect&& innerBound) {
+			loadFrom(rect, std::forward<HardRect>(innerBound));
 		}
 
-		void loadFrom(const TextureRegionRect* const rect, const HardRect& innerBound) {
+		void loadFrom(const TextureRegionRect* const rect, HardRect&& innerBound) {
 			const HardRect totalBound{
-				static_cast<unsigned>(rect->u00() * rect->getData()->getWidth()),
-				static_cast<unsigned>(rect->v00() * rect->getData()->getHeight()),
-				static_cast<unsigned>(rect->getWidth()),
-				static_cast<unsigned>(rect->getHeight())
+				Math::round<unsigned>(rect->u00() * rect->getData()->getWidth()),
+				Math::round<unsigned>(rect->v00() * rect->getData()->getHeight()),
+				Math::round<unsigned>(rect->getWidth()),
+				Math::round<unsigned>(rect->getHeight())
 			};
 
-#ifdef DEBUG_LOCAL
-			if(
-				totalBound.getSrcX() > innerBound.getSrcX() || totalBound.getSrcY() > innerBound.getSrcY() ||
-				totalBound.getEndX() < innerBound.getEndX() || totalBound.getEndY() < innerBound.getEndY()
-			) {
-				throw ext::IllegalArguments{"NineRegion Receives An Inner Part Larger Than Exter Part!"};
-			}
-#endif
-
+			innerBound.move(totalBound.getSrcX(), totalBound.getSrcY());
 
 			loadFrom(rect->getData(), totalBound, innerBound);
 		}
 
 		void loadFrom(const Texture2D* const rect, const HardRect& totalBound, const HardRect& innerBound) {
-#ifdef DEBUG_LOCAL
+#ifdef _DEBUG
 			if(
 				totalBound.getSrcX() > innerBound.getSrcX() || totalBound.getSrcY() > innerBound.getSrcY() ||
 				totalBound.getEndX() < innerBound.getEndX() || totalBound.getEndY() < innerBound.getEndY()
@@ -101,6 +91,10 @@ export namespace GL {
 				throw ext::IllegalArguments{"NineRegion Receives An Inner Part Larger Than Exter Part!"};
 			}
 #endif
+
+			for(TextureRegionRect& region : regions) {
+				region.setData(rect);
+			}
 
 			const unsigned int
 				srcX = totalBound.getSrcX(),
@@ -112,20 +106,19 @@ export namespace GL {
 				topRight_W = totalBound.getEndX() - innerBound.getEndX(),
 				topRight_H = totalBound.getEndY() - innerBound.getEndY();
 
-			regions[ID_center     ].fetchInto(innerBound, totalBound);
+			regions[ID_center     ].fetchIntoCurrent(innerBound);
 
-			regions[ID_right      ].fetchInto(innerBound.getEndX(), bottomLeft_H + srcY, topRight_W, inner_H, totalBound);
-			regions[ID_top        ].fetchInto(bottomLeft_W + srcX, innerBound.getEndY(), inner_W, topRight_H, totalBound);
-			regions[ID_left       ].fetchInto(srcX, bottomLeft_H, bottomLeft_W, inner_H, totalBound);
-			regions[ID_bottom     ].fetchInto(bottomLeft_W + srcX, srcY, inner_W, bottomLeft_H, totalBound);
+			regions[ID_right      ].fetchIntoCurrent(HardRect{innerBound.getEndX(), innerBound.getSrcY(), topRight_W, inner_H});
+			regions[ID_top        ].fetchIntoCurrent(HardRect{innerBound.getSrcX(), innerBound.getEndY(), inner_W, topRight_H});
+			regions[ID_left       ].fetchIntoCurrent(HardRect{srcX, innerBound.getSrcY(), bottomLeft_W, inner_H});
+			regions[ID_bottom     ].fetchIntoCurrent(HardRect{innerBound.getSrcX(), srcY, inner_W, bottomLeft_H});
 
-			regions[ID_topRight   ].fetchInto(innerBound.getEndX(), innerBound.getEndY(), topRight_W, topRight_H, totalBound);
-			regions[ID_topLeft    ].fetchInto(srcX, innerBound.getEndY(), bottomLeft_W, topRight_H, totalBound);
-			regions[ID_bottomLeft ].fetchInto(srcX, srcY, bottomLeft_W, bottomLeft_H, totalBound);
-			regions[ID_bottomRight].fetchInto(innerBound.getEndX(), srcY, topRight_W, bottomLeft_H, totalBound);
+			regions[ID_topRight   ].fetchIntoCurrent(HardRect{innerBound.getEndX(), innerBound.getEndY(), topRight_W, topRight_H});
+			regions[ID_topLeft    ].fetchIntoCurrent(HardRect{srcX, innerBound.getEndY(), bottomLeft_W, topRight_H});
+			regions[ID_bottomLeft ].fetchIntoCurrent(HardRect{srcX, srcY, bottomLeft_W, bottomLeft_H});
+			regions[ID_bottomRight].fetchIntoCurrent(HardRect{innerBound.getEndX(), srcY, topRight_W, bottomLeft_H});
 
 			for(TextureRegionRect& region : regions) {
-				region.setData(rect);
 				if(region.getWidth() * region.getHeight() < 0.2f) {
 					region.setData(nullptr);
 				}
@@ -175,19 +168,7 @@ export namespace GL {
 		 * \param width  Inner Width
 		 * \param height  Inner Height
 		 */
-		void render_RelativeInner(const float x, const float y, const float width, const float height) const{
-			if(regions[ID_center     ].getData())Draw::rect(&regions[ID_center], x, y, width, height);
-
-			if(regions[ID_right      ].getData())Draw::rect(&regions[ID_right], x + width, y, topRightSize.x, height);
-			if(regions[ID_top        ].getData())Draw::rect(&regions[ID_top], x, y + height, width, topRightSize.y);
-			if(regions[ID_left       ].getData())Draw::rect(&regions[ID_left], x - bottomLeftSize.x, y, bottomLeftSize.x, height);
-			if(regions[ID_bottom     ].getData())Draw::rect(&regions[ID_bottom], x, y - bottomLeftSize.y, width, bottomLeftSize.y);
-
-			if(regions[ID_topRight   ].getData())Draw::rect(&regions[ID_topRight], x + width, y + height, topRightSize.x, topRightSize.y);
-			if(regions[ID_topLeft    ].getData())Draw::rect(&regions[ID_topLeft], x - bottomLeftSize.x, y + height, bottomLeftSize.x, topRightSize.y);
-			if(regions[ID_bottomLeft ].getData())Draw::rect(&regions[ID_bottomLeft], x - bottomLeftSize.x, y - bottomLeftSize.y, bottomLeftSize.x, bottomLeftSize.y);
-			if(regions[ID_bottomRight].getData())Draw::rect(&regions[ID_bottomRight], x + width, y - bottomLeftSize.y, topRightSize.x, bottomLeftSize.y);
-		}
+		void render_RelativeInner(const float x, const float y, const float width, const float height) const;
 
 		void render_RelativeInner(const Rect& rect) const{
 			render_RelativeInner(rect.getSrcX(), rect.getSrcY(), rect.getWidth(), rect.getHeight());
@@ -200,19 +181,7 @@ export namespace GL {
 		 * \param width  Exter Width
 		 * \param height  Exter Height
 		 */
-		void render_RelativeExter(const float x, const float y, const float width, const float height) const{
-			if(regions[ID_center     ].getData())Draw::rect(&regions[ID_center], x + bottomLeftSize.x, y + bottomLeftSize.y, width - bottomLeftSize.x - topRightSize.x, height - bottomLeftSize.y - topRightSize.y);
-
-			if(regions[ID_right      ].getData())Draw::rect(&regions[ID_right], x + width - topRightSize.x, y + bottomLeftSize.y, topRightSize.x, height - bottomLeftSize.y - topRightSize.y);
-			if(regions[ID_top        ].getData())Draw::rect(&regions[ID_top], x + bottomLeftSize.x, y + height - topRightSize.y, width - bottomLeftSize.x - topRightSize.x, topRightSize.y);
-			if(regions[ID_left       ].getData())Draw::rect(&regions[ID_left], x, y + bottomLeftSize.y, bottomLeftSize.x,  height - bottomLeftSize.y - topRightSize.y);
-			if(regions[ID_bottom     ].getData())Draw::rect(&regions[ID_bottom], x + bottomLeftSize.x, y, width - bottomLeftSize.x - topRightSize.x,  bottomLeftSize.y);
-
-			if(regions[ID_topRight   ].getData())Draw::rect(&regions[ID_topRight], x + width - topRightSize.x, y + height - topRightSize.y, topRightSize.x, topRightSize.y);
-			if(regions[ID_topLeft    ].getData())Draw::rect(&regions[ID_topLeft], x, y + height - topRightSize.y, bottomLeftSize.x, topRightSize.y);
-			if(regions[ID_bottomLeft ].getData())Draw::rect(&regions[ID_bottomLeft], x, y, bottomLeftSize.x, bottomLeftSize.y);
-			if(regions[ID_bottomRight].getData())Draw::rect(&regions[ID_bottomRight], x + width - topRightSize.x, y, topRightSize.x, bottomLeftSize.y);
-		}
+		void render_RelativeExter(float x, float y, float width, float height) const;
 
 		void render_RelativeExter(const Rect& rect) const{
 			render_RelativeExter(rect.getSrcX(), rect.getSrcY(), rect.getWidth(), rect.getHeight());

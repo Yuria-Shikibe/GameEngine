@@ -1,6 +1,6 @@
 module;
 
-export module Assets;
+export module Assets.Graphic;
 
 import GL.Mesh.RenderableMesh;
 import GL.Buffer.IndexBuffer;
@@ -53,6 +53,7 @@ export namespace Assets{
 	inline OS::File textureDir;
 	inline OS::File texCacheDir;
 	inline OS::File fontDir;
+	inline OS::File soundDir;
 	inline OS::File screenshotDir;
 
 	namespace Shaders {
@@ -236,7 +237,7 @@ export namespace Assets{
 			*telegrama{nullptr}
 		;
 
-		void loadPreivous(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter)
+		void loadPreivous(Font::FontManager* loader) { // NOLINT(*-non-const-parameter)
 			loader->quickInit = true;
 			cacheDir = fontDir.subFile("cache-load");
 			if(!cacheDir.exist())cacheDir.createDirQuiet();
@@ -251,7 +252,7 @@ export namespace Assets{
 			Font::initParser(telegrama);
 		}
 
-		void load(Font::FontLoader* loader) { // NOLINT(*-non-const-parameter
+		void load(Font::FontManager* loader) { // NOLINT(*-non-const-parameter
 
 			cacheDir = fontDir.subFile("cache");
 			if(!cacheDir.exist())cacheDir.createDirQuiet();
@@ -367,14 +368,15 @@ export namespace Assets{
 		OS::FileTree& mainTree = *Core::rootFileTree;
 
 		assetsDir = mainTree.findDir("assets");
-		shaderDir = mainTree.find("shader");
-		textureDir = mainTree.find("texture");
-		fontDir = mainTree.find("fonts");
+		shaderDir = mainTree.findDir("shader");
+		textureDir = mainTree.findDir("texture");
+		fontDir = mainTree.findDir("fonts");
+		soundDir  = mainTree.findDir("sounds");
 
 		texCacheDir = assetsDir.subFile("tex-cache");
 		texCacheDir.createDirQuiet();
 
-		screenshotDir = mainTree.find("screenshots"); //TODO move this to other places, it doesn't belong to assets!
+		screenshotDir = mainTree.findDir("screenshots"); //TODO move this to other places, it doesn't belong to assets!
 
 		Font::loadLib();
 

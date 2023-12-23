@@ -49,19 +49,14 @@ void Core::initMainWindow() {
 }
 
 void Core::initFileSystem() {
-#ifdef DEBUG_LOCAL
-	#ifdef ASSETS_DIR
-		rootFileTree = new OS::FileTree{ASSETS_DIR};
-	#else
-		rootFileTree = new OS::FileTree{OS::args[0]};
-	#endif
+#if defined(_DEBUG) && defined(ASSETS_DIR)
+	rootFileTree = new OS::FileTree{ASSETS_DIR};
 #else
-		//TODO release build assets pacakge
-	#ifdef ASSETS_DIR
-		rootFileTree = new OS::FileTree{ASSETS_DIR};
-	#else
-		rootFileTree = new OS::FileTree{OS::args[0]};
-	#endif
+	const OS::File self{OS::args[0]};
+
+	const auto dir = self.getParent().subFile("resource");
+
+	rootFileTree = new OS::FileTree{dir};
 #endif
 	OS::crashFileGetter = std::bind(&Core::Log::generateCrashFilePath, log);
 }
@@ -85,6 +80,8 @@ void Core::initCore(const std::function<void()>& initializer) {
 		if(!camera)camera = new Camera2D();
 		if(!log)log = new Log{rootFileTree->findDir("logs")};
 	}
+
+	audio = new Core::Audio;
 }
 
 void Core::initCore_Post(const std::function<void()>& initializer) {
@@ -101,6 +98,7 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 }
 
 void Core::loadAssets() {
+	assetsManager->getSoundLoader().setEngine(audio->engine);
 	assetsManager->pullRequest();
 	assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), mainWindow, renderer);
 	assetsManager->loadPost();

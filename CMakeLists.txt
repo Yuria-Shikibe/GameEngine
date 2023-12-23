@@ -25,22 +25,48 @@ message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
-set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
-
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    add_definitions(-DDEBUG_LOCAL)
-    message(STATUS "Debug Mode")
-else()
-    message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
-    message(STATUS "Release Mode")
-endif ()
-
 set(SRC_DIR src)
 set(RES_DIR resource)
 set(REF_DIR include)
 set(LIB_DIR lib)
 
-add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
+set(BUILD_DIR build)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
+
+set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR}/${CMAKE_BUILD_TYPE})
+
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    message(STATUS "Debug Mode")
+    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
+    add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
+    
+    file(GLOB_RECURSE BIN
+            ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
+    )
+    
+    file(COPY ${BIN} DESTINATION
+            ${EXE_DIR}
+    )
+else()
+    message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
+    message(STATUS "Release Mode")
+    
+#    file(GLOB_RECURSE RESOURCE_FILE_PACK
+#        ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
+#    )
+    
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR} DESTINATION
+            ${EXE_DIR}
+    )
+    
+    file(ARCHIVE_CREATE
+            OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.zip"
+            PATHS ${EXE_DIR}
+            FORMAT "zip"
+    )
+    
+endif ()
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
 
@@ -85,7 +111,10 @@ link_libraries(
     gdi32.lib
     shell32.lib
     User32.lib
+    irrKlang.lib
+#    irrKlang.exp
 )
+
 
 message(STATUS "Building...")
 
@@ -106,6 +135,7 @@ target_sources(${PROJECT_NAME}
 message(STATUS "Compile Complete...")
 
 
+message(STATUS ${CMAKE_BINARY_DIR})
 #if(0#[[CMAKE_CXX_COMPILER_ID STREQUAL "GNU"]])
 #
 #    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmodules-ts")
