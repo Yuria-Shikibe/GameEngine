@@ -44,15 +44,24 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     file(GLOB_RECURSE BIN
             ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
     )
-    
+
     file(COPY ${BIN} DESTINATION
             ${EXE_DIR}
     )
+    
 else()
     message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
     
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR} DESTINATION
+            ${EXE_DIR}
+    )
+    
+    file(GLOB_RECURSE BIN
+            ${EXE_DIR}/${RES_DIR}/*.dll
+    )
+    
+    file(COPY ${BIN} DESTINATION
             ${EXE_DIR}
     )
     
@@ -105,7 +114,6 @@ link_libraries(
     irrKlang.lib
 #    irrKlang.exp
 )
-
 
 message(STATUS "Building...")
 
