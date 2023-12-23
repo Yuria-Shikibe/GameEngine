@@ -64,8 +64,6 @@ else()
     file(COPY ${BIN} DESTINATION
             ${EXE_DIR}
     )
-    
-#    file(MAKE_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Done")
 endif ()
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
@@ -75,25 +73,18 @@ message(STATUS "Loading...")
 # Source Files...
 file(GLOB_RECURSE SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cpp
-#        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.c
-#        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui
-#        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.qrc
 )
 
 # Header Files...
 file(GLOB_RECURSE CURRENT_HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.h
         ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.hpp
-#        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
-#        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
 )
 
 
 # Modules...
 #
 file(GLOB_RECURSE FAST_MODULES
-    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
-#    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cxx
     ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
 )
 
