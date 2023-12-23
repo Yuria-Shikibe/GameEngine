@@ -52,20 +52,11 @@ else()
     message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
     
-#    file(GLOB_RECURSE RESOURCE_FILE_PACK
-#        ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
-#    )
-    
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR} DESTINATION
             ${EXE_DIR}
     )
     
-    file(ARCHIVE_CREATE
-            OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${PROJECT_NAME}.zip"
-            PATHS ${EXE_DIR}
-            FORMAT "zip"
-    )
-    
+#    file(MAKE_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Done")
 endif ()
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
@@ -134,8 +125,18 @@ target_sources(${PROJECT_NAME}
 
 message(STATUS "Compile Complete...")
 
+#if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+#    message(STATUS "Destination Dir: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Done")
+#
+#    message(STATUS "Build Dir: ${EXE_DIR}")
+#
+#    file(ARCHIVE_CREATE
+#        OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Done/${PROJECT_NAME}.zip"
+#        PATHS ${EXE_DIR}
+#        FORMAT "zip"
+#    )
+#endif()
 
-message(STATUS "Build Dir: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 #if(0#[[CMAKE_CXX_COMPILER_ID STREQUAL "GNU"]])
 #
 #    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmodules-ts")
