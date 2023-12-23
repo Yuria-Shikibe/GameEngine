@@ -135,7 +135,7 @@ target_sources(${PROJECT_NAME}
 message(STATUS "Compile Complete...")
 
 
-message(STATUS ${CMAKE_BINARY_DIR})
+message(STATUS "Build Dir: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 #if(0#[[CMAKE_CXX_COMPILER_ID STREQUAL "GNU"]])
 #
 #    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmodules-ts")
