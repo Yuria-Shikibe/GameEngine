@@ -150,7 +150,7 @@ void setupUITest(){
 		{
 			auto& cell2 = HUD->add(new UI::Table{});
 			cell2.item->color = Colors::GREEN;
-			cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.25f, 0.2f).setMargin(0, 10, 0, 10);
+			cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.25f, 0.2f).setMargin(0, 10, 10, 10);
 			cell2.clearRelativeMove();
 
 			UI::Table& table = cell2.as<UI::Table>();
@@ -167,7 +167,7 @@ void setupUITest(){
 			.setAlign(Align::Mode::bottom_left)
 			.setSizeScale(0.075f, 0.2f)
 			.setSrcScale(0.25f, 0.0f)
-			.setMargin(10, 0, 0, 10);
+			.setMargin(10, 0, 10, 10);
 	}
 
 	{
