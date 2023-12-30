@@ -51,7 +51,7 @@ export namespace OS{
 			buildFileTree();
 		}
 
-		explicit FileTree(const std::string& root) : root{root} {
+		explicit FileTree(const std::string_view& root) : root{root} {
 			buildFileTree();
 		}
 
@@ -157,6 +157,10 @@ export namespace OS{
 		}
 
 		void buildFileTree(const bool clearLegacy = false){
+			if(!root.exist() || !root.isDir()) {
+				throw ext::IllegalArguments{"Cannot Setup A FileTree Based On A Non-Dir File!"};
+			}
+
 			if(clearLegacy)files.clear();
 
 			if(concentrateAll()){

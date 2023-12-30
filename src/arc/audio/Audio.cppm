@@ -84,7 +84,9 @@ export namespace Core{
 		}
 
 		[[nodiscard]] Audio() {
-			engine = createIrrKlangDevice();
+			engine = createIrrKlangDevice(
+				// ESOD_AUTO_DETECT, ESEO_MULTI_THREADED | ESEO_LOAD_PLUGINS | ESEO_USE_3D_BUFFERS | ESEO_PRINT_DEBUG_INFO_TO_DEBUGGER | ESEO_PRINT_DEBUG_INFO_TO_STDOUT
+			);
 
 			if (!engine)throw ext::RuntimeException{"Failed To Initialize irrklang!"};
 		}

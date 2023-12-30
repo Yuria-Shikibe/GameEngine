@@ -13,11 +13,13 @@ export namespace Assets::Sounds{
 
 	SoundSource
 		flak,
-		largeExplosion
+		largeExplosion,
+		laser5
 	;
 
 	void load(const OS::File& dir, Assets::SoundLoader& loader) {
 		flak = loader.pullRequest(dir.subFile("flak.mp3"));
 		largeExplosion = loader.pullRequest(dir.subFile("largeExplosion.ogg"));
+		laser5 = loader.pullRequest(dir.subFile("laser5.ogg"));
 	}
 }

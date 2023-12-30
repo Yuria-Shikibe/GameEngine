@@ -253,20 +253,20 @@ export namespace Graphic{
         }
 
         static colorBits blend(const colorBits src, const colorBits dst){
-            const colorBits src_a = src & Color::a_Bits;
+            const colorBits src_a = src & Color::a_Mask;
             if(src_a == 0) return dst;
 
-            colorBits dst_a = dst & Color::a_Bits;
+            colorBits dst_a = dst & Color::a_Mask;
             if(dst_a == 0) return src;
-            colorBits dst_r = dst >> Color::r_Offset & Color::a_Bits;
-            colorBits dst_g = dst >> Color::g_Offset & Color::a_Bits;
-            colorBits dst_b = dst >> Color::b_Offset & Color::a_Bits;
+            colorBits dst_r = dst >> Color::r_Offset & Color::a_Mask;
+            colorBits dst_g = dst >> Color::g_Offset & Color::a_Mask;
+            colorBits dst_b = dst >> Color::b_Offset & Color::a_Mask;
 
             dst_a -=  static_cast<colorBits>(static_cast<float>(dst_a) * (static_cast<float>(src_a) / Color::maxValF));
             const colorBits a = dst_a + src_a;
-            dst_r = static_cast<colorBits>(static_cast<float>(dst_r * dst_a + (src >> Color::r_Offset & Color::a_Bits) * src_a) / static_cast<colorBits>(a));
-            dst_g = static_cast<colorBits>(static_cast<float>(dst_g * dst_a + (src >> Color::g_Offset & Color::a_Bits) * src_a) / static_cast<colorBits>(a));
-            dst_b = static_cast<colorBits>(static_cast<float>(dst_b * dst_a + (src >> Color::b_Offset & Color::a_Bits) * src_a) / static_cast<colorBits>(a));
+            dst_r = static_cast<colorBits>(static_cast<float>(dst_r * dst_a + (src >> Color::r_Offset & Color::a_Mask) * src_a) / static_cast<colorBits>(a));
+            dst_g = static_cast<colorBits>(static_cast<float>(dst_g * dst_a + (src >> Color::g_Offset & Color::a_Mask) * src_a) / static_cast<colorBits>(a));
+            dst_b = static_cast<colorBits>(static_cast<float>(dst_b * dst_a + (src >> Color::b_Offset & Color::a_Mask) * src_a) / static_cast<colorBits>(a));
             return
                 dst_r << Color::r_Offset |
                 dst_g << Color::g_Offset |
@@ -375,29 +375,29 @@ export namespace Graphic{
                             const float tc = (1 - xdiff) *      ydiff ;
                             const float td =      xdiff  *      ydiff ;
 
-                            const colorBits r = Color::a_Bits & static_cast<colorBits>(
-                                static_cast<float>((c1 & Color::r_Bits) >> Color::r_Offset) * ta +
-                                static_cast<float>((c2 & Color::r_Bits) >> Color::r_Offset) * tb +
-                                static_cast<float>((c3 & Color::r_Bits) >> Color::r_Offset) * tc +
-                                static_cast<float>((c4 & Color::r_Bits) >> Color::r_Offset) * td
+                            const colorBits r = Color::a_Mask & static_cast<colorBits>(
+                                static_cast<float>((c1 & Color::r_Mask) >> Color::r_Offset) * ta +
+                                static_cast<float>((c2 & Color::r_Mask) >> Color::r_Offset) * tb +
+                                static_cast<float>((c3 & Color::r_Mask) >> Color::r_Offset) * tc +
+                                static_cast<float>((c4 & Color::r_Mask) >> Color::r_Offset) * td
                             );
-                            const colorBits g = Color::a_Bits & static_cast<colorBits>(
-                                static_cast<float>((c1 & Color::g_Bits) >> Color::g_Offset) * ta +
-                                static_cast<float>((c2 & Color::g_Bits) >> Color::g_Offset) * tb +
-                                static_cast<float>((c3 & Color::g_Bits) >> Color::g_Offset) * tc +
-                                static_cast<float>((c4 & Color::g_Bits) >> Color::g_Offset) * td
+                            const colorBits g = Color::a_Mask & static_cast<colorBits>(
+                                static_cast<float>((c1 & Color::g_Mask) >> Color::g_Offset) * ta +
+                                static_cast<float>((c2 & Color::g_Mask) >> Color::g_Offset) * tb +
+                                static_cast<float>((c3 & Color::g_Mask) >> Color::g_Offset) * tc +
+                                static_cast<float>((c4 & Color::g_Mask) >> Color::g_Offset) * td
                             );
-                            const colorBits b = Color::a_Bits & static_cast<colorBits>(
-                                static_cast<float>((c1 & Color::b_Bits) >> Color::b_Offset) * ta +
-                                static_cast<float>((c2 & Color::b_Bits) >> Color::b_Offset) * tb +
-                                static_cast<float>((c3 & Color::b_Bits) >> Color::b_Offset) * tc +
-                                static_cast<float>((c4 & Color::b_Bits) >> Color::b_Offset) * td
+                            const colorBits b = Color::a_Mask & static_cast<colorBits>(
+                                static_cast<float>((c1 & Color::b_Mask) >> Color::b_Offset) * ta +
+                                static_cast<float>((c2 & Color::b_Mask) >> Color::b_Offset) * tb +
+                                static_cast<float>((c3 & Color::b_Mask) >> Color::b_Offset) * tc +
+                                static_cast<float>((c4 & Color::b_Mask) >> Color::b_Offset) * td
                             );
-                            const colorBits a = Color::a_Bits & static_cast<colorBits>(
-                                static_cast<float>((c1 & Color::a_Bits) >> Color::a_Offset) * ta +
-                                static_cast<float>((c2 & Color::a_Bits) >> Color::a_Offset) * tb +
-                                static_cast<float>((c3 & Color::a_Bits) >> Color::a_Offset) * tc +
-                                static_cast<float>((c4 & Color::a_Bits) >> Color::a_Offset) * td
+                            const colorBits a = Color::a_Mask & static_cast<colorBits>(
+                                static_cast<float>((c1 & Color::a_Mask) >> Color::a_Offset) * ta +
+                                static_cast<float>((c2 & Color::a_Mask) >> Color::a_Offset) * tb +
+                                static_cast<float>((c3 & Color::a_Mask) >> Color::a_Offset) * tc +
+                                static_cast<float>((c4 & Color::a_Mask) >> Color::a_Offset) * td
                             );
 
                             const unsigned int srccol = r << Color::r_Offset | g << Color::g_Offset | b << Color::b_Offset | a << Color::a_Offset;

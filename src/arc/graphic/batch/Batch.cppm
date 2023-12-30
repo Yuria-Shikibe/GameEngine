@@ -20,10 +20,6 @@ import Geom.Matrix3D;
 using namespace GL;
 
 export namespace Core{
-	inline constexpr int VERT_GROUP_SIZE = 2 + 2 + 4 + 4;
-	inline constexpr int VERT_GROUP_COUNT = 4;
-	inline constexpr int VERT_LENGTH_STD = VERT_GROUP_COUNT * VERT_GROUP_SIZE;
-
 	class Batch
 	{
 	protected:

@@ -55,13 +55,13 @@ namespace irrklang
 
     // some constants
 
-	constexpr ik_f32 IK_ROUNDING_ERROR_32	= 0.000001f;
-	constexpr ik_f64 IK_PI64			    = 3.1415926535897932384626433832795028841971693993751;
-	constexpr ik_f32 IK_PI32			    = 3.14159265359f;
-	constexpr ik_f32 IK_RADTODEG            = 180.0f / IK_PI32;
-	constexpr ik_f32 IK_DEGTORAD            = IK_PI32 / 180.0f;
-	constexpr ik_f64 IK_RADTODEG64          = 180.0 / IK_PI64;
-	constexpr ik_f64 IK_DEGTORAD64          = IK_PI64 / 180.0;
+	inline constexpr ik_f32 IK_ROUNDING_ERROR_32	= 0.000001f;
+	inline constexpr ik_f64 IK_PI64			    = 3.1415926535897932384626433832795028841971693993751;
+	inline constexpr ik_f32 IK_PI32			    = 3.14159265359f;
+	inline constexpr ik_f32 IK_RADTODEG            = 180.0f / IK_PI32;
+	inline constexpr ik_f32 IK_DEGTORAD            = IK_PI32 / 180.0f;
+	inline constexpr ik_f64 IK_RADTODEG64          = 180.0 / IK_PI64;
+	inline constexpr ik_f64 IK_DEGTORAD64          = IK_PI64 / 180.0;
 
 	//! returns if a float equals the other one, taking floating
 	//! point rounding errors into account

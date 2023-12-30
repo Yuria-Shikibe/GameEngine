@@ -40,9 +40,33 @@ void main() {
 		}
 	}
 	
+	color.a *= 0.82f;
+	
 	color.r = color.a;
 	color.g = color.a;
 	color.b = color.a;
+	
+	float newA = 0.0f;
+	
+	if(!modified(newA)){
+		newA = step(abs(gl_FragCoord.x - screenSize.x * 0.5f), 1f) * 0.4f;
+		
+		if(!modified(newA)){
+			newA = step(abs(gl_FragCoord.y - screenSize.y * 0.5f), 1f) * 0.4f;
+		}
+		
+		if(modified(newA)){
+			color.r = 0.3f;
+			color.g = 0.961f;
+			color.b = 0.671f;
+		}
+		
+		color.a = max(color.a, newA);
+	}
+	
+	if(!modified(color.a)){
+		color = vec4(0.42f, 0.55f, 1.0f, 0.12f);
+	}
 	
 //	color.rg *= (gl_FragCoord.xy / screenSize);
 

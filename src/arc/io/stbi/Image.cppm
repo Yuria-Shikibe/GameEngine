@@ -57,7 +57,7 @@ export namespace stbi{
 		return data_;
 	}
 
-	std::string getException() {
+	std::string_view getException() {
 		return stbi_failure_reason();
 	}
 

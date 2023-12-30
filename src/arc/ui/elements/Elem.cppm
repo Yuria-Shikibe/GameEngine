@@ -9,8 +9,6 @@ import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 
-import UI.ElemDrawer;
-
 import <algorithm>;
 import <execution>;
 import <functional>;
@@ -18,12 +16,16 @@ import <set>;
 import <vector>;
 import <unordered_set>;
 
+export namespace  UI {
+	struct ElemDrawer;
+	class Group;
+	class Root;
+}
+
 export namespace UI {
 	using Rect = Geom::Shape::OrthoRectFloat;
 
 	//TODO fuck this bug!
-	// struct ElemDrawer;
-	class Root;
 
 	class Elem {
 	public:
@@ -37,12 +39,8 @@ export namespace UI {
 		 * \brief The srcx, srcy is relative to its parent.
 		 */
 		Rect bound{};
-		Elem* parent{nullptr};
+		Group* parent{nullptr};
 		mutable ::UI::Root* root{nullptr};
-
-		//TODO abstact this if possible
-		std::vector<std::unique_ptr<Elem>> children{};
-		std::set<Elem*> toRemove{};
 
 		std::unordered_set<Elem*> focusTarget{};
 
@@ -108,23 +106,14 @@ export namespace UI {
 			}
 
 			if(elem->fillParentY){
-				bound.setSrcX(margin_bottomLeft.y);
-				bound.setWidth(getHeight() - marginHeight());
+				bound.setSrcY(margin_bottomLeft.y);
+				bound.setHeight(getHeight() - marginHeight());
 			}
 
 			return bound;
 		}
 
-		virtual bool layout_fillParent() {
-			if(parent) {
-				if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
-					bound = rect;
-					return true;
-				}
-			}
-
-			return false;
-		}
+		virtual bool layout_fillParent();
 
 		[[nodiscard]] bool isFillParentX() const {
 			return fillParentX;
@@ -143,35 +132,16 @@ export namespace UI {
 		virtual void applySettings() {
 		}
 
-		virtual void layoutChildren() {
-			for(const auto& child : children) {
-				if(!child->ignoreLayout())child->layout();
-			}
-		}
-
 		virtual bool ignoreLayout() const {
 			return !visiable;
 		}
 
 		virtual void draw() const {
 			drawBackground();
-			drawChildren();
 		}
 
-		virtual void modifyAddedChildren(Elem* elem) {
-			childrenCheck(elem);
-			elem->parent = this;
-			elem->changed();
-			changed();
-			elem->setRoot(root);
-		}
-
-		void setRoot(Root* const root) {
+		virtual void setRoot(Root* const root) {
 			this->root = root;
-
-			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [root](auto& elem) {
-				elem->setRoot(root);
-			});
 		}
 
 		void setFillparentX(const bool val = true) {
@@ -191,34 +161,6 @@ export namespace UI {
 		void setFillparent(const bool valX = true, const bool valY = true) {
 			setFillparentX(valX);
 			setFillparentY(valY);
-		}
-
-		virtual void addChildren(std::unique_ptr<Elem>&& elem) {
-			modifyAddedChildren(elem.get());
-			children.push_back(std::forward<std::unique_ptr<Elem>>(elem));
-		}
-
-		virtual void addChildren(std::unique_ptr<Elem>&& elem, const size_t depth) {
-			if(depth >= children.size()) {
-				addChildren(std::forward<std::unique_ptr<Elem>>(elem));
-			}else {
-				modifyAddedChildren(elem.get());
-				children.insert(children.begin() + depth, std::forward<std::unique_ptr<Elem>>(elem));
-			}
-		}
-
-		virtual void addChildren(Elem* elem) {
-			modifyAddedChildren(elem);
-			children.emplace_back(elem);
-		}
-
-		virtual void addChildren(Elem* elem, const size_t depth) {
-			if(depth >= children.size()) {
-				addChildren(elem);
-			}else {
-				modifyAddedChildren(elem);
-				children.insert(children.begin() + depth, std::unique_ptr<Elem>(elem));
-			}
 		}
 
 		[[nodiscard]] bool touchDisabled() const {
@@ -243,41 +185,19 @@ export namespace UI {
 
 		virtual void drawBackground() const;
 
-		virtual void drawChildren() const {
-			for(const auto& elem : children) {
-				elem->maskOpacity *= maskOpacity;
-				elem->draw();
-				elem->maskOpacity = 1.0f;
-			}
-		}
-
-		[[nodiscard]] Elem* getParent() const {
-			return parent;
-		}
+		[[nodiscard]] Group* getParent() const;
 
 		void setDrawer(ElemDrawer* drawer);
 
-		Elem* setParent(Elem* const parent) {
-			Elem* former = parent;
-			this->parent = parent;
+		Group* setParent(Group* parent);
 
-			return former;
-		}
-
-		virtual Elem& prepareRemove() {
-			if(parent == nullptr) {
-				throw ext::NullPointerException{"This Elem: " + name + " Doesn't Have A Parent!"};
-			}
-			parent->toRemove.insert(this);
-
-			return *this;
-		}
+		virtual Elem& prepareRemove();
 
 		[[nodiscard]] bool endingRow() const {
 			return endRow;
 		}
 
-		void setEndingRow(const bool end) {
+		void setEndRow(const bool end) {
 			endRow = end;
 		}
 
@@ -343,23 +263,11 @@ export namespace UI {
 			return bound;
 		}
 
-
-		virtual std::vector<std::unique_ptr<Elem>>& getChildren() {
-			return children;
-		}
-
 		virtual void calAbsolute(Elem* parent) {
 			Geom::Vector2D vec{parent->absoluteSrc};
 			vec.add(bound.getSrcX(), bound.getSrcY());
 			if(vec == absoluteSrc)return;
 			absoluteSrc.set(vec);
-			calAbsoluteChildren();
-		}
-
-		virtual void calAbsoluteChildren() {
-			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& elem) {
-				elem->calAbsolute(this);
-			});
 		}
 
 		Geom::Vector2D& getAbsSrc() {
@@ -369,11 +277,6 @@ export namespace UI {
 		virtual int elemSerializationID() {
 			return 0;
 		}
-
-		bool hasChildren() const {
-			return !children.empty();
-		}
-
 		[[nodiscard]] Event::EventManager& getInputListener() {
 			return inputListener;
 		}
@@ -382,47 +285,26 @@ export namespace UI {
 			return inputListener;
 		}
 
-		template <Concepts::Invokable<void(Elem*)> Func>
-		void iterateAll(const Func& func) {
-			func(this);
-
-			for (const auto& child : getChildren()) {
-				child->iterateAll(func);
-			}
-		}
-
 		[[nodiscard]] bool hasChanged() const {
 			return layoutChanged;
 		}
 
-		virtual void changed() const {
-			layoutChanged = true;
-			if(parent)parent->changed();
-		}
+		virtual void changed() const;
 
 		void toString(std::ostream& os, const int depth) const {
 			//TODO tree print support
 		}
 
 		virtual void update(float delta){
-			removePosted();
-			updateChildren(delta);
+
 		}
 
-		virtual void removePosted() {
-			if(toRemove.empty() || children.empty())return;
-			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
-				return toRemove.contains(ptr.get());
-			});
-			if(itr == children.end())return;
-			children.erase(itr);
-			toRemove.clear();
+		virtual std::vector<std::unique_ptr<Elem>>* getChildren() {
+			return nullptr;
 		}
 
-		virtual void updateChildren(const float delta) {
-			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [delta](const std::unique_ptr<Elem>& elem) {
-				elem->update(delta);
-			});
+		virtual bool hasChildren() const {
+			return false;
 		}
 
 		bool interactive() const {
@@ -433,11 +315,7 @@ export namespace UI {
 			return inbound(screenPos);
 		}
 
-		virtual bool inbound(const Geom::Vector2D& screenPos) const {
-			if(touchbility == TouchbilityFlags::disabled)return false;
-			if(parent != nullptr && !parent->inbound_validToParent(screenPos))return false;
-			return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
-		}
+		virtual bool inbound(const Geom::Vector2D& screenPos) const;
 
 		bool isFocusedKey() const;
 
@@ -465,6 +343,11 @@ export namespace UI {
 
 		[[nodiscard]] float getHeight() const {
 			return bound.getHeight();
+		}
+
+		void zerolizeMargin() {
+			margin_bottomLeft.setZero();
+			margin_topRight.setZero();
 		}
 
 		virtual void childrenCheck(const Elem* ptr) {

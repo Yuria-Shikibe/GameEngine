@@ -2,11 +2,13 @@ module ;
 
 export module Graphic.Color;
 
+import <iomanip>;
+import <sstream>;
 import <string>;
 import Math;
 import Math.Bit;
 import Geom.Vector3D;
-import <sstream>;
+
 
 export namespace Graphic{
 	using std::max;
@@ -28,10 +30,10 @@ export namespace Graphic{
 		static constexpr unsigned int g_Offset = 16;
 		static constexpr unsigned int b_Offset = 8 ;
 		static constexpr unsigned int a_Offset = 0 ;
-		static constexpr unsigned int a_Bits = 0x00'00'00'ff;
-		static constexpr unsigned int b_Bits = 0x00'00'ff'00;
-		static constexpr unsigned int g_Bits = 0x00'ff'00'00;
-		static constexpr unsigned int r_Bits = 0xff'00'00'00;
+		static constexpr unsigned int a_Mask = 0x00'00'00'ff;
+		static constexpr unsigned int b_Mask = 0x00'00'ff'00;
+		static constexpr unsigned int g_Mask = 0x00'ff'00'00;
+		static constexpr unsigned int r_Mask = 0xff'00'00'00;
 
 	public:
 		float r = 0, g = 0, b = 0, a = 0;
@@ -54,26 +56,6 @@ export namespace Graphic{
 
 		Color(const float r, const float g, const float b): Color(r, g, b, 1){}
 
-		Color(Color&& other) noexcept {
-			std::memcpy(this, &other, sizeof(Color));
-		}
-
-		Color(const Color& other){
-			std::memcpy(this, &other, sizeof(Color));
-		}
-
-		Color& operator=(const Color& other){
-			if (this == &other) return *this;
-			std::memcpy(this, &other, sizeof(Color));
-			return *this;  // NOLINT(misc-unconventional-assign-operator)
-		}
-
-		Color& operator=(Color&& other) noexcept{
-			if (this == &other) return *this;
-			std::memcpy(this, &other, sizeof(Color));
-			return *this;  // NOLINT(misc-unconventional-assign-operator)
-		}
-
 		static size_t hash_value(const Color& obj){
 			return obj.hashCode();
 		}
@@ -87,7 +69,9 @@ export namespace Graphic{
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const Color& obj){
-			return os << obj.toString();
+			os << std::setw(8) << std::setfill('0') << std::hex << (static_cast<colorBits>(255 * obj.r) << 24 | static_cast<colorBits>(255 * obj.g) << 16 | static_cast<colorBits>(255 * obj.b) << 8 | static_cast<colorBits>(255 * obj.a));
+
+			return os;
 		}
 
 		friend bool operator==(const Color& lhs, const Color& rhs){
@@ -565,13 +549,8 @@ export namespace Graphic{
 
 		[[nodiscard]] std::string toString() const{
 			std::stringstream ss;
-			ss << std::hex << (static_cast<colorBits>(255 * r) << 24 | static_cast<colorBits>(255 * g) << 16 | static_cast<colorBits>(255 * b) << 8 | static_cast<colorBits>(255 * a));
 
-			if (const int paddingSize = 8 - static_cast<int>(ss.str().size()); paddingSize > 0) {
-				const std::string hex = ss.str();
-				ss.str(std::string(paddingSize, '0'));
-				ss << hex;
-			}
+			ss << *this;
 
 			return ss.str();
 		}
@@ -733,23 +712,23 @@ export namespace Graphic{
 
 		static colorBits muli(const colorBits ca, const colorBits cb){
 			const colorBits
-					rV = (ca & 0xff000000) >> 24,
-					gV = (ca & 0x00ff0000) >> 16,
-					bV = (ca & 0x0000ff00) >> 8,
-					aV = ca & 0x000000ff,
-					r2 = (cb & 0xff000000) >> 24,
-					g2 = (cb & 0x00ff0000) >> 16,
-					b2 = (cb & 0x0000ff00) >> 8,
-					a2 = cb & 0x000000ff;
+					rV = (ca & r_Mask) >> r_Offset,
+					gV = (ca & g_Mask) >> g_Offset,
+					bV = (ca & b_Mask) >> b_Offset,
+					aV = ca & a_Mask,
+					r2 = (cb & r_Mask) >> r_Offset,
+					g2 = (cb & g_Mask) >> g_Offset,
+					b2 = (cb & b_Mask) >> b_Offset,
+					a2 = cb & a_Mask;
 			return clampf(static_cast<float>(rV * r2) / 255.0f) << 24 | clampf(static_cast<float>(gV * g2) / 255.0f) << 16 | clampf(static_cast<float>(bV * b2) / 255.0f) << 8 | clampf(static_cast<float>(aV * a2) / 255.0f);
 		}
 
 		static colorBits muli(const colorBits rgba, const float value){
 			const colorBits
-					rV = (rgba & 0xff000000) >> 24,
-					gV = (rgba & 0x00ff0000) >> 16,
-					bV = (rgba & 0x0000ff00) >> 8,
-					aV = rgba & 0x000000ff;
+					rV = (rgba & r_Mask) >> r_Offset,
+					gV = (rgba & g_Mask) >> g_Offset,
+					bV = (rgba & b_Mask) >> b_Offset,
+					aV = rgba & a_Mask;
 			return clampf(static_cast<float>(rV) * value) << 24 | clampf(static_cast<float>(gV) * value) << 16 | clampf(static_cast<float>(bV) * value) << 8 | aV;
 		}
 

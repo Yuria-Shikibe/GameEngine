@@ -32,4 +32,6 @@ export namespace Align {
 	bool operator &(const Mode l, const Mode r) {
 		return codeOf(l) & codeOf(r);
 	}
+
+	using enum Mode;
 }

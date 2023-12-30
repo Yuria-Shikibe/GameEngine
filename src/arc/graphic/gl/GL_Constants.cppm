@@ -30,7 +30,14 @@ export typedef char GLcharARB;
 //export typedef unsigned int GLhandleARB;
 //#endif
 
+export namespace GL {
+	inline constexpr int VERT_GROUP_SIZE = 2 + 2 + 4 + 4;
+	inline constexpr int VERT_GROUP_COUNT = 4;
+	inline constexpr int VERT_LENGTH_STD = VERT_GROUP_COUNT * VERT_GROUP_SIZE;
+}
+
 export{
+
 //	typedef void (*GLFWglproc)(void);
 //	typedef void (*GLFWvkproc)(void);
 //	typedef struct GLFWmonitor GLFWmonitor;

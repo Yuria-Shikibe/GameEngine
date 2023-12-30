@@ -19,7 +19,9 @@ export namespace Event {
 	}
 
 	class EventManager {
+#ifdef _DEBUG
 		std::set<std::type_index> registered{};
+#endif
 		std::unordered_map<std::type_index, std::vector<std::function<void(const void*)>>> events;
 
 	public:
@@ -29,7 +31,6 @@ export namespace Event {
 #ifdef _DEBUG
 			if(!registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
-
 			if (const auto itr = events.find(indexOf<T>()); itr != events.end()) {
 				for (const auto& listener : itr->second) {
 					listener(&event);
@@ -43,7 +44,6 @@ export namespace Event {
 #ifdef _DEBUG
 			if(!registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
-
 			const auto eventType = std::type_index(typeid(T));
 			events[eventType].emplace_back([fun = std::forward<Func>(func)](const void* event) {
 				fun(*static_cast<const T*>(event));
@@ -52,24 +52,28 @@ export namespace Event {
 
 		template <Concepts::Derived<EventType> ...T>
 		void registerType() {
+#ifdef _DEBUG
 			(registered.insert(std::type_index(typeid(T))), ...);
+#endif
 		}
 
 		[[nodiscard]] explicit EventManager(std::set<std::type_index>&& registered)
-			: registered(std::move(registered)) {
-		}
+#ifdef _DEBUG
+			: registered(std::move(registered))
+#endif
+		{}
 
 		[[nodiscard]] explicit EventManager(const std::initializer_list<std::type_index> registeredList)
-			: registered(registeredList) {
-		}
+#ifdef _DEBUG
+			: registered(registeredList)
+#endif
+		{}
 
 		[[nodiscard]] EventManager() = default;
 	};
 
 	enum class CycleSignalState {
 		begin, end,
-		/** \brief Internal Index Count Usage*/
-		maxCount
 	};
 
 	/**
@@ -77,9 +81,9 @@ export namespace Event {
 	 * \tparam T Used Enum Type
 	 * \tparam maxsize How Many Items This Enum Contains
 	 */
-	template <Concepts::Enum T, T maxsize>
+	template <Concepts::Enum T, size_t maxsize>
 	class SignalManager {
-		std::array<std::vector<std::function<void()>>, static_cast<size_t>(maxsize)> events{};
+		std::array<std::vector<std::function<void()>>, maxsize> events{};
 
 	public:
 		void fire(const T event) {
@@ -90,20 +94,12 @@ export namespace Event {
 
 		template <Concepts::Invokable<void()> Func>
 		void on(const T index, Func&& func){
-			events[static_cast<size_t>(index)].emplace_back(func);
+			events[static_cast<size_t>(index)].emplace_back(std::forward<Func>(func));
 		}
 	};
 
-	//TODO Move these to other places
-	struct Draw_After   final : EventType {};
-	struct Draw_Post    final : EventType {};
-	struct Draw_Prepare final : EventType {};
-	inline EventManager generalUpdateEvents{
-		indexOf<Draw_After>(),
-		indexOf<Draw_Post>(),
-		indexOf<Draw_Prepare>()
-	};
+	using CycleSignalManager = Event::SignalManager<Event::CycleSignalState, 2>;
 
-	using CycleSignalManager = Event::SignalManager<Event::CycleSignalState, Event::CycleSignalState::maxCount>;
+	using enum CycleSignalState;
 }
 

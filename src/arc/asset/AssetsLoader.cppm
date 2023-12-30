@@ -18,7 +18,7 @@ import <ranges>;
 import <vector>;
 
 export namespace Assets{
-class AssetsLoader;
+	class AssetsLoader;
 
 	enum class LoadType{
 		text,
@@ -46,7 +46,7 @@ class AssetsLoader;
 		using Handler = AssetsTaskHandler;
 		using Task = ext::ProgressTask<void, Handler>*;
 
-		static constexpr auto maxLoadSpacing = std::chrono::duration<long long, std::milli>(330);
+		static constexpr auto maxLoadSpacing = ::std::chrono::milliseconds(330);
 
 		ext::Timestamper timer{};
 		std::unordered_map<Task, TaskFuture> tasks{};

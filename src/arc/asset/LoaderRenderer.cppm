@@ -4,7 +4,7 @@ export module Assets.LoaderRenderer;
 
 import Align;
 
-import Graphic.RendererImpl;
+import Core.Renderer;
 
 import Graphic.Draw;
 import Graphic.Color;
@@ -30,7 +30,7 @@ import GL;
 using namespace Graphic;
 
 export namespace Assets {
-	class LoaderRenderer final : public Graphic::RendererImpl {
+	class LoaderRenderer final : public Core::Renderer{
 		Assets::AssetsLoader* loader{nullptr};
 		GL::FrameBuffer drawFBO{};
 		Geom::Matrix3D mat{};
@@ -46,7 +46,7 @@ export namespace Assets {
 		float lastThreshold = 0.0f;
 
 		[[nodiscard]] LoaderRenderer(const unsigned int w, const unsigned int h, Assets::AssetsLoader* const loader)
-			: RendererImpl(w, h), loader(loader), drawFBO(w, h) {
+			: Renderer(w, h), loader(loader), drawFBO(w, h) {
 
 			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h));
 
@@ -195,7 +195,7 @@ export namespace Assets {
 		}
 
 		void draw() override {
-			defaultFrameBuffer->bind();
+			defaultFrameBuffer.bind();
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
@@ -205,9 +205,16 @@ export namespace Assets {
 
 			drawMain();
 
-			Assets::PostProcessors::bloom->apply(&drawFBO, defaultFrameBuffer.get());
+			const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
+			Assets::PostProcessors::bloom->blur.setProcessTimes(4);
+			Assets::PostProcessors::bloom->setIntensity(1.0f);
 
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer->getID());
+			Assets::PostProcessors::bloom->apply(&drawFBO, &defaultFrameBuffer);
+
+			Assets::PostProcessors::bloom->blur.setProcessTimes(times);
+			Assets::PostProcessors::bloom->setIntensity(1.1f);
+
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer.getID());
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}

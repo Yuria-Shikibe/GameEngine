@@ -1,7 +1,3 @@
-//
-// Created by Matrix on 2023/11/27.
-//
-
 module;
 
 #include <ft2build.h>
@@ -466,7 +462,7 @@ export namespace Font {
 	struct FontManager final : ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 		bool quickInit = false;
 		std::vector<std::unique_ptr<FontFlags>> flags{};
-		Event::SignalManager<FontLoadState, FontLoadState::maxCount> fontLoadListeners{};
+		Event::CycleSignalManager fontLoadListeners{};
 		OS::File rootCacheDir{};
 		std::unique_ptr<FontCache> manager{nullptr};
 
@@ -739,7 +735,7 @@ export namespace Font {
 	public:
 		void load() { //Dose not support hot load!
 			//User Customized fonts to load;
-			fontLoadListeners.fire(FontLoadState::begin);
+			fontLoadListeners.fire(Event::begin);
 
 			//Init face data;
 			const bool requiresRecache = checkCahce();
@@ -776,7 +772,7 @@ export namespace Font {
 
 			//Release resouces
 
-			fontLoadListeners.fire(FontLoadState::end);
+			fontLoadListeners.fire(Event::end);
 			setProgress(1.0f);
 
 			setDone();

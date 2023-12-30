@@ -2,10 +2,10 @@ module;
 
 #include <thread>
 
-module OS;
+module RuntimeException;
 
 import Core;
-import RuntimeException;
+import OS;
 
 void ext::RuntimeException::postProcess() const {
 	if(Core::log) {

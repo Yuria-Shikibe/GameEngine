@@ -11,7 +11,6 @@ import File;
 import GlyphArrangement;
 import OS;
 import Core.Renderer;
-
 import Event;
 
 import <ranges>;

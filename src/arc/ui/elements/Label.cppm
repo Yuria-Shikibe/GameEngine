@@ -24,6 +24,10 @@ export namespace UI {
 		bool textChanged = false;
 
 	public:
+		[[nodiscard]] Label() {
+			setText("");
+		}
+
 		void textUpdated() {
 			textChanged = true;
 		}

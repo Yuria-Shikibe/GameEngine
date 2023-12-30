@@ -1,22 +1,12 @@
 module;
 
-export module UI.Table;
-export import UI.Group;
-export import UI.Elem;
+export module UI.Cell;
 
-import <vector>;
-import <memory_resource>;
-import <array>;
-import <algorithm>;
-import <execution>;
-
-import Geom.Shape.Rect_Orthogonal;
 import Align;
 import Concepts;
+import UI.Elem;
+import <memory>;
 
-using Rect = Geom::Shape::OrthoRectFloat;
-
-//TODO Using Pool to avoid heap allocation
 export namespace UI {
 	/**
 	 * @code
@@ -139,7 +129,7 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setMargin(const float left, const float right, const float top, const float bottom) {
+		LayoutCell& setMargin(const float left, const float right, const float bottom, const float top) {
 			marginLeft = left;
 			marginRight = right;
 			marginBottom = bottom;
@@ -183,24 +173,10 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setSrcScale(const float xScl, const float yScl, const bool move = true) {
+		LayoutCell& setSrcScale(const float xScl, const float yScl) {
 			changed();
-
-			if(move) {
-				const float dstX = widthScale();
-				const float dstY = heightScale();
-
-				srcxScale = xScl;
-				srcyScale = yScl;
-
-				endxScale = xScl + dstX;
-				endyScale = yScl + dstY;
-			}else {
-				srcxScale = xScl;
-				srcyScale = yScl;
-			}
-
-
+			srcxScale = xScl;
+			srcyScale = yScl;
 
 			return *this;
 		}
@@ -213,7 +189,7 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center, const bool clearRelativeMove = true) {
+		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center) {
 			changed();
 			if(align & Align::Mode::top) {
 				srcyScale = endyScale - yScl;
@@ -232,8 +208,6 @@ export namespace UI {
 				endxScale = 0.5f + xScl * 0.5f;
 				srcxScale = 0.5f - xScl * 0.5f;
 			}
-
-			if(clearRelativeMove)this->clearRelativeMove();
 
 			return *this;
 		}
@@ -323,11 +297,8 @@ export namespace UI {
 				xSign = 1;
 			}
 
-			const bool left   = xSign == 1;
-			const bool bottom = ySign == 1;
-
-			const float xMove = xSign * ((left   ? (padLeft + marginLeft + parent->margin_bottomLeft.x) : (padRight + marginRight + parent->margin_topRight.x)) + getCellWidth() * srcxScale);
-			const float yMove = ySign * ((bottom ? (padBottom + marginBottom + parent->margin_bottomLeft.y) : (padTop + marginTop + parent->margin_topRight.y)) + getCellHeight() * srcyScale);
+			const float xMove = xSign * ((xSign == 1 ? (padLeft + marginLeft) : (padRight + marginRight)) + getCellWidth() * srcxScale);
+			const float yMove = ySign * ((ySign == 1 ? (padBottom + marginBottom) : (padTop + marginTop)) + getCellHeight() * srcyScale);
 
 			item->getBound().move(xMove, yMove);
 
@@ -345,119 +316,4 @@ export namespace UI {
 			return dynamic_cast<T&>(*item);
 		}
 	};
-
-	class Table : public Group{
-	public:
-		size_t rowsCount = 0;
-		size_t maxElemPerRow = 0;
-
-		[[nodiscard]] Table() {
-			touchbility = TouchbilityFlags::childrenOnly;
-
-			color.a = 0.5f;
-		}
-
-		LayoutCell defaultCellLayout{nullptr};
-
-		std::vector<LayoutCell> cells{};
-
-		bool relativeLayoutFormat = true;
-
-		//TODO mess
-		void layoutRelative();
-
-		void layoutIrrelative();
-
-		void layout() override {
-
-			layout_fillParent();
-
-			layoutChanged = false;
-
-			if(relativeLayoutFormat) {
-				layoutRelative();
-			}else {
-				layoutIrrelative();
-			}
-
-			layoutChildren();
-
-			layoutChanged = false;
-		}
-
-		[[nodiscard]] size_t rows() const {
-			return rowsCount;
-		}
-
-		[[nodiscard]] size_t columns() const {
-			return maxElemPerRow;
-		}
-
-		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func>
-		LayoutCell& add(Func&& func = nullptr) {
-			T* elem = new T;
-			LayoutCell& cell = add(elem);
-			cell.applyLayout(defaultCellLayout);
-
-			if(func) {
-				func(elem);
-			}
-
-			return cell;
-		}
-
-		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func = nullptr_t>
-		LayoutCell& add(const size_t depth = std::numeric_limits<size_t>::max(), Func&& func = nullptr) {
-			T* elem = new T;
-			LayoutCell& cell = add(elem, depth);
-			cell.applyLayout(defaultCellLayout);
-
-			if(func) {
-				func(elem);
-			}
-
-			return cell;
-		}
-
-		LayoutCell& add(Elem* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
-			addChildren(elem, depth);
-			if(elem->endingRow())rowsCount++;
-			return cells.emplace_back(elem).applyLayout(defaultCellLayout);
-		}
-
-		void removePosted() override {
-			if(toRemove.empty() || children.empty())return;
-			const auto&& itrCell = std::remove_if(std::execution::par_unseq, cells.begin(), cells.end(), [this](const LayoutCell& cell) {
-				return toRemove.contains(cell.item);
-			});
-
-			if(itrCell == cells.end())return;
-
-			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
-				return toRemove.contains(ptr.get());
-			});
-
-			cells.erase(itrCell);
-			children.erase(itr);
-			toRemove.clear();
-		}
-
-		void lineFeed() {
-			if(!relativeLayoutFormat || children.empty())return;
-
-			rowsCount++;
-			children.back()->setEndRow(true);
-		}
-
-		void update(const float delta) override {
-			//TODO move this into listener
-			if(layoutChanged) {
-				layout();
-			}
-
-			Group::update(delta);
-		}
-	};
 }
-
-

@@ -20,7 +20,7 @@ import StackTrace;
 
 import Graphic.Draw;
 import Graphic.Pixmap;
-import Graphic.RendererImpl;
+import Core.Renderer;
 import Graphic.Viewport.Viewport_OrthoRect;
 import Graphic.Viewport;
 
@@ -88,7 +88,9 @@ import Assets.Manager;
 
 import TimeMark;
 
+import UI.Elem;
 import UI.Root;
+import UI.Table;
 import UI.Label;
 import UI.ScrollPane;
 import UI.ElemDrawer;
@@ -101,53 +103,82 @@ using namespace Draw;
 using namespace GL;
 using Geom::Vector2D;
 
-// using Assets::Manager;
-// using Core::Camera2D;
+std::string currentCoordText{" "};
+std::string_view* currentCoord;
 
 void setupUITest(){
-	/*{
-		auto& cell = Core::uiRoot->root->add(new UI::Label{});
-		cell.setAlign(Align::Mode::top_left).setSizeScale(0.35f, 0.2f);
-		cell.marginLeft = cell.marginRight = cell.marginBottom = cell.marginTop = 10;
+	const auto HUD = new UI::Table{};
+
+	Core::uiRoot->root->add(HUD).fillParent().setAlign(Align::center);
+
+	HUD->relativeLayoutFormat = false;
+	HUD->zerolizeMargin();
+	HUD->setDrawer(UI::emptyDrawer.get());
+
+	{
+
+		auto& cell = HUD->add(new UI::Label{});
+		cell.setAlign(Align::top_left).setSizeScale(0.25f, 0.2f);
+		cell.marginRight = cell.marginBottom = 10;
 		cell.item->color = Colors::RED;
 		cell.item->color.mul(0.6f);
 		cell.clearRelativeMove();
 		cell.as<UI::Label>().setText("test 1231231231");
 		cell.as<UI::Label>().setDynamic(true);
 
-		auto& view = cell.as<UI::Label>().getView();
+		currentCoord = &cell.as<UI::Label>().getView();
 
 		cell.item->getInputListener().on<UI::MouseActionPress>([item = cell.item](auto& e) {
-		if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
-		if(e.buttonID == Ctrl::RMB) {
-			item->color = Colors::RED;
-			item->color.mul(0.6f);
-		}
+			if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
+			if(e.buttonID == Ctrl::RMB) {
+				item->color = Colors::RED;
+				item->color.mul(0.6f);
+			}
 		});
 
-		auto& cell2 = Core::uiRoot->root->add(new UI::Table{});
-		cell2.item->color = Colors::GREEN;
-		cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.3f, 0.3f);
-		cell2.clearRelativeMove();
+		HUD->add(new UI::Table{})
+			.setAlign(Align::Mode::top_left)
+			.setSizeScale(0.4f, 0.08f)
+			.setSrcScale(0.25f, 0.0f)
+			.setMargin(10, 0, 0, 0);
+		HUD->add(new UI::Table{})
+			.setAlign(Align::Mode::top_left)
+			.setSizeScale(0.1f, 0.6f)
+			.setSrcScale(0.0f, 0.2f)
+			.setMargin(0, 0, 10, 10);
 
-		UI::Table& table = cell2.as<UI::Table>();
+		{
+			auto& cell2 = HUD->add(new UI::Table{});
+			cell2.item->color = Colors::GREEN;
+			cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.25f, 0.2f).setMargin(0, 10, 0, 10);
+			cell2.clearRelativeMove();
 
-		table.add(new UI::Elem{});
+			UI::Table& table = cell2.as<UI::Table>();
 
-		table.endRow();
+			table.add(new UI::Elem{});
 
-		table.add(new UI::Elem{});
-		table.add(new UI::Elem{});
-	}*/
+			table.lineFeed();
+
+			table.add(new UI::Elem{});
+			table.add(new UI::Elem{});
+		}
+
+		HUD->add(new UI::Table{})
+			.setAlign(Align::Mode::bottom_left)
+			.setSizeScale(0.075f, 0.2f)
+			.setSrcScale(0.25f, 0.0f)
+			.setMargin(10, 0, 0, 10);
+	}
 
 	{
 		auto pane = new UI::ScrollPane{};
 
 		auto rt = new UI::Table{};
 		rt->setSize(400, 900);
-		pane->addChildren(rt);
+		rt->setFillparentX();
+		pane->setItem(rt);
 
-		Core::uiRoot->root->add(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
+		HUD->add(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
 
 		auto t = new UI::Table{};
 		t->color = Colors::RED;
@@ -155,43 +186,29 @@ void setupUITest(){
 		rt->add(t);
 		// rt->add(new UI::Elem);
 
-		rt->endRow();
-		rt->add(new UI::Elem);
-		rt->add(new UI::Elem);
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop= 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		t->endRow();
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		{
-			auto& inner = t->add(new UI::Elem{}).fillParentX().wrapY().setAlign(Align::Mode::center);
-			inner.marginLeft = inner.marginRight = inner.marginBottom = inner.marginTop = 10;
-			inner.item->setHeight(200.0f);
-		}
-
-		Core::uiRoot->update(0.0f);
+		rt->lineFeed();
+		rt->add(new UI::Elem{});
+		rt->add(new UI::Elem{});
 	}
 
+	{
+		HUD->add(new UI::Table{})
+		   .setAlign(Align::top_right)
+		   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
+		   .setMargin(10, 0, 10, 0);
+		//
+		HUD->add(new UI::Table{})
+			.setAlign(Align::top_right)
+			.setSizeScale(0.225f - 0.185f, 0.575f).setSrcScale(0.185f, 0.25f)
+			.setMargin(10, 10, 10, 0);
+		//
+		HUD->add(new UI::Table{})
+			.setAlign(Align::Mode::bottom_right)
+			.setSizeScale(0.3f, 0.15f)
+			.setMargin(10, 0, 10, 0);
+	}
 
 	/*{
-		auto& cellp = Core::uiRoot->root->add(new UI::ScrollPane{}).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
-		cellp.marginLeft = cellp.marginRight = cellp.marginBottom = cellp.marginTop = 50;
 
 		auto t = new UI::Table{};
 
@@ -219,7 +236,8 @@ void setupUITest(){
 
 		inner.item->setHeight(200.0f);
 
-		cellp.as<UI::ScrollPane>().addChildren(t);
+		auto& cellp = Core::uiRoot->root->add(t).setAlign(Align::Mode::bottom_right).setSizeScale(0.225f, 0.33f).clearRelativeMove();
+		cellp.marginLeft = cellp.marginRight = cellp.marginBottom = cellp.marginTop = 50;
 	}*/
 }
 
@@ -235,9 +253,9 @@ void init(const int argc, char* argv[]) {
 	Core::initCore();
 
 	OS::loadListeners(Core::mainWindow);
-
+	//
 	Assets::loadBasic();
-
+	//
 	OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")).get());
 
 	Core::initCore_Post([] {
@@ -257,18 +275,16 @@ void init(const int argc, char* argv[]) {
 		int w, h;
 
 		glfwGetWindowSize(Core::mainWindow, &w, &h);
-		Core::renderer = new Graphic::RendererImpl{static_cast<unsigned>(w), static_cast<unsigned>(h)};
+		Core::uiRoot = new UI::Root{};
+		Core::renderer = new Core::Renderer{static_cast<unsigned>(w), static_cast<unsigned>(h)};
 
-		Ctrl::registerCommands(Core::input);
-
-		Core::renderer->registerSynchronizedResizableObject(Core::camera);
+		Core::uiRoot->resize(w, h);
 		Core::camera->resize(w, h);
 
-		Core::uiRoot = new UI::Root{};
-		Core::uiRoot->root->setRoot(Core::uiRoot);
-		Core::uiRoot->root->setDrawer(UI::emptyDrawer.get());
-		Core::uiRoot->resize(w, h);
+		Core::renderer->registerSynchronizedResizableObject(Core::camera);
 		Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
+
+		Ctrl::registerCommands(Core::input);
 		OS::registerListener(Core::uiRoot);
 	});
 
@@ -318,10 +334,8 @@ int main(const int argc, char* argv[]) {
 	// UI Test
 	setupUITest();
 
-	auto sound = Core::audio->loadFile_delayed(Assets::soundDir.subFile("flak.mp3"));
-
-	Core::input->registerKeyBind(Ctrl::KEY_K, Ctrl::Act_Press, [] {
-		Core::audio->play(Assets::Sounds::largeExplosion);
+	Core::input->registerKeyBind(Ctrl::KEY_K, Ctrl::Act_Repeat, [] {
+		Core::audio->play(Assets::Sounds::laser5);
 	});
 
 	//Draw Test
@@ -335,37 +349,22 @@ int main(const int argc, char* argv[]) {
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
-	//
-	// auto&& file = Assets::assetsDir.subFile("test.txt");
-	// const auto coordCenter = Font::obtainLayoutPtr();
-	// std::stringstream ss{};
-	//
-	// const auto layout = Font::obtainLayoutPtr();
-	// layout->maxWidth = 720;
-	//
-	// Font::glyphParser->parse(layout, file.readString());
-	// layout->setAlign(Align::Mode::bottom_left);
-	// layout->move(80, 30);
-	//
-	// std::string str;
-	//
-	Event::generalUpdateEvents.on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& d){
+
+	std::stringstream ss{};
+	Geom::Matrix3D mat{};
+	const auto coordCenter = Font::obtainLayoutPtr();
+
+	Core::renderer->getListener().on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& e){
 		Draw::meshBegin(Assets::Meshes::coords);
 		Draw::meshEnd(true);
 		//
-		Core::renderer->frameBegin(&frameBuffer);
-		Core::renderer->frameBegin(&multiSample);
+		e.renderer->frameBegin(&frameBuffer);
+		e.renderer->frameBegin(&multiSample);
 		//
-		const auto center = Core::camera->screenCenter();
+		const auto cameraPos = Core::camera->screenCenter();
 		//
 		Draw::meshBegin(Core::batch->getMesh());
-		//
-		Draw::setLineStroke(3);
-		Draw::color(Colors::WHITE);
 
-		Draw::lineAngleCenter(center.getX(), center.getY(), 135.0f, 50.0f);
-
-		Draw::lineAngleCenter(center.getX(), center.getY(), 45, 50);
 		//
 		Draw::color();
 
@@ -374,47 +373,41 @@ int main(const int argc, char* argv[]) {
 		// layout->render();
 
 
-
-		Geom::Matrix3D mat{};
 		mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()), static_cast<float>(Core::renderer->getHeight()));
 
 		Core::batch->beginProjection(mat);
 
-		Draw::color(Colors::AQUA_SKY);
+		ss.str("");
+		ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " << cameraPos.getY() << ") | " << std::to_string(OS::getFPS());
 
-		constexpr float size = 80;
-		constexpr float spacing = size + 10;
+		currentCoordText = ss.str();
+		*currentCoord = currentCoordText;
+		Font::glyphParser->parse(coordCenter, *currentCoord);
 
-		Draw::color();
+		coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(155, 35);
+		coordCenter->setAlign(Align::Mode::bottom_left);
+		coordCenter->render();
+
+		Draw::setLineStroke(4);
+		Draw::lineSquare(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
 		Core::batch->endProjection();
-		//
-		//
-		// ss.str("");
-		// ss << "${font#tele}${scl#[0.52]}(" << std::fixed << std::setprecision(2) << center.getX() << ", " << center.getY() << " | " << std::to_string(OS::getFPS()) << ")";
-		// str = ss.str();
-		// view = std::string_view{str};
-		// Font::glyphParser->parse(coordCenter, view);
-		//
-		// coordCenter->offset.set(center).add(155, 35);
-		//
-		// coordCenter->setAlign(Align::Mode::bottom_left);
-		// coordCenter->render();
 
-		// Draw::rectLine(layout->bound, true, layout->offset);
-		//
+
+
+
 		Draw::setLineStroke(3);
 		Draw::color(Colors::BLUE, Colors::SKY, 0.745f);
 
 		Draw::setLineStroke(5);
-		Draw::poly(center.getX(), center.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
+		Draw::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
 			{ &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
 		);
 
 		Draw::flush();
 		Draw::meshEnd(Core::batch->getMesh(), false);
-		Core::renderer->frameEnd(Assets::PostProcessors::blendMulti);
-		Core::renderer->frameEnd(Assets::PostProcessors::bloom);
+		e.renderer->frameEnd(Assets::PostProcessors::blendMulti);
+		e.renderer->frameEnd(Assets::PostProcessors::bloom);
 	});
 
 	OS::setupLoop();

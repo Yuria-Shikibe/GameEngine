@@ -39,22 +39,21 @@ namespace OS{
 	std::thread::id mainThreadID{};
 
 	inline bool paused = false;
+
+	float FPS_reload = 0;
+	float totalFrames = 0;
+	unsigned int FPS_last = 0;
 }
 
 
 export namespace OS{
 	std::vector<std::string> args{};
 
-	enum class LoopSignal {
-		begin, end,
-		maxCount
-	};
-
-	void exitApplication(int s, const std::string& what);
+	void exitApplication(int s, std::string_view what);
 
 	void exitApplication(const int s) {exitApplication(s, "");}
 
-	Event::SignalManager<LoopSignal, LoopSignal::maxCount> updateSignalManager{};
+	Event::CycleSignalManager updateSignalManager{};
 
 
 	//Should Be Done In Application Launcher
@@ -80,8 +79,17 @@ export namespace OS{
 		return _deltaTime;
 	}
 
-	inline unsigned int getFPS() {
-		return static_cast<unsigned int>(1.0f / _deltaTime);
+	unsigned int getFPS() {
+		FPS_reload += _deltaTime;
+
+		totalFrames += 1.0f;
+		if(FPS_reload > 1.0f) {
+			FPS_last = static_cast<unsigned int>(totalFrames);
+			FPS_reload = 0.0f;
+			totalFrames = 0.0f;
+		}
+
+		return FPS_last;
 	}
 
 	// ReSharper disable once CppDFAConstantFunctionResult
@@ -221,13 +229,13 @@ export namespace OS{
 
 		postAsyncTasks.clear();
 
-		updateSignalManager.fire(LoopSignal::begin);
+		updateSignalManager.fire(Event::CycleSignalState::begin);
 
 		for(const auto & listener : applicationListeners){
 			listener->update(_deltaTick);
 		}
 
-		updateSignalManager.fire(LoopSignal::end);
+		updateSignalManager.fire(Event::CycleSignalState::end);
 	}
 }
 

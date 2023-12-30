@@ -8,6 +8,7 @@ import <array>;
 import Geom.Vector3D;
 export import Geom.Vector2D;
 import Math;
+import <ostream>;
 
 export namespace Geom{
 	using MatRaw = std::array<float, 9>;
@@ -106,7 +107,10 @@ export namespace Geom{
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const Matrix3D& obj) {
-			return os << obj.toString();
+			return os
+				<< "[" << obj.val[M00] << "|" << obj.val[M01] << "|" << obj.val[M02] << "]\n" //
+				<< "[" << obj.val[M10] << "|" << obj.val[M11] << "|" << obj.val[M12] << "]\n" //
+				<< "[" << obj.val[M20] << "|" << obj.val[M21] << "|" << obj.val[M22] << "]";
 		}
 
 		Matrix3D(const Matrix3D& other) {  // NOLINT(cppcoreguidelines-pro-type-member-init)
@@ -322,9 +326,8 @@ export namespace Geom{
 
 		[[nodiscard]] std::string toString() const {
 			std::stringstream ss;
-			ss << "[" << val[M00] << "|" << val[M01] << "|" << val[M02] << "]\n" //
-			   << "[" << val[M10] << "|" << val[M11] << "|" << val[M12] << "]\n" //
-			   << "[" << val[M20] << "|" << val[M21] << "|" << val[M22] << "]";
+
+			ss << *this;
 
 			return ss.str();
 		}

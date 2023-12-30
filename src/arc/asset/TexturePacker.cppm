@@ -11,11 +11,9 @@ import GL.Texture.Texture2D;
 import GL;
 // import GL.Constants;
 import Async;
-import OS.Handler;
 import RuntimeException;
 import File;
 import OS;
-import NativeUtil;
 import <algorithm>;
 import <string>;
 import <vector>;
@@ -115,7 +113,7 @@ export namespace Assets {
 
 	public:
 		OrthoRectUInt texMaxBound{2048, 2048};
-		std::string_view pageName{};
+		std::string pageName{};
 
 		std::vector<std::unique_ptr<GL::Texture2D>> textures{};
 
@@ -126,8 +124,8 @@ export namespace Assets {
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
 			const OrthoRectUInt& texMaxBound, const bool forcePack)
 			: cacheDir(cacheDir),
-			pageName(pageName),
 			texMaxBound(texMaxBound),
+			pageName(pageName),
 			forcePack(forcePack) {
 		}
 

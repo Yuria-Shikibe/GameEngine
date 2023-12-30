@@ -71,19 +71,31 @@ export namespace UI {
 	};
 
 	struct ElemDrawer {
-		const UIStyle* style{nullptr};
-
 		virtual ~ElemDrawer() = default;
 
 		[[nodiscard]] ElemDrawer() = default;
 
-		[[nodiscard]] explicit ElemDrawer(const UIStyle& style)
-			: style(&style) {
+		virtual void drawBackground(const UI::Elem* elem) const = 0;
+
+		virtual void applyToElem(Elem* elem) {
+
+		}
+	};
+
+	struct StyleDrawer : ElemDrawer{
+		const UIStyle* style{nullptr};
+
+		[[nodiscard]] StyleDrawer() = default;
+
+		[[nodiscard]] explicit StyleDrawer(const UIStyle* style)
+			: style(style) {
 		}
 
-		virtual void drawBackground(const UI::Elem* elem) const{
+		void drawBackground(const UI::Elem* elem) const override {
 			if(style)style->drawElem(elem);
 		}
+
+		void applyToElem(Elem* elem) override;
 	};
 
 	struct EdgeDrawer final : ElemDrawer{
@@ -97,6 +109,6 @@ export namespace UI {
 	};
 
 	// std::unique_ptr<ElemDrawer> defDrawer{std::make_unique<EdgeDrawer>()};
-	std::unique_ptr<ElemDrawer> defDrawer{std::make_unique<ElemDrawer>()};
+	ElemDrawer* defDrawer{nullptr};
 	std::unique_ptr<ElemDrawer> emptyDrawer{std::make_unique<EmptyDrawer>()};
 }

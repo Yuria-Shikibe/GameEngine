@@ -20,7 +20,6 @@ export namespace Graphic {
 	class BloomProcessor : public PostProcessor {
 	protected:
 		mutable FrameBuffer temp1{2, 2};
-		mutable FrameBuffer temp2{2, 2};
 
 	public:
 		ShaderProcessor thresHolder{};
@@ -35,7 +34,7 @@ export namespace Graphic {
 			setTargetState(GL_BLEND, false);
 
 			blur.setTargetState(this);
-			blur.setScale(scale);
+			blur.setScale(1.0f);
 
 			thresHolder.shaderHandler = [this](const Shader& shader) {
 				shader.setFloat("threshold", threshold);
@@ -46,7 +45,12 @@ export namespace Graphic {
 
 		float intensity_blo = 0.9f;
 		float intensity_ori = 1.225f;
-		float scale = 0.33f;
+		float scale = 0.25f;
+
+		void setIntensity(const float intensity) {
+			intensity_ori = intensity;
+			intensity_blo = intensity * 0.732f;
+		}
 
 		void setScale(const float scale) {
 			this->scale = scale;
@@ -57,15 +61,13 @@ export namespace Graphic {
 
 		void begin() const override {
 			temp1.clear();
-			temp2.clear();
 
 			temp1.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
-			temp2.resize(toProcess->getWidth(), toProcess->getHeight());
-			thresHolder.apply(toProcess, &temp2);
+			thresHolder.apply(toProcess, &temp1);
 		}
 
 		void process() const override {
-			blur.apply(&temp2, &temp1);
+			blur.apply(&temp1, &temp1);
 		}
 
 		void end(FrameBuffer* target) const override {

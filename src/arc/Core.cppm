@@ -1,3 +1,8 @@
+module;
+
+/**
+ * \brief Keep This Module Imported in .cpp if possible!
+ */
 export module Core;
 
 import <string>;
@@ -19,16 +24,20 @@ import Core.Input;
 import Core.Camera;
 import Core.Renderer;
 import OS.FileTree;
+import GL;
 
-export namespace Core{
+export namespace Core {
 	const std::string title = APPLICATION_NAME;
 
-	inline GLFWwindow* mainWindow = nullptr;
-	inline GLFWmonitor* mainMonitor = nullptr;
+	inline GLFWwindow* mainWindow      = nullptr;
+	inline GLFWmonitor* mainMonitor    = nullptr;
 	inline GLFWmonitor* currentMonitor = nullptr;
 
 	inline Geom::Shape::OrthoRectInt lastScreenBound{};
-	inline bool maximizedWin = true;
+	inline bool maximizeWinOnInit = true;
+	inline bool maximized = true;
+	inline bool windowized = false;
+
 	void setScreenBound(GLFWwindow* win = mainWindow);
 
 	inline const GLFWvidmode* mainScreenMode = nullptr;

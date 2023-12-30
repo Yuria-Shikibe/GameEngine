@@ -3,6 +3,7 @@ module;
 export module UI.ScrollPane;
 
 import UI.Elem;
+import UI.Group;
 
 import Geom.Vector2D;
 import Geom.Matrix3D;
@@ -16,12 +17,14 @@ export namespace UI {
 	class ScrollPane;
 
 	struct ScrollerDrawer {
+		virtual ~ScrollerDrawer() = default;
+
 		virtual void operator()(const ScrollPane* pane) const;
 	};
 
 	std::unique_ptr defScrollBarDrawer{std::make_unique<ScrollerDrawer>()};
 
-	class ScrollPane : public Elem {
+	class ScrollPane : public Group {
 	protected:
 		Geom::Vector2D scrollOffset{};
 
@@ -47,6 +50,8 @@ export namespace UI {
 
 		ScrollerDrawer* scrollBarDrawer{defScrollBarDrawer.get()};
 
+		Elem* item{nullptr};
+
 		Rect itemSize;
 	public:
 		ScrollPane(){
@@ -57,6 +62,7 @@ export namespace UI {
 			});
 
 			inputListener.on<UI::MouseActionRelease>([this](const auto& event) {
+
 				pressed = false;
 			});
 
@@ -84,40 +90,48 @@ export namespace UI {
 
 			// pressed = false;
 
-			updateChildren(delta);
+			Group::update(delta);
 
 			if(layoutChanged) {
 				layout();
 			}
 
-			calAbsoluteChildren();
+			if(hasChildren()) {
+
+				const Geom::Vector2D absOri = absoluteSrc;
+				absoluteSrc += scrollOffset;
+				absoluteSrc.x += margin_bottomLeft.x;
+				absoluteSrc.y -= margin_bottomLeft.y;
+
+				if(vertOutbound()) {
+					absoluteSrc.y += getHeight() - itemSize.getHeight();
+				}
+
+				calAbsoluteChildren();
+
+				absoluteSrc = absOri;
+			}
 		}
 
 		void layout() override {
-			layoutChildren();
+			Group::layout();
 
-			Elem::layout();
-
-			if(!children.empty()) {
-				itemSize = children.front()->getBound();
+			if(item) {
+				itemSize = item->getBound();
 			}
 		}
 
-		void calAbsoluteChildren() override {
-			const Geom::Vector2D absOri = absoluteSrc;
-			absoluteSrc += scrollOffset;
-			absoluteSrc.x += margin_bottomLeft.x;
-			absoluteSrc.y -= margin_bottomLeft.y;
-
-			if(vertOutbound()) {
-				absoluteSrc.y += getHeight() - itemSize.getHeight();
+		void setItem(Group* item) {
+			this->item = item;
+			if(item != nullptr) {
+				itemSize = item->getBound();
 			}
 
-			Elem::calAbsoluteChildren();
-
-			absoluteSrc = absOri;
+			getChildren()->clear();
+			addChildren(item);
 		}
 
+		//TODO this has bug when resized !
 		Rect getFilledChildrenBound(Elem* elem) const override {
 			Rect rect = Elem::getFilledChildrenBound(elem);
 
@@ -147,10 +161,6 @@ export namespace UI {
 			return
 			(enableHorizonScroll() && screenPos.y - absoluteSrc.y + margin_bottomLeft.y < hoirScrollerHeight) ||
 			(enableVerticalScroll() && screenPos.x - absoluteSrc.x + margin_bottomLeft.x > getWidth() - vertScrollerWidth);
-		}
-
-		void modifyAddedChildren(Elem* elem) override {
-			Elem::modifyAddedChildren(elem);
 		}
 
 		[[nodiscard]] bool inbound(const Geom::Vector2D& screenPos) const override {

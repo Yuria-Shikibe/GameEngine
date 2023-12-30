@@ -11,10 +11,10 @@ import GL.Texture.MultiSampleTexture2D;
 export namespace GL {
 	class MultiSampleFrameBuffer final : virtual public FrameBuffer {
 	public:
-		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h, const int texSamples, const int renderSamples)
+		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h, const int samples)
 				: FrameBuffer() {
-			sample.reset(new MultiSampleTexture2D{w, h, texSamples});
-			renderBuffer.reset(new MultiSampleRenderBuffer{w, h, renderSamples});
+			sample.reset(new MultiSampleTexture2D{w, h, samples});
+			renderBuffer.reset(new MultiSampleRenderBuffer{w, h, samples});
 			width = w;
 			height = h;
 
@@ -31,9 +31,11 @@ export namespace GL {
 			FrameBuffer::unbind();
 		}
 
-		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h) : MultiSampleFrameBuffer(w, h, 4, 4) {
+		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h) : MultiSampleFrameBuffer(w, h, 4) {
 
 		}
+
+		[[nodiscard]] MultiSampleFrameBuffer() = default;
 
 		using FrameBuffer::resize;
 	};

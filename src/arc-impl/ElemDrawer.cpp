@@ -3,7 +3,6 @@ module UI.ElemDrawer;
 import UI.Elem;
 import Graphic.Color;
 import Graphic.Draw;
-
 import RuntimeException;
 
 void UI::TextureRegionRectDrawable::draw(const float srcx, const float srcy, const float width, const float height) const {
@@ -33,6 +32,16 @@ void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 
 	//TODO disabled
 	// if(elem->touchDisabled())disabled.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+}
+
+void UI::StyleDrawer::applyToElem(Elem* elem) {
+	elem->margin_bottomLeft.x = style->margin_left;
+	elem->margin_bottomLeft.y = style->margin_bottom;
+
+	elem->margin_topRight.x = style->margin_right;
+	elem->margin_topRight.y = style->margin_top;
+
+	elem->changed();
 }
 
 void UI::EdgeDrawer::drawBackground(const UI::Elem* elem) const {

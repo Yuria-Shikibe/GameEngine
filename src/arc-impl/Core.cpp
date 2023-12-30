@@ -7,6 +7,8 @@ import GL.Constants;
 import OS.Key;
 import OS;
 
+import <iostream>;
+
 using namespace Core;
 
 void Core::setScreenBound(GLFWwindow* win) {
@@ -29,7 +31,7 @@ void Core::initMainWindow() {
 
 	mainWindow = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
 
-	if(maximizedWin) {
+	if(maximizeWinOnInit) {
 		glfwSetWindowSizeCallback(mainWindow, [](GLFWwindow* win, const int width, const int height){
 			Core::lastScreenBound.setSize(width, height);
 		});
@@ -37,7 +39,7 @@ void Core::initMainWindow() {
 		glfwMaximizeWindow(mainWindow);
 		setScreenBound();
 
-		glViewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
+		GL::viewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
 		glfwSwapInterval(1);
 		GL::enable(GL_MULTISAMPLE);
 
@@ -57,6 +59,8 @@ void Core::initFileSystem() {
 	const auto dir = self.getParent().subFile("resource");
 
 	rootFileTree = new OS::FileTree{dir};
+
+	std::cout << "Targeted Resource Root:" << dir.absolutePath() << '\n';
 #endif
 	OS::crashFileGetter = std::bind(&Core::Log::generateCrashFilePath, log);
 }

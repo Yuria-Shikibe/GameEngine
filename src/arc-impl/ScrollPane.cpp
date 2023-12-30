@@ -37,6 +37,7 @@ void UI::ScrollPane::draw() const {
 	GL::enable(GL::Test::SCISSOR);
 
 	GL::scissor(Math::round<int>(absoluteSrc.x + margin_bottomLeft.x), Math::round<int>(absoluteSrc.y + horiBarStroke() + margin_bottomLeft.y), Math::round<int>(getWidth() - vertBarStroke() - marginWidth()), Math::round<int>(getHeight() - marginHeight()));
+
 	drawChildren();
 
 	Graphic::Draw::flush();

@@ -952,7 +952,7 @@ namespace irrklang
 	IRRKLANG_API ISoundEngine* IRRKLANGCALLCONV createIrrKlangDevice(
 		E_SOUND_OUTPUT_DRIVER driver = ESOD_AUTO_DETECT,
 		int options = ESEO_DEFAULT_OPTIONS,
-		const char* deviceID = 0,
+		const char* deviceID = nullptr,
 		const char* sdk_version_do_not_use = IRR_KLANG_VERSION);
 
 

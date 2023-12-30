@@ -21,6 +21,7 @@ import Graphic;
 import Core;
 import <array>;
 import <iostream>;
+import <GLFW/glfw3.h>;
 
 using namespace Core;
 
@@ -42,6 +43,9 @@ export namespace Ctrl{
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_F11, GLFW_PRESS, [] {
 			if(currentMonitor == mainMonitor) {
 				Graphic::windowize(mainWindow, currentMonitor, lastScreenBound, title);
+
+				glfwRestoreWindow(mainWindow);
+
 				renderer->resize(lastScreenBound.getWidth(), lastScreenBound.getHeight());
 			}else {
 				Graphic::fullScreen(mainWindow, currentMonitor, title);
