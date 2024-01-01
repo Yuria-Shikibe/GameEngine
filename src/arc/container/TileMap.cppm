@@ -5,8 +5,6 @@ import <vector>;
 import Concepts;
 import RuntimeException;
 
-//TODO import <mdspan>;  support this after msvc update
-
 export namespace Container {
 	template <typename T>
 	class TileMap
