@@ -74,12 +74,6 @@ else()
     file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ DESTINATION
             ${EXE_DIR}
     )
-    
-    file(GLOB_RECURSE DLL
-            ${EXE_DIR}/*.dll
-    )
-    
-    message(STATUS "Moved DLL: \n ${DLL}")
 endif ()
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
