@@ -1,4 +1,4 @@
-export module Container.TileMap;
+export module Container.Map2D;
 
 import <utility>;
 import <vector>;
@@ -7,7 +7,7 @@ import RuntimeException;
 
 export namespace Container {
 	template <typename T>
-	class TileMap
+	class Map2D
 	// : std::mdspan<>
 	{
 		using sizeType = unsigned int;
@@ -16,12 +16,12 @@ export namespace Container {
 		std::vector<T> items{};
 
 	public:
-		[[nodiscard]] TileMap(const sizeType width, const sizeType height)
+		[[nodiscard]] Map2D(const sizeType width, const sizeType height)
 			: width(width),
 			height(height), items(width * height){
 		}
 
-		[[nodiscard]] TileMap(const sizeType width, const sizeType height, const T& object)
+		[[nodiscard]] Map2D(const sizeType width, const sizeType height, const T& object)
 			: width(width),
 			height(height), items(width * height, object){
 		}
