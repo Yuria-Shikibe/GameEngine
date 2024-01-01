@@ -1,16 +1,19 @@
 module;
 
 export module Container.TileMap;
+
 import <vector>;
 import Concepts;
 
 import RuntimeException;
 
-// import <mdspan>; TODO support this after msvc update
+//TODO import <mdspan>;  support this after msvc update
 
 export namespace Container {
 	template <typename T>
-	class TileMap/* : std::mdspan<>*/ {
+	class TileMap
+	// : std::mdspan<>
+	{
 		using sizeType = unsigned int;
 		sizeType width{0};
 		sizeType height{0};
