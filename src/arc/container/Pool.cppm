@@ -1,7 +1,3 @@
-//
-// Created by Matrix on 2023/11/18.
-//
-
 module ;
 
 export module Container.Pool;
