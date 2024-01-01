@@ -71,7 +71,7 @@ else()
     message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
     
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR} DESTINATION
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ DESTINATION
             ${EXE_DIR}
     )
     
