@@ -15,7 +15,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 		glfwSetWindowSize(window, width, height);
 	}
 
-	std::cout << "Resized Buffer: " << width << "|" << height << std::endl;
+	// std::cout << "Resized Buffer: " << width << "|" << height << std::endl;
 
 	width  = std::max(200, width);
 	height = std::max(200, height);

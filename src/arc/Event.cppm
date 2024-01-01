@@ -72,10 +72,6 @@ export namespace Event {
 		[[nodiscard]] EventManager() = default;
 	};
 
-	enum class CycleSignalState {
-		begin, end,
-	};
-
 	/**
 	 * \brief THE VALUE OF THE ENUM MEMBERS MUST BE CONTINUOUS
 	 * \tparam T Used Enum Type
@@ -96,6 +92,11 @@ export namespace Event {
 		void on(const T index, Func&& func){
 			events[static_cast<size_t>(index)].emplace_back(std::forward<Func>(func));
 		}
+	};
+
+
+	enum class CycleSignalState {
+		begin, end,
 	};
 
 	using CycleSignalManager = Event::SignalManager<Event::CycleSignalState, 2>;

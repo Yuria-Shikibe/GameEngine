@@ -57,6 +57,7 @@ export namespace Ctrl{
 		input->registerKeyBindMulti(keys, []() {camera->setTargetScaleDef();});
 
 		input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
+			if(Core::uiRoot->cursorCaptured())return;
 			auto pos = Core::input->getMousePos();
 			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
 			pos *= Core::camera->getScreenToWorld();
@@ -64,13 +65,12 @@ export namespace Ctrl{
 			Core::camera->setPosition(pos);
 		});
 
-		input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
-			if(Core::uiRoot->cursorCaptured())return;
-			auto pos = Core::input->getMousePos();
-			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
-			pos *= Core::camera->getScreenToWorld();
-
-			Core::camera->setPosition(pos);
+		input->registerKeyBind(Ctrl::KEY_H, Ctrl::Act_Press, [] {
+			if(Core::uiRoot->allHidden) {
+				Core::uiRoot->enable();
+			}else {
+				Core::uiRoot->disable();
+			}
 		});
 
 		for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {

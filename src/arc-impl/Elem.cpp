@@ -3,17 +3,14 @@ module UI.Elem;
 import UI.Group;
 import UI.ElemDrawer;
 import UI.Root;
-import Core;
 import RuntimeException;
-
-using UI::Root;
+import Core;
 
 UI::Elem::~Elem() {
 	setUnfocused();
 }
 
 UI::Elem::Elem() {
-	Elem::setRoot(Core::uiRoot);
 	if(!drawer)setDrawer(UI::defDrawer);
 }
 
@@ -26,6 +23,19 @@ bool UI::Elem::layout_fillParent() {
 	}
 
 	return false;
+}
+
+void UI::Elem::draw() const {
+	if(!visiable)return;
+
+	if(parent) {
+		maskOpacity *= parent->maskOpacity;
+	}
+
+	drawBackground();
+	drawContent();
+
+	maskOpacity = 1.0f;
 }
 
 void UI::Elem::drawBackground() const {
@@ -47,6 +57,7 @@ void UI::Elem::setDrawer(ElemDrawer* drawer) {
 UI::Group* UI::Elem::setParent(Group* const parent) {
 	Group* former = parent;
 	this->parent  = parent;
+	setRoot(parent->root);
 
 	return former;
 }

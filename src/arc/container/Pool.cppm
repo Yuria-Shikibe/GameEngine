@@ -19,9 +19,10 @@ export namespace Containers{
         requires Concepts::HasDefConstructor<T>
     class Pool{
     public:
+        using ItemRef = T*;
         struct Deleter {
             Pool* const src{ nullptr };
-            std::function<void(T*)> reset{ nullptr };
+            std::function<void(ItemRef)> reset{ nullptr };
 
             ~Deleter() = default;
 
@@ -55,44 +56,69 @@ export namespace Containers{
                     : src(src) {
             }
 
-            Deleter(Pool* src, std::function<void(T*)>&& reset)
+            Deleter(Pool* src, std::function<void(ItemRef)>&& reset)
                     : src(src),
                       reset(reset){
             }
 
-            void operator()(T* t) const {
+            void operator()(ItemRef t) const {
+                // if(!t)return;
                 if(reset)reset(t);
                 src->store(t);
             }
         };
 
-        struct Allocator : ::std::allocator<T*> {
+        struct Allocator_Raw : ::std::allocator<ItemRef> {
             Pool* const src{ nullptr };
 
-            T** allocate() {
+            ItemRef* allocate(const size_t count) {
                 return &src->obtainRaw();
             }
 
-            void deallocate(T** ptr, size_t n) {
+            void deallocate(ItemRef* ptr, size_t n) {
                 src->store(*ptr);
             }
         };
 
+        struct Allocator_Shared : ::std::allocator<std::shared_ptr<T>> {
+            Pool* const src{ nullptr };
+
+            std::shared_ptr<T>* allocate(const size_t count) {
+                return &src->obtainShared();
+            }
+
+            void deallocate(std::shared_ptr<T>* ptr, size_t n) {
+                ptr->reset(nullptr);
+            }
+        };
+
+        struct Allocator_Unique : ::std::allocator<std::unique_ptr<T>> {
+            Pool* const src{ nullptr };
+
+            std::unique_ptr<T>* allocate(const size_t count) {
+                return &src->obtainUnique();
+            }
+
+            void deallocate(std::unique_ptr<T>* ptr, size_t n) {
+                src->store(std::move(*ptr));
+            }
+        };
+
     protected:
-        size_t maxSize{2000};
-        std::vector<T*> vault;
+        size_t maxSize{5000};
+        std::vector<ItemRef> vault;
         Deleter deleter;
 
-        std::unique_ptr<std::pmr::monotonic_buffer_resource> monotonicPool{nullptr};
+        // std::unique_ptr<std::pmr::monotonic_buffer_resource> monotonicPool{nullptr};
 
     public:
-        [[nodiscard]] Pool(const size_t maxSize, std::function<void(T*)>&& func)
+        [[nodiscard]] Pool(const size_t maxSize, std::function<void(ItemRef)>&& func)
             : maxSize(maxSize),
-            vault(vault), deleter(Deleter{this, std::forward<std::function<void(T*)>>(func)})  {
+            vault(vault), deleter(Deleter{this, std::forward<std::function<void(ItemRef)>>(func)})  {
             vault.reserve(maxSize);
         }
 
-        explicit Pool(std::function<void(T*)>&& func) : deleter(Deleter{this, std::forward<std::function<void(T*)>>(func)}) {
+        explicit Pool(std::function<void(ItemRef)>&& func) : deleter(Deleter{this, std::forward<decltype(func)>(func)}) {
             vault.reserve(maxSize);
         }
 
@@ -111,6 +137,13 @@ export namespace Containers{
             }
         }
 
+        void store(std::shared_ptr<T>& ptr) {
+            //TODO does this safe>>
+            if(std::addressof(get_deleter(ptr)) == &deleter) {
+                ptr.reset(nullptr);
+            }
+        }
+
         void store(std::unique_ptr<T>&& ptr){
             if(vault.size() < maxSize){
                 vault.push_back(ptr.release());
@@ -119,7 +152,7 @@ export namespace Containers{
             }
         }
 
-        void store(T* ptr) {
+        void store(ItemRef ptr) {
             if(vault.size() < maxSize){
                 vault.push_back(ptr);
             }else {
@@ -127,17 +160,25 @@ export namespace Containers{
             }
         }
 
-        std::pmr::monotonic_buffer_resource* getMonotonicPool() {
-            if(monotonicPool) {
-                return monotonicPool.get();
-            }
+        // std::pmr::monotonic_buffer_resource* getMonotonicPool() {
+        //     if(monotonicPool) {
+        //         return monotonicPool.get();
+        //     }
+        //
+        //     monotonicPool = std::make_unique<std::pmr::monotonic_buffer_resource>(vault.data(), vault.capacity());
+        //     return monotonicPool.get();
+        // }
 
-            monotonicPool = std::make_unique<std::pmr::monotonic_buffer_resource>(vault.data(), vault.capacity());
-            return monotonicPool.get();
+        Allocator_Raw getAllocator_Raw() const {
+            return Allocator_Raw{this};
         }
 
-        Allocator getAllocator() const {
-            return Allocator{this};
+        Allocator_Shared getAllocator_Shared() const {
+            return Allocator_Shared{this};
+        }
+
+        Allocator_Unique getAllocator_Unique() const {
+            return Allocator_Unique{this};
         }
 
         std::unique_ptr<T, Deleter> obtainUnique() {
@@ -145,7 +186,7 @@ export namespace Containers{
                 return std::unique_ptr<T, Deleter>{new T, deleter};
             }
 
-            T* ptr = vault.back();
+            ItemRef ptr = vault.back();
             vault.pop_back();
 
             return std::unique_ptr<T, Deleter>{ptr, deleter};
@@ -156,7 +197,7 @@ export namespace Containers{
                 return std::shared_ptr<T>{new T, deleter};
             }
 
-            T* ptr = vault.back();
+            ItemRef ptr = vault.back();
             vault.pop_back();
 
             return std::shared_ptr<T>{ptr, deleter};
@@ -167,7 +208,7 @@ export namespace Containers{
                 return new T;
             }
 
-            T* ptr = vault.back();
+            ItemRef ptr = vault.back();
             vault.pop_back();
 
             return ptr;

@@ -77,14 +77,24 @@ export namespace UI {
 		}
 
 		friend bool operator==(const LayoutCell& lhs, const LayoutCell& rhs) {
-			return std::tie(lhs.align, lhs.allocatedBound, lhs.marginLeft, lhs.marginRight, lhs.marginBottom,
-			                lhs.marginTop, lhs.padLeft, lhs.padRight, lhs.padBottom, lhs.padTop, lhs.srcxScale,
-			                lhs.srcyScale, lhs.endxScale, lhs.endyScale, lhs.modifyParentX, lhs.modifyParentY,
-			                lhs.scaleRelativeToParentX, lhs.scaleRelativeToParentY) == std::tie(
-				       rhs.align, rhs.allocatedBound, rhs.marginLeft, rhs.marginRight, rhs.marginBottom, rhs.marginTop,
-				       rhs.padLeft, rhs.padRight, rhs.padBottom, rhs.padTop, rhs.srcxScale, rhs.srcyScale,
-				       rhs.endxScale, rhs.endyScale, rhs.modifyParentX, rhs.modifyParentY, rhs.scaleRelativeToParentX,
-				       rhs.scaleRelativeToParentY);
+			return lhs.align == rhs.align
+			       && lhs.allocatedBound == rhs.allocatedBound
+			       && lhs.marginLeft == rhs.marginLeft
+			       && lhs.marginRight == rhs.marginRight
+			       && lhs.marginBottom == rhs.marginBottom
+			       && lhs.marginTop == rhs.marginTop
+			       && lhs.padLeft == rhs.padLeft
+			       && lhs.padRight == rhs.padRight
+			       && lhs.padBottom == rhs.padBottom
+			       && lhs.padTop == rhs.padTop
+			       && lhs.srcxScale == rhs.srcxScale
+			       && lhs.srcyScale == rhs.srcyScale
+			       && lhs.endxScale == rhs.endxScale
+			       && lhs.endyScale == rhs.endyScale
+			       && lhs.modifyParentX == rhs.modifyParentX
+			       && lhs.modifyParentY == rhs.modifyParentY
+			       && lhs.scaleRelativeToParentX == rhs.scaleRelativeToParentX
+			       && lhs.scaleRelativeToParentY == rhs.scaleRelativeToParentY;
 		}
 
 		friend bool operator!=(const LayoutCell& lhs, const LayoutCell& rhs) {

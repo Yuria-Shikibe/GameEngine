@@ -71,7 +71,7 @@ void Core::Renderer::renderUI() {
 	Core::batch->flush();
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
-	Assets::PostProcessors::bloom->blur.setProcessTimes(1);
+	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
 
 	// frameEnd(Assets::PostProcessors::blendMulti);
 	frameEnd(Assets::PostProcessors::bloom);

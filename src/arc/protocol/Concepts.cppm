@@ -16,7 +16,9 @@ export namespace Concepts {
     concept Derived = std::is_base_of_v<DerivedT, T>;
 
     template <class DerivedT, class... Bases>
-    concept DerivedMulti = (std::is_base_of_v<Bases, DerivedT> && ...);
+    concept DerivedMulti = requires{
+	    (std::is_base_of_v<Bases, DerivedT> && ...);
+    };
 
     template <class T>
     concept HasDefConstructor = std::is_default_constructible_v<T>;
@@ -40,5 +42,11 @@ export namespace Concepts {
 	concept Iterable = requires(T t){
 		std::is_same_v<decltype(std::begin(std::declval<T&>())), Item>;
 		std::is_same_v<decltype(std::end(std::declval<T&>())), Item>;
+	};
+
+	template <typename T, typename Item>
+	concept IterableDerived = requires(T t){
+		std::is_base_of_v<decltype(std::begin(std::declval<T&>())), Item>;
+		std::is_base_of_v<decltype(std::end(std::declval<T&>())), Item>;
 	};
 }

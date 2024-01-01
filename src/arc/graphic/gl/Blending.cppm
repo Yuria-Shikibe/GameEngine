@@ -6,16 +6,17 @@ import <glad/glad.h>;
 import GL;
 
 export namespace GL{
-	class Blending
+	struct Blending
 	{
-	public:
-		GLenum src, dst, srcAlpha, dstAlpha;
+		GLenum src{}, dst{}, srcAlpha{}, dstAlpha{};
 
 		Blending(const GLenum src, const GLenum dst, const GLenum srcAlpha, const GLenum dstAlpha): src(src),
 		                                                                                            dst(dst),
 		                                                                                            srcAlpha(srcAlpha),
 		                                                                                            dstAlpha(dstAlpha){
 		}
+
+		[[nodiscard]] Blending() = default;
 
 		Blending(const Blending& other) = default;
 
@@ -53,22 +54,40 @@ export namespace GL{
 
 		Blending(const GLenum src, const GLenum dst) : Blending(src, dst, src, dst) {}
 
-		~Blending() = default;
+		virtual ~Blending() = default;
 
 		friend bool operator==(const Blending& lhs, const Blending& rhs);
 
 		friend bool operator!=(const Blending& lhs, const Blending& rhs);
 
-		void apply() const{
+		virtual void apply() const{
 			GL::enable(GL_BLEND);
-			glBlendFuncSeparate(src, dst, srcAlpha, dstAlpha);
+			GL::blendFunc(src, dst, srcAlpha, dstAlpha);
+		}
+
+		virtual void apply(const GLuint id) const{
+			GL::enablei(GL_BLEND, id);
+			GL::blendFunci(id, src, dst, srcAlpha, dstAlpha);
+		}
+	};
+
+	struct BlendingDisable final : Blending{
+		[[nodiscard]] BlendingDisable() = default;
+
+		void apply() const override {
+			GL::disable(GL_BLEND);
+		}
+
+		void apply(const GLuint id) const override {
+			GL::disablei(GL_BLEND, id);
 		}
 	};
 
 	namespace Blendings{
-		inline const Blending NORMAL{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
-		inline const Blending ADDICTIVE{ GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
-		inline const Blending ALPHA_SUSTAIN{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
+		inline const BlendingDisable Disable{};
+		inline const Blending Normal{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
+		inline const Blending Addictive{ GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
+		inline const Blending AlphaSustain{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 	}
 }
 

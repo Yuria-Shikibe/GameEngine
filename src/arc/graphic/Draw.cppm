@@ -134,7 +134,7 @@ inline void color(const Color& c1, const Color& c2, const float t) {
 	contextColor.lerp(colors, t);
 }
 
-void blend(const Blending& blending = Blendings::NORMAL);
+void blend(const Blending& blending = Blendings::Normal);
 
 inline void texture(const TextureRegion* texture = defaultTexture) {
 	contextTexture = texture;
@@ -277,6 +277,36 @@ inline void quad(const TextureRegion* region,
 		x2, y2, region->u10(), region->v10(), c2,
 		x3, y3, region->u11(), region->v11(), c3,
 		x4, y4, region->u01(), region->v01(), c4
+	);
+}
+
+inline void quad(const TextureRegion* region,
+					 const Geom::Vector2D& v0, const Color& c1,
+					 const Geom::Vector2D& v1, const Color& c2,
+					 const Geom::Vector2D& v2, const Color& c3,
+					 const Geom::Vector2D& v3, const Color& c4
+	) {
+	vert_monochromeMix(
+		region->getData(), contextMixColor,
+		v0.x, v0.y, region->u00(), region->v00(), c1,
+		v1.x, v1.y, region->u10(), region->v10(), c2,
+		v2.x, v2.y, region->u11(), region->v11(), c3,
+		v3.x, v3.y, region->u01(), region->v01(), c4
+	);
+}
+
+inline void quad(const TextureRegion* region,
+				 const Geom::Vector2D& v0,
+				 const Geom::Vector2D& v1,
+				 const Geom::Vector2D& v2,
+				 const Geom::Vector2D& v3
+) {
+	vert_monochromeAll(
+		region->getData(), contextColor, contextMixColor,
+		v0.x, v0.y, region->u00(), region->v00(),
+		v1.x, v1.y, region->u10(), region->v10(),
+		v2.x, v2.y, region->u11(), region->v11(),
+		v3.x, v3.y, region->u01(), region->v01()
 	);
 }
 

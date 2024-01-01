@@ -7,14 +7,14 @@ export import UI.Elem;
 import <execution>;
 import <memory>;
 import <vector>;
-import <set>;
+import <unordered_set>;
 
 export namespace UI {
 	class Group : public Elem{
 	protected:
 		//TODO abstact this if possible
 		std::vector<std::unique_ptr<Elem>> children{};
-		std::set<Elem*> toRemove{};
+		std::unordered_set<Elem*> toRemove{};
 
 	public:
 		[[nodiscard]] Group() {
@@ -63,9 +63,7 @@ export namespace UI {
 
 		virtual void drawChildren() const {
 			for(const auto& elem : children) {
-				elem->maskOpacity *= maskOpacity;
 				elem->draw();
-				elem->maskOpacity = 1.0f;
 			}
 		}
 
@@ -113,7 +111,6 @@ export namespace UI {
 			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
 				return toRemove.contains(ptr.get());
 			});
-			if(itr == children.end())return;
 			children.erase(itr);
 			toRemove.clear();
 		}
@@ -129,9 +126,7 @@ export namespace UI {
 			updateChildren(delta);
 		}
 
-		void draw() const override {
-			Elem::draw();
-
+		void drawContent() const override {
 			drawChildren();
 		}
 	};

@@ -1,3 +1,4 @@
+
 // ReSharper disable CppDFAUnreachableCode
 module;
 
@@ -10,6 +11,7 @@ import Concepts;
 import RuntimeException;
 import <algorithm>;
 import <functional>;
+import <memory>;
 
 using Geom::Shape::Rect_Orthogonal;
 
@@ -19,40 +21,43 @@ using Rect = Rect_Orthogonal<T>;
 export namespace Geom {
     template <typename Cont, Concepts::Number T>
     class QuadTree {
+    public:
         using obtainer = std::function<const Rect<T>&(const Cont&)>;
     protected:
-        obtainer transfer;
+        obtainer transformer{nullptr};
         // The boundary of this node
         Rect<T> boundary{};
 
         Rect<T>& obtainBound(const Cont* const cont) {
-            return transfer(*cont);
+            return transformer(*cont);
         }
 
         Rect<T>& obtainBound(const Cont& cont) {
-            return transfer(cont);
+            return transformer(cont);
         }
 
         // The rectangles in this node
         std::vector<const Cont*> rectangles{};
 
         // The four children of this node
-        QuadTree* northwest{nullptr};
-        QuadTree* northeast{nullptr};
-        QuadTree* southwest{nullptr};
-        QuadTree* southeast{nullptr};
+        std::unique_ptr<QuadTree> northwest{nullptr};
+        std::unique_ptr<QuadTree> northeast{nullptr};
+        std::unique_ptr<QuadTree> southwest{nullptr};
+        std::unique_ptr<QuadTree> southeast{nullptr};
+
+        unsigned int maximumItemCount = 4;
 
     public:
-        unsigned int maximumItemCount = 4;
-        explicit QuadTree(const Rect<T>& boundary, const obtainer& transfer) : transfer(transfer), boundary(boundary) {
+        explicit QuadTree(unsigned int maxCount){
+            rectangles.reserve(maxCount);
+        }
+
+        QuadTree(const Rect<T>& boundary, const obtainer& transformer) : transformer(transformer), boundary(boundary) {
             rectangles.reserve(maximumItemCount);
         }
 
-        ~QuadTree() {
-            delete northwest;
-            delete northeast;
-            delete southwest;
-            delete southeast;
+        QuadTree(const Rect<T>& boundary, const obtainer& transformer, unsigned int maxCount) : transformer(transformer), boundary(boundary), maximumItemCount(maxCount) {
+            rectangles.reserve(maxCount);
         }
 
         [[nodiscard]] Rect<T>& getBoundary() {
@@ -60,6 +65,8 @@ export namespace Geom {
         }
 
         void setBoundary(const Rect<T>& boundary) {
+            if(!allChildrenEmpty())throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
+
             this->boundary = boundary;
         }
 
@@ -68,34 +75,14 @@ export namespace Geom {
         }
 
         void setBoundary(const T width, const T height) {
-            if(!leaf())throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
+            if(!allChildrenEmpty())throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
 
             this->boundary.setSize(width, height);
         }
 
         // ReSharper disable once CppDFAConstantFunctionResult
         [[nodiscard]] bool overlap(const Cont& box) const {
-            // Check if the rectangle overlaps with any rectangle in this node
-            if(
-                const Rect<T>& rectangle = transfer(box);
-                std::any_of(rectangles.begin(), rectangles.end(), [this, &rectangle](const Cont* cont) {
-                    return rectangle.overlap(obtainBound(cont));
-                })
-            ) {
-                return true;
-            }
-
-            // If this node has children, check if the rectangle overlaps with any rectangle in the children
-            if (!leaf()) {
-                //TODO uses direction vector to get more possible results?
-                if (northwest->overlap(box)) return true;
-                if (northeast->overlap(box)) return true;
-                if (southwest->overlap(box)) return true;
-                if (southeast->overlap(box)) return true;
-            }
-
-            // Otherwise, the rectangle does not overlap with any rectangle in the quad tree
-            return false;
+            return overlap(obtainBound(box));
         }
 
         void remove(const Cont& box) {
@@ -104,7 +91,7 @@ export namespace Geom {
             if (it != rectangles.end()) {
                 // If the rectangle is in this node, remove it
                 rectangles.erase(it);
-            }else if (!leaf()) { // If this node has children, check if the rectangle is in the children
+            }else if (!isLeaf()) { // If this node has children, check if the rectangle is in the children
                 northwest->remove(box);
                 northeast->remove(box);
                 southwest->remove(box);
@@ -113,23 +100,16 @@ export namespace Geom {
 
             // Check if this node should be merged
             if (rectangles.empty() && allChildrenEmpty()) {
-                delete northwest;
-                delete northeast;
-                delete southwest;
-                delete southeast;
-                northwest = nullptr;
-                northeast = nullptr;
-                southwest = nullptr;
-                southeast = nullptr;
+                clear();
             }
         }
 
-        [[nodiscard]] bool leaf() const {
+        [[nodiscard]] bool isLeaf() const {
             return northwest == nullptr || northeast == nullptr || southeast == nullptr || southwest == nullptr;
         }
 
         [[nodiscard]] bool allChildrenEmpty() const {
-            if (!leaf()) {
+            if (!isLeaf()) {
                 if (!northwest->rectangles.empty() || !northeast->rectangles.empty() ||
                     !southwest->rectangles.empty() || !southeast->rectangles.empty()) {
                     return false;
@@ -139,9 +119,29 @@ export namespace Geom {
             return true;
         }
 
+        bool overlap(const Rect<T>& rectangle) {
+            if(std::ranges::any_of(rectangles, [this, &rectangle](const Cont* cont) {
+                    return rectangle.overlap(obtainBound(cont));
+            })) {
+                return true;
+            }
+
+            // If this node has children, check if the rectangle overlaps with any rectangle in the children
+            if (!isLeaf()) {
+                //TODO uses direction vector to get more possible results?
+                if (northwest->overlap(rectangle)) return true;
+                if (northeast->overlap(rectangle)) return true;
+                if (southwest->overlap(rectangle)) return true;
+                if (southeast->overlap(rectangle)) return true;
+            }
+
+            // Otherwise, the rectangle does not overlap with any rectangle in the quad tree
+            return false;
+        }
+
         bool insert(const Cont& box) {
             // Ignore objects that do not belong in this quad tree
-            if (boundary.dissociated(transfer(box))) {
+            if (boundary.dissociated(obtainBound(box))) {
                 return false;
             }
 
@@ -152,7 +152,7 @@ export namespace Geom {
             }
 
             // Otherwise, subdivide and then add the object to whichever node will accept it
-            if (leaf()) {
+            if (isLeaf()) {
                 subDivide();
             }
 
@@ -163,6 +163,26 @@ export namespace Geom {
 
             // Otherwise, the object cannot be inserted for some unknown reason (this should never happen)
             return false;
+        }
+
+        void clear() {
+            northwest.reset(nullptr);
+            northeast.reset(nullptr);
+            southwest.reset(nullptr);
+            southeast.reset(nullptr);
+
+            rectangles.clear();
+        }
+
+        void clearItemsOnly() {
+            if(!isLeaf()) {
+                northwest->clearItemsOnly();
+                northeast->clearItemsOnly();
+                southwest->clearItemsOnly();
+                southeast->clearItemsOnly();
+            }
+
+            rectangles.clear();
         }
 
         void subDivide() {
@@ -176,10 +196,13 @@ export namespace Geom {
             const Rect<T> sw{x    , y + h, w, h};
             const Rect<T> se{x + w, y + h, w, h};
 
-            northwest = new QuadTree(nw, transfer);
-            northeast = new QuadTree(ne, transfer);
-            southwest = new QuadTree(sw, transfer);
-            southeast = new QuadTree(se, transfer);
+            northwest = std::make_unique<QuadTree>(nw, transformer, maximumItemCount);
+            northeast = std::make_unique<QuadTree>(ne, transformer, maximumItemCount);
+            southwest = std::make_unique<QuadTree>(sw, transformer, maximumItemCount);
+            southeast = std::make_unique<QuadTree>(se, transformer, maximumItemCount);
         }
     };
+
+    template <typename T>
+    using QuadTreeF = QuadTree<T, float>;
 }

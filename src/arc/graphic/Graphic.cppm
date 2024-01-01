@@ -22,7 +22,9 @@ export namespace Graphic{
 	// ReSharper disable once CppInconsistentNaming
 	inline void initOpenGL(){
 		glfwSetErrorCallback(throw_GL_Exception);
-		glfwInit();
+		if(!glfwInit()) {
+			throw ext::RuntimeException{"Unable to initialize GLFW!"};
+		}
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

@@ -19,17 +19,22 @@ void UI::TextureNineRegionDrawable::draw(float srcx, float srcy, float width, fl
 	rect->render_RelativeExter(srcx, srcy, width, height);
 }
 
-void UI::DrawPair::draw(float srcx, float srcy, float width, float height) const {
+void UI::DrawPair::draw(const float srcx, const float srcy, const float width, const float height) const {
 	Graphic::Draw::color(color);
 	region->draw(srcx, srcy, width, height);
 }
 
 void UI::UIStyle::drawElem(const UI::Elem* elem) const {
+	elem->tempColor = elem->color;
+	elem->tempColor.a *= elem->maskOpacity;
+	Graphic::Draw::mixColor(elem->tempColor);
+
 	base.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	edge.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	if(elem->isPressed())pressed.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	if(elem->cursorInbound())inbound.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 
+	Graphic::Draw::mixColor();
 	//TODO disabled
 	// if(elem->touchDisabled())disabled.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 }
@@ -47,6 +52,8 @@ void UI::StyleDrawer::applyToElem(Elem* elem) {
 void UI::EdgeDrawer::drawBackground(const UI::Elem* elem) const {
 	elem->tempColor = elem->color;
 	Graphic::Color& color = elem->tempColor;
+	elem->tempColor.a *= elem->maskOpacity;
+	Graphic::Draw::mixColor(elem->tempColor);
 
 	if(elem->cursorInbound()) {
 		color.mul(1.1f).lerp(Graphic::Colors::WHITE, 0.3f);

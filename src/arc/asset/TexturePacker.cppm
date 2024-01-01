@@ -47,7 +47,7 @@ export namespace Assets {
 			stream.write(reinterpret_cast<const char*>(&bound), sizeof(bound));
 		}
 
-		[[nodiscard]] bool read(std::ifstream& stream, const std::vector<std::unique_ptr<GL::Texture2D>>& textures){
+		[[nodiscard]] bool read(std::ifstream& stream, const std::vector<std::unique_ptr<GL::Texture2D>>& textures, const int margin = 0){
 			stream.read(reinterpret_cast<char*>(&pageID), sizeof(pageID));
 			stream.read(reinterpret_cast<char*>(&bound), sizeof(bound));
 
@@ -55,6 +55,10 @@ export namespace Assets {
 
 			const auto tex = textures[pageID].get();
 			if(bound.getEndX() > tex->getWidth() || bound.getEndY() > tex->getHeight())return false;
+
+			if(margin > 0) {
+				bound.addSize(-margin, -margin);
+			}
 
 			textureRegion.setData(tex);
 			textureRegion.fetchIntoCurrent(bound);
@@ -70,7 +74,7 @@ export namespace Assets {
 			return pixmap.valid();
 		}
 
-		[[nodiscard]] bool loadPixmap(){ // NOLINT(*-make-member-function-const)
+		[[nodiscard]] bool loadPixmap(const int margin){ // NOLINT(*-make-member-function-const)
 			if(hasFile()) {
 				pixmap.loadFrom(sourceFile);
 			}
@@ -79,7 +83,7 @@ export namespace Assets {
 				if(modifer)modifer(pixmap);
 			}
 
-			bound.set(0, 0, pixmap.getWidth(), pixmap.getHeight());
+			bound.set(0, 0, pixmap.getWidth() + margin, pixmap.getHeight() + margin);
 
 			return hasPixelData();
 		}
@@ -110,6 +114,8 @@ export namespace Assets {
 		OS::File cacheDir{};
 		std::unordered_map<std::string, TexturePackData> packData{};
 		PackState state{PackState::polling};
+
+		int margin = 1;
 
 	public:
 		OrthoRectUInt texMaxBound{2048, 2048};
@@ -193,7 +199,7 @@ export namespace Assets {
 
 		void loadRequest() {
 			for(auto& [name, data] : packData) {
-				if(!data.loadPixmap()) {
+				if(!data.loadPixmap(margin)) {
 					throw ext::RuntimeException{"Cannot Read Pixmap Data: " + name};
 				}
 			}
@@ -294,6 +300,10 @@ export namespace Assets {
 
 			for(auto& data : packData | std::views::values) {
 				data.textureRegion.setData(textures[data.pageID].get());
+
+				if(margin > 0) {
+					data.bound.addSize(-margin, -margin);
+				}
 
 				data.textureRegion.fetchIntoCurrent(data.bound);
 			}

@@ -2,7 +2,6 @@ module;
 
 export module UI.Table;
 export import UI.Group;
-export import UI.Elem;
 
 import <vector>;
 import <memory_resource>;
@@ -369,10 +368,9 @@ export namespace UI {
 		void layoutIrrelative();
 
 		void layout() override {
-
 			layout_fillParent();
 
-			layoutChanged = false;
+			layoutChildren();
 
 			if(relativeLayoutFormat) {
 				layoutRelative();
@@ -380,9 +378,7 @@ export namespace UI {
 				layoutIrrelative();
 			}
 
-			layoutChildren();
-
-			layoutChanged = false;
+			Group::layout();
 		}
 
 		[[nodiscard]] size_t rows() const {

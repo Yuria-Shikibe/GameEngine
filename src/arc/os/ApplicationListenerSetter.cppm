@@ -99,18 +99,18 @@ void charModCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 
 }
 
-void scrollCallback(GLFWwindow* window, const double xOffset, const double yOffset);
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
 void scaleCallback(GLFWwindow* window, const float xScale, const float yScale){
 	// cout << "Scale CallBack: " << xScale << " | " << yScale << endl;
 }
 
 // ReSharper disable once CppParameterMayBeConstPtrOrRef
-void keyCallback(GLFWwindow* window, const int key, const int scanCode, const int action, const int mods);
+void keyCallback(GLFWwindow* window, int key, int scanCode, int action, int mods);
 
 void monitorCallback(GLFWmonitor* monitor, int event);
 
-void maximizeCallback(GLFWwindow* window, const int maximized);
+void maximizeCallback(GLFWwindow* window, int maximized);
 
 void winPosCallBack(GLFWwindow* window, int xpos, int ypos);
 

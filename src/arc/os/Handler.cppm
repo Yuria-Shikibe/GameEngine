@@ -10,14 +10,14 @@ export namespace OS {
 		template <Concepts::Invokable<void()> Func>
 		void operator()(Func&& task, std::promise<void>&& promise) const {
 
-			OS::postAsync(
+			::OS::postAsync(
 				std::forward<Func>(task),
 				std::forward<std::promise<void>>(promise)
 			);
 		}
 
 		explicit operator bool() const {
-			return OS::getLoop();
+			return ::OS::getLoop();
 		}
 	};
 }

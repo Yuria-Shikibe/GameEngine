@@ -15,6 +15,7 @@ import <functional>;
 import <set>;
 import <vector>;
 import <unordered_set>;
+import <any>;
 
 export namespace  UI {
 	struct ElemDrawer;
@@ -67,20 +68,21 @@ export namespace UI {
 		bool endRow{false};
 		bool visiable{true};
 		bool requiresLayout{false};
+		bool pressed = false;
 
 		bool quitInboundFocus = true;
 
 		Geom::Vector2D absoluteSrc{};
 
 		ElemDrawer* drawer{nullptr};
-		bool pressed = false;
 
 	public:
 		std::string name{"undefind"};
-		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
-		mutable Graphic::Color tempColor{1.0f, 1.0f, 1.0f, 1.0f};
 
+		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
+		mutable Graphic::Color tempColor{0.0f, 0.0f, 0.0f, 0.0f};
 		mutable float maskOpacity = 1.0f;
+		std::any animationData{nullptr};
 
 		Geom::Vector2D margin_bottomLeft{};
 		Geom::Vector2D margin_topRight{};
@@ -136,8 +138,14 @@ export namespace UI {
 			return !visiable;
 		}
 
-		virtual void draw() const {
-			drawBackground();
+		virtual void draw() const;
+
+		virtual void drawContent() const {
+
+		}
+
+		virtual void setVisible(const bool val) {
+			visiable = val;
 		}
 
 		virtual void setRoot(Root* const root) {
@@ -345,9 +353,19 @@ export namespace UI {
 			return bound.getHeight();
 		}
 
-		void zerolizeMargin() {
+		void setMarginZero() {
 			margin_bottomLeft.setZero();
 			margin_topRight.setZero();
+		}
+
+		void setMargin(const float left, const float right, const float top, const float bottom) {
+			margin_bottomLeft.set(left, bottom);
+			margin_topRight.set(right, top);
+		}
+
+		void setMargin(const float val) {
+			margin_bottomLeft.set(val, val);
+			margin_topRight.set(val, val);
 		}
 
 		virtual void childrenCheck(const Elem* ptr) {

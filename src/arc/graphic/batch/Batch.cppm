@@ -30,7 +30,7 @@ export namespace Core{
 		Shader* generalShader = nullptr;
 		Shader* customShader = nullptr;
 
-		const Blending* blending = &Blendings::NORMAL;
+		const Blending* blending = &Blendings::Normal;
 
 		/**
 		 * \brief From Viewport Size to normalized [-1, 1]

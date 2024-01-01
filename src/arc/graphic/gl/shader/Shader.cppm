@@ -40,7 +40,7 @@ export namespace GL {
 		comp = GL_COMPUTE_SHADER
 	};
 
-	std::string_view shaderTypeStr(const ShaderType shaderType) {
+	constexpr std::string_view shaderTypeStr(const ShaderType shaderType) {
 		switch (shaderType) {
 			case ShaderType::glsl:
 				return "GENERAL";
@@ -61,7 +61,7 @@ export namespace GL {
 		}
 	}
 
-	std::string suffix(const ShaderType shaderType) {
+	constexpr std::string suffix(const ShaderType shaderType) {
 		switch (shaderType) {
 			case ShaderType::glsl:
 				return ".glsl";
@@ -82,7 +82,7 @@ export namespace GL {
 		}
 	}
 
-	inline GLuint typeID(ShaderType type){
+	constexpr GLuint typeID(ShaderType type){
 		return static_cast<GLuint>(type);
 	}
 

@@ -7,7 +7,7 @@ import GL.Buffer;
 import <array>;
 
 export namespace GL{
-	class IndexBuffer final : virtual public GLBuffer
+	class IndexBuffer final : public GLBuffer
 	{
 	public:
 		/**The Count Of Vert Indexes Needed To Draw A Quad*/

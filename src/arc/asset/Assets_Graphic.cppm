@@ -9,10 +9,10 @@ import GL.VertexArray;
 import Font;
 import GlyphArrangement;
 import OS.FileTree;
-export import GL.Shader;
-export import GL.Uniform;
-export import GL.Texture.Texture2D;
-export import GL.Texture.TextureRegion;
+import GL.Shader;
+import GL.Uniform;
+import GL.Texture.Texture2D;
+import GL.Texture.TextureRegion;
 import GL.Texture.TextureRegionRect;
 
 import Geom.Vector2D;
@@ -166,7 +166,7 @@ export namespace Assets{
 			loader->rootCacheDir = cacheDir;
 			
 			telegrama =
-				 loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars, DefFlag, 120});
+				 loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"),  targetChars, DefFlag, 120});
 
 			loader->load();
 
@@ -180,35 +180,35 @@ export namespace Assets{
 
 			loader->rootCacheDir = cacheDir;
 			consola_Regular =
-				loader->registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ),  targetChars});
 			consola_Italic =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolai.ttf"),  targetChars});
 			consola_Bold =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolab.ttf"),  targetChars});
 			consola_Bold_Italic =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("consolaz.ttf"),  targetChars});
 
 			times_Regular =
-				loader->registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("times.ttf" ),  targetChars});
 			times_Italic =
-				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesi.ttf"),  targetChars});
 			times_Bold =
-				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesbd.ttf"),  targetChars});
 			times_Bold_Italic =
-				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"), cacheDir,  targetChars});
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("timesbi.ttf"),  targetChars});
 
 			josefinSans_Regular =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"),  targetChars});
 			josefinSans_Bold =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"),  targetChars});
 
 			josefinSans_Regular_Large =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"), cacheDir,  targetChars, DefFlag, 90});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Regular.ttf"),  targetChars, DefFlag, 90});
 			josefinSans_Bold_Large =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"), cacheDir,  targetChars, DefFlag, 90});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("josefinSans-ES-Bold.ttf"),  targetChars, DefFlag, 90});
 
 			telegrama =
-			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"), cacheDir,  targetChars});
+			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"),  targetChars});
 
 
 			Font::registerParserableFont("tms-R" , times_Regular);

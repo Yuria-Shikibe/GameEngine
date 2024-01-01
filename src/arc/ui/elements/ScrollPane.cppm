@@ -52,6 +52,7 @@ export namespace UI {
 
 		Elem* item{nullptr};
 
+		//TODO uses layout cell
 		Rect itemSize;
 	public:
 		ScrollPane(){
@@ -73,8 +74,6 @@ export namespace UI {
 
 			touchbility = UI::TouchbilityFlags::enabled;
 			quitInboundFocus = false;
-
-			color.set(0.3f, 0.66f, 0.96f, 0.6f);
 		}
 
 		void update(const float delta) override {
@@ -132,13 +131,14 @@ export namespace UI {
 		}
 
 		//TODO this has bug when resized !
+		//If layouted multible times, this will shrink itemsize!
 		Rect getFilledChildrenBound(Elem* elem) const override {
 			Rect rect = Elem::getFilledChildrenBound(elem);
 
 			if(hoverScroller)return rect;
 
-			const bool enableX = bound.getWidth() > getWidth() - marginWidth() && bound.getHeight() > getHeight() - marginHeight() - hoirScrollerHeight;
-			const bool enableY = bound.getHeight() > getHeight() - marginHeight() && bound.getWidth() > getWidth() - marginWidth() - vertScrollerWidth;
+			const bool enableX = !elem->isFillParentX() && bound.getWidth() > getWidth() - marginWidth() && bound.getHeight() > getHeight() - marginHeight() - hoirScrollerHeight;
+			const bool enableY = !elem->isFillParentY() && bound.getHeight() > getHeight() - marginHeight() && bound.getWidth() > getWidth() - marginWidth() - vertScrollerWidth;
 
 			rect.addSize(
 				enableY ? -vertScrollerWidth : 0.0f,
@@ -213,7 +213,7 @@ export namespace UI {
 			return std::clamp(1.0f - scrollOffset.y / (itemSize.getHeight() - getHeight() + marginHeight() + horiBarStroke()), 0.0f, 1.0f);
 		}
 
-		void draw() const override;
+		void drawContent() const override;
 	};
 
 

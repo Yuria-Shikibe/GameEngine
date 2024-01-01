@@ -5,6 +5,7 @@ export module GL.Buffer.FrameBuffer;
 import <glad/glad.h>;
 import <memory>;
 
+import GL;
 import GL.Texture.Texture2D;
 import GL.Buffer;
 import GL.Buffer.RenderBuffer;
@@ -12,7 +13,7 @@ import Graphic.Resizeable;
 import Graphic.Color;
 
 export namespace GL{
-	class FrameBuffer : virtual public GLBuffer, virtual public Graphic::ResizeableUInt
+	class FrameBuffer : public GLBuffer, public Graphic::ResizeableUInt
 	{
 	protected:
 		unsigned int width = 0, height = 0;
@@ -41,11 +42,14 @@ export namespace GL{
 			glFramebufferTexture2D(targetFlag, GL_COLOR_ATTACHMENT0, sample->getTargetFlag(), sample->getID(), 0);
 			glFramebufferRenderbuffer(targetFlag, GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer->getTargetFlag(), renderBuffer->getID());
 
+			sample->setScale(GL_LINEAR, GL_LINEAR);
+
 			FrameBuffer::unbind();
 		}
 
 		~FrameBuffer() override{
 			glDeleteFramebuffers(1, &bufferID);
+			GL::cleari(bufferID);
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{

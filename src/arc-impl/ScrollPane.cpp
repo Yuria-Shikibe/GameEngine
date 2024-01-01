@@ -29,9 +29,7 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 	}
 }
 
-void UI::ScrollPane::draw() const {
-	drawBackground();
-
+void UI::ScrollPane::drawContent() const {
 	Graphic::Draw::flush();
 
 	GL::enable(GL::Test::SCISSOR);

@@ -49,14 +49,25 @@ export namespace ext{
 		}
 	};
 
-	class IllegalArguments final : RuntimeException{
+	class IllegalArguments final : RuntimeException {
 	public:
-	[[nodiscard]] explicit IllegalArguments(const std::string& str)
-		: RuntimeException(str) {
-	}
+		[[nodiscard]] explicit IllegalArguments(const std::string& str)
+			: RuntimeException(str) {
+		}
 
-	[[nodiscard]] IllegalArguments() : IllegalArguments("Illegal Arguments At...") {
+		[[nodiscard]] IllegalArguments() : IllegalArguments("Illegal Arguments At...") {
 
-	}
-};
+		}
+	};
+
+	class ArrayIndexOutOfBound final : RuntimeException {
+	public:
+		[[nodiscard]] explicit ArrayIndexOutOfBound(const std::string& str)
+			: RuntimeException(str) {
+		}
+
+		[[nodiscard]] ArrayIndexOutOfBound(size_t index, size_t bound) : RuntimeException("Array Index Out Of Bound! : [" + std::to_string(index) + "] Out of " + std::to_string(bound)) {
+
+		}
+	};
 }

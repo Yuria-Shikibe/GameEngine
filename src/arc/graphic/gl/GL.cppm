@@ -5,6 +5,7 @@ module;
 
 export module GL;
 
+import <unordered_map>;
 import <unordered_set>;
 import <glad/glad.h>;
 
@@ -12,6 +13,7 @@ namespace GL {
     GLuint lastProgram{0};
 
     std::unordered_set<GLenum> currentState;
+    std::unordered_map<GLuint, std::unordered_set<GLenum>> bufferState;
 
     int maxTexSize = 4096;
 
@@ -25,6 +27,9 @@ namespace GL {
     GLint scissor_y{0};
     GLint scissor_w{0};
     GLint scissor_h{0};
+
+    GLenum
+        globalBlend_src{}, globalBlend_dst{}, globalBlend_srcAlpha{}, globalBlend_dstAlpha;
 }
 
 export namespace GL {
@@ -35,6 +40,11 @@ export namespace GL {
         constexpr GLenum SIMULTANEOUS_TEXTURE_AND_STENCIL = 0x82AD;
         constexpr GLenum FASTEST = 0x1101;
         constexpr GLenum SCISSOR = 0x0C11;
+    }
+
+
+    unsigned int getMaxTextureSize() {
+        return maxTexSize;
     }
     
     GLuint useProgram(const GLuint program) {
@@ -49,11 +59,8 @@ export namespace GL {
         if(!currentState.contains(cap)) {
             currentState.insert(cap);
             glEnable(cap);
-        }
-    }
 
-    unsigned int getMaxTextureSize() {
-        return maxTexSize;
+        }
     }
 
     void disable(const GLenum cap) {
@@ -61,6 +68,29 @@ export namespace GL {
             currentState.erase(cap);
             glDisable(cap);
         }
+    }
+
+    void enablei(const GLenum cap, const GLuint id) {
+        if(auto& state = bufferState[cap]; !state.contains(cap)) {
+            state.insert(cap);
+            glEnablei(cap, id);
+        }
+    }
+
+    void disablei(const GLenum cap, const GLuint id) {
+        if(auto& state = bufferState[cap]; state.contains(cap)) {
+            state.erase(cap);
+            glDisablei(cap, id);
+        }
+    }
+
+    bool cleari(const GLuint id) {
+        if(const auto itr = bufferState.find(id); itr != bufferState.end()) {
+            itr->second.clear();
+            return true;
+        }
+
+        return false;
     }
 
     void init() {
@@ -80,7 +110,7 @@ export namespace GL {
     void setState(const GLenum cap, const bool enable) {
         if(enable) {
             GL::enable(cap);
-        }else {
+        }else{
             GL::disable(cap);
         }
     }
@@ -99,13 +129,36 @@ export namespace GL {
     }
 
     void scissor(const GLint x, const GLint y, const GLint width, const GLint height) {
-        // if(x == scissor_x && y == scissor_y && scissor_w == width && scissor_h == height)return;
+        if(x == scissor_x && y == scissor_y && scissor_w == width && scissor_h == height)return;
         glScissor(x, y, width, height);
-        // scissor_x = x;
-        // scissor_y = y;
-        // scissor_w = width;
-        // scissor_h = height;
+        scissor_x = x;
+        scissor_y = y;
+        scissor_w = width;
+        scissor_h = height;
     }
 
+    void blendFunc(const GLenum src, const GLenum dst) {
+        if(src == globalBlend_src && dst == globalBlend_dst && src == globalBlend_srcAlpha && dst == globalBlend_dstAlpha)return;
+        glBlendFunc(src, dst);
+        globalBlend_src = globalBlend_srcAlpha = src;
+        globalBlend_dst = globalBlend_dstAlpha = dst;
+    }
+
+    void blendFunc(const GLenum src, const GLenum dst, const GLenum srcAlpha, const GLenum dstAlpha) {
+        if(src == globalBlend_src && dst == globalBlend_dst && src == globalBlend_srcAlpha && dst == globalBlend_dstAlpha)return;
+        glBlendFuncSeparate(src, dst, srcAlpha, dstAlpha);
+        globalBlend_src = src;
+        globalBlend_srcAlpha = srcAlpha;
+        globalBlend_dst = dst;
+        globalBlend_dstAlpha = dstAlpha;
+    }
+
+    void blendFunci(const GLuint buf, const GLenum src, const GLenum dst) {
+        glBlendFunci(buf, src, dst);
+    }
+
+    void blendFunci(const GLuint buf, const GLenum src, const GLenum dst, const GLenum srcAlpha, const GLenum dstAlpha) {
+        glBlendFuncSeparatei(buf, src, dst, srcAlpha, dstAlpha);
+    }
 }
 

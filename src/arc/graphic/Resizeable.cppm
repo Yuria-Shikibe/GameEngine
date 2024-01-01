@@ -25,6 +25,7 @@ export namespace Graphic{
 	};
 
 	using ResizeableUInt = Resizeable<unsigned int>;
+	using ResizeableInt = Resizeable<int>;
 }
 
 

@@ -46,6 +46,8 @@ export namespace UI{
 		float marginX = 8.0f;
 		float marginY = 8.0f;
 
+		bool allHidden = false;
+
 		[[nodiscard]] Root();
 
 		Geom::Vector2D cursorPos{};
@@ -113,6 +115,18 @@ export namespace UI{
 		void onRelease(int id);
 
 		void onScroll() const;
+
+		void disable() {
+			root->setVisible(false);
+			root->setTouchbility(TouchbilityFlags::disabled);
+			allHidden = true;
+		}
+
+		void enable() {
+			root->setVisible(true);
+			root->setTouchbility(TouchbilityFlags::childrenOnly);
+			allHidden = false;
+		}
 
 		[[nodiscard]] bool onDrag(int id = 0) const;
 

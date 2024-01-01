@@ -74,8 +74,7 @@ void Assets::Manager::loadPost() {
 	Assets::loadAfter();
 
 	Font::glyphParser->context.defaultFont = Assets::Fonts::telegrama;
-
-	Font::defaultManager = fonts.manager.get();
+	Font::glyphParser->fontLib = fonts.manager.get();
 }
 
 void Assets::Manager::loadEnd() {

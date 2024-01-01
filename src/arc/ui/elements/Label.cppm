@@ -33,8 +33,7 @@ export namespace UI {
 		}
 
 		void updateTextLayout() const {
-			glyphLayout->maxWidth = bound.getWidth();
-			Font::glyphParser->parse(glyphLayout, text);
+			Font::glyphParser->parse(glyphLayout, text, bound.getWidth());
 			glyphLayout->setAlign(textAlignMode);
 		}
 
@@ -65,15 +64,12 @@ export namespace UI {
 			return text;
 		}
 
-		void draw() const override {
-			drawBackground();
-
+		void drawContent() const override {
 			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight());
 			glyphLayout->render();
 		}
 
 		void layout() override {
-
 			Elem::layout();
 		}
 

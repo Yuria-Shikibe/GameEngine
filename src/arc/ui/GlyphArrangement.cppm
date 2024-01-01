@@ -175,7 +175,7 @@ export namespace Font {
 		const FontFlags* currentFont{nullptr};
 		const FontFlags* fallbackFont{nullptr};
 
-		[[nodiscard]] explicit TypesettingTable(const FontFlags* const font);
+		[[nodiscard]] explicit TypesettingTable(const FontFlags* font);
 
 		[[nodiscard]] TypesettingTable() = default;
 
@@ -208,11 +208,11 @@ export namespace Font {
 	struct ModifierableData {
 		TypesettingTable& context;
 		Geom::Vector2D& cursorPos;
-		const Font::FontData::CharData*& charData;
+		const Font::CharData*& charData;
 		GlyphLayout& layout;
 
 		[[nodiscard]] ModifierableData(TypesettingTable& context, Geom::Vector2D& vec2,
-			const Font::FontData::CharData*& data, GlyphLayout& layout)
+			const Font::CharData*& data, GlyphLayout& layout)
 			: context(context),
 			cursorPos(vec2),
 			charData(data),
@@ -221,7 +221,7 @@ export namespace Font {
 	};
 
 namespace ParserFunctions {
-	void setScl(const ModifierableData& data, const float target);
+	void setScl(const ModifierableData& data, float target);
 
 	void resetScl(const ModifierableData& data) {
 		setScl(data, 1.0f);
@@ -270,6 +270,8 @@ namespace ParserFunctions {
 		const char TokenBeginCode = '{';
 		const char TokenEndCode = '}';
 
+		Font::FontCache* fontLib{nullptr};
+
 		mutable TypesettingTable context{};
 
 		std::unique_ptr<TokenParser> tokenParser{std::make_unique<TokenParser>()};
@@ -282,7 +284,7 @@ namespace ParserFunctions {
 
 		}
 
-		virtual void parse(const std::shared_ptr<GlyphLayout> layout, const std::string_view text) const;
+		virtual void parse(std::shared_ptr<GlyphLayout> layout, std::string_view text, float newMaxWidth = std::numeric_limits<float>::max()) const;
 
 		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string_view text) const {
 			const auto layout = std::make_shared<GlyphLayout>();

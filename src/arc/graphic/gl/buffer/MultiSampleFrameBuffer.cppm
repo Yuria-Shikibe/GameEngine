@@ -9,7 +9,7 @@ import GL.Buffer.MultiSampleRenderBuffer;
 import GL.Texture.MultiSampleTexture2D;
 
 export namespace GL {
-	class MultiSampleFrameBuffer final : virtual public FrameBuffer {
+	class MultiSampleFrameBuffer final : public FrameBuffer {
 	public:
 		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h, const int samples)
 				: FrameBuffer() {
@@ -26,7 +26,7 @@ export namespace GL {
 			glFramebufferTexture2D(targetFlag, GL_COLOR_ATTACHMENT0, sample->getTargetFlag(), sample->getID(), 0);
 			glFramebufferRenderbuffer(targetFlag, GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer->getTargetFlag(), renderBuffer->getID());
 
-			// sample->setScale(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR);
+			sample->setScale(GL_LINEAR, GL_LINEAR);
 
 			FrameBuffer::unbind();
 		}

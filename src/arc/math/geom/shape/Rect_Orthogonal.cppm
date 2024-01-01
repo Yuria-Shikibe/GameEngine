@@ -164,6 +164,15 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
+		template <Concepts::Number N>
+		Rect_Orthogonal& addSize(const N x, const N y){
+			using S = std::make_signed_t<T>;
+			setWidth(static_cast<S>(width) + static_cast<S>(x));
+			setHeight(static_cast<S>(height) + static_cast<S>(y));
+
+			return *this;
+		}
+
 		void setLargerWidth(const T v) {
 			T abs = v < 0 ? -v : v;
 			if(abs > width) {
@@ -330,6 +339,10 @@ export namespace Geom::Shape{
 			collector.push_back(vert_01());
 
 			return collector;
+		}
+
+		void setVert(const float srcX, const float srcY, const float endX, const float endY) {
+			set(srcX, srcY, endX - srcX, endY - srcY);
 		}
 	};
 

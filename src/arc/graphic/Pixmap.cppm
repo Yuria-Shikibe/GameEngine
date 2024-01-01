@@ -18,15 +18,12 @@ using Graphic::Color;
 using colorBits = Graphic::Color::colorBits;
 
 export namespace Graphic{
-    /**
-     * \brief Png Only!!
-     *
-     */
     class Pixmap{
     protected:
         unsigned int width{ 1 };
         unsigned int height{ 1 };
-        unsigned int bpp{ 4 };
+        //TODO is this necessay?
+        // unsigned int bpp{ 4 };
 
         std::unique_ptr<unsigned char[]> data{nullptr};
 
@@ -43,9 +40,9 @@ export namespace Graphic{
             return height;
         }
 
-        [[nodiscard]] unsigned getBpp() const {
-            return bpp;
-        }
+        // [[nodiscard]] unsigned getBpp() const {
+        //     return bpp;
+        // }
 
         [[nodiscard]] unsigned char* release() {
             return data.release();
@@ -93,14 +90,15 @@ export namespace Graphic{
         Pixmap(const Pixmap& other)
             : width(other.width),
               height(other.height),
-              bpp(other.bpp), data(other.copyData()) {
+              //bpp(other.bpp),
+              data(other.copyData()) {
 
         }
 
         Pixmap(Pixmap&& other) noexcept
             : width(other.width),
               height(other.height),
-              bpp(other.bpp),
+              //bpp(other.bpp),
               data(std::move(other.data)) {
         }
 
@@ -108,7 +106,7 @@ export namespace Graphic{
             if(this == &other) return *this;
             width = other.width;
             height = other.height;
-            bpp = other.bpp;
+            //bpp = other.bpp;
             data = other.copyData();
             return *this;
         }
@@ -117,7 +115,7 @@ export namespace Graphic{
             if(this == &other) return *this;
             width = other.width;
             height = other.height;
-            bpp = other.bpp;
+            //bpp = other.bpp;
             data = std::move(other.data);
             return *this;
         }
@@ -140,7 +138,8 @@ export namespace Graphic{
         }
 
         void loadFrom(const OS::File& file) {
-            const auto pixels = stbi::loadPng(file, width, height, bpp, Channels);
+            unsigned b;
+            const auto pixels = stbi::loadPng(file, width, height, b, Channels);
 
             this->data = std::unique_ptr<unsigned char[]>(pixels);
         }
@@ -149,18 +148,6 @@ export namespace Graphic{
             data = texture2D.copyData();
             width = texture2D.getWidth();
             height = texture2D.getHeight();
-        }
-
-        void loadRaw(const unsigned char* data, const int length, const size_t offset = 0) {
-            int w, h, b;
-
-            unsigned char* pixels = stbi::load_fromMemroy(data + offset, length, w, h, b);
-
-            width = w;
-            height = h;
-            bpp = b;
-
-            this->data = std::unique_ptr<unsigned char[]>(pixels);
         }
 
         void write(const OS::File& file, const bool autoCreate = false) const {

@@ -2,7 +2,6 @@ module;
 
 export module GL.Texture.Texture2D;
 
-import File;
 import Graphic.Resizeable;
 import RuntimeException;
 import <string>;
@@ -10,9 +9,24 @@ import <ostream>;
 import <memory>;
 import <glad/glad.h>;
 import Image;
+import File;
 
 export namespace GL{
-	class Texture2D : virtual public Graphic::ResizeableUInt
+	enum TexParams{
+		nearest                = GL_NEAREST,
+		linear                 = GL_LINEAR,
+		mipmap_linear_linear   = GL_LINEAR_MIPMAP_LINEAR,
+		mipmap_nearest_nearest = GL_NEAREST_MIPMAP_NEAREST,
+		mipmap_nearest_linear  = GL_NEAREST_MIPMAP_LINEAR,
+		mipmap_linear_nearest  = GL_LINEAR_MIPMAP_NEAREST,
+		filterMag              = GL_TEXTURE_MAG_FILTER,
+		filterMin              = GL_TEXTURE_MIN_FILTER,
+		wrap_U                 = GL_TEXTURE_WRAP_S,
+		wrap_V                 = GL_TEXTURE_WRAP_T,
+		//...
+	};
+
+	class Texture2D : public Graphic::ResizeableUInt
 	{
 
 	protected:
@@ -30,9 +44,10 @@ export namespace GL{
 			}
 		};
 
+		//TODO is this really necessay?
 		std::string texName{"null"};
 
-		std::unique_ptr<unsigned char, STBI_DataDeleter> localData = nullptr;
+		std::unique_ptr<unsigned char, STBI_DataDeleter> localData{nullptr};
 
 		Texture2D() = default;
 
@@ -63,11 +78,7 @@ export namespace GL{
 
 		}
 
-		explicit Texture2D(const OS::File& file, const bool initInstantly = true){
-			localData.reset(loadFromFile(file));
-			if(initInstantly)init();
-			texName = file.stem();
-		}
+		explicit Texture2D(const OS::File& file, bool initInstantly = true);
 
 		static std::size_t hash_value(const Texture2D& obj){
 			return obj.textureID;
@@ -85,37 +96,11 @@ export namespace GL{
 			return !(lhs == rhs);
 		}
 
-		Texture2D(const Texture2D& other) noexcept: textureID(other.textureID),
-											   targetFlag(other.targetFlag),
-											   width(other.width),
-		                                       height(other.height),
-											   bpp(other.bpp),
-											   texName(other.texName),
-											   localData(other.copyData().release()){
-		}
+		Texture2D(const Texture2D& other) noexcept;
 
-		Texture2D(Texture2D&& other) noexcept: textureID(other.textureID),
-		                                       targetFlag(other.targetFlag),
-		                                       width(other.width),
-											   height(other.height),
-		                                       bpp(other.bpp),
-		                                       texName(std::move(other.texName)),
-		                                       localData(std::move(other.localData)){
-			textureID = 0;
-		}
+		Texture2D(Texture2D&& other) noexcept;
 
-		Texture2D& operator=(Texture2D&& other) noexcept{
-			if(this == &other) return *this;
-			localData = std::move(other.localData);
-			texName = std::move(other.texName);
-			textureID = other.textureID;
-			width = other.width;
-			height = other.height;
-			bpp = other.bpp;
-
-			other.textureID = 0;
-			return *this;
-		}
+		Texture2D& operator=(Texture2D&& other) noexcept;
 
 		Texture2D& operator=(const Texture2D& other) = delete;
 
@@ -123,17 +108,7 @@ export namespace GL{
 			localData.reset(nullptr);
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override{
-			if(w == width && h == height)return;
-
-			free();
-			width = w;
-			height = h;
-
-			bind();
-			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
-			unbind();
-		}
+		void resize(const unsigned int w, const unsigned int h) override;
 
 		[[nodiscard]] bool valid() const {
 			return localData != nullptr;
@@ -147,79 +122,31 @@ export namespace GL{
 			return height;
 		}
 
-		unsigned char* loadFromFile(const OS::File& file){
-			//TODO File Support
-			return stbi::loadPng(file, width, height, bpp);
-		}
+		unsigned char* loadFromFile(const OS::File& file);
 
 
 		/**
 		 * \brief The data will be released after init, uses rv-ref to pass the pointer
 		 * \param data
 		 */
-		void init(unsigned char*&& data) {
-			if(data != localData.get())localData.reset(data);
-
-			if(bpp != 4) {
-				throw ext::RuntimeException{"Illegal Bpp Size: " + bpp};
-			}
-
-			glGenTextures(1, &textureID);
-
-			active();
-
-			//TODO : Check if needed here.
-			glTexImage2D(targetFlag, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
-
-			glGenerateMipmap(targetFlag);
-
-			setParameters();
-			free();
-		}
+		void init(unsigned char*&& data);
 
 		void init() {
 			init(localData.get());
 		}
 
-		void updateData() { // NOLINT(*-make-member-function-const)
-			bind();
+		void updateData();
 
-			//Avoid unnecessary resize allocate
-			if(!valid()) {
-				localData.reset(new unsigned char[width * height * 4]);
-			}
+		void setParameters(GLint downScale = GL_LINEAR_MIPMAP_LINEAR, GLint upScale = GL_LINEAR, GLint clampX = GL_CLAMP_TO_EDGE, GLint clampY = GL_CLAMP_TO_EDGE) const;
 
-			glGetTexImage(targetFlag, 0, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
-			unbind();
-		}
+		void setScale(GLint downScale = GL::mipmap_nearest_linear, GLint upScale = GL::linear) const;
 
-		void setParameters(const GLint downScale = GL_LINEAR, const GLint upScale = GL_LINEAR, const GLint clampX = GL_CLAMP_TO_EDGE, const GLint clampY = GL_CLAMP_TO_EDGE) const{
-			bind();
-			glTexParameteri(targetFlag, GL_TEXTURE_MIN_FILTER, downScale);
-			glTexParameteri(targetFlag, GL_TEXTURE_MAG_FILTER, upScale);
-			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_S, clampX);
-			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_T, clampY);
-			unbind();
-		}
-
-		void setScale(const GLint upScale, const GLint downScale) const{
-			bind();
-			glTexParameteri(targetFlag, GL_TEXTURE_MIN_FILTER, downScale);
-			glTexParameteri(targetFlag, GL_TEXTURE_MAG_FILTER, upScale);
-			unbind();
-		}
-
-		void setWrap(const GLint clamp) const{
-			bind();
-			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_S, clamp);
-			glTexParameteri(targetFlag, GL_TEXTURE_WRAP_T, clamp);
-			unbind();
-		}
+		void setWrap(GLint clamp) const;
 
 		void bind() const{
 			glBindTexture(targetFlag, textureID);
 		}
-		
+
 		void active(const unsigned char slotOffset = 0) const{ // NOLINT(*-convert-member-functions-to-static)
 			glActiveTexture(GL_TEXTURE0 + slotOffset);
 			bind();
@@ -239,18 +166,7 @@ export namespace GL{
 			return width * height * bpp;
 		}
 
-		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
-			if(!valid()) {
-				throw ext::RuntimeException{"Texture doesn't contains data!"};
-			}
-
-			const size_t size = dataSize();
-			auto* data = new unsigned char[size]{0};
-
-			std::copy_n(localData.get(), size, data);
-
-			return std::unique_ptr<unsigned char[]>(data);
-		}
+		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const;
 
 		[[nodiscard]] GLuint getID() const{
 			return textureID;

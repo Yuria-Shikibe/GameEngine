@@ -40,7 +40,7 @@ void main() {
 		}
 	}
 	
-	color.a *= 0.82f;
+	color.a *= 0.9f;
 	
 	color.r = color.a;
 	color.g = color.a;
@@ -49,10 +49,10 @@ void main() {
 	float newA = 0.0f;
 	
 	if(!modified(newA)){
-		newA = step(abs(gl_FragCoord.x - screenSize.x * 0.5f), 1f) * 0.4f;
+		newA = step(abs(gl_FragCoord.x - screenSize.x * 0.5f), 1.0f) * 0.4f;
 		
 		if(!modified(newA)){
-			newA = step(abs(gl_FragCoord.y - screenSize.y * 0.5f), 1f) * 0.4f;
+			newA = step(abs(gl_FragCoord.y - screenSize.y * 0.5f), 1.0f) * 0.4f;
 		}
 		
 		if(modified(newA)){

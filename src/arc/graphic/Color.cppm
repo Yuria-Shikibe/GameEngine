@@ -790,6 +790,8 @@ export namespace Graphic{
 
 		const Color AQUA_SKY = Color::createLerp({&AQUA, &SKY}, 0.5f);
 
+		const Color BLUE_SKY = Color::createLerp({&BLUE, &SKY}, 0.745f);
+
 		const Color CYAN{ 0, 1, 1, 1 };
 		const Color TEAL{ 0, 0.5f, 0.5f, 1 };
 

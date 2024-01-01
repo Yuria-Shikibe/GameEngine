@@ -7,7 +7,7 @@ import <glad/glad.h>;
 export import GL.Buffer;
 
 export namespace GL{
-	class VertexBuffer final : virtual public GLBuffer
+	class VertexBuffer final : public GLBuffer
 	{
 
 	protected:
