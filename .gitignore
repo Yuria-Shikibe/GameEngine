@@ -142,3 +142,5 @@ CTestTestfile.cmake
 /resource/assets/texture/test/
 /resource/logs/crashes/
 /resource/assets/tex-cache/
+/resource/assets/fonts/cache-load/
+/deprecated/
