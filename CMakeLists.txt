@@ -44,7 +44,7 @@ message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 #endif()
 
 set(SRC_DIR src)
-set(RES_DIR resource)
+set(RES_DIR properties)
 set(REF_DIR include)
 set(LIB_DIR lib)
 

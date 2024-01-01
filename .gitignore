@@ -1,4 +1,4 @@
-resource/assets/fonts/cache
+properties/resource/assets/fonts/cache
 #project end
 
 _ReSharper.Caches/
@@ -137,10 +137,10 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
-/resource/assets/fonts/cache/
-/resource/assets/texture/test2/
-/resource/assets/texture/test/
-/resource/logs/crashes/
-/resource/assets/tex-cache/
-/resource/assets/fonts/cache-load/
+/properties/resource/assets/fonts/cache/
+/properties/resource/assets/texture/test2/
+/properties/resource/assets/texture/test/
+/properties/resource/logs/crashes/
+/properties/resource/assets/tex-cache/
+/properties/resource/assets/fonts/cache-load/
 /deprecated/
