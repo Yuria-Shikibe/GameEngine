@@ -2,6 +2,8 @@ module;
 
 module UI.ScrollPane;
 
+import Graphic.Draw;
+
 import UI.Root;
 import Graphic.Color;
 

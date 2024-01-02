@@ -18,14 +18,16 @@ export namespace UI {
 		Align::Mode textAlignMode{Align::Mode::top_left};
 
 		//TODO Support characters apart from ASCII
-		TextView text = "";
+		TextView text{" "};
 		std::shared_ptr<TextView::value_type> dataSource{nullptr};
 
 		bool textChanged = false;
+		bool adoptHeight = false;
 
 	public:
 		[[nodiscard]] Label() {
-			setText("");
+			setMargin(12.0f);
+			setText(" ");
 		}
 
 		void textUpdated() {
@@ -33,7 +35,7 @@ export namespace UI {
 		}
 
 		void updateTextLayout() const {
-			Font::glyphParser->parse(glyphLayout, text, bound.getWidth());
+			Font::glyphParser->parse(glyphLayout, text, bound.getWidth() - marginWidth());
 			glyphLayout->setAlign(textAlignMode);
 		}
 
@@ -64,13 +66,11 @@ export namespace UI {
 			return text;
 		}
 
-		void drawContent() const override {
-			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight());
-			glyphLayout->render();
-		}
+		void drawContent() const override;
 
-		void layout() override {
-			Elem::layout();
+		void calAbsolute(Elem* parent) override {
+			Elem::calAbsolute(parent);
+			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::motionOf(textAlignMode, margin_bottomLeft, margin_topRight));
 		}
 
 		void update(float delta) override {

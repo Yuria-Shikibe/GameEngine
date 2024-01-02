@@ -50,6 +50,26 @@ export namespace Game {
 			return ally.contains(id);
 		}
 
+		[[nodiscard]] bool isHostileTo(const FactionID id) const {
+			return hostile.contains(id);
+		}
+
+		[[nodiscard]] bool isNeutralTo(const FactionID id) const {
+			return neutral.contains(id);
+		}
+
+		[[nodiscard]] bool isAllyTo(const Faction* t) const {
+			return ally.contains(t->getID());
+		}
+
+		[[nodiscard]] bool isHostileTo(const Faction* t) const {
+			return hostile.contains(t->getID());
+		}
+
+		[[nodiscard]] bool isNeutralTo(const Faction* t) const {
+			return neutral.contains(t->getID());
+		}
+
 		//...properties...
 	};
 }

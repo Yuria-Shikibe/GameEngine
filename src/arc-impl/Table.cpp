@@ -5,12 +5,16 @@ void UI::Table::layoutRelative() {
 		return cell.ignore();
 	}))return;
 
-	size_t curLayoutRows = rows();
+	size_t curLayoutRows = std::ranges::count_if(std::as_const(cells), [](const auto& t) {
+		return t.endRow();
+	});
 
 	//Make Sure There at least exist one row!
 	if(!cells.back().endRow()) {
 		curLayoutRows++;
 	}
+
+	rowsCount = curLayoutRows;
 
 	//Register Row Max width / height
 

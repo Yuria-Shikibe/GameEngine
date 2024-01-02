@@ -33,17 +33,19 @@ export namespace UI {
 
 		void setRoot(Root* root) override;
 
-		virtual void addChildren(std::unique_ptr<Elem>&& elem) {
+		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem) {
 			modifyAddedChildren(elem.get());
 			children.push_back(std::forward<std::unique_ptr<Elem>>(elem));
+			return children.back().get();
 		}
 
-		virtual void addChildren(std::unique_ptr<Elem>&& elem, const size_t depth) {
+		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem, const size_t depth) {
 			if(depth >= children.size()) {
 				addChildren(std::forward<std::unique_ptr<Elem>>(elem));
-			}else {
+				return children.back().get();
+			}else{
 				modifyAddedChildren(elem.get());
-				children.insert(children.begin() + depth, std::forward<std::unique_ptr<Elem>>(elem));
+				return children.insert(children.begin() + depth, std::forward<std::unique_ptr<Elem>>(elem))->get();
 			}
 		}
 

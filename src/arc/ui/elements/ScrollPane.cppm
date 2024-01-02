@@ -8,7 +8,6 @@ import UI.Group;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import GL;
-import Graphic.Draw;
 import <algorithm>;
 import <execution>;
 import <iostream>;

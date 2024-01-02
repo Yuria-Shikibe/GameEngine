@@ -2,6 +2,8 @@ module;
 
 export module Align;
 
+import Geom.Vector2D;
+
 export namespace Align {
 	enum class Mode : char{
 		left = 0b0000'0001,
@@ -32,6 +34,30 @@ export namespace Align {
 	bool operator &(const Mode l, const Mode r) {
 		return codeOf(l) & codeOf(r);
 	}
+
+	Geom::Vector2D motionOf(Mode align, const Geom::Vector2D& bottomLeft, const Geom::Vector2D& topRight) {
+		float xSign = 0;
+		float ySign = 0;
+
+		if(align & Align::Mode::top) {
+			ySign = -1;
+		}else if(align & Align::Mode::bottom){
+			ySign = 1;
+		}
+
+		if(align & Align::Mode::right) {
+			xSign = -1;
+		}else if(align & Align::Mode::left){
+			xSign = 1;
+		}
+
+		const float xMove = xSign * (xSign == 1 ? bottomLeft.x : topRight.x);
+		const float yMove = ySign * (ySign == 1 ? (bottomLeft.y) : topRight.y);
+
+		return {xMove, yMove};
+	}
+
+
 
 	using enum Mode;
 }

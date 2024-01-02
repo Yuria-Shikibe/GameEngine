@@ -38,8 +38,8 @@ export namespace Event {
 			}
 		}
 
-		template <typename T, typename Func>
-			requires Concepts::Derived<T, EventType> && Concepts::Invokable<Func, void(const T&)> && std::is_final_v<T>
+		template <Concepts::Derived<EventType> T, Concepts::Invokable<void(const T&)> Func>
+			requires std::is_final_v<T>
 		void on(Func&& func){
 #ifdef _DEBUG
 			if(!registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};

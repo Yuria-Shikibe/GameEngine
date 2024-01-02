@@ -4,6 +4,8 @@ import <iomanip>;
 
 import <functional>;
 import <iostream>;
+import <cmath>;
+#include <numeric>
 import <sstream>;
 import <unordered_set>;
 import <glad/glad.h>;
@@ -121,24 +123,25 @@ void setupUITest(){
 
 	{
 
-		auto& cell = HUD->add(new UI::Label{});
-		cell.setAlign(Align::top_left).setSizeScale(0.25f, 0.2f);
-		cell.marginRight = cell.marginBottom = 10;
-		cell.item->color = Colors::RED;
-		cell.item->color.mul(0.6f);
-		cell.clearRelativeMove();
-		cell.as<UI::Label>().setText("test 1231231231");
-		cell.as<UI::Label>().setDynamic(true);
+		HUD->add<UI::Label>([](UI::Label& label) {
+			currentCoord = &label.getView();
+			label.color = Colors::RED;
+			label.color.mul(0.6f);
+			label.setDynamic(true);
+			label.getInputListener().on<UI::MouseActionPress>([&label](const auto& e) {
+				switch(e.buttonID) {
+					case Ctrl::RMB : {
+						label.color = Colors::RED;
+						label.color.mul(0.6f);
+						break;
+					}
+					default: label.color.lerp(Colors::BLUE, 0.1f);
+				}
+			});
+		})
+		.setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
+		.setMargin(0, 10, 0, 10);
 
-		currentCoord = &cell.as<UI::Label>().getView();
-
-		cell.item->getInputListener().on<UI::MouseActionPress>([item = cell.item](auto& e) {
-			if(e.buttonID == Ctrl::LMB)item->color.lerp(Colors::BLUE, 0.1f);
-			if(e.buttonID == Ctrl::RMB) {
-				item->color = Colors::RED;
-				item->color.mul(0.6f);
-			}
-		});
 
 		HUD->add(new UI::Table{})
 			.setAlign(Align::Mode::top_left)
@@ -315,9 +318,11 @@ int main(const int argc, char* argv[]) {
 	assetsLoad();
 
 	// UI Test
-	// setupUITest();
+	setupUITest();
 
 	setupAudioTest();
+
+
 
 	//Draw Test
 	// auto tex = Core::assetsManager->getAtlas().find("test-pester-full");

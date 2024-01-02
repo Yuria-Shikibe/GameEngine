@@ -4,6 +4,7 @@ export module Game.Entity;
 
 import <limits>;
 import RuntimeException;
+import Geom.Shape.Rect_Orthogonal;
 
 export namespace Game {
 	using IDType = unsigned int;
@@ -54,7 +55,7 @@ export namespace Game {
 			return sleeping;
 		}
 
-		virtual void calculateInScreen() {
+		virtual void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) {
 			inScreen = true;
 		}
 

@@ -7,13 +7,20 @@ import <vector>;
 import <algorithm>;
 import <cmath>;
 import <numbers>;
+import <array>;
+import <span>;
 
-export namespace Math{
-	constexpr int SIGNS[2] = { -1, 1 };
-	constexpr int ZERO_ONE[2] = { 0, 1 };
+import SinTable;
+
+import <sstream>;
+
+export namespace Math {
+	constexpr int SIGNS[2]     = { -1, 1 };
+	constexpr int ZERO_ONE[2]  = { 0, 1 };
 	constexpr bool BOOLEANS[2] = { true, false };
+
 	constexpr float FLOAT_ROUNDING_ERROR = 0.000001f;
-	constexpr float PI = std::numbers::pi_v<float>;
+	constexpr float PI                   = std::numbers::pi_v<float>;
 	// ReSharper disable once CppInconsistentNaming
 	constexpr float pi        = PI, HALF_PI = PI / 2.0f;
 	constexpr double PI_EXACT = 3.14159265358979323846;
@@ -22,48 +29,43 @@ export namespace Math{
 	constexpr float SQRT2     = std::numbers::sqrt2_v<float>;
 	constexpr float SQRT3     = std::numbers::sqrt3_v<float>;
 	/** multiply by this to convert from radians to degrees */
-	constexpr float RADIANS_TO_DEGREES = 180.0f / std::numbers::pi_v<float>;
-	constexpr float RAD_DEG = RADIANS_TO_DEGREES;
+	constexpr float RADIANS_TO_DEGREES = 180.0f / PI;
+	constexpr float RAD_DEG            = RADIANS_TO_DEGREES;
 	/** multiply by this to convert from degrees to radians */
-	constexpr float DEGREES_TO_RADIANS = PI / 180;
-	constexpr float DEG_RAD = DEGREES_TO_RADIANS;
-	constexpr double DOUBLE_DEG_RAD = 0.017453292519943295;
-	constexpr double DOUBLE_RAD_DEG = 57.29577951308232;
+	constexpr float DEGREES_TO_RADIANS = PI / 180.0f;
+	constexpr float DEG_RAD            = DEGREES_TO_RADIANS;
+	constexpr double DOUBLE_DEG_RAD    = 0.017453292519943295;
+	constexpr double DOUBLE_RAD_DEG    = 57.29577951308232;
 
-	constexpr unsigned int SIN_BITS = 16;
-	constexpr unsigned int SIN_MASK = ~(-1 << SIN_BITS);
+	constexpr unsigned int SIN_BITS  = 16;
+	constexpr unsigned int SIN_MASK  = ~(-1 << SIN_BITS);
 	constexpr unsigned int SIN_COUNT = SIN_MASK + 1;
 
-	constexpr float RAD_FULL = PI * 2;
-	constexpr float DEG_FULL = 360.0f;
-	constexpr float RAD_TO_INDEX = SIN_COUNT / RAD_FULL;
-	constexpr float DEG_TO_INDEX = SIN_COUNT / DEG_FULL;
-	constexpr int BIG_ENOUGH_INT = 16 * 1024;
+	constexpr float RAD_FULL          = PI * 2;
+	constexpr float DEG_FULL          = 360.0f;
+	constexpr float RAD_TO_INDEX      = SIN_COUNT / RAD_FULL;
+	constexpr float DEG_TO_INDEX      = SIN_COUNT / DEG_FULL;
+	constexpr int BIG_ENOUGH_INT      = 16 * 1024;
 	constexpr double BIG_ENOUGH_FLOOR = BIG_ENOUGH_INT;
-	constexpr double CEIL = 0.9999999;
+	constexpr double CEIL             = 0.9999999;
 	constexpr double BIG_ENOUGH_ROUND = static_cast<double>(BIG_ENOUGH_INT) + 0.5f;
 
-	inline const std::unique_ptr<const float[]> sinTable = []{
-		std::unique_ptr<float[]> table(new float[SIN_COUNT]);
+	inline constexpr auto sinTable = genTable<SIN_MASK, DEG_TO_INDEX>();
 
-		for (unsigned int i = 0; i < SIN_COUNT; i++) {
-			table[i] = std::sinf((static_cast<float>(i) + 0.5f) / SIN_COUNT * RAD_FULL);
+	[[nodiscard]] std::string printSinTable() {
+		const SinTable<SIN_COUNT, SIN_MASK, DEG_TO_INDEX> table{};
+
+		std::stringstream ss;
+		ss << '{';
+		for(const float sin : table.table) {
+			std::string s = std::to_string(sin);
+			ss << s;
+			ss << "f,";
 		}
+		ss << "};";
 
-		for (unsigned int i = 0; i < 360; i += 90){
-			const auto fi = static_cast<float>(i);
-			table[static_cast<unsigned int>(fi * DEG_TO_INDEX) & SIN_MASK] = std::sinf(fi * DEGREES_TO_RADIANS);
-		}
-
-		table[0                                                       ] =  0.0f;
-		table[static_cast<unsigned int>( 90 * DEG_TO_INDEX) & SIN_MASK] =  1.0f;
-		table[static_cast<unsigned int>(180 * DEG_TO_INDEX) & SIN_MASK] =  0.0f;
-		table[static_cast<unsigned int>(270 * DEG_TO_INDEX) & SIN_MASK] = -1.0f;
-
-		return table;
-	}();
-
-	// Rand rand = new Rand();
+		return ss.str();
+	}
 
 	/** Returns the sine in radians from a lookup table. */
 	float sin(const float radians) {
@@ -103,7 +105,7 @@ export namespace Math{
 
 	float angleExact(const float x, const float y) {
 		float result = atan2(y, x) * RAD_DEG;
-		if (result < 0) result += DEG_FULL;
+		if(result < 0) result += DEG_FULL;
 		return result;
 	}
 
@@ -111,14 +113,14 @@ export namespace Math{
 	 * @param a the angle in radians
 	 * @return the given angle wrapped to the range [-PI, PI] */
 	float wrapAngleAroundZero(const float a) {
-		if (a >= 0) {
+		if(a >= 0) {
 			float rotation = fmod(a, PI2);
-			if (rotation > PI) rotation -= PI2;
+			if(rotation > PI) rotation -= PI2;
 			return rotation;
 		}
 
 		float rotation = fmod(-a, PI2);
-		if (rotation > PI) rotation -= PI2;
+		if(rotation > PI) rotation -= PI2;
 		return -rotation;
 	}
 
@@ -136,7 +138,8 @@ export namespace Math{
 		const double c2 = c * c, c3 = c * c2, c5 = c3 * c2, c7 = c5 * c2, c9 = c7 * c2, c11 = c9 * c2;
 		return static_cast<float>
 		(std::copysign(PI_EXACT * 0.25
-		               + (0.99997726 * c - 0.33262347 * c3 + 0.19354346 * c5 - 0.11643287 * c7 + 0.05265332 * c9 - 0.0117212 * c11), i));
+		               + (0.99997726 * c - 0.33262347 * c3 + 0.19354346 * c5 - 0.11643287 * c7 + 0.05265332 * c9 -
+		                  0.0117212 * c11), i));
 	}
 
 	/** Close approximation of the frequently-used trigonometric method atan2, with higher precision than libGDX's atan2
@@ -153,23 +156,23 @@ export namespace Math{
 	float atan2(const float x, const float y) {
 		const float n = y / x;
 
-//		 if (n != n) {
-//		     n = (y == x ? 1.0f : -1.0f); // if both y and x are infinite, n would be NaN
-//		 }
-//		 else if (n - n != n - n) {
-//		     x = 0.0f; // if n is infinite, y is infinitely larger than x.
-//		 }
+		//		 if (n != n) {
+		//		     n = (y == x ? 1.0f : -1.0f); // if both y and x are infinite, n would be NaN
+		//		 }
+		//		 else if (n - n != n - n) {
+		//		     x = 0.0f; // if n is infinite, y is infinitely larger than x.
+		//		 }
 
-		if (x > 0.0f) {
+		if(x > 0.0f) {
 			return atn(n);
 		}
-		if (x < 0.0f) {
+		if(x < 0.0f) {
 			return y >= 0 ? atn(n) + PI : atn(n) - PI;
 		}
-		if (y > 0.0f) {
+		if(y > 0.0f) {
 			return x + HALF_PI;
 		}
-		if (y < 0.0f) {
+		if(y < 0.0f) {
 			return x - HALF_PI;
 		}
 
@@ -178,12 +181,30 @@ export namespace Math{
 
 	float angle(const float x, const float y) {
 		float result = atan2(x, y) * RAD_DEG;
-		if (result < 0) result += DEG_FULL;
+		if(result < 0) result += DEG_FULL;
 		return result;
 	}
 
 	int digits(const int n) {
-		return n < 100000 ? n < 100 ? n < 10 ? 1 : 2 : n < 1000 ? 3 : n < 10000 ? 4 : 5 : n < 10000000 ? n < 1000000 ? 6 : 7 : n < 100000000 ? 8 : n < 1000000000 ? 9 : 10;
+		return n < 100000
+			       ? n < 100
+				         ? n < 10
+					           ? 1
+					           : 2
+				         : n < 1000
+					           ? 3
+					           : n < 10000
+						             ? 4
+						             : 5
+			       : n < 10000000
+				         ? n < 1000000
+					           ? 6
+					           : 7
+				         : n < 100000000
+					           ? 8
+					           : n < 1000000000
+						             ? 9
+						             : 10;
 	}
 
 	int digits(const long n) {
@@ -228,7 +249,7 @@ export namespace Math{
 
 	/** Returns the next power of two. Returns the specified value if the value is already a power of two. */
 	int nextPowerOfTwo(int value) {
-		if (value == 0) return 1;
+		if(value == 0) return 1;
 		value--;
 		value |= value >> 1;
 		value |= value >> 2;
@@ -277,10 +298,16 @@ export namespace Math{
 		return from + clamp(to - from, -speed, speed);
 	}
 
+	template <typename T>
+	float lerp(const T& fromValue, const T& toValue, const T& progress) {
+		return fromValue + (toValue - fromValue) * progress;
+	}
+
 	/** Linearly interpolates between fromValue to toValue on progress position. */
 	inline float lerp(const float fromValue, const float toValue, const float progress) {
 		return fromValue + (toValue - fromValue) * progress;
 	}
+
 
 	/**
 	 * Linearly interpolates between two angles in radians. Takes into account that angles wrap at two pi and always takes the
@@ -346,24 +373,24 @@ export namespace Math{
 	 */
 	template <typename T>
 		requires std::is_integral_v<T>
-	T round(const float value) {
+	constexpr T round(const float value) {
 		return static_cast<T>(value + BIG_ENOUGH_ROUND) - BIG_ENOUGH_INT;
 	}
 
-	inline int round(const int value, const int step) {
+	constexpr int round(const int value, const int step) {
 		return value / step * step;
 	}
 
-	inline float round(const float value, const float step) {
+	constexpr float round(const float value, const float step) {
 		return static_cast<float>(static_cast<int>(value / step)) * step;
 	}
 
-	inline int round(const float value, const int step) {
+	constexpr int round(const float value, const int step) {
 		return static_cast<int>(value / static_cast<float>(step)) * step;
 	}
 
 	/** Returns the closest integer to the specified float. This method will only properly round floats that are positive. */
-	inline int roundPositive(const float value) {
+	int roundPositive(const float value) {
 		return lround(value + 0.5f);
 	}
 
@@ -423,7 +450,7 @@ export namespace Math{
 
 	/** Mod function that works properly for negative numbers. */
 	inline float mod(const float f, const float n) {
-		return fmod(fmod(f, n) + n , n);
+		return fmod(fmod(f, n) + n, n);
 	}
 
 	/** Mod function that works properly for negative numbers. */
@@ -431,13 +458,33 @@ export namespace Math{
 		return (x % n + n) % n;
 	}
 
-	/** @return a sampled value based on position in an array of float values. */
-	inline float sample(const std::vector<float>& values, float time) {
-		time = clamp(time);
-		const auto size = static_cast<float>(values.size());
-		const float pos = time * (size - 1.0f);
-		const auto cur = static_cast<unsigned long long>(min(time * (size - 1.0f), size - 1.0f));
-		const unsigned long long next = min(values.size() + 1ULL, values.size() - 1ULL);
+	/**
+	 * @return a sampled value based on position in an array of float values.
+	 * @param values toLerp
+	 * @param time [0, 1]
+	 */
+	template <typename T>
+	float sample(const std::span<T>& values, float time) {
+		time             = clamp(time);
+		const auto sizeF = static_cast<float>(values.size() - 1ull);
+
+		const float pos = time * sizeF;
+
+		const auto cur  = static_cast<unsigned long long>(min(time * sizeF, sizeF));
+		const auto next = min(cur + 1ULL, values.size() - 1ULL);
+		const float mod = pos - static_cast<float>(cur);
+		return lerp<T>(values[cur], values[next], mod);
+	}
+
+	template <>
+	float sample<float>(const std::span<float>& values, float time) {
+		time             = clamp(time);
+		const auto sizeF = static_cast<float>(values.size() - 1ull);
+
+		const float pos = time * sizeF;
+
+		const auto cur  = static_cast<unsigned long long>(min(time * sizeF, sizeF));
+		const auto next = min(cur + 1ULL, values.size() - 1ULL);
 		const float mod = pos - static_cast<float>(cur);
 		return lerp(values[cur], values[next], mod);
 	}
@@ -449,7 +496,7 @@ export namespace Math{
 
 	/**Converts a 0-1 value to 0-1 when it is in [offset, 1].*/
 	inline float curve(const float f, const float offset) {
-		if (f < offset) {
+		if(f < offset) {
 			return 0.0f;
 		}
 		return (f - offset) / (1.0f - offset);
@@ -457,10 +504,10 @@ export namespace Math{
 
 	/**Converts a 0-1 value to 0-1 when it is in [offset, to].*/
 	inline float curve(const float f, const float from, const float to) {
-		if (f < from) {
+		if(f < from) {
 			return 0.0f;
 		}
-		if (f > to) {
+		if(f > to) {
 			return 1.0f;
 		}
 		return (f - from) / (to - from);
@@ -468,8 +515,8 @@ export namespace Math{
 
 	/** Transforms a 0-1 value to a value with a 0.5 plateau in the middle. When margin = 0.5, this method doesn't do anything. */
 	inline float curveMargin(const float f, const float marginLeft, const float marginRight) {
-		if (f < marginLeft) return f / marginLeft * 0.5f;
-		if (f > 1.0f - marginRight) return (f - 1.0f + marginRight) / marginRight * 0.5f + 0.5f;
+		if(f < marginLeft) return f / marginLeft * 0.5f;
+		if(f > 1.0f - marginRight) return (f - 1.0f + marginRight) / marginRight * 0.5f + 0.5f;
 		return 0.5f;
 	}
 

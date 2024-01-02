@@ -85,15 +85,29 @@ export namespace UI {
 			return item->endingRow();
 		}
 
+		[[nodiscard]] explicit LayoutCell(Elem* const item)
+			: item(item) {
+		}
+
 		friend bool operator==(const LayoutCell& lhs, const LayoutCell& rhs) {
-			return std::tie(lhs.align, lhs.allocatedBound, lhs.marginLeft, lhs.marginRight, lhs.marginBottom,
-			                lhs.marginTop, lhs.padLeft, lhs.padRight, lhs.padBottom, lhs.padTop, lhs.srcxScale,
-			                lhs.srcyScale, lhs.endxScale, lhs.endyScale, lhs.modifyParentX, lhs.modifyParentY,
-			                lhs.scaleRelativeToParentX, lhs.scaleRelativeToParentY) == std::tie(
-				       rhs.align, rhs.allocatedBound, rhs.marginLeft, rhs.marginRight, rhs.marginBottom, rhs.marginTop,
-				       rhs.padLeft, rhs.padRight, rhs.padBottom, rhs.padTop, rhs.srcxScale, rhs.srcyScale,
-				       rhs.endxScale, rhs.endyScale, rhs.modifyParentX, rhs.modifyParentY, rhs.scaleRelativeToParentX,
-				       rhs.scaleRelativeToParentY);
+			return lhs.align == rhs.align
+			       && lhs.allocatedBound == rhs.allocatedBound
+			       && lhs.marginLeft == rhs.marginLeft
+			       && lhs.marginRight == rhs.marginRight
+			       && lhs.marginBottom == rhs.marginBottom
+			       && lhs.marginTop == rhs.marginTop
+			       && lhs.padLeft == rhs.padLeft
+			       && lhs.padRight == rhs.padRight
+			       && lhs.padBottom == rhs.padBottom
+			       && lhs.padTop == rhs.padTop
+			       && lhs.srcxScale == rhs.srcxScale
+			       && lhs.srcyScale == rhs.srcyScale
+			       && lhs.endxScale == rhs.endxScale
+			       && lhs.endyScale == rhs.endyScale
+			       && lhs.modifyParentX == rhs.modifyParentX
+			       && lhs.modifyParentY == rhs.modifyParentY
+			       && lhs.scaleRelativeToParentX == rhs.scaleRelativeToParentX
+			       && lhs.scaleRelativeToParentY == rhs.scaleRelativeToParentY;
 		}
 
 		friend bool operator!=(const LayoutCell& lhs, const LayoutCell& rhs) {
@@ -247,10 +261,6 @@ export namespace UI {
 			return *this;
 		}
 
-		[[nodiscard]] explicit LayoutCell(Elem* const item)
-			: item(item) {
-		}
-
 		[[nodiscard]] float getCellWidth() const {return allocatedBound.getWidth();}
 		[[nodiscard]] float getCellHeight() const {return allocatedBound.getHeight();}
 
@@ -389,27 +399,13 @@ export namespace UI {
 			return maxElemPerRow;
 		}
 
-		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func>
-		LayoutCell& add(Func&& func = nullptr) {
-			T* elem = new T;
-			LayoutCell& cell = add(elem);
+		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T&)> Func = nullptr_t>
+		LayoutCell& add(Func&& func = nullptr, const size_t depth = std::numeric_limits<size_t>::max()) {
+			LayoutCell& cell = cells.emplace_back(addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
 
 			if(func) {
-				func(elem);
-			}
-
-			return cell;
-		}
-
-		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T*)> Func = nullptr_t>
-		LayoutCell& add(const size_t depth = std::numeric_limits<size_t>::max(), Func&& func = nullptr) {
-			T* elem = new T;
-			LayoutCell& cell = add(elem, depth);
-			cell.applyLayout(defaultCellLayout);
-
-			if(func) {
-				func(elem);
+				func(cell.as<T>());
 			}
 
 			return cell;
@@ -417,7 +413,6 @@ export namespace UI {
 
 		LayoutCell& add(Elem* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
-			if(elem->endingRow())rowsCount++;
 			return cells.emplace_back(elem).applyLayout(defaultCellLayout);
 		}
 
