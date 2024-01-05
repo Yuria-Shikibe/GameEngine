@@ -417,19 +417,16 @@ export namespace UI {
 		}
 
 		void removePosted() override {
+			//TODO the two itr should at the same position...
 			if(toRemove.empty() || children.empty())return;
-			const auto&& itrCell = std::remove_if(std::execution::par_unseq, cells.begin(), cells.end(), [this](const LayoutCell& cell) {
+
+			std::erase_if(cells, [this](const decltype(cells)::value_type& cell) {
 				return toRemove.contains(cell.item);
 			});
-
-			if(itrCell == cells.end())return;
-
-			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
+			std::erase_if(children, [this](const decltype(children)::value_type& ptr) {
 				return toRemove.contains(ptr.get());
 			});
 
-			cells.erase(itrCell);
-			children.erase(itr);
 			toRemove.clear();
 		}
 

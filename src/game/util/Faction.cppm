@@ -9,7 +9,6 @@ import <unordered_set>;
 import Graphic.Color;
 import GL.Texture.TextureRegionRect;
 
-
 export namespace Game {
 	class Faction;
 
@@ -19,13 +18,19 @@ export namespace Game {
 
 	class Faction {
 		FactionID id{0};
-		std::string name{"undefind"};
+		std::string_view name{"undefind"};
 
 		Graphic::Color color{};
 		GL::TextureRegionRect* factionIcon{nullptr};
 
 	public:
 		[[nodiscard]] Faction() = default;
+
+		[[nodiscard]] Faction(const FactionID id, const std::string_view name, const Graphic::Color& color)
+			: id(id),
+			name(name),
+			color(color) {
+		}
 
 		[[nodiscard]] explicit Faction(const FactionID id)
 			: id(id) {

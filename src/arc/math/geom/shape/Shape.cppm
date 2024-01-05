@@ -17,11 +17,11 @@ export namespace Geom::Shape{
 		Shape() = default;
 
 	public:
-		virtual std::vector<Vector2D>& vertices(std::vector<Vector2D>& collector) const = 0;
+		virtual std::vector<Vec2>& vertices(std::vector<Vec2>& collector) const = 0;
 
-		[[nodiscard]] virtual bool containsPos_edgeExclusive(const Vector2D& v) const = 0;
-		[[nodiscard]] virtual bool containsPos_edgeInclusive(const Vector2D& v) const = 0;
-		[[nodiscard]] virtual bool containsPos(const Vector2D& v)const {
+		[[nodiscard]] virtual bool containsPos_edgeExclusive(const Vec2& v) const = 0;
+		[[nodiscard]] virtual bool containsPos_edgeInclusive(const Vec2& v) const = 0;
+		[[nodiscard]] virtual bool containsPos(const Vec2& v)const {
 			return containsPos_edgeExclusive(v);
 		}
 

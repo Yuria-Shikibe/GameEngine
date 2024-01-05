@@ -14,8 +14,8 @@ import Geom.Shape.Rect_Orthogonal;
 using namespace Geom::Shape;
 
 export namespace Geom{
-	Vector2D arrive(const float x, const float y, const float destX, const float destY, const Vector2D& curVel, const float radius, const float tolerance, const float speed, const float accel) {
-		 auto toTarget = Vector2D{destX - x, destY - y};
+	Vec2 arrive(const float x, const float y, const float destX, const float destY, const Vec2& curVel, const float radius, const float tolerance, const float speed, const float accel) {
+		 auto toTarget = Vec2{destX - x, destY - y};
 
 	     const float distance = toTarget.length();
 
@@ -27,7 +27,7 @@ export namespace Geom{
 	 }
 
 
-	Vector2D arrive(const Position& pos, const Position& target, const Vector2D& curVel, const float radius, const float tolerance, const float speed, const float smoothTime) {
+	Vec2 arrive(const Position2D& pos, const Position2D& target, const Vec2& curVel, const float radius, const float tolerance, const float speed, const float smoothTime) {
 	     return arrive(pos.getX(), pos.getY(), target.getX(), target.getY(), curVel, radius, tolerance, speed, smoothTime);
 	 }
 

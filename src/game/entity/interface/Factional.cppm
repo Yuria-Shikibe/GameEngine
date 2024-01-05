@@ -4,12 +4,15 @@
 
 export module Game.Entity.Factional;
 
-import Game.Faction;
+import Game.Entity;
+
+export import Game.Faction;
+export import Game.Factions;
 
 export namespace Game {
-	class Factional {
+	class Factional{
 	protected:
-		Faction* faction = nullptr;
+		Faction* faction = &Factions::ownerless;
 
 	public:
 		virtual ~Factional() = default;

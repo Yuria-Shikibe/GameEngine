@@ -455,6 +455,10 @@ namespace Graphic::Draw {
 	void line(const float x, const float y, const float x2, const float y2, const bool cap = true) {
 		line(defaultTexture, x, y, x2, y2, cap);
 	}
+	
+	void line(const Vec2 v1, const Vec2 v2, const bool cap = true) {
+		line(defaultTexture, v1.x, v1.y, v2.x, v2.y, cap);
+	}
 
 	inline void setLineStroke(const float s) {
 		contextStroke = s;
@@ -609,3 +613,4 @@ namespace Graphic::Draw {
 		);
 	}
 }
+

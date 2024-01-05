@@ -81,7 +81,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout> layout, const s
 	const Font::CharData* lastCharData = &Font::emptyCharData;
 	bool tokenState                              = false;
 	size_t tokenBegin                            = npos;
-	Geom::Vector2D currentPosition{ 0, -context.lineSpacing };
+	Geom::Vec2 currentPosition{ 0, -context.lineSpacing };
 
 	if(text.empty()) {
 		layout->bound.set(0, 0, 0, 0);

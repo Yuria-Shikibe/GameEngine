@@ -29,7 +29,7 @@ export namespace Event {
 			requires std::is_final_v<T>
 		void fire(const T& event) const {
 #ifdef _DEBUG
-			if(!registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
+			if(!registered.empty() && !registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
 			if (const auto itr = events.find(indexOf<T>()); itr != events.end()) {
 				for (const auto& listener : itr->second) {
@@ -42,10 +42,9 @@ export namespace Event {
 			requires std::is_final_v<T>
 		void on(Func&& func){
 #ifdef _DEBUG
-			if(!registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
+			if(!registered.empty() && !registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
-			const auto eventType = std::type_index(typeid(T));
-			events[eventType].emplace_back([fun = std::forward<Func>(func)](const void* event) {
+			events[indexOf<T>()].emplace_back([fun = std::forward<Func>(func)](const void* event) {
 				fun(*static_cast<const T*>(event));
 			});
 		}

@@ -3,30 +3,32 @@ module;
 export module Game.Entity.Pos;
 
 export import Geom.Position;
+export import Geom.Vector2D;
+
+import Game.Entity;
 
 export namespace Game {
-	class Pos : public Geom::Position {
+	class PosedEntity : public Geom::Position2D{
 	protected:
-		float x{};
-		float y{};
+		Geom::Vec2 position{};
 
 	public:
-		~Pos() override;
+		~PosedEntity() override = default;
 
 		[[nodiscard]] float getX() const override {
-			return x;
+			return position.x;
 		}
 
 		[[nodiscard]] float getY() const override {
-			return y;
+			return position.y;
 		}
 
-		void setX(float x) override {
-			this->x = x;
+		void setX(const float x) override {
+			this->position.x = x;
 		}
 
-		void setY(float y) override {
-			this->y = y;
+		void setY(const float y) override {
+			this->position.y = y;
 		}
 	};
 }

@@ -3,6 +3,7 @@ module ;
 export module Concepts;
 
 import <functional>;
+import <concepts>;
 import <type_traits>;
 
 export namespace Concepts {
@@ -47,7 +48,7 @@ export namespace Concepts {
     };
 
     template <class T>
-    concept HasDefConstructor = std::is_default_constructible_v<T>;
+    concept DefConstructable = std::is_default_constructible_v<T>;
 
 	template <typename T, typename functype>
 	concept Invokable = FunctionTraits<functype>::template invocableAs_v<T>();

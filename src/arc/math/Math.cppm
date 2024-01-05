@@ -11,6 +11,8 @@ import <array>;
 import <span>;
 
 import SinTable;
+import Concepts;
+import RuntimeException;
 
 import <sstream>;
 
@@ -50,7 +52,7 @@ export namespace Math {
 	constexpr double CEIL             = 0.9999999;
 	constexpr double BIG_ENOUGH_ROUND = static_cast<double>(BIG_ENOUGH_INT) + 0.5f;
 
-	inline constexpr auto sinTable = genTable<SIN_MASK, DEG_TO_INDEX>();
+	constexpr auto sinTable = genTable<SIN_MASK, DEG_TO_INDEX>();
 
 	[[nodiscard]] std::string printSinTable() {
 		const SinTable<SIN_COUNT, SIN_MASK, DEG_TO_INDEX> table{};
@@ -68,38 +70,38 @@ export namespace Math {
 	}
 
 	/** Returns the sine in radians from a lookup table. */
-	float sin(const float radians) {
+	constexpr float sin(const float radians) {
 		return sinTable[static_cast<int>(radians * RAD_TO_INDEX) & SIN_MASK];
 	}
 
-	float sin(const float radians, const float scl, const float mag) {
+	constexpr float sin(const float radians, const float scl, const float mag) {
 		return sin(radians / scl) * mag;
 	}
 
 	/** Returns the cosine in radians from a lookup table. */
-	float cos(const float radians) {
+	constexpr float cos(const float radians) {
 		return sinTable[static_cast<int>((radians + PI / 2) * RAD_TO_INDEX) & SIN_MASK];
 	}
 
 	/** Returns the sine in radians from a lookup table. */
-	float sinDeg(const float degrees) {
+	constexpr float sinDeg(const float degrees) {
 		return sinTable[static_cast<int>(degrees * DEG_TO_INDEX) & SIN_MASK];
 	}
 
 	/** Returns the cosine in radians from a lookup table. */
-	float cosDeg(const float degrees) {
+	constexpr float cosDeg(const float degrees) {
 		return sinTable[static_cast<int>((degrees + 90) * DEG_TO_INDEX) & SIN_MASK];
 	}
 
-	float absin(const float in, const float scl, const float mag) {
+	constexpr float absin(const float in, const float scl, const float mag) {
 		return (sin(in, scl * 2.0f, mag) + mag) / 2.0f;
 	}
 
-	float tan(const float radians, const float scl, const float mag) {
+	constexpr float tan(const float radians, const float scl, const float mag) {
 		return sin(radians / scl) / cos(radians / scl) * mag;
 	}
 
-	float cos(const float radians, const float scl, const float mag) {
+	constexpr float cos(const float radians, const float scl, const float mag) {
 		return cos(radians / scl) * mag;
 	}
 
@@ -248,7 +250,7 @@ export namespace Math {
 	}
 
 	/** Returns the next power of two. Returns the specified value if the value is already a power of two. */
-	int nextPowerOfTwo(int value) {
+	constexpr int nextPowerOfTwo(int value) {
 		if(value == 0) return 1;
 		value--;
 		value |= value >> 1;
@@ -259,42 +261,54 @@ export namespace Math {
 		return value + 1;
 	}
 
-	bool isPowerOfTwo(const int value) {
+	constexpr bool isPowerOfTwo(const int value) {
 		return value != 0 && (value & value - 1) == 0;
 	}
 
-	using std::max;
-	using std::min;
+	template <Concepts::Number T>
+	constexpr T clamp(const T v, const T min, const T max){
+#ifdef _DEBUG
+		if(min > max) {
+			throw ext::IllegalArguments{"Min Greater Than Max: " + std::to_string(min) + " : " + std::to_string(max)};
+		}
+#endif
 
+		if(v > max)return max;
+		if(v < min)return min;
 
-	//Seriously, using std::clamp
-	inline int clamp(const int value, const int minv, const int maxv) {
-		return max(min(value, maxv), minv);
+		return v;
 	}
 
-	inline long clamp(const long value, const long minv, const long maxv) {
-		return max(min(value, maxv), minv);
+	template <Concepts::Number T>
+	constexpr T abs(const T v) {
+		if constexpr (std::is_unsigned_v<T>) {
+			return v;
+		}else {
+			return std::abs(v);
+		}
 	}
 
-	inline float clamp(const float value, const float minv, const float maxv) {
-		return max(min(value, maxv), minv);
+	template <Concepts::Number T>
+	constexpr T max(const T v1, const T v2) {
+		return v1 > v2 ? v1 : v2;
+	}
+
+	template <Concepts::Number T>
+	constexpr T min(const T v1, const T v2) {
+		return v1 < v2 ? v1 : v2;
 	}
 
 	/** Clamps to [0, 1]. */
-	inline float clamp(const float value) {
+	constexpr float clamp(const float value) {
 		return clamp(value, 0.0f, 1.0f);
 	}
 
-	inline double clamp(const double value, const double minv, const double maxv) {
-		return max(min(value, maxv), minv);
-	}
-
-	inline float maxZero(const float val) {
-		return max(val, 0.0f);
+	constexpr float maxZero(const float val) {
+		return ::Math::max(val, 0.0f);
 	}
 
 	/** Approaches a value at linear speed. */
-	inline float approach(const float from, const float to, const float speed) {
+	constexpr float approach(const float from, const float to, const float speed) {
 		return from + clamp(to - from, -speed, speed);
 	}
 
@@ -303,8 +317,13 @@ export namespace Math {
 		return fromValue + (toValue - fromValue) * progress;
 	}
 
+	template <Concepts::Number T>
+	constexpr float lerp(const T fromValue, const T toValue, const T progress) {
+		return fromValue + (toValue - fromValue) * progress;
+	}
+
 	/** Linearly interpolates between fromValue to toValue on progress position. */
-	inline float lerp(const float fromValue, const float toValue, const float progress) {
+	constexpr float lerp(const float fromValue, const float toValue, const float progress) {
 		return fromValue + (toValue - fromValue) * progress;
 	}
 
@@ -318,8 +337,8 @@ export namespace Math {
 	 * @return the interpolated angle in the range [0, PI2]
 	 */
 	float slerpRad(const float fromRadians, const float toRadians, const float progress) {
-		const float delta = fmod(toRadians - fromRadians + PI2 + PI, PI2) - PI;
-		return fmod(fromRadians + delta * progress + PI2, PI2);
+		const float delta = std::fmod(toRadians - fromRadians + PI2 + PI, PI2) - PI;
+		return std::fmod(fromRadians + delta * progress + PI2, PI2);
 	}
 
 	/**
@@ -331,8 +350,8 @@ export namespace Math {
 	 * @return the interpolated angle in the range [0, 360[
 	 */
 	float slerp(const float fromDegrees, const float toDegrees, const float progress) {
-		const float delta = fmod(toDegrees - fromDegrees + DEG_FULL + 180.0f, DEG_FULL) - 180.0f;
-		return fmod(fromDegrees + delta * progress + DEG_FULL, DEG_FULL);
+		const float delta = std::fmod(toDegrees - fromDegrees + DEG_FULL + 180.0f, DEG_FULL) - 180.0f;
+		return std::fmod(fromDegrees + delta * progress + DEG_FULL, DEG_FULL);
 	}
 
 	/**
@@ -450,12 +469,21 @@ export namespace Math {
 
 	/** Mod function that works properly for negative numbers. */
 	inline float mod(const float f, const float n) {
-		return fmod(fmod(f, n) + n, n);
+		return std::fmod(std::fmod(f, n) + n, n);
 	}
 
 	/** Mod function that works properly for negative numbers. */
 	inline int mod(const int x, const int n) {
 		return (x % n + n) % n;
+	}
+
+	template <Concepts::Number T>
+	constexpr T mod(const T x, const T n) {
+		if constexpr (std::is_floating_point_v<T>) {
+			return std::fmod(x, n);
+		}else {
+			return x % n;
+		}
 	}
 
 	/**
@@ -473,7 +501,7 @@ export namespace Math {
 		const auto cur  = static_cast<unsigned long long>(min(time * sizeF, sizeF));
 		const auto next = min(cur + 1ULL, values.size() - 1ULL);
 		const float mod = pos - static_cast<float>(cur);
-		return lerp<T>(values[cur], values[next], mod);
+		return ::Math::lerp<T>(values[cur], values[next], mod);
 	}
 
 	template <>
@@ -486,7 +514,7 @@ export namespace Math {
 		const auto cur  = static_cast<unsigned long long>(min(time * sizeF, sizeF));
 		const auto next = min(cur + 1ULL, values.size() - 1ULL);
 		const float mod = pos - static_cast<float>(cur);
-		return lerp(values[cur], values[next], mod);
+		return Math::lerp(values[cur], values[next], mod);
 	}
 
 	/** @return the input 0-1 value scaled to 0-1-0. */
@@ -571,6 +599,18 @@ export namespace Math {
 	/** @return whether dst(x, y, 0, 0) < dst */
 	inline bool within(const float x1, const float y1, const float dst) {
 		return x1 * x1 + y1 * y1 < dst * dst;
+	}
+
+	/**
+	 * \return a corret dst value safe for unsigned numbers, can be negative if params are signed.
+	 */
+	template <Concepts::Number T>
+	T constexpr safeDst(const T a, const T b) {
+		if constexpr(std::is_signed_v<T>) {
+			return a - b;
+		}else {
+			return a > b ? a - b : b - a;
+		}
 	}
 }
 

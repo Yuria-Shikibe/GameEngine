@@ -99,7 +99,7 @@ export namespace Core{
 		};
 
 		template <typename T, size_t total, Concepts::Derived<PressedChecker<T, total>> Checker>
-			requires requires(T t){t.state();t.code();t.tryRun(0);t.act();} && Concepts::HasDefConstructor<Checker>
+			requires requires(T t){t.state();t.code();t.tryRun(0);t.act();} && Concepts::DefConstructable<Checker>
 		struct InputGroup final : OS::InputListener{
 			array<vector<unique_ptr<T>>, total> binds{};
 			array<vector<unique_ptr<T>>, total> continuous{};
@@ -173,12 +173,12 @@ export namespace Core{
 		GLFWwindow* window{nullptr};
 		bool isInbound{false};
 
-		Geom::Vector2D mousePos{};
-		Geom::Vector2D lastMousePos{};
+		Geom::Vec2 mousePos{};
+		Geom::Vec2 lastMousePos{};
 
-		Geom::Vector2D mouseVelocity{};
+		Geom::Vec2 mouseVelocity{};
 
-		Geom::Vector2D scrollOffset{};
+		Geom::Vec2 scrollOffset{};
 
 	public:
 		explicit Input(GLFWwindow* w) : window(w) {
@@ -258,11 +258,11 @@ export namespace Core{
 			});
 		}
 
-		Geom::Vector2D& getMousePos() {
+		Geom::Vec2& getMousePos() {
 			return mousePos;
 		}
 
-		Geom::Vector2D& getScrollOffset() {
+		Geom::Vec2& getScrollOffset() {
 			return scrollOffset;
 		}
 

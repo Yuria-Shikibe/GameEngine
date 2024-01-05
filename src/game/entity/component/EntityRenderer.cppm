@@ -1,16 +1,16 @@
 module;
 
-export module Game.Entity.Drawer;
+export module Game.Entity.Renderer;
 
 import GL.Buffer.FrameBuffer;
 
 export namespace Game {
-	class EntityDrawer {
+	class EntityRenderer {
 	protected:
 		GL::FrameBuffer* context{nullptr};
 
 	public:
-		virtual ~EntityDrawer() = default;
+		virtual ~EntityRenderer() = default;
 
 		[[nodiscard]] virtual GL::FrameBuffer* getContext() const {
 			return context;

@@ -4,6 +4,7 @@ module OS.ApplicationListenerSetter;
 
 import Core;
 import GL.Constants;
+import UI.Scl;
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	if(width * height == 0)return;
@@ -21,6 +22,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	height = std::max(200, height);
 
 	Core::renderer->resize(width, height);
+	UI::setScreenSize(width, height);
 
 	if(!Core::currentMonitor && !Core::maximized) {
 		Core::lastScreenBound.setSize(width, height);

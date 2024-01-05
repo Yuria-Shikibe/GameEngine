@@ -50,9 +50,9 @@ export namespace UI{
 
 		[[nodiscard]] Root();
 
-		Geom::Vector2D cursorPos{};
-		Geom::Vector2D cursorVel{};
-		Geom::Vector2D mouseScroll{};
+		Geom::Vec2 cursorPos{};
+		Geom::Vec2 cursorVel{};
+		Geom::Vec2 mouseScroll{};
 
 		//TODO use bitmap or array???
 		std::bitset<Ctrl::MOUSE_BUTTON_COUNT> pressedMouseButtons{};

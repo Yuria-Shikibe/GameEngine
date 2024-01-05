@@ -5,10 +5,13 @@ export module Geom.Matrix3D;
 import <exception>;
 import <sstream>;
 import <array>;
+import <algorithm>;
+import <ostream>;
+
 import Geom.Vector3D;
 export import Geom.Vector2D;
 import Math;
-import <ostream>;
+
 
 export namespace Geom{
 	using MatRaw = std::array<float, 9>;
@@ -26,6 +29,7 @@ export namespace Geom{
 		static constexpr int M20 = 2;
 		static constexpr int M21 = 5;
 		static constexpr int M22 = 8;
+		static constexpr int TOTAL = 9;
 
 		MatRaw val{};
 
@@ -69,12 +73,12 @@ export namespace Geom{
 
 		~Matrix3D() = default;
 
-		friend Vector2D operator*(const Matrix3D& mat, const Vector2D& vec2) {
-			Vector2D vector2D{};
+		friend Vec2 operator*(const Matrix3D& mat, const Vec2& vec2) {
+			Vec2 vector2D{};
 			return vector2D.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
 		}
 
-		friend Vector2D operator*=(Vector2D& vec2, const Matrix3D& mat) {
+		friend Vec2 operator*=(Vec2& vec2, const Matrix3D& mat) {
 			return vec2.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
 		}
 
@@ -240,11 +244,11 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& setToRotation(const Vector3D axis, const float degrees) {
+		Matrix3D& setToRotation(const Vec3& axis, const float degrees) {
 			return setToRotation(axis, Math::cosDeg(degrees), Math::sinDeg(degrees));
 		}
 
-		Matrix3D& setToRotation(const Vector3D axis, const float cos, const float sin) {
+		Matrix3D& setToRotation(const Vec3& axis, const float cos, const float sin) {
 			const float oc = 1.0f - cos;
 			val[M00] = oc * axis.x * axis.x + cos;
 			val[M10] = oc * axis.x * axis.y - axis.z * sin;
@@ -282,7 +286,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& setToTranslation(const Vector2D& translation) {
+		Matrix3D& setToTranslation(const Vec2& translation) {
 			val[M00] = 1;
 			val[M10] = 0;
 			val[M20] = 0;
@@ -311,7 +315,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& setToScaling(const Vector2D& scale) {
+		Matrix3D& setToScaling(const Vec2& scale) {
 			val[M00] = scale.x;
 			val[M10] = 0;
 			val[M20] = 0;
@@ -377,7 +381,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& trn(const Vector2D& vector) {
+		Matrix3D& trn(const Vec2& vector) {
 			val[M02] += vector.x;
 			val[M12] += vector.y;
 			return *this;
@@ -389,7 +393,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& trn(const Vector3D vector) {
+		Matrix3D& trn(const Vec3& vector) {
 			val[M02] += vector.x;
 			val[M12] += vector.y;
 			return *this;
@@ -411,7 +415,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& translate(const Vector2D& translation) {
+		Matrix3D& translate(const Vec2& translation) {
 			tmp[M00] = 1;
 			tmp[M10] = 0;
 			tmp[M20] = 0;
@@ -465,7 +469,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& scale(const Vector2D& scale) {
+		Matrix3D& scale(const Vec2& scale) {
 			tmp[M00] = scale.x;
 			tmp[M10] = 0;
 			tmp[M20] = 0;
@@ -483,13 +487,13 @@ export namespace Geom{
 			return MatRaw{val};
 		}
 
-		Vector2D& getTranslation(Vector2D& position) const {
+		Vec2& getTranslation(Vec2& position) const {
 			position.x = val[M02];
 			position.y = val[M12];
 			return position;
 		}
 
-		Vector2D& getScale(Vector2D& scale) const {
+		Vec2& getScale(Vec2& scale) const {
 			scale.x = sqrt(val[M00] * val[M00] + val[M01] * val[M01]);
 			scale.y = sqrt(val[M10] * val[M10] + val[M11] * val[M11]);
 			return scale;
@@ -509,13 +513,13 @@ export namespace Geom{
 			return *this;
 		}
 
-		Matrix3D& scl(const Vector2D& scale) {
+		Matrix3D& scl(const Vec2& scale) {
 			val[M00] *= scale.x;
 			val[M11] *= scale.y;
 			return *this;
 		}
 
-		Matrix3D& scl(const Vector3D scale) {
+		Matrix3D& scl(const Vec3& scale) {
 			val[M00] *= scale.x;
 			val[M11] *= scale.y;
 			return *this;

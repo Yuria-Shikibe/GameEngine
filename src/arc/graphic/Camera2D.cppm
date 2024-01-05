@@ -59,11 +59,15 @@ export namespace Core{
 			return *viewport;
 		}
 
+		[[nodiscard]] Shape::OrthoRectFloat& viewportRect() const {
+			return viewport->getPorjectedBound();
+		}
+
 		void trans(const float x, const float y) const {
 			viewport->getPosition().add(x, y);
 		}
 
-		[[nodiscard]] Geom::Vector2D screenCenter() const {
+		[[nodiscard]] Geom::Vec2 screenCenter() const {
 			return viewport->getCenter();
 		}
 
@@ -85,7 +89,7 @@ export namespace Core{
 				scale = targetScale;
 			}
 
-			viewport->apply(worldToScreen);
+			viewport->modify(worldToScreen);
 
 			screenToWorld.set(worldToScreen).inv();
 		}
@@ -106,11 +110,11 @@ export namespace Core{
 			this->screenToWorld = screenToWorld;
 		}
 
-		[[nodiscard]] Vector2D& getPosition() const {
+		[[nodiscard]] Vec2& getPosition() const {
 			return viewport->getCenter();
 		}
 
-		void setPosition(const Vector2D& position) const {
+		void setPosition(const Vec2& position) const {
 			viewport->getPosition() = position;
 		}
 

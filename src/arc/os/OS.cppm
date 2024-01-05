@@ -140,6 +140,10 @@ export namespace OS{
 		postAsyncTasks.emplace_back(std::forward<Func>(func), std::move(promise));
 	}
 
+	/**
+	 * \brief Register an application listener.
+	 * \param listener Should Has Static Lifetime or at least keeps alive before main loop exited.
+	 */
 	void registerListener(ApplicationListener* listener){
 		applicationListeners.push_back(listener);
 	}

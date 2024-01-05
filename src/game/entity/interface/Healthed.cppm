@@ -2,10 +2,11 @@ module;
 
 export module Game.Entity.Healthed;
 
+import Game.Entity;
 import <limits>;
 
 export namespace Game {
-	class Healthed {
+	class Healthed{
 	protected:
 		float health{0};
 	public:
@@ -27,7 +28,7 @@ export namespace Game {
 			health += val;
 		}
 
-		virtual bool killed() {
+		virtual bool invalid() {
 			return health < 0;
 		}
 

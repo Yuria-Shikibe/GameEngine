@@ -5,18 +5,15 @@ export module Graphic.Viewport.Viewport_OrthoRect;
 export import Graphic.Viewport;
 
 import Concepts;
-import Geom.Shape.Rect_Orthogonal;
-
-using Geom::Shape::OrthoRectFloat;
 
 export namespace Graphic {
 	class Viewport_OrthoRect : public Viewport<>{
-		OrthoRectFloat bound{};
+		Geom::Shape::OrthoRectFloat bound{};
 
 	public:
 		[[nodiscard]] Viewport_OrthoRect() = default;
 
-		void apply(Geom::Matrix3D& projection) const override {
+		void modify(Geom::Matrix3D& projection) const override {
 			projection.setOrthogonal(bound.getSrcX(), bound.getSrcY(), bound.getWidth(), bound.getHeight());
 		}
 
@@ -24,7 +21,7 @@ export namespace Graphic {
 			bound.set(srcX, srcY, width, height);
 		}
 
-		[[nodiscard]] Geom::Vector2D& getCenter() override {
+		[[nodiscard]] Geom::Vec2& getCenter() override {
 			return this->position;
 		}
 
@@ -33,6 +30,10 @@ export namespace Graphic {
 				position.x - width * 0.5f, position.y - height * 0.5f,
 				width, height
 			);
+		}
+
+		Geom::Shape::OrthoRectFloat& getPorjectedBound() override {
+			return bound;
 		}
 	};
 }

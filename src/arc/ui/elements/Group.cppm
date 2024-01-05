@@ -110,10 +110,9 @@ export namespace UI {
 
 		virtual void removePosted() {
 			if(toRemove.empty() || children.empty())return;
-			const auto&& itr = std::remove_if(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& ptr) {
+			std::erase_if(children, [this](const std::unique_ptr<Elem>& ptr) {
 				return toRemove.contains(ptr.get());
 			});
-			children.erase(itr);
 			toRemove.clear();
 		}
 

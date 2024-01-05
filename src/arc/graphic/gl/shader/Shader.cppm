@@ -335,7 +335,7 @@ export namespace GL {
 			glUniform2f(getLocation(name), x, y);
 		}
 
-		void setVec2(const std::string_view &name, const Geom::Vector2D &vector) const {
+		void setVec2(const std::string_view &name, const Geom::Vec2 &vector) const {
 			setVec2(name, vector.getX(), vector.getY());
 		}
 

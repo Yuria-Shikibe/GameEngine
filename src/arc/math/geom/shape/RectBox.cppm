@@ -2,7 +2,6 @@ module;
 
 export module Geom.Shape.RectBox;
 
-import Geom.Point2D;
 import Geom.Vector2D;
 import Geom.Shape.Rect_Orthogonal;
 
@@ -14,20 +13,20 @@ import <limits>;
 
 export namespace Geom {
 	struct RectBox {
-		using VertGroup = std::array<Geom::PointF2D, 4>;
+		using VertGroup = std::array<Vec2, 4>;
 		/**
-		 * \brief x for rect width, y for rect height
+		 * \brief x for rect width, y for rect height, static
 		 */
-		Geom::PointF2D edgeLength{};
+		Vec2 edgeLength{};
 
 		/**
-		 * \brief Geomtery Center
+		 * \brief Box Origin Point
 		 */
-		Geom::PointF2D originPoint{};
+		Vec2 originPoint{};
 		/**
 		 * \brief Center To Bottom-Left Offset
 		 */
-		Geom::PointF2D offset{};
+		Vec2 offset{};
 
 		/**
 		 * \brief Rect Rotation
@@ -35,21 +34,21 @@ export namespace Geom {
 		float rotation{0};
 
 		/**
-		 * \brief Exported Vert [bottom-left, bottom-right, top-right, top-left]
+		 * \brief Exported Vert [bottom-left, bottom-right, top-right, top-left], dynamic calculated
 		 */
-		Geom::PointF2D vert0_dynamic{};
-		Geom::PointF2D vert1_dynamic{};
-		Geom::PointF2D vert2_dynamic{};
-		Geom::PointF2D vert3_dynamic{};
+		Vec2 v0{};
+		Vec2 v1{};
+		Vec2 v2{};
+		Vec2 v3{};
 
 
 		/**
 		 * \brief Normal Vector
 		 */
-		Geom::PointF2D normalU{};
-		Geom::PointF2D normalV{};
+		Vec2 normalU{};
+		Vec2 normalV{};
 
-		Geom::Shape::OrthoRectFloat maxOrthoBound{};
+		Shape::OrthoRectFloat maxOrthoBound{};
 
 		void setSize(const float w, const float h) {
 			edgeLength.set(w, h);
@@ -59,47 +58,47 @@ export namespace Geom {
 			const float cos = Math::cosDeg(rotation);
 			const float sin = Math::sinDeg(rotation);
 
-			vert0_dynamic.set(offset).rotate(cos, sin);
-			vert1_dynamic.set(edgeLength.x, 0).rotate(cos, sin);
-			vert3_dynamic.set(0, edgeLength.y).rotate(cos, sin);
-			vert2_dynamic = vert1_dynamic + vert3_dynamic;
+			v0.set(offset).rotate(cos, sin);
+			v1.set(edgeLength.x, 0).rotate(cos, sin);
+			v3.set(0, edgeLength.y).rotate(cos, sin);
+			v2 = v1 + v3;
 
-			normalU = vert3_dynamic;
-			normalV = vert1_dynamic;
+			normalU = v3;
+			normalV = v1;
 
-			vert0_dynamic += originPoint;
-			vert1_dynamic += vert0_dynamic;
-			vert2_dynamic += vert0_dynamic;
-			vert3_dynamic += vert0_dynamic;
+			v0 += originPoint;
+			v1 += v0;
+			v2 += v0;
+			v3 += v0;
 
-			auto [xMin, xMax] = std::minmax({vert0_dynamic.x, vert1_dynamic.x, vert2_dynamic.x, vert3_dynamic.x});
-			auto [yMin, yMax] = std::minmax({vert0_dynamic.y, vert1_dynamic.y, vert2_dynamic.y, vert3_dynamic.y});
+			auto [xMin, xMax] = std::minmax({v0.x, v1.x, v2.x, v3.x});
+			auto [yMin, yMax] = std::minmax({v0.y, v1.y, v2.y, v3.y});
 
 			maxOrthoBound.setVert(xMin, yMin, xMax, yMax);
 		}
 
-		[[nodiscard]] bool axisOverlap(const RectBox& other, const Geom::PointF2D& axis) const {
-			float box1_min   = vert0_dynamic.dot(axis);
+		[[nodiscard]] bool axisOverlap(const RectBox& other, const Vec2& axis) const {
+			float box1_min   = v0.dot(axis);
 			float box1_max   = box1_min;
-			float projection = vert1_dynamic.dot(axis);
+			float projection = v1.dot(axis);
 			box1_min         = std::min(box1_min, projection);
 			box1_max         = std::max(box1_max, projection);
-			projection       = vert2_dynamic.dot(axis);
+			projection       = v2.dot(axis);
 			box1_min         = std::min(box1_min, projection);
 			box1_max         = std::max(box1_max, projection);
-			projection       = vert3_dynamic.dot(axis);
+			projection       = v3.dot(axis);
 			box1_min         = std::min(box1_min, projection);
 			box1_max         = std::max(box1_max, projection);
 
-			float other_min = other.vert0_dynamic.dot(axis);
+			float other_min = other.v0.dot(axis);
 			float other_max = other_min;
-			projection      = other.vert1_dynamic.dot(axis);
+			projection      = other.v1.dot(axis);
 			other_min       = std::min(other_min, projection);
 			other_max       = std::max(other_max, projection);
-			projection      = other.vert2_dynamic.dot(axis);
+			projection      = other.v2.dot(axis);
 			other_min       = std::min(other_min, projection);
 			other_max       = std::max(other_max, projection);
-			projection      = other.vert3_dynamic.dot(axis);
+			projection      = other.v3.dot(axis);
 			other_min       = std::min(other_min, projection);
 			other_max       = std::max(other_max, projection);
 
@@ -118,7 +117,7 @@ export namespace Geom {
 		}
 
 		[[nodiscard]] VertGroup verts() const {
-			return VertGroup{vert0_dynamic, vert1_dynamic, vert2_dynamic, vert3_dynamic};
+			return VertGroup{v0, v1, v2, v3};
 		}
 	};
 }

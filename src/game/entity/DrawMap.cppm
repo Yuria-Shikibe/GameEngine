@@ -13,19 +13,22 @@ import <ranges>;
 import <unordered_map>;
 
 export namespace Game{
-	template <Concepts::Derived<Drawable> T>
-	class DrawMap : public EntityMap<T> {
-		using EntityMap<T>::idMap;
-
+	class DrawMap : public EntityMap<DrawableEntity>{
+	protected:
 		Geom::Shape::OrthoRectFloat viewPort{};
 
-		void render() override {
-			auto range = idMap | std::ranges::views::values;
-			std::for_each(std::execution::par_unseq, range.begin(), range.end(), [this](std::shared_ptr<T>& t) {
-				if(!t->isSleeping())t->calculateInScreen(viewPort);
+	public:
+		using EntityMap::idMap;
 
-				if(t->isInScreen())t->draw();
-			});
+		void render() override {
+			for(const auto& entity : idMap | std::ranges::views::values) {
+				entity->calculateInScreen(viewPort);
+				if(entity->isInScreen())entity->draw();
+			}
+		}
+
+		void setViewport(const Geom::Shape::OrthoRectFloat& view) {
+			viewPort = view;
 		}
 	};
 }

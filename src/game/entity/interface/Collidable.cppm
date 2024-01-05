@@ -10,7 +10,5 @@ export namespace Game {
 		virtual bool ignoreCollision() {
 			return false;
 		}
-
-		//...
 	};
 }

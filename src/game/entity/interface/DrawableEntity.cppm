@@ -6,7 +6,7 @@ import Geom.Shape.Rect_Orthogonal;
 import Game.Entity;
 
 export namespace Game {
-	class Drawable : public Entity{
+	class DrawableEntity : virtual public Entity{
 	protected:
 		/**
 		 * \brief When entity exit screen, part of its calculation can be roughly.
@@ -14,7 +14,7 @@ export namespace Game {
 		bool inScreen{true};
 
 	public:
-		~Drawable() override = default;
+		~DrawableEntity() override = default;
 
 		[[nodiscard]] virtual const Geom::Shape::OrthoRectFloat& getDrawBound() const = 0;
 
@@ -23,7 +23,7 @@ export namespace Game {
 		}
 
 		virtual void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) {
-			inScreen = true;
+			inScreen = getDrawBound().overlap(viewport);
 		}
 
 		virtual void draw() const = 0;
@@ -31,7 +31,8 @@ export namespace Game {
 		virtual void drawDebug() const = 0;
 	};
 
-	class DrawableBounded : public Drawable {
+	class DrawableBounded : public DrawableEntity {
+	public:
 		Geom::Shape::OrthoRectFloat expectedDrawRegion{};
 
 		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {

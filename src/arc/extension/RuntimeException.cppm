@@ -9,16 +9,20 @@ import StackTrace;
 import <sstream>;
 import <string>;
 import <exception>;
+import <source_location>;
 
 export namespace ext{
 	class RuntimeException : virtual public std::exception{
 	public:
 		std::string data{};
 
-		explicit RuntimeException(const std::string& str){
+		explicit RuntimeException(const std::string& str, const std::source_location location = std::source_location::current()){
 			std::stringstream ss;
 
 			ss << str << '\n';
+			ss << "at: " << location.file_name() << '\n';
+			ss << "at: " << location.function_name() << '\n';
+			ss << "at: " << location.column() << '\n';
 
 			getStackTraceBrief(ss);
 

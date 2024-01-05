@@ -8,10 +8,13 @@ import Concepts;
 export import Geom.Matrix3D;
 export import Geom.Vector3D;
 export import Geom.Vector2D;
+export import Geom.Shape.Rect_Orthogonal;
+
+using Geom::Shape::OrthoRectFloat;
 
 export namespace Graphic {
-	template <typename DimensionVec = Geom::Vector2D, typename DimensionMat = Geom::Matrix3D>
-		requires Concepts::HasDefConstructor<DimensionVec> && Concepts::HasDefConstructor<DimensionMat>
+	template <typename DimensionVec = Geom::Vec2, typename DimensionMat = Geom::Matrix3D>
+		requires Concepts::DefConstructable<DimensionVec> && Concepts::DefConstructable<DimensionMat>
 	class Viewport {
 	protected:
 		DimensionVec position{};
@@ -31,10 +34,12 @@ export namespace Graphic {
 
 		[[nodiscard]] virtual DimensionVec& getCenter() = 0;
 
-		virtual void apply(DimensionMat& projection) const = 0;
+		virtual void modify(DimensionMat& projection) const = 0;
 
 		virtual void setOrtho(float srcX, float srcY, float width, float height) = 0;
 
 		virtual void setOrtho(float width, float height) = 0;
+
+		virtual OrthoRectFloat& getPorjectedBound() = 0;
 	};
 }

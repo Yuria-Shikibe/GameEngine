@@ -44,8 +44,17 @@ export namespace Game {
 
 		[[nodiscard]] EntityMap() = default;
 
+		[[nodiscard]] explicit EntityMap(typename Geom::QuadTree<T, float>::obtainer&& transformer)
+		: quadTree(std::make_unique<Geom::QuadTreeF<T>>(
+			{0, 0, 0, 0},
+			std::forward<typename Geom::QuadTree<T, float>::obtainer>(transformer)
+		))
+		{
+		}
+
+
 		virtual void add(std::shared_ptr<T> t) {
-			if(const std::pair<auto, bool> pair = idMap.try_emplace(t->getID(), t); pair.second) {
+			if(const auto pair = idMap.try_emplace(t->getID(), t); pair.second) {
 				addEvent.entity = t.get();
 				groupListener.fire(addEvent);
 				if(quadTree)quadTree->insert(t.get());
@@ -59,7 +68,7 @@ export namespace Game {
 			if(const auto itr = idMap.find(t->getID()); itr != idMap.end()) {
 				removeEvent.entity = t;
 				groupListener.fire(removeEvent);
-				if(quadTree)quadTree->remove(t.get());
+				if(quadTree)quadTree->remove(t);
 
 				idMap.erase(itr);
 			}else {
@@ -67,8 +76,11 @@ export namespace Game {
 			}
 		}
 
-		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound, const std::function<const Geom::Shape::OrthoRectFloat&(const T&)>& transformer) {
-			quadTree = std::make_unique<Geom::QuadTreeF<T>>(worldBound, transformer);
+		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound, typename Geom::QuadTree<T, float>::obtainer&& transformer) {
+			quadTree = std::make_unique<Geom::QuadTreeF<T>>(
+				worldBound,
+				std::forward<typename Geom::QuadTree<T, float>::obtainer>(transformer)
+			);
 		}
 
 		virtual void resizeTree(const Geom::Shape::OrthoRectFloat& worldBound) {
@@ -77,7 +89,7 @@ export namespace Game {
 
 			quadTree->setBoundary(worldBound);
 
-			each([this](std::shared_ptr<T>& t) {
+			this->each([this](std::shared_ptr<T>& t) {
 				quadTree->insert(t.get());
 			});
 		}
@@ -109,16 +121,21 @@ export namespace Game {
 
 		virtual void updateMain(const float delta) {
 			auto range = idMap | std::ranges::views::values;
-			std::for_each(std::execution::par_unseq, range.begin(), range.end(), [delta](std::shared_ptr<T>& t) {
-				if(!t->isSleeping())t->update(delta);
-			});
+			std::for_each(
+				std::execution::par_unseq,
+				range.begin(), range.end(),
+				[delta](std::shared_ptr<T>& t) {
+					if(!t->isSleeping())t->update(delta);
+				}
+			);
 		}
 
 		virtual void processRemoves() {
 			if(toRemove.empty())return;
-			for(const T* entity : toRemove) {
+			for(T* entity : toRemove) {
 				remove(entity);
 			}
+			toRemove.clear();
 		}
 
 		virtual void render() {
@@ -129,6 +146,10 @@ export namespace Game {
 		void each(Func&& func) {
 			auto range = idMap | std::ranges::views::values;
 			std::for_each(std::execution::par_unseq, range.begin(), range.end(), std::forward<Func>(func));
+		}
+
+		void clear() {
+			idMap.clear();
 		}
 	};
 }

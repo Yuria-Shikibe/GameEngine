@@ -72,7 +72,7 @@ export namespace UI {
 
 		bool quitInboundFocus = true;
 
-		Geom::Vector2D absoluteSrc{};
+		Geom::Vec2 absoluteSrc{};
 
 		ElemDrawer* drawer{nullptr};
 
@@ -84,8 +84,8 @@ export namespace UI {
 		mutable float maskOpacity = 1.0f;
 		std::any animationData{nullptr};
 
-		Geom::Vector2D margin_bottomLeft{};
-		Geom::Vector2D margin_topRight{};
+		Geom::Vec2 margin_bottomLeft{};
+		Geom::Vec2 margin_topRight{};
 
 		[[nodiscard]] virtual bool isVisiable() const {
 			return visiable;
@@ -272,13 +272,13 @@ export namespace UI {
 		}
 
 		virtual void calAbsolute(Elem* parent) {
-			Geom::Vector2D vec{parent->absoluteSrc};
+			Geom::Vec2 vec{parent->absoluteSrc};
 			vec.add(bound.getSrcX(), bound.getSrcY());
 			if(vec == absoluteSrc)return;
 			absoluteSrc.set(vec);
 		}
 
-		Geom::Vector2D& getAbsSrc() {
+		Geom::Vec2& getAbsSrc() {
 			return absoluteSrc;
 		}
 
@@ -319,11 +319,11 @@ export namespace UI {
 			return touchbility == TouchbilityFlags::enabled && visiable;
 		}
 
-		virtual bool inbound_validToParent(const Geom::Vector2D& screenPos) const {
+		virtual bool inbound_validToParent(const Geom::Vec2& screenPos) const {
 			return inbound(screenPos);
 		}
 
-		virtual bool inbound(const Geom::Vector2D& screenPos) const;
+		virtual bool inbound(const Geom::Vec2& screenPos) const;
 
 		bool isFocusedKey() const;
 

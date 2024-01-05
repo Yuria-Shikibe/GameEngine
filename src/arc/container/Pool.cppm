@@ -8,16 +8,17 @@ import <memory>;
 import <vector>;
 
 import Concepts;
+import RuntimeException;
 
 
 export namespace Containers{
     template <class T>
-        requires Concepts::HasDefConstructor<T>
+        requires Concepts::DefConstructable<T>
     class Pool{
     public:
         using ItemRef = T*;
         struct Deleter {
-            Pool* const src{ nullptr };
+            Pool* src{ nullptr };
             std::function<void(ItemRef)> reset{ nullptr };
 
             ~Deleter() = default;
@@ -58,7 +59,10 @@ export namespace Containers{
             }
 
             void operator()(ItemRef t) const {
-                // if(!t)return;
+                if(!src) {
+                    std::weak_ptr<T> ptr;
+                    throw ext::NullPointerException{"Source pool is expired!"};
+                }
                 if(reset)reset(t);
                 src->store(t);
             }
@@ -122,6 +126,14 @@ export namespace Containers{
             vault.reserve(maxSize);
         }
 
+        Pool(const Pool& other) = delete;
+
+        Pool& operator=(const Pool& other) = delete;
+
+        Pool(Pool&& other) noexcept = default;
+
+        Pool& operator=(Pool&& other) noexcept = default;
+
         Pool() : deleter(Deleter{this}){
             vault.reserve(maxSize);
         }
@@ -177,7 +189,7 @@ export namespace Containers{
             return Allocator_Unique{this};
         }
 
-        std::unique_ptr<T, Deleter> obtainUnique() {
+        [[nodiscard]] std::unique_ptr<T, Deleter> obtainUnique() {
             if (vault.empty()) {
                 return std::unique_ptr<T, Deleter>{new T, deleter};
             }
@@ -188,7 +200,7 @@ export namespace Containers{
             return std::unique_ptr<T, Deleter>{ptr, deleter};
         }
 
-        std::shared_ptr<T> obtainShared() {
+        [[nodiscard]] std::shared_ptr<T> obtainShared() {
             if (vault.empty()) {
                 return std::shared_ptr<T>{new T, deleter};
             }
@@ -199,7 +211,7 @@ export namespace Containers{
             return std::shared_ptr<T>{ptr, deleter};
         }
 
-        std::shared_ptr<T> obtainRaw() {
+        [[nodiscard]] std::shared_ptr<T> obtainRaw() {
             if (vault.empty()) {
                 return new T;
             }
@@ -217,6 +229,8 @@ export namespace Containers{
         void clear(){
             vault.clear();
         }
+
+
     };
 }
 

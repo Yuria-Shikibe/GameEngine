@@ -76,7 +76,7 @@ export namespace Font {
 	};
 
 	struct GlyphLayout { // NOLINT(*-pro-type-member-init)
-		Geom::Vector2D offset{};
+		Geom::Vec2 offset{};
 		//TODO uses pools!
 		std::vector<GlyphVertData> toRender{};
 
@@ -105,7 +105,7 @@ export namespace Font {
 			offset.add(x, y);
 		}
 
-		void move(const Geom::Vector2D& vec) {
+		void move(const Geom::Vec2& vec) {
 			move(vec.x, vec.y);
 		}
 
@@ -161,7 +161,7 @@ export namespace Font {
 
 		float additionalYOffset{0.0f}; // This happens when the font changes, maybe
 
-		Geom::Vector2D offset{};
+		Geom::Vec2 offset{};
 
 		std::vector<GlyphVertData*> currentLineData{};
 		std::vector<std::function<void(const ModifierableData&)>> endlineOperation{};
@@ -207,11 +207,11 @@ export namespace Font {
 
 	struct ModifierableData {
 		TypesettingTable& context;
-		Geom::Vector2D& cursorPos;
+		Geom::Vec2& cursorPos;
 		const Font::CharData*& charData;
 		GlyphLayout& layout;
 
-		[[nodiscard]] ModifierableData(TypesettingTable& context, Geom::Vector2D& vec2,
+		[[nodiscard]] ModifierableData(TypesettingTable& context, Geom::Vec2& vec2,
 			const Font::CharData*& data, GlyphLayout& layout)
 			: context(context),
 			cursorPos(vec2),

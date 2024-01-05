@@ -48,7 +48,7 @@ export namespace Geom::Shape{
 			this->radius = r;
 		}
 
-		[[nodiscard]] Vector2D getCenter() const{
+		[[nodiscard]] Vec2 getCenter() const{
 			return { cX, cY };
 		}
 
@@ -56,10 +56,10 @@ export namespace Geom::Shape{
 			return true;
 		}
 
-		[[nodiscard]] bool containsPos_edgeExclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeExclusive(const Vec2& v) const override{
 			return true;
 		}
-		[[nodiscard]] bool containsPos_edgeInclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeInclusive(const Vec2& v) const override{
 			return true;
 		}
 		T maxDiagonalLen() const override{
@@ -71,7 +71,7 @@ export namespace Geom::Shape{
 		[[nodiscard]] bool overlap(const T& other) const override{
 			return true;
 		}
-		std::vector<Vector2D>& vertices(std::vector<Vector2D>& collector) const override{
+		std::vector<Vec2>& vertices(std::vector<Vec2>& collector) const override{
 			return collector;
 		}
 

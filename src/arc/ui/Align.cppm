@@ -35,7 +35,7 @@ export namespace Align {
 		return codeOf(l) & codeOf(r);
 	}
 
-	Geom::Vector2D motionOf(Mode align, const Geom::Vector2D& bottomLeft, const Geom::Vector2D& topRight) {
+	Geom::Vec2 motionOf(Mode align, const Geom::Vec2& bottomLeft, const Geom::Vec2& topRight) {
 		float xSign = 0;
 		float ySign = 0;
 

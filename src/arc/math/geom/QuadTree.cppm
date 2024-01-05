@@ -12,6 +12,7 @@ import RuntimeException;
 import <algorithm>;
 import <functional>;
 import <memory>;
+import <mutex>;
 
 using Geom::Shape::Rect_Orthogonal;
 
@@ -28,11 +29,13 @@ export namespace Geom {
         // The boundary of this node
         Rect<T> boundary{};
 
-        Rect<T>& obtainBound(const Cont* const cont) {
+        std::mutex lock{};
+
+        const Rect<T>& obtainBound(const Cont* const cont) {
             return transformer(*cont);
         }
 
-        Rect<T>& obtainBound(const Cont& cont) {
+        const Rect<T>& obtainBound(const Cont& cont) {
             return transformer(cont);
         }
 
@@ -46,7 +49,6 @@ export namespace Geom {
         std::unique_ptr<QuadTree> southeast{nullptr};
 
         unsigned int maximumItemCount = 4;
-
     public:
         explicit QuadTree(unsigned int maxCount){
             rectangles.reserve(maxCount);
@@ -85,13 +87,13 @@ export namespace Geom {
             return overlap(obtainBound(box));
         }
 
-        void remove(const Cont& box) {
+        void remove(const Cont* box) {
             // Check if the rectangle is in this node
-            auto it = std::find(rectangles.begin(), rectangles.end(), box);
-            if (it != rectangles.end()) {
-                // If the rectangle is in this node, remove it
-                rectangles.erase(it);
-            }else if (!isLeaf()) { // If this node has children, check if the rectangle is in the children
+            lock.lock();
+            const bool success = static_cast<bool>(std::erase(rectangles, box));
+            lock.unlock();
+
+            if (!success && !isLeaf()) { // If this node has children, check if the rectangle is in the children
                 northwest->remove(box);
                 northeast->remove(box);
                 southwest->remove(box);
@@ -99,9 +101,14 @@ export namespace Geom {
             }
 
             // Check if this node should be merged
-            if (rectangles.empty() && allChildrenEmpty()) {
-                clear();
+            // ReSharper disable once CppDFAConstantConditions
+            if(success) {
+                lock.lock();
+                if (rectangles.empty() && allChildrenEmpty()) {
+                    clear();
+                }
             }
+
         }
 
         [[nodiscard]] bool isLeaf() const {
@@ -121,7 +128,7 @@ export namespace Geom {
 
         bool overlap(const Rect<T>& rectangle) {
             if(std::ranges::any_of(rectangles, [this, &rectangle](const Cont* cont) {
-                    return rectangle.overlap(obtainBound(cont));
+                return rectangle.overlap(obtainBound(cont));
             })) {
                 return true;
             }
@@ -139,21 +146,26 @@ export namespace Geom {
             return false;
         }
 
-        bool insert(const Cont& box) {
+        bool insert(const Cont* box) {
             // Ignore objects that do not belong in this quad tree
             if (boundary.dissociated(obtainBound(box))) {
                 return false;
             }
 
             // If there is space in this quad tree and if it does not subdivide, add the object here
-            if (rectangles.size() < maximumItemCount) {
-                rectangles.push_back(&box);
-                return true;
+            {
+                std::lock_guard guard{lock};
+                if (rectangles.size() < maximumItemCount) {
+                    rectangles.push_back(box);
+                    return true;
+                }
             }
 
             // Otherwise, subdivide and then add the object to whichever node will accept it
             if (isLeaf()) {
+                lock.lock();
                 subDivide();
+                lock.unlock();
             }
 
             if (northwest->insert(box)) return true;

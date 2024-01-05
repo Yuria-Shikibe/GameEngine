@@ -86,7 +86,7 @@ void UI::Elem::changed() const {
 	if(parent)parent->changed();
 }
 
-bool UI::Elem::inbound(const Geom::Vector2D& screenPos) const {
+bool UI::Elem::inbound(const Geom::Vec2& screenPos) const {
 	if(touchbility == TouchbilityFlags::disabled)return false;
 	if(parent != nullptr && !parent->inbound_validToParent(screenPos))return false;
 	return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();

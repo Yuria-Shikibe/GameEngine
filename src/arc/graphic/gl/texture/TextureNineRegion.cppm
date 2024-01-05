@@ -57,10 +57,10 @@ export namespace GL {
 
 		std::array<TextureRegionRect, TotalRegions> regions{};
 
-		Geom::Vector2D innerSize{};
+		Geom::Vec2 innerSize{};
 
-		Geom::Vector2D bottomLeftSize{};
-		Geom::Vector2D topRightSize{};
+		Geom::Vec2 bottomLeftSize{};
+		Geom::Vec2 topRightSize{};
 
 
 		[[nodiscard]] TextureNineRegion() = default;

@@ -5,10 +5,12 @@ export module Game.Entity;
 import <limits>;
 import RuntimeException;
 import Geom.Shape.Rect_Orthogonal;
+import Event;
 
 export namespace Game {
 	using IDType = unsigned int;
 	using SerializationIDType = unsigned int;
+	using SignatureType = size_t;
 
 	class Entity {
 	public:
@@ -19,12 +21,11 @@ export namespace Game {
 	protected:
 		SerializationIDType serializationID{SerializationDisabled};
 		IDType id{0};
+		SignatureType signature{0};
 		bool activated{false};
 		bool sleeping{false};
-		/**
-		 * \brief When entity exit screen, part of its calculation can be roughly.
-		 */
-		bool inScreen{true};
+
+		Event::EventManager listener{};
 
 	public:
 		[[nodiscard]] bool serializable() const {
@@ -33,6 +34,10 @@ export namespace Game {
 
 		void setSerializationID(const SerializationIDType serializationID = SerializationDisabled) {
 			this->serializationID = serializationID;
+		}
+
+		[[nodiscard]] Event::EventManager& getListener() {
+			return listener;
 		}
 
 		//TODO io support
@@ -53,14 +58,6 @@ export namespace Game {
 
 		virtual bool isSleeping() {
 			return sleeping;
-		}
-
-		virtual void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) {
-			inScreen = true;
-		}
-
-		[[nodiscard]] bool isInScreen() const {
-			return inScreen;
 		}
 
 		[[nodiscard]] virtual IDType getID() const {

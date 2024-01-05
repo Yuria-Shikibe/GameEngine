@@ -30,7 +30,7 @@ export namespace Geom::Shape{
 			this->setSize(width, height);
 		}
 
-		Rect_Orthogonal(const Vector2D& center, const T width, const T height){
+		Rect_Orthogonal(const Vec2& center, const T width, const T height){
 			this->setSize(width, height);
 			this->setCenter(center.x, center.y);
 		}
@@ -106,7 +106,7 @@ export namespace Geom::Shape{
 			return &height;
 		}
 
-		[[nodiscard]] Vector2D getCenter() const{
+		[[nodiscard]] Vec2 getCenter() const{
 			return { srcX + width / HALF, srcY + height / HALF };
 		}
 
@@ -202,11 +202,11 @@ export namespace Geom::Shape{
 			);
 		}
 
-		[[nodiscard]] bool containsPos_edgeExclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeExclusive(const Vec2& v) const override{
 			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
 		}
 
-		[[nodiscard]] bool containsPos_edgeInclusive(const Vector2D& v) const override{
+		[[nodiscard]] bool containsPos_edgeInclusive(const Vec2& v) const override{
 			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
@@ -229,7 +229,7 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
-		Rect_Orthogonal& setSrc(const Vector2D& v) {
+		Rect_Orthogonal& setSrc(const Vec2& v) {
 			srcX = v.x;
 			srcY = v.y;
 
@@ -280,7 +280,7 @@ export namespace Geom::Shape{
 			setHeight(height);
 		}
 
-		Rect_Orthogonal& setSize(const Vector2D& v) {
+		Rect_Orthogonal& setSize(const Vec2& v) {
 			return setSize(static_cast<T>(v.x), static_cast<T>(v.y));
 		}
 
@@ -290,7 +290,7 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
-		Rect_Orthogonal& setCenter(const Vector2D& v) {
+		Rect_Orthogonal& setCenter(const Vec2& v) {
 			this->setSrc(static_cast<T>(v.x) - width / HALF, static_cast<T>(v.y) - height / HALF);
 
 			return *this;
@@ -304,23 +304,23 @@ export namespace Geom::Shape{
 			return Math::curve(y, static_cast<float>(srcY), static_cast<float>(srcY + height));
 		}
 
-		[[nodiscard]] Vector2D offsetRatio(const Vector2D& v){
+		[[nodiscard]] Vec2 offsetRatio(const Vec2& v){
 			return { xOffsetRatio(v.x), yOffsetRatio(v.y) };
 		}
 
-		[[nodiscard]] Vector2D vert_00()const {
+		[[nodiscard]] Vec2 vert_00()const {
 			return { static_cast<float>(srcX), static_cast<float>(srcY) };
 		}
 
-		[[nodiscard]] Vector2D vert_10() const {
+		[[nodiscard]] Vec2 vert_10() const {
 			return { static_cast<float>(srcX + width), static_cast<float>(srcY) };
 		}
 
-		[[nodiscard]] Vector2D vert_01() const {
+		[[nodiscard]] Vec2 vert_01() const {
 			return { static_cast<float>(srcX), static_cast<float>(srcY + height) };
 		}
 
-		[[nodiscard]] Vector2D vert_11() const {
+		[[nodiscard]] Vec2 vert_11() const {
 			return {static_cast<float>(srcX + width), static_cast<float>(srcY + height) };
 		}
 
@@ -332,7 +332,7 @@ export namespace Geom::Shape{
 			return static_cast<float>(width) / static_cast<float>(height);
 		}
 
-		std::vector<Vector2D>& vertices(std::vector<Vector2D>& collector) const override{
+		std::vector<Vec2>& vertices(std::vector<Vec2>& collector) const override{
 			collector.push_back(vert_00());
 			collector.push_back(vert_01());
 			collector.push_back(vert_11());

@@ -25,10 +25,10 @@ export namespace UI {
 
 	class ScrollPane : public Group {
 	protected:
-		Geom::Vector2D scrollOffset{};
+		Geom::Vec2 scrollOffset{};
 
-		Geom::Vector2D scrollVelocity{};
-		Geom::Vector2D scrollTargetVelocity{};
+		Geom::Vec2 scrollVelocity{};
+		Geom::Vec2 scrollTargetVelocity{};
 
 		bool usingAccel = true;
 
@@ -56,7 +56,7 @@ export namespace UI {
 	public:
 		ScrollPane(){
 			inputListener.on<UI::MouseActionDrag>([this](const auto& event) {
-				scrollTargetVelocity = static_cast<Geom::Vector2D>(event);
+				scrollTargetVelocity = static_cast<Geom::Vec2>(event);
 				scrollTargetVelocity.scl(dragSensitivityCoefficient, -dragSensitivityCoefficient);
 				pressed = true;
 			});
@@ -67,7 +67,7 @@ export namespace UI {
 			});
 
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
-				scrollTargetVelocity = static_cast<Geom::Vector2D>(event);
+				scrollTargetVelocity = static_cast<Geom::Vec2>(event);
 				scrollTargetVelocity.scl(scrollSensitivityCoefficient, -scrollSensitivityCoefficient);
 			});
 
@@ -96,7 +96,7 @@ export namespace UI {
 
 			if(hasChildren()) {
 
-				const Geom::Vector2D absOri = absoluteSrc;
+				const Geom::Vec2 absOri = absoluteSrc;
 				absoluteSrc += scrollOffset;
 				absoluteSrc.x += margin_bottomLeft.x;
 				absoluteSrc.y -= margin_bottomLeft.y;
@@ -152,17 +152,17 @@ export namespace UI {
 			return rect;
 		}
 
-		[[nodiscard]] bool inbound_validToParent(const Geom::Vector2D& screenPos) const override {
+		[[nodiscard]] bool inbound_validToParent(const Geom::Vec2& screenPos) const override {
 			return Elem::inbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
-		[[nodiscard]] bool inbound_scrollBars(const Geom::Vector2D& screenPos) const {
+		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2& screenPos) const {
 			return
 			(enableHorizonScroll() && screenPos.y - absoluteSrc.y + margin_bottomLeft.y < hoirScrollerHeight) ||
 			(enableVerticalScroll() && screenPos.x - absoluteSrc.x + margin_bottomLeft.x > getWidth() - vertScrollerWidth);
 		}
 
-		[[nodiscard]] bool inbound(const Geom::Vector2D& screenPos) const override {
+		[[nodiscard]] bool inbound(const Geom::Vec2& screenPos) const override {
 			if(Elem::inbound(screenPos)) {
 				Elem::setFocusedScroll(true);
 				return inbound_scrollBars(screenPos);

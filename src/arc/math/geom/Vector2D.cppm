@@ -24,188 +24,192 @@ export namespace Geom{
 	{
 		T x = 0, y = 0;
 
-		constexpr Vector2D(const T x, const T y) : x(x), y(y) {
+		[[nodiscard]] constexpr Vector2D(const T x, const T y) : x(x), y(y) {
 		}
 
-		constexpr Vector2D() : Vector2D(0, 0) {
+		[[nodiscard]] constexpr Vector2D() : Vector2D(0, 0) {
 
 		}
 
-		Vector2D operator+(const Vector2D& tgt) {
+		[[nodiscard]] constexpr Vector2D operator+(const Vector2D& tgt) {
 			return this->copy().add(tgt);
 		}
 
-		Vector2D operator-(const Vector2D& tgt) {
+		[[nodiscard]] constexpr Vector2D operator-(const Vector2D& tgt) {
 			return this->copy().sub(tgt);
 		}
 
-		Vector2D operator*(const Vector2D& tgt) {
+		[[nodiscard]] constexpr Vector2D operator*(const Vector2D& tgt) {
 			return this->copy().mul(tgt);
 		}
 
-		Vector2D operator/(const Vector2D& tgt) {
+		[[nodiscard]] constexpr Vector2D operator/(const Vector2D& tgt) {
 			return this->copy().sub(tgt);
 		}
 
-		Vector2D operator%(const Vector2D& tgt) {
+		[[nodiscard]] constexpr Vector2D operator%(const Vector2D& tgt) {
 			return this->copy().mod(tgt.x, tgt.y);
 		}
 
-		Vector2D& operator+=(const Vector2D& tgt) {
+		constexpr Vector2D& operator+=(const Vector2D& tgt) {
 			return this->add(tgt);
 		}
 
-		Vector2D& operator-=(const Vector2D& tgt) {
+		constexpr Vector2D& operator-=(const Vector2D& tgt) {
 			return this->sub(tgt);
 		}
 
-		Vector2D& operator*=(const Vector2D& tgt) {
+		constexpr Vector2D& operator*=(const Vector2D& tgt) {
 			return this->mul(tgt);
 		}
 
-		Vector2D& operator*=(const T val) {
+		constexpr Vector2D& operator*=(const T val) {
 			return this->scl(val);
 		}
 
-		Vector2D& operator/=(const Vector2D& tgt) {
+		constexpr Vector2D& operator/=(const Vector2D& tgt) {
 			return this->sub(tgt);
 		}
 
-		Vector2D& operator/=(const T tgt) {
+		constexpr Vector2D& operator/=(const T tgt) {
 			return this->div(tgt, tgt);
 		}
 
-		Vector2D& operator%=(const Vector2D& tgt) {
+		constexpr Vector2D& operator%=(const Vector2D& tgt) {
 			return this->mod(tgt.x, tgt.y);
 		}
 
-		Vector2D& operator%=(const T tgt) {
+		constexpr Vector2D& operator%=(const T tgt) {
 			return this->mod(tgt, tgt);
 		}
 
-		Vector2D& mod(const T ox, const T oy) {
+		constexpr Vector2D& mod(const T ox, const T oy) {
 			x = Math::mod(x, ox);
 			y = Math::mod(y, oy);
 			return *this;
 		}
 
-		Vector2D& mod(const T val) {
+		constexpr Vector2D& mod(const T val) {
 			return this->mod(val, val);
 		}
 
-		Vector2D& mod(const Vector2D& other) {
+		constexpr Vector2D& mod(const Vector2D& other) {
 			return this->mod(other.x, other.y);
 		}
 
-		[[nodiscard]] Vector2D copy() const {
+		constexpr [[nodiscard]] Vector2D copy() const {
 			return Vector2D{ x, y };
 		}
 
-		Vector2D& setZero() {
+		constexpr Vector2D& setZero() {
 			return this->set(static_cast<T>(0), static_cast<T>(0));
 		}
 
-		Vector2D& setNaN() requires std::is_floating_point_v<T> {
+		constexpr Vector2D& setNaN() requires std::is_floating_point_v<T> {
 			return set(NAN, NAN);
 		}
 
-		Vector2D& set(const T ox, const T oy) {
+		constexpr Vector2D& set(const T ox, const T oy) {
 			this->x = ox;
 			this->y = oy;
 
 			return *this;
 		}
 
-		Vector2D& set(const T val) {
+		constexpr Vector2D& set(const T val) {
 			return this->set(val, val);
 		}
 
-		Vector2D& set(const Vector2D& tgt) {
+		constexpr Vector2D& set(const Vector2D& tgt) {
 			return this->set(tgt.x, tgt.y);
 		}
 
-		Vector2D& add(const T ox, const T oy) {
+		constexpr Vector2D& add(const T ox, const T oy) {
 			x += ox;
 			y += oy;
 
 			return *this;
 		}
 
-		Vector2D& add(const Vector2D& other) {
+		constexpr Vector2D& add(const Vector2D& other) {
 			return this->add(other.x, other.y);
 		}
 
-		Vector2D& sub(const T ox, const T oy) {
+		constexpr Vector2D& add(const Vector2D& other, const T scale) {
+			return this->add(other.x * scale, other.y * scale);
+		}
+
+		constexpr Vector2D& sub(const T ox, const T oy) {
 			x -= ox;
 			y -= oy;
 
 			return *this;
 		}
 
-		Vector2D& sub(const Vector2D& other) {
+		constexpr Vector2D& sub(const Vector2D& other) {
 			return this->sub(other.x, other.y);
 		}
 
-		Vector2D& mul(const T ox, const T oy) {
+		constexpr Vector2D& mul(const T ox, const T oy) {
 			x *= ox;
 			y *= oy;
 
 			return *this;
 		}
 
-		Vector2D& mul(const T val) {
+		constexpr Vector2D& mul(const T val) {
 			return this->mul(val, val);
 		}
 
-		Vector2D& mul(const Vector2D& other) {
+		constexpr Vector2D& mul(const Vector2D& other) {
 			return this->mul(other.x, other.y);
 		}
 
-		Vector2D& div(const T ox, const T oy) {
+		constexpr Vector2D& div(const T ox, const T oy) {
 			x /= ox;
 			y /= oy;
 
 			return *this;
 		}
 
-		Vector2D& div(const T val) {
+		constexpr Vector2D& div(const T val) {
 			return this->div(val, val);
 		}
 
-		Vector2D& div(const Vector2D& other) {
+		constexpr Vector2D& div(const Vector2D& other) {
 			return this->div(other.x, other.y);
 		}
 
-		[[nodiscard]] T getX() const{
+		[[nodiscard]] constexpr T getX() const{
 			return x;
 		}
 
-		[[nodiscard]] T getY() const{
+		[[nodiscard]] constexpr T getY() const{
 			return y;
 		}
 
-		Vector2D& setX(const T ox){
+		constexpr Vector2D& setX(const T ox){
 			this->x = ox;
 			return *this;
 		}
 
-		Vector2D& setY(const T oy){
+		constexpr Vector2D& setY(const T oy){
 			this->y = oy;
 			return *this;
 		}
 
-		[[nodiscard]] T dst2(const Vector2D& other) const {
+		[[nodiscard]] constexpr T dst2(const Vector2D& other) const {
 			T dx = Math::safeDst(x, other.x);
 			T dy = Math::safeDst(y, other.y);
 
 			return dx * dx + dy * dy;
 		}
 
-		[[nodiscard]] float dst(const Vector2D& other) const{
+		[[nodiscard]] constexpr float dst(const Vector2D& other) const{
 			return std::sqrtf(static_cast<float>(this->dst2(other)));
 		}
 
-		[[nodiscard]] bool within(const Vector2D& other, const T dst) const{
+		[[nodiscard]] constexpr bool within(const Vector2D& other, const T dst) const{
 			return this->dst2(other) < dst * dst;
 		}
 
@@ -218,10 +222,10 @@ export namespace Geom{
 		}
 
 		[[nodiscard]] float length() const {
-			return std::sqrt(static_cast<float>(length2()));
+			return std::sqrtf(static_cast<float>(length2()));
 		}
 
-		[[nodiscard]] T length2() const {
+		[[nodiscard]] constexpr T length2() const {
 			return x * x + y * y;
 		}
 
@@ -270,14 +274,14 @@ export namespace Geom{
 			const float alpha2 = alpha * alpha;
 
 			if (const float len2 = dx * dx + dy * dy; len2 > alpha2) {
-				const float scl = sqrt(alpha2 / len2);
+				const float scl = std::sqrtf(alpha2 / len2);
 				dx *= scl;
 				dy *= scl;
 
 				return sub(dx, dy);
 			}
 
-			return set(target);
+			return this->set(target);
 		}
 
 		Vector2D& setPolar(const float angDeg, const float length) {
@@ -288,11 +292,11 @@ export namespace Geom{
 			return setPolar(angDeg, length());
 		}
 
-		[[nodiscard]] float dot(const Vector2D& tgt) const {
+		[[nodiscard]] constexpr T dot(const Vector2D& tgt) const {
 			return x * tgt.x + y * tgt.y;
 		}
 
-		[[nodiscard]] float cross(const Vector2D& tgt) const {
+		[[nodiscard]] constexpr T cross(const Vector2D& tgt) const {
 			return x * tgt.y - y * tgt.x;
 		}
 
@@ -312,20 +316,12 @@ export namespace Geom{
 			rhs.y = y1;
 		}
 
-		friend bool operator==(const Vector2D& lhs, const Vector2D& rhs) {
+		[[nodiscard]] friend bool operator==(const Vector2D& lhs, const Vector2D& rhs) {
 			return lhs.x == rhs.x && lhs.y == rhs.y;
 		}
 
-		friend bool operator!=(const Vector2D& lhs, const Vector2D& rhs) {
+		[[nodiscard]] friend bool operator!=(const Vector2D& lhs, const Vector2D& rhs) {
 			return lhs.x != rhs.x || lhs.y != rhs.y;
-		}
-
-		[[nodiscard]] Vector3D expandTo3D(const T z) const {
-			return Vector3D{ x, y, z };
-		}
-
-		[[nodiscard]] Vector3D expandTo3D() const {
-			return expandTo3D(0);
 		}
 
 		Vector2D& clampLength(const T min, const T max) {
@@ -340,12 +336,12 @@ export namespace Geom{
 			return *this;
 		}
 
-		Vector2D& clampX(const T min, const T max) {
+		constexpr Vector2D& clampX(const T min, const T max) {
 			x = Math::clamp(x, min, max);
 			return *this;
 		}
 
-		Vector2D& clampY(const T min, const T max) {
+		constexpr Vector2D& clampY(const T min, const T max) {
 			y = Math::clamp(y, min, max);
 			return *this;
 		}
@@ -383,17 +379,17 @@ export namespace Geom{
 
 		Vector2D& limit2(const T limit2) {
 			if (const float len2 = length2(); len2 > limit2) {
-				return this->scl(std::sqrt(static_cast<float>(limit2) / static_cast<float>(len2)));
+				return this->scl(std::sqrtf(static_cast<float>(limit2) / static_cast<float>(len2)));
 			}
 
 			return *this;
 		}
 
-		Vector2D& scl(const T val) {
+		constexpr Vector2D& scl(const T val) {
 			return this->scl(val, val);
 		}
 
-		Vector2D& scl(const T ox, const T oy) {
+		constexpr Vector2D& scl(const T ox, const T oy) {
 			x *= ox;
 			y *= oy;
 			return *this;
@@ -402,8 +398,8 @@ export namespace Geom{
 		Vector2D& clamp(const T min, const T max) {
 			const float len2 = length2();
 			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
-			if (const float max2 = max * max; len2 > max2) return scl(std::sqrt(max2 / len2));
-			if (const float min2 = min * min; len2 < min2) return scl(std::sqrt(min2 / len2));
+			if (const float max2 = max * max; len2 > max2) return scl(std::sqrtf(max2 / len2));
+			if (const float min2 = min * min; len2 < min2) return scl(std::sqrtf(min2 / len2));
 			return *this;
 		}
 
@@ -413,7 +409,7 @@ export namespace Geom{
 
 		Vector2D& setLength2(const T len2) {
 			const float oldLen2 = length2();
-			return oldLen2 == 0 || oldLen2 == len2 ? *this : this->scl(std::sqrt(len2 / oldLen2));  // NOLINT(clang-diagnostic-float-equal)
+			return oldLen2 == 0 || oldLen2 == len2 ? *this : this->scl(std::sqrtf(len2 / oldLen2));  // NOLINT(clang-diagnostic-float-equal)
 		}
 
 		[[nodiscard]] float angleRad() const {
@@ -428,11 +424,11 @@ export namespace Geom{
 		 * \brief
 		 * \return
 		 */
-		Vector2D& rotateRT() requires std::is_signed_v<T> {
+		constexpr Vector2D& rotateRT() requires std::is_signed_v<T> {
 			return this->set(y, -x);
 		}
 
-		auto operator<=>(const Vector2D& v) const {
+		auto constexpr operator<=>(const Vector2D& v) const {
 			T len = length2();
 			T lenO = v.length2();
 
@@ -453,14 +449,14 @@ export namespace Geom{
 	};
 
 	using Vec2 = Vector2D<float>;
-	using Point = Vector2D<int>;
-	using PointU = Vector2D<unsigned int>;
-	using PointS = Vector2D<short>;
-	using PointUS = Vector2D<unsigned short>;
+	using Point2 = Vector2D<int>;
+	using Point2U = Vector2D<unsigned int>;
+	using Point2S = Vector2D<short>;
+	using Point2US = Vector2D<unsigned short>;
 
 	constexpr Vec2 ZERO{ 0, 0 };
-	constexpr Vec2 X{ 1, 0 };
-	constexpr Vec2 Y{ 0, 1 };
+	constexpr Vec2 X2{ 1, 0 };
+	constexpr Vec2 Y2{ 0, 1 };
 }
 
 export {
@@ -472,15 +468,15 @@ export {
 	};
 
 	template<>
-	struct std::hash<Geom::Point>{
-		size_t operator()(const Geom::Point& v) const noexcept {
+	struct std::hash<Geom::Point2>{
+		size_t operator()(const Geom::Point2& v) const noexcept {
 			return *reinterpret_cast<const size_t*>(&v.x);
 		}
 	};
 
 	template<>
-	struct std::hash<Geom::PointU>{
-		size_t operator()(const Geom::PointU& v) const noexcept {
+	struct std::hash<Geom::Point2U>{
+		size_t operator()(const Geom::Point2U& v) const noexcept {
 			return *reinterpret_cast<const size_t*>(&v.x);
 		}
 	};

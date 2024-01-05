@@ -24,16 +24,16 @@ export namespace Graphic{
 	 */
 	class Color{
 	public:
-		static constexpr auto maxVal = std::numeric_limits<unsigned char>::max();
-		static constexpr float maxValF = static_cast<float>(std::numeric_limits<unsigned char>::max());
+		static constexpr auto maxVal           = std::numeric_limits<unsigned char>::max();
+		static constexpr float maxValF         = std::numeric_limits<unsigned char>::max();
 		static constexpr unsigned int r_Offset = 24;
 		static constexpr unsigned int g_Offset = 16;
 		static constexpr unsigned int b_Offset = 8 ;
 		static constexpr unsigned int a_Offset = 0 ;
-		static constexpr unsigned int a_Mask = 0x00'00'00'ff;
-		static constexpr unsigned int b_Mask = 0x00'00'ff'00;
-		static constexpr unsigned int g_Mask = 0x00'ff'00'00;
-		static constexpr unsigned int r_Mask = 0xff'00'00'00;
+		static constexpr unsigned int a_Mask   = 0x00'00'00'ff;
+		static constexpr unsigned int b_Mask   = 0x00'00'ff'00;
+		static constexpr unsigned int g_Mask   = 0x00'ff'00'00;
+		static constexpr unsigned int r_Mask   = 0xff'00'00'00;
 
 	public:
 		float r = 0, g = 0, b = 0, a = 0;
@@ -269,7 +269,7 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& set(const Geom::Vector3D vec){
+		Color& set(const Geom::Vec3 vec){
 			return set(vec.x, vec.y, vec.z);
 		}
 

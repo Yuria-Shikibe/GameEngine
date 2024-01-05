@@ -12,7 +12,7 @@ export namespace UI {
 		inbound = 1, outbound = 0
 	};
 
-	struct MouseAction : EventType, Geom::Vector2D {
+	struct MouseAction : EventType, Geom::Vec2 {
 		using Vector2D::x;
 		using Vector2D::y;
 
@@ -30,17 +30,17 @@ export namespace UI {
 			buttonID = id;
 		}
 
-		void set(const Vector2D& pos, const int id) {
-			Geom::Vector2D::operator=(pos);
+		void set(const Geom::Vec2& pos, const int id) {
+			Geom::Vec2::operator=(pos);
 			buttonID = id;
 		}
 	};
 
-	struct MouseActionScroll final : EventType, Geom::Vector2D {
+	struct MouseActionScroll final : EventType, Geom::Vec2 {
 		[[nodiscard]] MouseActionScroll() = default;
 
 		[[nodiscard]] MouseActionScroll(const float x, const float y)
-			: Geom::Vector2D(x, y) {
+			: Geom::Vec2(x, y) {
 		}
 	};
 
@@ -76,33 +76,33 @@ export namespace UI {
 		}
 	};
 
-	struct CurosrInbound final : Event::EventType, Geom::Vector2D {
+	struct CurosrInbound final : Event::EventType, Geom::Vec2 {
 		[[nodiscard]] CurosrInbound() = default;
 
 		[[nodiscard]] CurosrInbound(const float x, const float y)
-			: Geom::Vector2D(x, y) {
+			: Geom::Vec2(x, y) {
 		}
 	};
 
-	struct CurosrExbound final : Event::EventType, Geom::Vector2D {
+	struct CurosrExbound final : Event::EventType, Geom::Vec2 {
 		[[nodiscard]] CurosrExbound() = default;
 
 		[[nodiscard]] CurosrExbound(const float x, const float y)
-			: Geom::Vector2D(x, y) {
+			: Geom::Vec2(x, y) {
 		}
 	};
 
 	/**
 	 * \brief shouldn't be used, really
 	 */
-	struct LongClick final : EventType, Geom::Vector2D  {
-		using Vector2D::x;
-		using Vector2D::y;
+	struct LongClick final : EventType, Geom::Vec2  {
+		using Geom::Vec2::x;
+		using Geom::Vec2::y;
 
 		[[nodiscard]] LongClick() = default;
 
 		[[nodiscard]] LongClick(const float x, const float y)
-			: Vector2D(x, y) {
+			: Geom::Vec2(x, y) {
 		}
 	};
 
