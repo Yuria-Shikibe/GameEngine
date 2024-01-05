@@ -36,13 +36,13 @@ using namespace Geom;
 using namespace GL;
 
 namespace Graphic::Draw {
-	Vector2D vec2_0{};
-	Vector2D vec2_1{};
-	Vector2D vec2_2{};
-	Vector2D vec2_3{};
-	Vector2D vec2_4{};
-	Vector2D vec2_5{};
-	Vector2D vec2_6{};
+	Vec2 vec2_0{};
+	Vec2 vec2_1{};
+	Vec2 vec2_2{};
+	Vec2 vec2_3{};
+	Vec2 vec2_4{};
+	Vec2 vec2_5{};
+	Vec2 vec2_6{};
 
 	const Color* colors[2];
 }
@@ -255,10 +255,10 @@ namespace Graphic::Draw {
 
 	inline void vert(
 		const Texture2D* texture,
-		const Vector2D& v1,
-		const Vector2D& v2,
-		const Vector2D& v3,
-		const Vector2D& v4
+		const Vec2& v1,
+		const Vec2& v2,
+		const Vec2& v3,
+		const Vec2& v4
 	) {
 		vert(
 			texture,
@@ -494,7 +494,7 @@ namespace Graphic::Draw {
 		line(defaultTexture, srcx + width, srcy, srcx + contextStroke, srcy, cap);
 	}
 
-	void rectLine(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vector2D& offset = Geom::ZERO) {
+	void rectLine(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO) {
 		rectLine(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(), rect.getHeight(),
 		         cap);
 	}
