@@ -30,7 +30,8 @@ export namespace Game::EntityManage{
 	EntityMap<::Game::RealityEntity> realEntities{};
 
 	void init() {
-		realEntities.buildTree({-1000, -1000, 2000, 2000}, RealityEntity::getHitBoound);
+		realEntities.buildTree({-10000, -10000, 20000, 20000}, RealityEntity::getHitBoound);
+		realEntities.quadTree->setExactInterscet(RealityEntity::exactInterscet);
 	}
 
 	void updateTree() {
@@ -38,9 +39,17 @@ export namespace Game::EntityManage{
 	}
 
 	void update(const float delta) {
+		drawables.processRemoves();
+		realEntities.processRemoves();
+
+		if(delta == 0.0f)return;
+		entities.updateMain(delta);
+
 		updateTree();
 
-		entities.updateMain(delta);
+		realEntities.each([delta](const decltype(realEntities)::ValueType& t) {
+			t->updateCollision(delta);
+		});
 	}
 
 	void render() {
@@ -57,9 +66,8 @@ export namespace Game::EntityManage{
 	template<Concepts::Derived<Entity> T>
 	void add(std::shared_ptr<T> entity) {
 		entities.add(entity);
-		if constexpr(std::is_base_of_v<Game::DrawableEntity, T>) {
-			drawables.add(entity);
-		}
+		if constexpr(std::is_base_of_v<Game::DrawableEntity, T>)drawables.add(entity);
+		if constexpr(std::is_base_of_v<Game::RealityEntity, T>)realEntities.add(entity);
 
 		entity->activate();
 	}
@@ -69,13 +77,13 @@ export namespace Game::EntityManage{
 		entity->deactivate();
 
 		entities.postRemove(entity);
-		if constexpr(std::is_convertible_v<T, Game::DrawableEntity>) {
-			drawables.postRemove(entity);
-		}
+		if constexpr(std::is_convertible_v<T, Game::DrawableEntity>)drawables.postRemove(entity);
+		if constexpr(std::is_convertible_v<T, Game::RealityEntity>)realEntities.postRemove(entity);
 	}
 
 	void clear() {
 		entities.clear();
 		drawables.clear();
+		realEntities.clear();
 	}
 }

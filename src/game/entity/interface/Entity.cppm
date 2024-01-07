@@ -2,17 +2,34 @@ module;
 
 export module Game.Entity;
 
+import Game.Entity.RemoveCallalble;
+import <atomic>;
+import <memory>;
+import <string_view>;
+import <vector>;
 import <limits>;
 import RuntimeException;
 import Geom.Shape.Rect_Orthogonal;
 import Event;
+
 
 export namespace Game {
 	using IDType = unsigned int;
 	using SerializationIDType = unsigned int;
 	using SignatureType = size_t;
 
-	class Entity {
+	class Entity;
+
+	class RemoveCallalble {
+	public:
+		virtual ~RemoveCallalble() = default;
+
+		virtual void postRemovePrimitive(Game::Entity* entity) = 0;
+
+		virtual void postAddPrimitive(Game::Entity* entity) = 0;
+	};
+
+	class Entity : public std::enable_shared_from_this<Entity> {
 	public:
 		virtual ~Entity() = default;
 
@@ -22,8 +39,10 @@ export namespace Game {
 		SerializationIDType serializationID{SerializationDisabled};
 		IDType id{0};
 		SignatureType signature{0};
-		bool activated{false};
+		std::atomic_bool activated{false};
 		bool sleeping{false};
+
+		std::vector<RemoveCallalble*> sharedGroup{};
 
 		Event::EventManager listener{};
 
@@ -44,7 +63,7 @@ export namespace Game {
 
 		virtual void update(float deltaTick/*should Delta applied here or globally?*/) = 0;
 
-		virtual bool deletable(){
+		[[nodiscard]] virtual bool deletable() const{
 			return !activated;
 		}
 
@@ -52,11 +71,32 @@ export namespace Game {
 			//Sustain this currently
 		}
 
-		virtual void activate() = 0;
+		virtual std::string_view getClassname() {
+			return typeid(*this).name();
+		}
 
-		virtual void deactivate() = 0;
+		virtual void activate() {
+			activated = true;
+		}
 
-		virtual bool isSleeping() {
+		[[nodiscard]] virtual bool valid() const{
+			return activated;
+		}
+
+		virtual void deactivate() {
+			if(!activated)return;
+			activated = false;
+			for(const auto& group : sharedGroup) {
+				group->postRemovePrimitive(this);
+			}
+			sharedGroup.clear();
+		}
+
+		virtual void registerGroup(RemoveCallalble* callalble) {
+			sharedGroup.push_back(callalble);
+		}
+
+		[[nodiscard]] virtual bool isSleeping() {
 			return sleeping;
 		}
 
@@ -68,6 +108,42 @@ export namespace Game {
 			if(activated)throw ext::RuntimeException{"Setting An Activated Entity's ID is banned!"};
 
 			this->id = id;
+		}
+
+		/**
+		 * \brief Nullptr condition should be considered!
+		 */
+		[[nodiscard]] virtual std::shared_ptr<Entity> obtainSharedSelf() {
+			if(activated) {
+				return shared_from_this();
+			}
+			return weak_from_this().lock();
+		}
+
+		/**
+		 * \brief Nullptr condition should be considered!
+		 */
+		[[nodiscard]] virtual std::shared_ptr<const Entity> obtainSharedSelf() const {\
+			if(activated) {
+				return shared_from_this();
+			}
+			return weak_from_this().lock();
+		}
+	};
+}
+
+export {
+	template<>
+	struct std::hash<Game::Entity>{
+		size_t operator()(const Game::Entity& entity) const noexcept {
+			return entity.getID();
+		}
+	};
+
+	template<Concepts::Derived<Game::Entity> K, typename V>
+	struct std::hash<std::pair<K*, V>>{
+		size_t operator()(const std::pair<K*, V>& entity) const noexcept {
+			return entity.first->getID();
 		}
 	};
 }

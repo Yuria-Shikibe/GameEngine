@@ -4,6 +4,7 @@ module;
 export module Game.Entity.EntityMap;
 
 export import Game.Entity;
+export import Game.Entity.RemoveCallalble;
 import Container.Pool;
 import Event;
 import Concepts;
@@ -19,10 +20,12 @@ import <unordered_set>;
 
 export namespace Game {
 	template <Concepts::Derived<Entity> T>
-	class EntityMap{
+	class EntityMap : public RemoveCallalble{
 
 	public:
-		virtual ~EntityMap() = default;
+		~EntityMap() override = default;
+
+		using ValueType = std::shared_ptr<T>;
 
 		struct AddEvent final : Event::EventType {T* entity{nullptr};};
 		struct RemoveEvent final : Event::EventType {T* entity{nullptr};};
@@ -42,12 +45,14 @@ export namespace Game {
 			Event::indexOf<RemoveEvent>()
 		};
 
+		std::mutex removeLock{};
+
 		[[nodiscard]] EntityMap() = default;
 
-		[[nodiscard]] explicit EntityMap(typename Geom::QuadTree<T, float>::obtainer&& transformer)
+		[[nodiscard]] explicit EntityMap(typename Geom::QuadTree<T, float>::Obtainer&& transformer)
 		: quadTree(std::make_unique<Geom::QuadTreeF<T>>(
 			{0, 0, 0, 0},
-			std::forward<typename Geom::QuadTree<T, float>::obtainer>(transformer)
+			std::forward<typename Geom::QuadTree<T, float>::Obtainer>(transformer)
 		))
 		{
 		}
@@ -58,6 +63,7 @@ export namespace Game {
 				addEvent.entity = t.get();
 				groupListener.fire(addEvent);
 				if(quadTree)quadTree->insert(t.get());
+				t->registerGroup(this);
 			}else {
 				//If insert doesn't happen, says the id crushed, should show a warning or sth
 				//TODO warning or exception
@@ -76,10 +82,10 @@ export namespace Game {
 			}
 		}
 
-		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound, typename Geom::QuadTree<T, float>::obtainer&& transformer) {
+		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound, typename Geom::QuadTree<T, float>::Obtainer&& transformer) {
 			quadTree = std::make_unique<Geom::QuadTreeF<T>>(
 				worldBound,
-				std::forward<typename Geom::QuadTree<T, float>::obtainer>(transformer)
+				std::forward<typename Geom::QuadTree<T, float>::Obtainer>(transformer)
 			);
 		}
 
@@ -112,7 +118,21 @@ export namespace Game {
 		}
 
 		virtual void postRemove(T* entity) {
+			removeLock.lock();
 			toRemove.insert(entity);
+			removeLock.unlock();
+		}
+
+		void postRemovePrimitive(::Game::Entity* entity) override {
+			if(T* t = dynamic_cast<T*>(entity)) {
+				this->postRemove(t);
+			}else {
+				//TODO debug throw
+			}
+		}
+
+		void postAddPrimitive(Game::Entity* entity) override {
+
 		}
 
 		virtual void cancelRemove(T* entity) {
@@ -120,9 +140,10 @@ export namespace Game {
 		}
 
 		virtual void updateMain(const float delta) {
+			processRemoves();
 			auto range = idMap | std::ranges::views::values;
 			std::for_each(
-				std::execution::par_unseq,
+				std::execution::par,
 				range.begin(), range.end(),
 				[delta](std::shared_ptr<T>& t) {
 					if(!t->isSleeping())t->update(delta);
@@ -130,7 +151,7 @@ export namespace Game {
 			);
 		}
 
-		virtual void processRemoves() {
+		void processRemoves() {
 			if(toRemove.empty())return;
 			for(T* entity : toRemove) {
 				remove(entity);
@@ -138,14 +159,10 @@ export namespace Game {
 			toRemove.clear();
 		}
 
-		virtual void render() {
-
-		}
-
 		template <Concepts::Invokable<void(std::shared_ptr<T>&)> Func>
 		void each(Func&& func) {
 			auto range = idMap | std::ranges::views::values;
-			std::for_each(std::execution::par_unseq, range.begin(), range.end(), std::forward<Func>(func));
+			std::for_each(std::execution::par, range.begin(), range.end(), std::forward<Func>(func));
 		}
 
 		void clear() {

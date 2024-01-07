@@ -1,18 +1,15 @@
 module;
 
-export module Game.Entity.Pos;
+export module Game.Entity.PosedEntity;
 
 export import Geom.Position;
 export import Geom.Vector2D;
 
-import Game.Entity;
-
 export namespace Game {
 	class PosedEntity : public Geom::Position2D{
-	protected:
+	public:
 		Geom::Vec2 position{};
 
-	public:
 		~PosedEntity() override = default;
 
 		[[nodiscard]] float getX() const override {
@@ -29,6 +26,14 @@ export namespace Game {
 
 		void setY(const float y) override {
 			this->position.y = y;
+		}
+
+		[[nodiscard]] virtual Geom::Vec2& getPos() {
+			return position;
+		}
+
+		[[nodiscard]] virtual Geom::Vec2 copyPos() const {
+			return position;
 		}
 	};
 }

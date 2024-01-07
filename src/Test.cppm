@@ -104,7 +104,7 @@ export namespace Test {
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
 
 			for (auto& texture : event.manager->getAtlas().getPage("ui").textures) {
-				texture->setScale(GL::nearest, GL_LINEAR);
+				texture->setScale(GL::nearest, GL::linear);
 			}
 
 			Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
@@ -118,7 +118,7 @@ export namespace Test {
 	}
 
 	void setupAudioTest() {
-		Core::input->registerKeyBind(Ctrl::KEY_K, Ctrl::Act_Press, [] {
+		Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Press, [] {
 			Core::audio->play(Assets::Sounds::laser5);
 		});
 	}

@@ -6,10 +6,25 @@ import <functional>;
 import <concepts>;
 import <type_traits>;
 
-export namespace Concepts {
+namespace Concepts {
+	/**
+	 * \brief coonditional variant but friendly to IDEs
+	 */
+	template <bool Test, class T>
+	struct RefConditional {
+		using type = T;
+	};
+
+	template <class T>
+	struct RefConditional<false, T> {
+		using type = std::add_lvalue_reference_t<T>;
+	};
+
 	template<typename T>
 	struct FunctionTraits;
+}
 
+export namespace Concepts {
 	template<typename Ret, typename... Args>
 	struct FunctionTraits<Ret(Args...)>
 	{
@@ -33,19 +48,27 @@ export namespace Concepts {
 		}
 	};
 
+	/**
+	 * \brief Decide whether to use reference for template classes
+	 * \tparam T Value Type
+	 */
+	template <typename T, size_t size>
+	using ParamPassType = typename RefConditional<
+		size <= sizeof(void*) * 2,
+		T
+	>::type;
+
     template <typename T>
     concept Number = std::is_arithmetic_v<T>;
 
     template <typename T>
     concept NumberSingle = std::is_arithmetic_v<T> && sizeof(T) <= 4;
 
-    template <class T, class DerivedT>
-    concept Derived = std::is_base_of_v<DerivedT, T>;
+    template <class DerivedT, class Base>
+    concept Derived = std::derived_from<DerivedT, Base>;
 
     template <class DerivedT, class... Bases>
-    concept DerivedMulti = requires{
-	    (std::is_base_of_v<Bases, DerivedT> && ...);
-    };
+    concept DerivedMulti = (std::derived_from<Bases, DerivedT> && ...);;
 
     template <class T>
     concept DefConstructable = std::is_default_constructible_v<T>;
@@ -67,14 +90,16 @@ export namespace Concepts {
 
 	template <typename T, typename Item>
 	concept Iterable = requires(T t){
-		std::is_same_v<decltype(std::begin(std::declval<T&>())), Item>;
-		std::is_same_v<decltype(std::end(std::declval<T&>())), Item>;
+		std::begin(std::declval<T&>());
+		std::end(std::declval<T&>());
+		// requires std::is_same_v<decltype(std::begin(std::declval<T&>())), Item>;
+		// requires std::is_same_v<decltype(std::end(std::declval<T&>())), Item>;
 	};
 
 	template <typename T, typename Item>
 	concept IterableDerived = requires(T t){
-		std::is_base_of_v<decltype(std::begin(std::declval<T&>())), Item>;
-		std::is_base_of_v<decltype(std::end(std::declval<T&>())), Item>;
+		requires std::is_base_of_v<decltype(std::begin(std::declval<T&>())), Item>;
+		requires std::is_base_of_v<decltype(std::end(std::declval<T&>())), Item>;
 	};
 
 	template <typename T, typename NumberType = float>

@@ -5,7 +5,7 @@ export module Geom.Position;
 import <complex>;
 
 export namespace Geom {
-	class Position2D  // NOLINT(cppcoreguidelines-special-member-functions)
+	class Position2D
 	{
 	public:
 		virtual ~Position2D() = default;
@@ -31,7 +31,7 @@ export namespace Geom {
 			return dst2(other) < dst * dst;
 		}
 
-		[[nodiscard]] virtual bool isNaN() const{
+		[[nodiscard]] virtual bool isPosNaN() const{
 			return !(isnan(getX()) || isnan(getY()));
 		}
 	};

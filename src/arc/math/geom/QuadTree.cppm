@@ -1,4 +1,3 @@
-
 // ReSharper disable CppDFAUnreachableCode
 module;
 
@@ -16,205 +15,385 @@ import <mutex>;
 
 using Geom::Shape::Rect_Orthogonal;
 
-template <typename T>
-using Rect = Rect_Orthogonal<T>;
-
 export namespace Geom {
-    template <typename Cont, Concepts::Number T>
-    class QuadTree {
-    public:
-        using obtainer = std::function<const Rect<T>&(const Cont&)>;
-    protected:
-        obtainer transformer{nullptr};
-        // The boundary of this node
-        Rect<T> boundary{};
+	template <typename Cont, Concepts::Number T>
+	class QuadTree {
+		using Rect = Rect_Orthogonal<T>;
 
-        std::mutex lock{};
+	public:
+		using SubTree = std::array<QuadTree *, 4>;
+		using Obtainer = std::function<const Rect&(const Cont*)>;
+		using InersectCheck = std::function<bool(const Cont*, const Cont*)>;
 
-        const Rect<T>& obtainBound(const Cont* const cont) {
-            return transformer(*cont);
-        }
+	protected:
+		Obtainer transformer{ nullptr };
+		InersectCheck interscetExactJudger{ nullptr };
+		InersectCheck interscetRoughJudger{ nullptr };
+		// The boundary of this node
+		Rect boundary{};
 
-        const Rect<T>& obtainBound(const Cont& cont) {
-            return transformer(cont);
-        }
+		std::mutex containerlock{};
+		std::mutex subTreelock{};
 
-        // The rectangles in this node
-        std::vector<const Cont*> rectangles{};
+		bool isInersectedBetween(const Cont* subject, const Cont* object) {
+			if(subject == object) return false;
+			if(interscetRoughJudger && !interscetExactJudger(subject, object)) return false;
+			if(interscetExactJudger) {
+				return obtainBound(subject).overlap(obtainBound(object)) && interscetExactJudger(subject, object);
+			}
 
-        // The four children of this node
-        std::unique_ptr<QuadTree> northwest{nullptr};
-        std::unique_ptr<QuadTree> northeast{nullptr};
-        std::unique_ptr<QuadTree> southwest{nullptr};
-        std::unique_ptr<QuadTree> southeast{nullptr};
+			return obtainBound(subject).overlap(obtainBound(object));
+		}
 
-        unsigned int maximumItemCount = 4;
-    public:
-        explicit QuadTree(unsigned int maxCount){
-            rectangles.reserve(maxCount);
-        }
+		const Rect& obtainBound(const Cont* const cont) {
+			return transformer(cont);
+		}
 
-        QuadTree(const Rect<T>& boundary, const obtainer& transformer) : transformer(transformer), boundary(boundary) {
-            rectangles.reserve(maximumItemCount);
-        }
+		const Rect& obtainBound(const Cont& cont) {
+			return transformer(&cont);
+		}
 
-        QuadTree(const Rect<T>& boundary, const obtainer& transformer, unsigned int maxCount) : transformer(transformer), boundary(boundary), maximumItemCount(maxCount) {
-            rectangles.reserve(maxCount);
-        }
+		// The rectangles in this node
+		std::vector<const Cont *> rectangles{};
 
-        [[nodiscard]] Rect<T>& getBoundary() {
-            return boundary;
-        }
+		// The four children of this node
+		std::unique_ptr<QuadTree> topLeft{ nullptr };
+		std::unique_ptr<QuadTree> topRight{ nullptr };
+		std::unique_ptr<QuadTree> bottomLeft{ nullptr };
+		std::unique_ptr<QuadTree> bottomRight{ nullptr };
 
-        void setBoundary(const Rect<T>& boundary) {
-            if(!allChildrenEmpty())throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
+		unsigned int maximumItemCount = 4;
+		bool strict                   = false;
 
-            this->boundary = boundary;
-        }
+		std::atomic_uint currentSize = 0;
+		std::atomic_bool leaf        = true;
 
-        void setBoundary(const T x, const T y, const T width, const T height) {
-            this->boundary.set(x, y, width, height);
-        }
+	public:
+		[[nodiscard]] unsigned int size() const {
+			return currentSize;
+		}
 
-        void setBoundary(const T width, const T height) {
-            if(!allChildrenEmpty())throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
+		void setExactInterscet(const InersectCheck& interscetExactJudger) {
+			this->interscetExactJudger = interscetExactJudger;
+		}
 
-            this->boundary.setSize(width, height);
-        }
+		void setRoughInterscet(const InersectCheck& interscetRoughJudger) {
+			this->interscetExactJudger = interscetRoughJudger;
+		}
 
-        // ReSharper disable once CppDFAConstantFunctionResult
-        [[nodiscard]] bool overlap(const Cont& box) const {
-            return overlap(obtainBound(box));
-        }
+		explicit QuadTree(unsigned int maxCount) {
+			rectangles.reserve(maxCount);
+		}
 
-        void remove(const Cont* box) {
-            // Check if the rectangle is in this node
-            lock.lock();
-            const bool success = static_cast<bool>(std::erase(rectangles, box));
-            lock.unlock();
+		QuadTree(const Rect& boundary, const Obtainer& transformer) : transformer(transformer), boundary(boundary) {
+			rectangles.reserve(maximumItemCount);
+		}
 
-            if (!success && !isLeaf()) { // If this node has children, check if the rectangle is in the children
-                northwest->remove(box);
-                northeast->remove(box);
-                southwest->remove(box);
-                southeast->remove(box);
-            }
+		QuadTree(const Rect& boundary, const Obtainer& transformer, const InersectCheck& interectExactJudger,
+		         unsigned int maxCount) : transformer(transformer), interscetExactJudger(interectExactJudger),
+			boundary(boundary), maximumItemCount(maxCount) {
+			rectangles.reserve(maxCount);
+		}
 
-            // Check if this node should be merged
-            // ReSharper disable once CppDFAConstantConditions
-            if(success) {
-                lock.lock();
-                if (rectangles.empty() && allChildrenEmpty()) {
-                    clear();
-                }
-            }
+		[[nodiscard]] Rect& getBoundary() {
+			return boundary;
+		}
 
-        }
+		void setBoundary(const Rect& boundary) {
+			if(!allChildrenEmpty()) throw ext::RuntimeException{ "QuadTree Boundary Should be set initially" };
 
-        [[nodiscard]] bool isLeaf() const {
-            return northwest == nullptr || northeast == nullptr || southeast == nullptr || southwest == nullptr;
-        }
+			this->boundary = boundary;
+		}
 
-        [[nodiscard]] bool allChildrenEmpty() const {
-            if (!isLeaf()) {
-                if (!northwest->rectangles.empty() || !northeast->rectangles.empty() ||
-                    !southwest->rectangles.empty() || !southeast->rectangles.empty()) {
-                    return false;
-                }
-            }
+		void setBoundary(const T x, const T y, const T width, const T height) {
+			this->boundary.set(x, y, width, height);
+		}
 
-            return true;
-        }
+		void setBoundary(const T width, const T height) {
+			if(!allChildrenEmpty()) throw ext::RuntimeException{ "QuadTree Boundary Should be set initially" };
 
-        bool overlap(const Rect<T>& rectangle) {
-            if(std::ranges::any_of(rectangles, [this, &rectangle](const Cont* cont) {
-                return rectangle.overlap(obtainBound(cont));
-            })) {
-                return true;
-            }
+			this->boundary.setSize(width, height);
+		}
 
-            // If this node has children, check if the rectangle overlaps with any rectangle in the children
-            if (!isLeaf()) {
-                //TODO uses direction vector to get more possible results?
-                if (northwest->overlap(rectangle)) return true;
-                if (northeast->overlap(rectangle)) return true;
-                if (southwest->overlap(rectangle)) return true;
-                if (southeast->overlap(rectangle)) return true;
-            }
+		bool remove(const Cont* box) {
+			bool result;
+			if(isLeaf()) {
+				containerlock.lock();
+				result = static_cast<bool>(std::erase(rectangles, box));
+				containerlock.unlock();
+			} else {
+				if(QuadTree* child = this->getFittingChild(this->obtainBound(box))) {
+					result = child->remove(box);
+				} else {
+					containerlock.lock();
+					result = static_cast<bool>(std::erase(rectangles, box));
+					containerlock.unlock();
+				}
 
-            // Otherwise, the rectangle does not overlap with any rectangle in the quad tree
-            return false;
-        }
+				if(currentSize <= maximumItemCount) unsplit();
+			}
 
-        bool insert(const Cont* box) {
-            // Ignore objects that do not belong in this quad tree
-            if (boundary.dissociated(obtainBound(box))) {
-                return false;
-            }
+			if(result) {
+				--currentSize;
+				if(allChildrenEmpty()) {
+					leaf = true;
+				}
+			}
 
-            // If there is space in this quad tree and if it does not subdivide, add the object here
-            {
-                std::lock_guard guard{lock};
-                if (rectangles.size() < maximumItemCount) {
-                    rectangles.push_back(box);
-                    return true;
-                }
-            }
+			return result;
+		}
 
-            // Otherwise, subdivide and then add the object to whichever node will accept it
-            if (isLeaf()) {
-                lock.lock();
-                subDivide();
-                lock.unlock();
-            }
+		[[nodiscard]] bool isLeaf() const {
+			return leaf;
+		}
 
-            if (northwest->insert(box)) return true;
-            if (northeast->insert(box)) return true;
-            if (southwest->insert(box)) return true;
-            if (southeast->insert(box)) return true;
+		[[nodiscard]] bool allChildrenEmpty() const {
+			return currentSize == rectangles.size();
+		}
 
-            // Otherwise, the object cannot be inserted for some unknown reason (this should never happen)
-            return false;
-        }
+		template <Concepts::Invokable<void(QuadTree*)> Func>
+		void each(Func&& func) {
+			func(this);
 
-        void clear() {
-            northwest.reset(nullptr);
-            northeast.reset(nullptr);
-            southwest.reset(nullptr);
-            southeast.reset(nullptr);
+			if(!isLeaf()) {
+				topLeft->each(std::forward<Func>(func));
+				topRight->each(std::forward<Func>(func));
+				bottomLeft->each(std::forward<Func>(func));
+				bottomRight->each(std::forward<Func>(func));
+			}
+		}
 
-            rectangles.clear();
-        }
+		bool intersectAny(const Cont* object) {
+			if(!this->inbound(object)) {
+				return false;
+			}
 
-        void clearItemsOnly() {
-            if(!isLeaf()) {
-                northwest->clearItemsOnly();
-                northeast->clearItemsOnly();
-                southwest->clearItemsOnly();
-                southeast->clearItemsOnly();
-            }
+			if(std::ranges::any_of(rectangles, [this, object](const Cont* cont) {
+				return this->isInersectedBetween(object, cont);
+			})) {
+				return true;
+			}
 
-            rectangles.clear();
-        }
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				//TODO uses direction vector to get more possible results?
+				return
+						topLeft->intersectAny(object) ||
+						topRight->intersectAny(object) ||
+						bottomLeft->intersectAny(object) ||
+						bottomRight->intersectAny(object);
+			}
 
-        void subDivide() {
-            const T x = boundary.getSrcX();
-            const T y = boundary.getSrcY();
-            const T w = boundary.getWidth() / static_cast<T>(2);
-            const T h = boundary.getHeight() / static_cast<T>(2);
+			// Otherwise, the rectangle does not overlap with any rectangle in the quad tree
+			return false;
+		}
 
-            const Rect<T> nw{x    , y    , w, h};
-            const Rect<T> ne{x + w, y    , w, h};
-            const Rect<T> sw{x    , y + h, w, h};
-            const Rect<T> se{x + w, y + h, w, h};
+		template <Concepts::Invokable<void(Cont*)> Pred>
+		void intersect(const Cont* object, Pred&& pred) {
+			if(!this->inbound(object)) return;
 
-            northwest = std::make_unique<QuadTree>(nw, transformer, maximumItemCount);
-            northeast = std::make_unique<QuadTree>(ne, transformer, maximumItemCount);
-            southwest = std::make_unique<QuadTree>(sw, transformer, maximumItemCount);
-            southeast = std::make_unique<QuadTree>(se, transformer, maximumItemCount);
-        }
-    };
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				topLeft->intersect(object, pred);
+				topRight->intersect(object, pred);
+				bottomLeft->intersect(object, pred);
+				bottomRight->intersect(object, pred);
+			}
 
-    template <typename T>
-    using QuadTreeF = QuadTree<T, float>;
+			std::ranges::for_each(rectangles, [this, object, pred = std::forward<Pred>(pred)](Cont* cont) {
+				if(this->isInersectedBetween(object, cont)) {
+					pred(cont);
+				}
+			});
+		}
+
+		template <Concepts::Invokable<void(Cont*)> Pred>
+		void within(const Cont* object, const T dst, Pred&& pred) {
+			if(!this->withinBound(object, dst)) return;
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				topLeft->within(object, dst, pred);
+				topRight->within(object, dst, pred);
+				bottomLeft->within(object, dst, pred);
+				bottomRight->within(object, dst, pred);
+			}
+
+			std::ranges::for_each(rectangles, [this, object, dst, pred = std::forward<Pred>(pred)](Cont* cont) {
+				if(this->obtainBound(cont).getCenter().within(this->obtainBound(object), dst)) {
+					pred(cont);
+				}
+			});
+		}
+
+		template <Concepts::Invokable<void(Cont*)> Pred>
+		bool intersectOnce(const Cont* object, Pred&& pred) {
+			if(!this->inbound(object)) return false;
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				return topLeft->intersect(object, pred) ||
+				       topRight->intersect(object, pred) ||
+				       bottomLeft->intersect(object, pred) ||
+				       bottomRight->intersect(object, pred);
+			}
+
+			bool intersected = false;
+
+			std::ranges::for_each(rectangles, [this, object, &pred, &intersected](Cont* cont) {
+				if(intersected) return;
+				if(this->isInersectedBetween(object, cont)) {
+					intersected = true;
+					pred(cont);
+				}
+			});
+
+			return intersected;
+		}
+
+		bool inbound(const Cont* object) {
+			if(strict) return boundary.contains(obtainBound(object));
+			return boundary.overlap(obtainBound(object));
+		}
+
+		bool withinBound(const Cont* object, const T dst) {
+			return obtainBound(object).getCenter().within(boundary.getCenter(), dst);
+		}
+
+		bool insert(const Cont* box) {
+			// Ignore objects that do not belong in this quad tree
+			if(!this->inbound(box)) {
+				return false;
+			}
+
+			//If this box is inbound, it should must be added.
+			++currentSize;
+
+			// Otherwise, subdivide and then add the object to whichever node will accept it
+			if(isLeaf()) {
+				if(rectangles.size() >= maximumItemCount) {
+					split();
+				} else {
+					std::lock_guard guard{ containerlock };
+					rectangles.push_back(box);
+					return true;
+				}
+			}
+
+			const Rect& rect = this->obtainBound(box);
+			// Add to relevant child, or root if can't fit completely in a child
+			if(QuadTree* child = this->getFittingChild(rect)) {
+				return child->insert(box);
+			}
+
+			//Fallback
+			std::lock_guard guard{ containerlock };
+			rectangles.push_back(box);
+			return true;
+		}
+
+		void clear() {
+			topLeft.reset(nullptr);
+			topRight.reset(nullptr);
+			bottomLeft.reset(nullptr);
+			bottomRight.reset(nullptr);
+
+			currentSize = 0;
+
+			rectangles.clear();
+		}
+
+		void clearItemsOnly() {
+			if(!isLeaf()) {
+				topLeft->clearItemsOnly();
+				topRight->clearItemsOnly();
+				bottomLeft->clearItemsOnly();
+				bottomRight->clearItemsOnly();
+			}
+
+			leaf        = true;
+			currentSize = 0;
+			rectangles.clear();
+		}
+
+		void split() {
+			if(!isLeaf()) return;
+			leaf = false;
+			if(topLeft != nullptr) return;
+
+			subTreelock.lock();
+
+			const T x = boundary.getSrcX();
+			const T y = boundary.getSrcY();
+			const T w = boundary.getWidth() / static_cast<T>(2);
+			const T h = boundary.getHeight() / static_cast<T>(2);
+
+			const Rect bl{ x, y, w, h };
+			const Rect br{ x + w, y, w, h };
+			const Rect tl{ x, y + h, w, h };
+			const Rect tr{ x + w, y + h, w, h };
+
+			topLeft     = std::make_unique<QuadTree>(tl, transformer, interscetExactJudger, maximumItemCount);
+			topRight    = std::make_unique<QuadTree>(tr, transformer, interscetExactJudger, maximumItemCount);
+			bottomLeft  = std::make_unique<QuadTree>(bl, transformer, interscetExactJudger, maximumItemCount);
+			bottomRight = std::make_unique<QuadTree>(br, transformer, interscetExactJudger, maximumItemCount);
+
+			subTreelock.unlock();
+		}
+
+		void unsplit() {
+			if(isLeaf()) return;
+			leaf = true;
+
+			containerlock.lock();
+			rectangles.insert(rectangles.end(), std::make_move_iterator(topLeft->rectangles.begin()),
+			                  std::make_move_iterator(topLeft->rectangles.end()));
+			rectangles.insert(rectangles.end(), std::make_move_iterator(topRight->rectangles.begin()),
+			                  std::make_move_iterator(topRight->rectangles.end()));
+			rectangles.insert(rectangles.end(), std::make_move_iterator(bottomLeft->rectangles.begin()),
+			                  std::make_move_iterator(bottomLeft->rectangles.end()));
+			rectangles.insert(rectangles.end(), std::make_move_iterator(bottomRight->rectangles.begin()),
+			                  std::make_move_iterator(bottomRight->rectangles.end()));
+			containerlock.unlock();
+
+			topLeft->clearItemsOnly();
+			topRight->clearItemsOnly();
+			bottomLeft->clearItemsOnly();
+			bottomRight->clearItemsOnly();
+		}
+
+		QuadTree* getFittingChild(const Rect& boundingBox) {
+			if(isLeaf()) return nullptr;
+			const T verticalMidpoint   = boundary.getSrcX() + boundary.getWidth() / 2;
+			const T horizontalMidpoint = boundary.getSrcY() + boundary.getHeight() / 2;
+
+			// Object can completely fit within the top quadrants
+			const bool topQuadrant = boundingBox.getSrcY() > horizontalMidpoint;
+			// Object can completely fit within the bottom quadrants
+			const bool bottomQuadrant = boundingBox.getSrcY() < horizontalMidpoint && (
+				                            boundingBox.getSrcY() + boundingBox.getHeight()) < horizontalMidpoint;
+
+			// Object can completely fit within the left quadrants
+			if(boundingBox.getSrcX() < verticalMidpoint && boundingBox.getSrcX() + boundingBox.getWidth() <
+			   verticalMidpoint) {
+				if(topQuadrant) {
+					return topLeft.get();
+				} else if(bottomQuadrant) {
+					return bottomLeft.get();
+				}
+			} else if(boundingBox.getSrcX() > verticalMidpoint) {
+				// Object can completely fit within the right quadrants
+				if(topQuadrant) {
+					return topRight.get();
+				} else if(bottomQuadrant) {
+					return bottomRight.get();
+				}
+			}
+
+			return nullptr;
+		}
+	};
+
+	template <typename T>
+	using QuadTreeF = QuadTree<T, float>;
 }

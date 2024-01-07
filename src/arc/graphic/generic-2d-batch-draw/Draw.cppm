@@ -44,7 +44,7 @@ namespace Graphic::Draw {
 	Vec2 vec2_5{};
 	Vec2 vec2_6{};
 
-	const Color* colors[2];
+	const Color* colors[2]{nullptr};
 }
 
 export
@@ -131,7 +131,7 @@ namespace Graphic::Draw {
 
 	void endPorj();
 
-	inline void color(const Color& c1, const Color& c2, const float t) {
+	void color(const Color& c1, const Color& c2, const float t) {
 		colors[0] = &c1;
 		colors[1] = &c2;
 

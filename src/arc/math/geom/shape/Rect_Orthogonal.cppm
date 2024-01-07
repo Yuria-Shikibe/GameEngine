@@ -15,7 +15,7 @@ export namespace Geom::Shape{
 	 * \tparam T 
 	 */
 	template <Concepts::Number T>
-	class Rect_Orthogonal final : public Shape<Rect_Orthogonal<T>, T>{
+	class Rect_Orthogonal final/* : public Shape<Rect_Orthogonal<T>, T>*/{
 		static constexpr T HALF = static_cast<T>(2);
 
 		T srcX{0};
@@ -24,37 +24,37 @@ export namespace Geom::Shape{
 		T height{0};
 
 	public:
-		Rect_Orthogonal(const T srcX, const T srcY, const T width, const T height)
+		constexpr Rect_Orthogonal(const T srcX, const T srcY, const T width, const T height)
 			: srcX(srcX),
 			  srcY(srcY){
 			this->setSize(width, height);
 		}
 
-		Rect_Orthogonal(const Vec2& center, const T width, const T height){
+		constexpr Rect_Orthogonal(const Vec2& center, const T width, const T height){
 			this->setSize(width, height);
 			this->setCenter(center.x, center.y);
 		}
 
-		Rect_Orthogonal(const T width, const T height){
+		constexpr Rect_Orthogonal(const T width, const T height){
 			this->setSize(width, height);
 		}
 
-		explicit Rect_Orthogonal(const T size){
+		constexpr explicit Rect_Orthogonal(const T size){
 			this->setSize(size, size);
 		}
 
-		Rect_Orthogonal() = default;
+		constexpr Rect_Orthogonal() = default;
 
-		~Rect_Orthogonal() = default;
+		constexpr ~Rect_Orthogonal() = default;
 
-		friend bool operator==(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
+		friend constexpr bool operator==(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
 			return lhs.srcX == rhs.srcX
 			       && lhs.srcY == rhs.srcY
 			       && lhs.width == rhs.width
 			       && lhs.height == rhs.height;
 		}
 
-		friend bool operator!=(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
+		friend constexpr bool operator!=(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) {
 			return !(lhs == rhs);
 		}
 
@@ -66,52 +66,48 @@ export namespace Geom::Shape{
 			       << " height: " << obj.height;
 		}
 
-		[[nodiscard]] T getSrcX() const{
+		[[nodiscard]] constexpr T getSrcX() const{
 			return srcX;
 		}
 
-		[[nodiscard]] T* getSrcXRaw(){
+		[[nodiscard]] constexpr T* getSrcXRaw(){
 			return &srcX;
 		}
 
-		void setSrcX(const T x){
+		constexpr void setSrcX(const T x){
 			this->srcX = x;
 		}
 
-		[[nodiscard]] T getSrcY() const{
+		[[nodiscard]] constexpr T getSrcY() const{
 			return srcY;
 		}
 
-		[[nodiscard]] T* getSrcYRaw(){
+		[[nodiscard]] constexpr T* getSrcYRaw(){
 			return &srcY;
 		}
 
-		void setSrcY(const T y){
+		constexpr void setSrcY(const T y){
 			this->srcY = y;
 		}
 
-		[[nodiscard]] T getWidth() const{
+		[[nodiscard]] constexpr T getWidth() const{
 			return width;
 		}
 
-		[[nodiscard]] T getHeight() const{
+		[[nodiscard]] constexpr T getHeight() const{
 			return height;
 		}
 
-		[[nodiscard]] T* getWidthRaw(){
+		[[nodiscard]] constexpr T* getWidthRaw(){
 			return &width;
 		}
 
-		[[nodiscard]] T* getHeightRaw(){
+		[[nodiscard]] constexpr T* getHeightRaw(){
 			return &height;
 		}
 
-		[[nodiscard]] Vec2 getCenter() const{
-			return { srcX + width / HALF, srcY + height / HALF };
-		}
-
 		template <Concepts::Number T_>
-		Rect_Orthogonal<T_> as() const {
+		constexpr Rect_Orthogonal<T_> as() const {
 			return Rect_Orthogonal<T_>{
 				static_cast<T_>(srcX),
 				static_cast<T_>(srcY),
@@ -120,43 +116,44 @@ export namespace Geom::Shape{
 			};
 		}
 
-		void setWidth(const T w)requires Concepts::Signed<T>{
-			if(w >= 0){
+		template <Concepts::Number N>
+		constexpr void setWidth(const N w){
+			if constexpr(std::is_unsigned_v<N>) {
 				this->width = w;
-			} else{
-				T abs = w < 0 ? -w : w;
-				srcX -= abs;
-				this->width = abs;
+			}else {
+				if(w >= 0){
+					this->width = w;
+				}else{
+					T abs = w < 0 ? -w : w;
+					srcX -= abs;
+					this->width = abs;
+				}
 			}
 		}
 
-		void setWidth(const T w)requires Concepts::NonNegative<T>{
-			this->width = w;
-		}
-
-		void setHeight(const T h)requires Concepts::Signed<T>{
-			if (h >= 0) {
+		template <Concepts::Number N>
+		constexpr void setHeight(const N h){
+			if constexpr(std::is_unsigned_v<N>) {
 				this->height = h;
-			}
-			else {
-				T abs = h < 0 ? -h : h; // abs
-				srcY -= abs;
-				this->height = abs;
+			}else {
+				if(h >= 0){
+					this->height = h;
+				}else{
+					T abs = h < 0 ? -h : h;
+					srcY -= abs;
+					this->height = abs;
+				}
 			}
 		}
 
-		void setHeight(const T h)requires Concepts::NonNegative<T>{
-			this->height = h;
-		}
-
-		Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::Signed<T> {
-			this->setWidth(width + x);
-			this->setHeight(height + y);
+		constexpr Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::Signed<T> {
+			this->template setWidth<T>(width + x);
+			this->template setHeight<T>(height + y);
 
 			return *this;
 		}
 
-		Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::NonNegative<T> {
+		constexpr Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::NonNegative<T> {
 			using S = std::make_signed_t<T>;
 			this->template setWidth<S>(static_cast<S>(width) + static_cast<S>(x));
 			this->template setHeight<S>(static_cast<S>(height) + static_cast<S>(y));
@@ -165,99 +162,123 @@ export namespace Geom::Shape{
 		}
 
 		template <Concepts::Number N>
-		Rect_Orthogonal& addSize(const N x, const N y){
+		constexpr Rect_Orthogonal& addSize(const N x, const N y){
 			using S = std::make_signed_t<T>;
-			setWidth(static_cast<S>(width) + static_cast<S>(x));
-			setHeight(static_cast<S>(height) + static_cast<S>(y));
+			this->template setWidth<S>(static_cast<S>(width) + static_cast<S>(x));
+			this->template setHeight<S>(static_cast<S>(height) + static_cast<S>(y));
 
 			return *this;
 		}
 
-		void setLargerWidth(const T v) {
-			T abs = v < 0 ? -v : v;
-			if(abs > width) {
-				setWidth(v);
+		constexpr void setLargerWidth(const T v) {
+			if constexpr(std::is_unsigned_v<T>) {
+				if(v > width) {
+					this->template setWidth<T>(v);
+				}
+			}else {
+				T abs = v < 0 ? -v : v;
+				if(abs > width) {
+					this->template setWidth<T>(v);
+				}
+			}
+
+		}
+
+		constexpr void setLargerHeight(const T v) {
+			if constexpr(std::is_unsigned_v<T>) {
+				if(v > height) {
+					this->template setHeight<T>(v);
+				}
+			}else {
+				T abs = v < 0 ? -v : v;
+				if(abs > height) {
+					this->template setHeight<T>(v);
+				}
 			}
 		}
 
-		void setLargerHeight(const T v) {
-			T abs = v < 0 ? -v : v;
-			if(abs > height) {
-				setHeight(v);
-			}
-		}
-
-		[[nodiscard]] bool contains(const Rect_Orthogonal& other) const override{
+		[[nodiscard]] constexpr bool contains(const Rect_Orthogonal& other) const{
 			return
 				other.srcX > srcX && other.srcX + other.width < srcX + width &&
 				other.srcY > srcY && other.srcY + other.height < srcY + height;
 		}
 
-		[[nodiscard]] bool overlap(const Rect_Orthogonal& other) const override{
-			return !(
-				srcX >= other.srcX + other.width  ||
-				srcX +  width	  <= other.srcX   ||
-				srcY >= other.srcY + other.height ||
-				srcY +  height	  <= other.srcY
-			);
+		[[nodiscard]] constexpr bool overlap(const Rect_Orthogonal& r) const{
+			return
+				getSrcX() < r.getEndX() &&
+				getEndX() > r.getSrcX() &&
+				getSrcY() < r.getEndY() &&
+				getEndY() > r.getSrcY();
 		}
 
-		[[nodiscard]] bool containsPos_edgeExclusive(const Vec2& v) const override{
+		[[nodiscard]] constexpr bool containsPos_edgeExclusive(const Vec2& v) const{
 			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
 		}
 
-		[[nodiscard]] bool containsPos_edgeInclusive(const Vec2& v) const override{
+		[[nodiscard]] constexpr bool containsPos_edgeInclusive(const Vec2& v) const{
 			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
-		[[nodiscard]] T getEndX() const{
+		[[nodiscard]] constexpr T getEndX() const{
 			return srcX + width;
 		}
 
-		[[nodiscard]] T getEndY() const{
+		[[nodiscard]] constexpr T getEndY() const{
 			return srcY + height;
 		}
 
-		[[nodiscard]] T maxDiagonalSqLen() const override{
+		[[nodiscard]] constexpr T getCenterX() const{
+			return srcX + width / HALF;
+		}
+
+		[[nodiscard]] constexpr T getCenterY() const{
+			return srcY + height / HALF;
+		}
+
+		[[nodiscard]] constexpr Geom::Vector2D<T> getCenter() const{
+			return {getCenterX(), getCenterY()};
+		}
+
+		[[nodiscard]] constexpr T maxDiagonalSqLen() const{
 			return width * width + height * height;
 		}
 
-		Rect_Orthogonal& setSrc(const T x, const T y){
+		constexpr Rect_Orthogonal& setSrc(const T x, const T y){
 			srcX = x;
 			srcY = y;
 
 			return *this;
 		}
 
-		Rect_Orthogonal& setSrc(const Vec2& v) {
+		constexpr Rect_Orthogonal& setSrc(const Vec2& v) {
 			srcX = v.x;
 			srcY = v.y;
 
 			return *this;
 		}
 
-		Rect_Orthogonal& setSize(const T x, const T y) {
+		constexpr Rect_Orthogonal& setSize(const T x, const T y) {
 			this->setWidth(x);
 			this->setHeight(y);
 
 			return *this;
 		}
 
-		Rect_Orthogonal& setSize(const Rect_Orthogonal& other) {
+		constexpr Rect_Orthogonal& setSize(const Rect_Orthogonal& other) {
 			this->setWidth(other.width);
 			this->setHeight(other.height);
 
 			return *this;
 		}
 
-		Rect_Orthogonal& move(const T x, const T y) {
+		constexpr Rect_Orthogonal& move(const T x, const T y) {
 			srcX += x;
 			srcY += y;
 
 			return *this;
 		}
 
-		Rect_Orthogonal& setSrc(const Rect_Orthogonal& other) {
+		constexpr Rect_Orthogonal& setSrc(const Rect_Orthogonal& other) {
 			srcX = other.srcX;
 			srcY = other.srcY;
 
@@ -265,74 +286,74 @@ export namespace Geom::Shape{
 		}
 
 		template <Concepts::Number T1, Concepts::Number T2>
-		Rect_Orthogonal& scl(const T1 xScl, const T2 yScl) {
+		constexpr Rect_Orthogonal& scl(const T1 xScl, const T2 yScl) {
 			width = static_cast<T>(static_cast<T1>(width) * xScl);
 			height = static_cast<T>(static_cast<T1>(height) * yScl);
 
 			return *this;
 		}
 
-		void set(const T srcx, const T srcy, const T width, const T height) {
+		constexpr void set(const T srcx, const T srcy, const T width, const T height) {
 			srcX = srcx;
 			srcY = srcy;
 
-			setWidth(width);
-			setHeight(height);
+			this->template setWidth<T>(width);
+			this->template setHeight<T>(height);
 		}
 
-		Rect_Orthogonal& setSize(const Vec2& v) {
-			return setSize(static_cast<T>(v.x), static_cast<T>(v.y));
+		constexpr Rect_Orthogonal& setSize(const Vec2& v) {
+			return this->setSize(static_cast<T>(v.x), static_cast<T>(v.y));
 		}
 
-		Rect_Orthogonal& setCenter(const T x, const T y){
+		constexpr Rect_Orthogonal& setCenter(const T x, const T y){
 			this->setSrc(x - width / HALF, y - height / HALF);
 
 			return *this;
 		}
 
-		Rect_Orthogonal& setCenter(const Vec2& v) {
+		constexpr Rect_Orthogonal& setCenter(const Vec2& v) {
 			this->setSrc(static_cast<T>(v.x) - width / HALF, static_cast<T>(v.y) - height / HALF);
 
 			return *this;
 		}
 
-		[[nodiscard]] float xOffsetRatio(const T x) const{
+		[[nodiscard]] constexpr float xOffsetRatio(const T x) const{
 			return Math::curve(x, static_cast<float>(srcX), static_cast<float>(srcX + width));
 		}
 
-		[[nodiscard]] float yOffsetRatio(const T y) const{
+		[[nodiscard]] constexpr float yOffsetRatio(const T y) const{
 			return Math::curve(y, static_cast<float>(srcY), static_cast<float>(srcY + height));
 		}
 
-		[[nodiscard]] Vec2 offsetRatio(const Vec2& v){
+		[[nodiscard]] constexpr Vec2 offsetRatio(const Vec2& v){
 			return { xOffsetRatio(v.x), yOffsetRatio(v.y) };
 		}
 
-		[[nodiscard]] Vec2 vert_00()const {
+		[[nodiscard]] constexpr Vec2 vert_00()const {
 			return { static_cast<float>(srcX), static_cast<float>(srcY) };
 		}
 
-		[[nodiscard]] Vec2 vert_10() const {
+		[[nodiscard]] constexpr Vec2 vert_10() const {
 			return { static_cast<float>(srcX + width), static_cast<float>(srcY) };
 		}
 
-		[[nodiscard]] Vec2 vert_01() const {
+		[[nodiscard]] constexpr Vec2 vert_01() const {
 			return { static_cast<float>(srcX), static_cast<float>(srcY + height) };
 		}
 
-		[[nodiscard]] Vec2 vert_11() const {
+		[[nodiscard]] constexpr Vec2 vert_11() const {
 			return {static_cast<float>(srcX + width), static_cast<float>(srcY + height) };
 		}
 
-		[[nodiscard]] T area() const{
+		[[nodiscard]] constexpr T area() const{
 			return width * height;
 		}
 
-		[[nodiscard]] float ratio() const{
+		[[nodiscard]] constexpr float ratio() const{
 			return static_cast<float>(width) / static_cast<float>(height);
 		}
 
-		std::vector<Vec2>& vertices(std::vector<Vec2>& collector) const override{
+		std::vector<Vec2>& vertices(std::vector<Vec2>& collector) const{
 			collector.push_back(vert_00());
 			collector.push_back(vert_01());
 			collector.push_back(vert_11());
@@ -341,7 +362,7 @@ export namespace Geom::Shape{
 			return collector;
 		}
 
-		void setVert(const float srcX, const float srcY, const float endX, const float endY) {
+		constexpr void setVert(const float srcX, const float srcY, const float endX, const float endY) {
 			set(srcX, srcY, endX - srcX, endY - srcY);
 		}
 	};

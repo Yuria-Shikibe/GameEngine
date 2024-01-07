@@ -39,6 +39,7 @@ import Font;
 
 
 import Math;
+import Math.Rand;
 import Math.StripPacker2D;
 import Geom.Vector2D;
 import Geom.Matrix3D;
@@ -238,36 +239,104 @@ int main(const int argc, char* argv[]) {
 	Geom::Matrix3D mat{};
 	const auto coordCenter = Font::obtainLayoutPtr();
 
-	Geom::RectBox box1{};
-	Geom::RectBox box2{};
-
-	box1.setSize(100, 200);
-
-	box2.setSize(20, 500);
-	box2.rotation = 60.0f;
-
-	box1.offset      = { -50, -100 };
-	box1.rotation    = 30;
-	box1.originPoint = { 100, 100 };
-	box1.update();
-
 	Game::EntityManage::init();
+	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
 
-	Core::input->registerKeyBind(Ctrl::KEY_SPACE, Ctrl::Act_Repeat, [] {
+	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Press, [] {
 		Geom::RectBox box{};
-		box.setSize(20, 500);
-		box.rotation = 60.0f;
+		box.setSize(75, 15);
+		box.offset = box.edgeLength;
+		box.offset.mul(-0.5f);
 
 		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+		ptr->position.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
+		ptr->rotation =
+			Core::input->getMousePos()
+				.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
+				.angle();
+
+		ptr->velocity.set(180, 0).rotate(ptr->rotation);
 		Game::EntityManage::add(ptr);
 		ptr->hitBox = box;
-		// std::cout << Game::EntityManage::entities.idMap.size();
+		ptr->inertialMass = 100;
+		ptr->activate();
+	});
+
+	Core::input->registerKeyBind(Ctrl::KEY_I, Ctrl::Act_Press, [] {
+		int i =  Game::EntityManage::entities.idMap.at(0).use_count();
+		std::cout << i << std::endl;
+	});
+
+	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Repeat, [] {
+		Geom::RectBox box{};
+		box.setSize(50, 15);
+		box.offset = box.edgeLength;
+		box.offset.mul(-0.5f);
+
+		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+		ptr->position.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
+		ptr->rotation =
+			Core::input->getMousePos()
+				.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
+				.angle();
+
+		ptr->velocity.set(120, 0).rotate(ptr->rotation);
+		Game::EntityManage::add(ptr);
+		ptr->hitBox = box;
+		ptr->activate();
+	});
+
+	{
+		Math::Rand rand = Math::globalRand;
+		for(int i = 0; i < 800; ++i) {
+			Geom::RectBox box{};
+			box.setSize(rand.random(360), rand.random(360));
+			box.rotation = rand.random(360);
+			box.offset = box.edgeLength;
+			box.offset.mul(-0.5f);
+
+			const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+			ptr->rotation  = rand.random(360.0f);
+			ptr->position.set(rand.range(40000), rand.range(40000));
+			Game::EntityManage::add(ptr);
+			ptr->hitBox = box;
+			ptr->velocity.set(1, 0).rotate(rand.random(360));
+			ptr->activate();
+		}
+
+		Geom::RectBox box{};
+		box.setSize(20, 100);
+		box.rotation = 0;
+		box.offset = box.edgeLength;
+		box.offset.mul(-0.5f);
+
+		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+		ptr->position.set(1000, 100);
+		Game::EntityManage::add(ptr);
+		ptr->hitBox = box;
+		ptr->velocity.set(0, 0);
+		ptr->activate();
+
+	}
+
+	Core::input->registerKeyBind(Ctrl::KEY_P, Ctrl::Act_Press, [] {
+		OS::setPause(!OS::isPaused());
 	});
 
 	Core::renderer->getListener().on<Event::Draw_Post>([&](const Event::Draw_Post& e) {
+		e.renderer->frameBegin(&frameBuffer);
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
 		Game::EntityManage::render();
-	}); {
+
+		Draw::setLineStroke(5);
+		Draw::color(Colors::GRAY);
+		Game::EntityManage::realEntities.quadTree->each([](Geom::QuadTreeF<Game::RealityEntity>* t) {
+			Draw::rectLine(t->getBoundary());
+		});
+		e.renderer->frameEnd(Assets::PostProcessors::bloom);
+	});
+
+	{
 		Core::renderer->getListener().on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& e) {
 			// e.renderer->frameBegin(&multiSample);
 			Draw::meshBegin(Assets::Meshes::coords);
@@ -286,54 +355,34 @@ int main(const int argc, char* argv[]) {
 			Draw::color(Colors::BLUE_SKY);
 
 			Draw::setLineStroke(5);
-			Draw::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::globalTime() / 5.0f, 1.0f)),
-			           { &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
+			Draw::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+					   { &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
 			);
-
-			box2.originPoint.set(140, 140).mul(Math::sin(OS::globalTime()) + 0.75f)
-			    .add(Math::sin(OS::globalTime() * 2.0f) * 60, Math::cos(OS::globalTime() * 2.0f) * 60);
-			box2.update();
-
-			Draw::setLineStroke(1);
-			if(box1.overlapRough(box2)) {
-				Draw::color(Graphic::Colors::CORAL);
-			}
-			Draw::rectLine(box1.maxOrthoBound);
-			Draw::rectLine(box2.maxOrthoBound);
-
-			Draw::color(Colors::BLUE_SKY);
-			if(box1.overlapExact(box2)) {
-				Draw::color(Graphic::Colors::CORAL);
-			}
-
-			Draw::quad(Draw::defaultTexture, box1.v0, box1.v1, box1.v2, box1.v3);
-			Draw::quad(Draw::defaultTexture, box2.v0, box2.v1, box2.v2, box2.v3);
 
 			Draw::color(); {
 				mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()),
-				                  static_cast<float>(Core::renderer->getHeight()));
+								  static_cast<float>(Core::renderer->getHeight()));
 
 				Core::batch->beginProjection(mat);
 				Draw::color();
 
 				ss.str("");
-				ss << "${font#tele}${scl#[0.7]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " <<
+				ss << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " <<
 						cameraPos.getY() << ") | " << std::to_string(OS::getFPS());
 				ss << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
 				ss << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, [](const decltype(Game::EntityManage::drawables.idMap)::value_type::second_type& i) {
 					return i->isInScreen();
 				});
+				ss << "\nTotal hit: " << Game::totalHit;
 
 
 				currentCoordText = ss.str();
 				*currentCoord    = currentCoordText;
-				Font::glyphParser->parse(coordCenter, *currentCoord);
-
-				box2.rotation += OS::deltaTick();
-
-				coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(45, 45);
-				coordCenter->setAlign(Align::Mode::bottom_left);
-				coordCenter->render();
+				// Font::glyphParser->parse(coordCenter, *currentCoord);
+				//
+				// coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(45, 45);
+				// coordCenter->setAlign(Align::Mode::bottom_left);
+				// coordCenter->render();
 
 				Draw::setLineStroke(4);
 				Draw::lineSquare(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);

@@ -5,6 +5,7 @@ export module OS.ApplicationListener;
 export namespace OS{
 	class ApplicationListener{
 	public:
+		bool pauseRestrictable = false;
 		virtual ~ApplicationListener() = default;
 
 		virtual void update(float delta) = 0;

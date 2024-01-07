@@ -60,7 +60,6 @@ export namespace Containers{
 
             void operator()(ItemRef t) const {
                 if(!src) {
-                    std::weak_ptr<T> ptr;
                     throw ext::NullPointerException{"Source pool is expired!"};
                 }
                 if(reset)reset(t);

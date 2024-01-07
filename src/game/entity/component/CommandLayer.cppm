@@ -3,7 +3,7 @@ module;
 export module Game.Entity.CommandLayer;
 
 import Game.Entity.RealityEntity;
-import Game.Entity.Pos;
+import Game.Entity.PosedEntity;
 
 import Game.Logic.Strategy;
 import Game.Logic.Objective;

@@ -41,7 +41,7 @@ export namespace UI {
 		bool fadeWhenUnused = true;
 		bool hoverScroller = false;
 
-		float dragSensitivityCoefficient = 0.795f;
+		float dragSensitivityCoefficient = 2.15f;
 		float scrollSensitivityCoefficient = 60.0f;
 		float scrollMarginCoefficient = 6.0f;
 

@@ -258,11 +258,11 @@ export namespace Core{
 			});
 		}
 
-		Geom::Vec2& getMousePos() {
+		[[nodiscard]] Geom::Vec2 getMousePos() const {
 			return mousePos;
 		}
 
-		Geom::Vec2& getScrollOffset() {
+		[[nodiscard]] Geom::Vec2 getScrollOffset() const {
 			return scrollOffset;
 		}
 

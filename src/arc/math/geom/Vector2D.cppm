@@ -18,7 +18,6 @@ export import Math.Bit;
 import Concepts;
 
 export namespace Geom{
-
 	template <Concepts::Number T>
 	struct Vector2D
 	{
@@ -27,39 +26,39 @@ export namespace Geom{
 		[[nodiscard]] constexpr Vector2D(const T x, const T y) : x(x), y(y) {
 		}
 
-		[[nodiscard]] constexpr Vector2D() : Vector2D(0, 0) {
+		[[nodiscard]] constexpr Vector2D() = default;
 
+		using PassType = Concepts::ParamPassType<Vector2D, sizeof(T) * 2>;
+
+		[[nodiscard]] constexpr Vector2D operator+(const PassType tgt) const {
+			return {x + tgt.x, y + tgt.y};
 		}
 
-		[[nodiscard]] constexpr Vector2D operator+(const Vector2D& tgt) {
-			return this->copy().add(tgt);
+		[[nodiscard]] constexpr Vector2D operator-(const PassType tgt) const {
+			return {x - tgt.x, y - tgt.y};
 		}
 
-		[[nodiscard]] constexpr Vector2D operator-(const Vector2D& tgt) {
-			return this->copy().sub(tgt);
+		[[nodiscard]] constexpr Vector2D operator*(const PassType tgt) const {
+			return {x * tgt.x, y * tgt.y};
 		}
 
-		[[nodiscard]] constexpr Vector2D operator*(const Vector2D& tgt) {
-			return this->copy().mul(tgt);
+		[[nodiscard]] constexpr Vector2D operator/(const PassType tgt) const {
+			return {x / tgt.x, y / tgt.y};
 		}
 
-		[[nodiscard]] constexpr Vector2D operator/(const Vector2D& tgt) {
-			return this->copy().sub(tgt);
-		}
-
-		[[nodiscard]] constexpr Vector2D operator%(const Vector2D& tgt) {
+		[[nodiscard]] constexpr Vector2D operator%(const PassType tgt) const {
 			return this->copy().mod(tgt.x, tgt.y);
 		}
 
-		constexpr Vector2D& operator+=(const Vector2D& tgt) {
+		constexpr Vector2D& operator+=(const PassType tgt) {
 			return this->add(tgt);
 		}
 
-		constexpr Vector2D& operator-=(const Vector2D& tgt) {
+		constexpr Vector2D& operator-=(const PassType tgt) {
 			return this->sub(tgt);
 		}
 
-		constexpr Vector2D& operator*=(const Vector2D& tgt) {
+		constexpr Vector2D& operator*=(const PassType tgt) {
 			return this->mul(tgt);
 		}
 
@@ -67,7 +66,7 @@ export namespace Geom{
 			return this->scl(val);
 		}
 
-		constexpr Vector2D& operator/=(const Vector2D& tgt) {
+		constexpr Vector2D& operator/=(const PassType tgt) {
 			return this->sub(tgt);
 		}
 
@@ -75,7 +74,7 @@ export namespace Geom{
 			return this->div(tgt, tgt);
 		}
 
-		constexpr Vector2D& operator%=(const Vector2D& tgt) {
+		constexpr Vector2D& operator%=(const PassType tgt) {
 			return this->mod(tgt.x, tgt.y);
 		}
 
@@ -93,11 +92,15 @@ export namespace Geom{
 			return this->mod(val, val);
 		}
 
-		constexpr Vector2D& mod(const Vector2D& other) {
+		constexpr Vector2D& mod(const PassType other) {
 			return this->mod(other.x, other.y);
 		}
 
 		constexpr [[nodiscard]] Vector2D copy() const {
+			return Vector2D{ x, y };
+		}
+
+		constexpr [[nodiscard]] Vector2D copy(){
 			return Vector2D{ x, y };
 		}
 
@@ -120,7 +123,7 @@ export namespace Geom{
 			return this->set(val, val);
 		}
 
-		constexpr Vector2D& set(const Vector2D& tgt) {
+		constexpr Vector2D& set(const PassType tgt) {
 			return this->set(tgt.x, tgt.y);
 		}
 
@@ -131,11 +134,11 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Vector2D& add(const Vector2D& other) {
+		constexpr Vector2D& add(const PassType other) {
 			return this->add(other.x, other.y);
 		}
 
-		constexpr Vector2D& add(const Vector2D& other, const T scale) {
+		constexpr Vector2D& add(const PassType other, const T scale) {
 			return this->add(other.x * scale, other.y * scale);
 		}
 
@@ -146,8 +149,12 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Vector2D& sub(const Vector2D& other) {
+		constexpr Vector2D& sub(const PassType other) {
 			return this->sub(other.x, other.y);
+		}
+
+		constexpr Vector2D& sub(const PassType other, const T scale) {
+			return this->sub(other.x * scale, other.y * scale);
 		}
 
 		constexpr Vector2D& mul(const T ox, const T oy) {
@@ -161,7 +168,7 @@ export namespace Geom{
 			return this->mul(val, val);
 		}
 
-		constexpr Vector2D& mul(const Vector2D& other) {
+		constexpr Vector2D& mul(const PassType other) {
 			return this->mul(other.x, other.y);
 		}
 
@@ -176,7 +183,7 @@ export namespace Geom{
 			return this->div(val, val);
 		}
 
-		constexpr Vector2D& div(const Vector2D& other) {
+		constexpr Vector2D& div(const PassType other) {
 			return this->div(other.x, other.y);
 		}
 
@@ -198,18 +205,18 @@ export namespace Geom{
 			return *this;
 		}
 
-		[[nodiscard]] constexpr T dst2(const Vector2D& other) const {
+		[[nodiscard]] constexpr T dst2(const PassType other) const {
 			T dx = Math::safeDst(x, other.x);
 			T dy = Math::safeDst(y, other.y);
 
 			return dx * dx + dy * dy;
 		}
 
-		[[nodiscard]] constexpr float dst(const Vector2D& other) const{
-			return std::sqrtf(static_cast<float>(this->dst2(other)));
+		[[nodiscard]] constexpr float dst(const PassType other) const{
+			return std::sqrt(static_cast<float>(this->dst2(other)));
 		}
 
-		[[nodiscard]] constexpr bool within(const Vector2D& other, const T dst) const{
+		[[nodiscard]] constexpr bool within(const PassType other, const T dst) const{
 			return this->dst2(other) < dst * dst;
 		}
 
@@ -221,8 +228,12 @@ export namespace Geom{
 			}
 		}
 
+		[[nodiscard]] bool isInf() const{
+			return std::isinf(x) || std::isinf(y);
+		}
+
 		[[nodiscard]] float length() const {
-			return std::sqrtf(static_cast<float>(length2()));
+			return std::sqrt(static_cast<float>(length2()));
 		}
 
 		[[nodiscard]] constexpr T length2() const {
@@ -235,7 +246,7 @@ export namespace Geom{
 			return angle;
 		}
 
-		[[nodiscard]] float angle(const Vector2D& reference) const {
+		[[nodiscard]] float angle(const PassType reference) const {
 			return Math::atan2(cross(reference), dot(reference)) * Math::RADIANS_TO_DEGREES;
 		}
 
@@ -265,16 +276,16 @@ export namespace Geom{
 			return rotateRad(degree * Math::DEGREES_TO_RADIANS);
 		}
 
-		Vector2D& lerp(const Vector2D& tgt, const float alpha) {
+		Vector2D& lerp(const PassType tgt, const float alpha) {
 			return this->set(Math::lerp(x, tgt.x, alpha), Math::lerp(y, tgt.y, alpha));
 		}
 
-		Vector2D& approach(const Vector2D& target, const float alpha) {
+		Vector2D& approach(const PassType target, const float alpha) {
 			float dx = x - target.x, dy = y - target.y;
 			const float alpha2 = alpha * alpha;
 
 			if (const float len2 = dx * dx + dy * dy; len2 > alpha2) {
-				const float scl = std::sqrtf(alpha2 / len2);
+				const float scl = std::sqrt(alpha2 / len2);
 				dx *= scl;
 				dy *= scl;
 
@@ -292,21 +303,30 @@ export namespace Geom{
 			return setPolar(angDeg, length());
 		}
 
-		[[nodiscard]] constexpr T dot(const Vector2D& tgt) const {
+		[[nodiscard]] constexpr T dot(const PassType tgt) const {
 			return x * tgt.x + y * tgt.y;
 		}
 
-		[[nodiscard]] constexpr T cross(const Vector2D& tgt) const {
+		[[nodiscard]] constexpr T cross(const PassType tgt) const {
 			return x * tgt.y - y * tgt.x;
 		}
 
-		Vector2D& project(const Vector2D& tgt) {
+		Vector2D& project(const PassType tgt) {
 			float scl = this->dot(tgt) / this->length();
 
 			return this->set(tgt).mul(scl / tgt.length2());
 		}
 
-		friend void swap(Vector2D& lhs, Vector2D& rhs) noexcept {
+		[[nodiscard]] constexpr float projLen2(const PassType axis) const {
+			const float dot = this->dot(axis);
+			return dot * dot / axis.length2();
+		}
+
+		[[nodiscard]] float projLen(const PassType axis) const {
+			return std::sqrt(this->projLen2(axis));
+		}
+
+		friend void swap(PassType lhs, PassType rhs) noexcept {
 			const float x1 = lhs.x;
 			const float y1 = lhs.y;
 
@@ -316,11 +336,11 @@ export namespace Geom{
 			rhs.y = y1;
 		}
 
-		[[nodiscard]] friend bool operator==(const Vector2D& lhs, const Vector2D& rhs) {
+		[[nodiscard]] friend bool operator==(const PassType lhs, const PassType rhs) {
 			return lhs.x == rhs.x && lhs.y == rhs.y;
 		}
 
-		[[nodiscard]] friend bool operator!=(const Vector2D& lhs, const Vector2D& rhs) {
+		[[nodiscard]] friend bool operator!=(const PassType lhs, const PassType rhs) {
 			return lhs.x != rhs.x || lhs.y != rhs.y;
 		}
 
@@ -379,7 +399,7 @@ export namespace Geom{
 
 		Vector2D& limit2(const T limit2) {
 			if (const float len2 = length2(); len2 > limit2) {
-				return this->scl(std::sqrtf(static_cast<float>(limit2) / static_cast<float>(len2)));
+				return this->scl(std::sqrt(static_cast<float>(limit2) / static_cast<float>(len2)));
 			}
 
 			return *this;
@@ -396,10 +416,24 @@ export namespace Geom{
 		}
 
 		Vector2D& clamp(const T min, const T max) {
-			const float len2 = length2();
+			const T len2 = length2();
 			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
-			if (const float max2 = max * max; len2 > max2) return scl(std::sqrtf(max2 / len2));
-			if (const float min2 = min * min; len2 < min2) return scl(std::sqrtf(min2 / len2));
+			if (const T max2 = max * max; len2 > max2) return this->scl(std::sqrt(max2 / len2));
+			if (const T min2 = min * min; len2 < min2) return this->scl(std::sqrt(min2 / len2));
+			return *this;
+		}
+
+		Vector2D& clampMin(const T min) {
+			const T len2 = length2();
+			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
+			if (const T min2 = min * min; len2 < min2) return this->scl(std::sqrt(min2 / len2));
+			return *this;
+		}
+
+		Vector2D& clampMax(const T max) {
+			const T len2 = length2();
+			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
+			if (const T max2 = max * max; len2 > max2) return this->scl(std::sqrt(max2 / len2));
 			return *this;
 		}
 
@@ -409,7 +443,7 @@ export namespace Geom{
 
 		Vector2D& setLength2(const T len2) {
 			const float oldLen2 = length2();
-			return oldLen2 == 0 || oldLen2 == len2 ? *this : this->scl(std::sqrtf(len2 / oldLen2));  // NOLINT(clang-diagnostic-float-equal)
+			return oldLen2 == 0 || oldLen2 == len2 ? *this : this->scl(std::sqrt(len2 / oldLen2));  // NOLINT(clang-diagnostic-float-equal)
 		}
 
 		[[nodiscard]] float angleRad() const {
@@ -428,7 +462,15 @@ export namespace Geom{
 			return this->set(y, -x);
 		}
 
-		auto constexpr operator<=>(const Vector2D& v) const {
+		[[nodiscard]] constexpr bool isZero() const {
+			return length2() == 0.0f;
+		}
+
+		[[nodiscard]] constexpr bool isZero(const float margin) const {
+			return length2() < margin;
+		}
+
+		auto constexpr operator<=>(const PassType v) const {
 			T len = length2();
 			T lenO = v.length2();
 
@@ -443,7 +485,7 @@ export namespace Geom{
 			return std::strong_ordering::equivalent;
 		}
 
-		friend std::ostream& operator<<(std::ostream& os, const Vector2D& obj){
+		friend std::ostream& operator<<(std::ostream& os, const PassType obj){
 			return os << '(' << std::to_string(obj.x) << ", " << std::to_string(obj.y) << ')';
 		}
 	};
@@ -455,6 +497,7 @@ export namespace Geom{
 	using Point2US = Vector2D<unsigned short>;
 
 	constexpr Vec2 ZERO{ 0, 0 };
+	constexpr Vec2 NAN2{ NAN, NAN };
 	constexpr Vec2 X2{ 1, 0 };
 	constexpr Vec2 Y2{ 0, 1 };
 }

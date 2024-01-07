@@ -155,15 +155,14 @@ export namespace Math {
 	 * @param y y-component of the point to find the angle towards; note the parameter order is unusual by convention
 	 * @param x x-component of the point to find the angle towards; note the parameter order is unusual by convention
 	 * @return the angle to the given point, in radians as a float; ranges from -PI to PI */
-	float atan2(const float x, const float y) {
-		const float n = y / x;
+	float atan2(float x, const float y) {
+		float n = y / x;
 
-		//		 if (n != n) {
-		//		     n = (y == x ? 1.0f : -1.0f); // if both y and x are infinite, n would be NaN
-		//		 }
-		//		 else if (n - n != n - n) {
-		//		     x = 0.0f; // if n is infinite, y is infinitely larger than x.
-		//		 }
+		if(std::isnan(n)) {
+			n = y == x ? 1.0f : -1.0f; // if both y and x are infinite, n would be NaN
+		} else if(std::isinf(n)) {
+			x = 0.0f; // if n is infinite, y is infinitely larger than x.
+		}
 
 		if(x > 0.0f) {
 			return atn(n);
@@ -187,7 +186,7 @@ export namespace Math {
 		return result;
 	}
 
-	int digits(const int n) {
+	constexpr int digits(const int n) {
 		return n < 100000
 			       ? n < 100
 				         ? n < 10
@@ -213,31 +212,31 @@ export namespace Math {
 		return n == 0 ? 1 : static_cast<int>(log10(n) + 1);
 	}
 
-	float sqr(const float x) {
+	constexpr float sqr(const float x) {
 		return x * x;
 	}
 
-	float map(const float value, const float fromA, const float toa, const float fromB, const float tob) {
+	constexpr float map(const float value, const float fromA, const float toa, const float fromB, const float tob) {
 		return fromB + (value - fromA) * (tob - fromB) / (toa - fromA);
 	}
 
-	/** Map value from [0, 1].*/
+	constexpr /** Map value from [0, 1].*/
 	float map(const float value, const float from, const float to) {
 		return map(value, 0, 1, from, to);
 	}
 
 	/**Returns -1 if f<0, 1 otherwise.*/
-	int sign(const float f) {
+	constexpr int sign(const float f) {
 		return f < 0 ? -1 : 1;
 	}
 
 	/** Returns 1 if true, -1 if false. */
-	int sign(const bool b) {
+	constexpr int sign(const bool b) {
 		return b ? 1 : -1;
 	}
 
 	/**Converts a bool to an integer: 1 if true, 0, if false.*/
-	int num(const bool b) {
+	constexpr int num(const bool b) {
 		return b ? 1 : 0;
 	}
 
@@ -266,24 +265,24 @@ export namespace Math {
 	}
 
 	template <Concepts::Number T>
-	constexpr T clamp(const T v, const T min, const T max){
+	constexpr T clamp(const T v, const T min, const T max) {
 #ifdef _DEBUG
 		if(min > max) {
 			throw ext::IllegalArguments{"Min Greater Than Max: " + std::to_string(min) + " : " + std::to_string(max)};
 		}
 #endif
 
-		if(v > max)return max;
-		if(v < min)return min;
+		if(v > max) return max;
+		if(v < min) return min;
 
 		return v;
 	}
 
 	template <Concepts::Number T>
 	constexpr T abs(const T v) {
-		if constexpr (std::is_unsigned_v<T>) {
+		if constexpr(std::is_unsigned_v<T>) {
 			return v;
-		}else {
+		} else {
 			return std::abs(v);
 		}
 	}
@@ -313,7 +312,7 @@ export namespace Math {
 	}
 
 	template <typename T>
-	float lerp(const T& fromValue, const T& toValue, const T& progress) {
+	T& lerp(const T& fromValue, const T& toValue, const T& progress) {
 		return fromValue + (toValue - fromValue) * progress;
 	}
 
@@ -374,7 +373,7 @@ export namespace Math {
 	 * Returns the smallest integer greater than or equal to the specified float. This method will only properly ceil floats from
 	 * -(2^14) to (Float.MAX_VALUE - 2^14).
 	 */
-	inline int ceil(const float value) {
+	constexpr int ceil(const float value) {
 		return BIG_ENOUGH_INT - static_cast<int>(BIG_ENOUGH_FLOOR - value);
 	}
 
@@ -479,9 +478,9 @@ export namespace Math {
 
 	template <Concepts::Number T>
 	constexpr T mod(const T x, const T n) {
-		if constexpr (std::is_floating_point_v<T>) {
+		if constexpr(std::is_floating_point_v<T>) {
 			return std::fmod(x, n);
-		}else {
+		} else {
 			return x % n;
 		}
 	}
@@ -518,12 +517,12 @@ export namespace Math {
 	}
 
 	/** @return the input 0-1 value scaled to 0-1-0. */
-	inline float slope(const float fin) {
+	constexpr float slope(const float fin) {
 		return 1.0f - abs(fin - 0.5f) * 2.0f;
 	}
 
 	/**Converts a 0-1 value to 0-1 when it is in [offset, 1].*/
-	inline float curve(const float f, const float offset) {
+	constexpr float curve(const float f, const float offset) {
 		if(f < offset) {
 			return 0.0f;
 		}
@@ -531,7 +530,7 @@ export namespace Math {
 	}
 
 	/**Converts a 0-1 value to 0-1 when it is in [offset, to].*/
-	inline float curve(const float f, const float from, const float to) {
+	constexpr float curve(const float f, const float from, const float to) {
 		if(f < from) {
 			return 0.0f;
 		}
@@ -608,7 +607,7 @@ export namespace Math {
 	T constexpr safeDst(const T a, const T b) {
 		if constexpr(std::is_signed_v<T>) {
 			return a - b;
-		}else {
+		} else {
 			return a > b ? a - b : b - a;
 		}
 	}

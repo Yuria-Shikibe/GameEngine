@@ -122,6 +122,23 @@ export namespace OS{
 		return _updateTick;
 	}
 
+	void pause() {
+		paused = true;
+	}
+
+	bool isPaused() {
+		return paused;
+	}
+
+	void resume() {
+		paused = false;
+	}
+
+	void setPause(const bool v) {
+		if(v)pause();
+		else resume();
+	}
+
 	template <Concepts::Invokable<void()> Func>
 	void post(const Func& func) {
 		postTasks.push_back(&func);
@@ -236,7 +253,12 @@ export namespace OS{
 		updateSignalManager.fire(Event::CycleSignalState::begin);
 
 		for(const auto & listener : applicationListeners){
-			listener->update(_deltaTick);
+			if(listener->pauseRestrictable) {
+				listener->update(_updateDeltaTick);
+			}else {
+				listener->update(_deltaTick);
+			}
+
 		}
 
 		updateSignalManager.fire(Event::CycleSignalState::end);

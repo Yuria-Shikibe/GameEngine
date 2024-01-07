@@ -56,7 +56,7 @@ set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
-#    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
+    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
     add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
     
     file(GLOB_RECURSE BIN
@@ -108,10 +108,10 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 link_libraries(
     freetype.lib
     glfw3.lib
-    opengl32.lib
-    gdi32.lib
-    shell32.lib
-    User32.lib
+#    opengl32.lib
+#    gdi32.lib
+#    shell32.lib
+#    User32.lib
     irrKlang.lib
 #    irrKlang.exp
 )

@@ -117,7 +117,7 @@ export namespace UI {
 		}
 
 		virtual void updateChildren(const float delta) {
-			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [delta](const std::unique_ptr<Elem>& elem) {
+			std::for_each(std::execution::par, children.begin(), children.end(), [delta](const std::unique_ptr<Elem>& elem) {
 				elem->update(delta);
 			});
 		}
