@@ -3,7 +3,7 @@ module ;
 export module OS.FileTree;
 
 import Platform;
-import File;
+import OS.File;
 import RuntimeException;
 import <iostream>;
 import <unordered_map>;

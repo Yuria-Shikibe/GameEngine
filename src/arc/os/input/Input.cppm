@@ -45,28 +45,20 @@ export namespace Core{
 		vector<InputListener*> inputKeyListeners{};
 		vector<InputListener*> inputMouseListeners{};
 
-		template <typename T, size_t total>
-		struct PressedChecker {
-			virtual ~PressedChecker() = default;
-
-			virtual void insert(int code) = 0;
-			virtual void remove(int code) = 0;
-			virtual void operator()(const array<vector<unique_ptr<T>>, total>& range) = 0;
-		};
 
 		template <typename T, size_t total>
-		struct ArrayChecker final : PressedChecker<T, total>{
+		struct ArrayChecker final{
 			array<bool, total> pressed{};
 
-			void insert(const int code) override {
+			void insert(const int code) {
 				pressed[code] = true;
 			}
 
-			void remove(const int code) override {
+			void remove(const int code) {
 				pressed[code] = false;
 			}
 
-			void operator()(const array<vector<unique_ptr<T>>, total>& range) override {
+			void operator()(const array<vector<unique_ptr<T>>, total>& range){
 				for(int key = 0; key < range.size(); ++key) {
 					if(pressed[key]) {
 						for (const auto& mouseBind : range[key]) {
@@ -78,18 +70,18 @@ export namespace Core{
 		};
 
 		template <typename T, size_t total>
-		struct SetChecker final : PressedChecker<T, total>{
+		struct SetChecker final{
 			std::unordered_set<int> pressed{};
 
-			void insert(const int code) override {
+			void insert(const int code) {
 				pressed.insert(code);
 			}
 
-			void remove(const int code) override {
+			void remove(const int code) {
 				pressed.erase(code);
 			}
 
-			void operator()(const array<vector<unique_ptr<T>>, total>& range) override {
+			void operator()(const array<vector<unique_ptr<T>>, total>& range){
 				for(const int key : pressed) {
 					for (const auto& mouseBind : range[key]) {
 						mouseBind->act();
@@ -98,7 +90,7 @@ export namespace Core{
 			}
 		};
 
-		template <typename T, size_t total, Concepts::Derived<PressedChecker<T, total>> Checker>
+		template <typename T, size_t total, typename Checker>
 			requires requires(T t){t.state();t.code();t.tryRun(0);t.act();} && Concepts::DefConstructable<Checker>
 		struct InputGroup final : OS::InputListener{
 			array<vector<unique_ptr<T>>, total> binds{};
@@ -153,11 +145,11 @@ export namespace Core{
 			}
 
 			void clear() {
-				std::for_each(std::execution::par_unseq, binds.begin(), binds.end(), [](vector<unique_ptr<T>>& ptrs) {
+				std::for_each(std::execution::par, binds.begin(), binds.end(), [](vector<unique_ptr<T>>& ptrs) {
 					ptrs.clear();
 				});
 
-				std::for_each(std::execution::par_unseq, continuous.begin(), continuous.end(), [](vector<unique_ptr<T>>& ptrs) {
+				std::for_each(std::execution::par, continuous.begin(), continuous.end(), [](vector<unique_ptr<T>>& ptrs) {
 					ptrs.clear();
 				});
 			}
@@ -237,7 +229,7 @@ export namespace Core{
 		void informMouseAction(const GLFWwindow* targetWin, const int button, const int action, [[maybe_unused]] const int mods) {
 			mouseGroup.inform(button, action, mods);
 
-			std::for_each(std::execution::par_unseq, inputMouseListeners.begin(), inputMouseListeners.end(), [button, action, mods](InputListener* listener) {
+			std::for_each(std::execution::par, inputMouseListeners.begin(), inputMouseListeners.end(), [button, action, mods](InputListener* listener) {
 				listener->inform(button, action, mods);
 			});
 		}
@@ -245,7 +237,7 @@ export namespace Core{
 		void informKeyAction(const GLFWwindow* targetWin, const int key, [[maybe_unused]] int scanCode, const int action, [[maybe_unused]] const int mods) {
 			keyGroup.inform(key, action, mods);
 
-			std::for_each(std::execution::par_unseq, inputKeyListeners.begin(), inputKeyListeners.end(), [key, action, mods](InputListener* listener) {
+			std::for_each(std::execution::par, inputKeyListeners.begin(), inputKeyListeners.end(), [key, action, mods](InputListener* listener) {
 				listener->inform(key, action, mods);
 			});
 		}
@@ -253,7 +245,7 @@ export namespace Core{
 		void cursorMoveInform(const float x, const float y) {
 			mousePos.set(x, y);
 
-			std::for_each(std::execution::par_unseq, cursorMoveListeners.begin(), cursorMoveListeners.end(), [x, y](const PosListener& listener) {
+			std::for_each(std::execution::par, cursorMoveListeners.begin(), cursorMoveListeners.end(), [x, y](const PosListener& listener) {
 				listener(x, y);
 			});
 		}
@@ -269,7 +261,7 @@ export namespace Core{
 		void setScrollOffset(const float x, const float y) {
 			scrollOffset.set(x, y);
 
-			std::for_each(std::execution::par_unseq, scrollListeners.begin(), scrollListeners.end(), [x, y](const PosListener& listener) {
+			std::for_each(std::execution::par, scrollListeners.begin(), scrollListeners.end(), [x, y](const PosListener& listener) {
 				listener(x, y);
 			});
 		}
@@ -296,7 +288,7 @@ export namespace Core{
 
 			lastMousePos = mousePos;
 
-			std::for_each(std::execution::par_unseq, velocityListeners.begin(), velocityListeners.end(), [this](const PosListener& listener) {
+			std::for_each(std::execution::par, velocityListeners.begin(), velocityListeners.end(), [this](const PosListener& listener) {
 				listener(mouseVelocity.x, mouseVelocity.y);
 			});
 		}

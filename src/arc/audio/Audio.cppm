@@ -9,7 +9,7 @@ export module Core.Audio;
 import <irrKlang.h>;
 import RuntimeException;
 import Concepts;
-import File;
+import OS.File;
 import <memory>;
 
 

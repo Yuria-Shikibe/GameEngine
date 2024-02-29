@@ -4,6 +4,7 @@ export module Interpolation;
 
 import <functional>;
 import Math;
+import Concepts;
 import <numbers>;
 
 export namespace Math::Interp {
@@ -22,6 +23,16 @@ export namespace Math::Interp {
 		float operator()(const float a) const {
 			if(a <= 0.5f) return std::powf(a * 2, power) * 0.5f;
 			return std::powf((a - 1.0f) * 2.0f, power) / (std::fmod(power, 2.0f) == 0.0f ? -2.0f : 2.0f) + 1;
+		}
+	};
+
+	template <auto Func, float powBegin = 0.5f, float minVal = 0.02f>
+		requires Concepts::Invokable<decltype(Func), float(float)>
+	struct LinePow {
+		float operator()(const float a) const {
+			auto t = a < powBegin ? minVal * a / powBegin : (1 - minVal) * Func((a - powBegin) / (1 - powBegin));
+
+			return t;
 		}
 	};
 
@@ -315,6 +326,8 @@ export namespace Math::Interp {
 	};
 
 	InterpFunc& fade = smoother;
+
+	InterpFunc burst = LinePow<Math::sqr, 0.925f>{};
 
 	InterpFunc pow2 = Pow(2);
 	/** Slow, then fast. */

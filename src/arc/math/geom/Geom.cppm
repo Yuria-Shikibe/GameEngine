@@ -8,6 +8,7 @@ import <vector>;
 import <execution>;
 import Concepts;
 import Math;
+import Interpolation;
 
 import Geom.Vector2D;
 
@@ -20,7 +21,7 @@ import Geom.Shape.Rect_Orthogonal;
 using namespace Geom::Shape;
 
 export namespace Geom {
-	constexpr Vec2 intersectCenterPoint(const RectBox_Brief& subject, const RectBox_Brief& object) {
+	constexpr Vec2 intersectCenterPoint(const QuadBox& subject, const QuadBox& object) {
 		const float x0 = Math::max(subject.v0.x, object.v0.x);
 		const float y0 = Math::max(subject.v0.y, object.v0.y);
 		const float x1 = Math::min(subject.v1.x, object.v1.x);
@@ -43,6 +44,54 @@ export namespace Geom {
 		return dstToLine(vec2, p1, p2);
 	}
 
+	float dst2ToLine(Vec2 from, const Vec2 pointOnLine, const Vec2 directionVec) {
+		if(directionVec.isZero()) return from.dst2(pointOnLine);
+		from.sub(pointOnLine);
+		const auto dot  = from.dot(directionVec);
+		const auto porj = dot * dot / directionVec.length2();
+
+		return from.length2() - porj;
+	}
+
+	float dst2ToLineSeg(const Vec2 vec2, const Vec2 vert1, Vec2 vert2) {
+		vert2 -= vert1;
+		return dstToLine(vec2, vert1, vert2);
+	}
+
+	float dstToSegment(const Vec2 p, const Vec2 a, const Vec2 b) {
+		const float lenAB = a.dst(b);
+		if (lenAB < Math::FLOAT_ROUNDING_ERROR) {
+			return a.dst(p);
+		}
+
+		// AB dot AB
+		if (const float dot = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y); dot < 0) {
+			return a.dst(p);
+		} else if (dot > lenAB * lenAB) {
+			return a.dst(p);
+		} else {
+			const float t = dot / (lenAB * lenAB);
+			return p.dst(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y));
+		}
+	}
+
+	float dst2ToSegment(const Vec2 p, const Vec2 a, const Vec2 b) {
+		const float lenAB = a.dst(b);
+		if (lenAB < Math::FLOAT_ROUNDING_ERROR) {
+			return a.dst2(p);
+		}
+
+		// AB dot AB
+		if (const float dot = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y); dot < 0) {
+			return a.dst2(p);
+		} else if (dot > lenAB * lenAB) {
+			return a.dst2(p);
+		} else {
+			const float t = dot / (lenAB * lenAB);
+			return p.dst2(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y));
+		}
+	}
+
 	Vec2 arrive(const float x, const float y, const float destX, const float destY, const Vec2 curVel,
 	            const float radius, const float tolerance, const float speed, const float accel) {
 		auto toTarget = Vec2{ destX - x, destY - y };
@@ -56,9 +105,12 @@ export namespace Geom {
 		return toTarget.sub(curVel.x / accel, curVel.y / accel).limit(targetSpeed);
 	}
 
-	constexpr float continousTestScl = 1.0f;
+	/**
+	 * \brief Used of CCD precision, the larger - the slower and more accurate
+	 */
+	constexpr float continousTestScl = 1.5f;
 
-	Vec2 intersectionLine(const Vec2 p1, const Vec2 p2, const Vec2 p3, const Vec2 p4) {
+	constexpr Vec2 intersectionLine(const Vec2 p1, const Vec2 p2, const Vec2 p3, const Vec2 p4) {
 		const float x1 = p1.x, x2 = p2.x, x3 = p3.x, x4 = p4.x;
 		const float y1 = p1.y, y2 = p2.y, y3 = p3.y, y4 = p4.y;
 
@@ -95,6 +147,7 @@ export namespace Geom {
 
 		const float yd = y1 - y3;
 		const float xd = x1 - x3;
+
 		const float ua = (dx2 * yd - dy2 * xd) / d;
 		if(ua < 0 || ua > 1) return std::nullopt;
 
@@ -128,13 +181,61 @@ export namespace Geom {
 		return true;
 	}
 
-	Vec2 rectAvgIntersection(const RectBox_Brief& quad1, const RectBox_Brief& quad2) {
+	template <Concepts::Derived<QuadBox> T>
+	[[nodiscard]] constexpr Vec2 nearestEdgeNormal(const Vec2 p, const T& rectangle) {
+		float minDistance = std::numeric_limits<float>::max();
+		Vec2 closestEdgeNormal{};
+
+		for (int i = 0; i < 4; i++) {
+			auto a = rectangle[i];
+			auto b = rectangle[(i + 1) % 4];
+
+			const float d = ::Geom::dst2ToSegment(p, a, b);
+
+			if (d < minDistance) {
+				minDistance = d;
+				closestEdgeNormal = rectangle.getNormalVec(i);
+			}
+		}
+
+		return closestEdgeNormal;
+	}
+
+	template <Concepts::Derived<QuadBox> T>
+	[[nodiscard]] constexpr Vec2 avgEdgeNormal(const Vec2 p, const T& rectangle) {
+		Vec2 closestEdgeNormal{};
+
+		std::array<std::pair<float, Vec2>, 4> normals{};
+
+		for (int i = 0; i < 4; i++) {
+			auto a = rectangle[i];
+			auto b = rectangle[(i + 1) % 4];
+
+			normals[i].first = ::Geom::dstToSegment(p, a, b) * a.dst(b);
+			normals[i].second = rectangle.getNormalVec(i).normalize();
+		}
+
+		const float total = (normals[0].first + normals[1].first + normals[2].first + normals[3].first);
+
+		for(auto& [weight, normal] : normals) {
+			closestEdgeNormal.add(normal * Math::powIntegral<15>(weight / total));
+		}
+
+		// Yes this is cool
+		// closestEdgeNormal /= std::accumulate(normals | std::ranges::views::elements<0> | std::ranges::common_range);
+
+		return closestEdgeNormal;
+	}
+
+	Vec2 rectAvgIntersection(const QuadBox& quad1, const QuadBox& quad2) {
 		Vec2 intersections{};
 		float count = 0;
 
-		for (int i = 0; i < 4; ++i) {
+		Vec2 rst{};
+
+		for(int i = 0; i < 4; ++i) {
 			for(int j = 0; j < 4; ++j) {
-				if(Vec2 rst{}; intersectSegments(quad1[i], quad1[(i + 1) % 4], quad2[j], quad2[(j + 1) % 4], rst)) {
+				if(intersectSegments(quad1[i], quad1[(i + 1) % 4], quad2[j], quad2[(j + 1) % 4], rst)) {
 					count++;
 					intersections += rst;
 				}
@@ -149,7 +250,11 @@ export namespace Geom {
 
 	}
 
-	void genContinousRectBox(std::vector<RectBox_Brief>& traces, Vec2 move, const RectBox& subject,
+
+	/**
+	 * \brief This ignores the rotation of the subject entity!
+	 */
+	void genContinousRectBox(std::vector<QuadBox>& traces, Vec2 move, const RectBox& subject,
 	                         const float scl = continousTestScl) {
 		const float dst2  = move.length2();
 		const float size2 = subject.projLen2(move);
@@ -159,28 +264,28 @@ export namespace Geom {
 		const size_t seg = Math::ceil(std::sqrtf(dst2 / size2) * scl + 0.00001f);
 
 		move.div(static_cast<float>(seg));
-		traces.assign(seg + 1, static_cast<RectBox_Brief>(subject));
+		traces.assign(seg + 1, static_cast<QuadBox>(subject));
 
 		for(size_t i = 1; i <= seg; ++i) {
 			traces[i].move(move, static_cast<float>(i));
 		}
 	}
 
-	void genContinousRectBox(std::vector<RectBox_Brief>& traces, const Vec2 begin, Vec2 end, const RectBox& subject,
+	void genContinousRectBox(std::vector<QuadBox>& traces, const Vec2 begin, Vec2 end, const RectBox& subject,
 	                         const float scl = continousTestScl) {
 		end -= begin;
 
 		genContinousRectBox(traces, end, subject, scl);
 	}
 
-	void genContinousRectBox(std::vector<RectBox_Brief>& traces, Vec2 velo, const float delta, const RectBox& subject,
+	void genContinousRectBox(std::vector<QuadBox>& traces, Vec2 velo, const float delta, const RectBox& subject,
 	                         const float scl = continousTestScl) {
 		velo *= delta;
 
 		genContinousRectBox(traces, velo, subject, scl);
 	}
 
-	OrthoRectFloat maxContinousBoundOf(const std::vector<RectBox_Brief>& traces) {
+	OrthoRectFloat maxContinousBoundOf(const std::vector<QuadBox>& traces) {
 		const auto& front = traces.front().maxOrthoBound;
 		const auto& back  = traces.back().maxOrthoBound;
 		auto [minX, maxX] = std::minmax({ front.getSrcX(), front.getEndX(), back.getSrcX(), back.getEndX() });

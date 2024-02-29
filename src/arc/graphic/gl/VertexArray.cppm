@@ -4,8 +4,6 @@
 
 module ;
 
-
-
 export module GL.VertexArray;
 
 import <glad/glad.h>;
@@ -20,6 +18,19 @@ export namespace GL{
 		GLenum type{0};
 		GLboolean normalized{0};
 		GLint size{0};
+
+		[[nodiscard]] VertElem(const GLenum type, const GLboolean normalized, const GLint size)
+			: type(type),
+			normalized(normalized),
+			size(size) {
+		}
+
+		[[nodiscard]] VertElem() = default;
+
+		[[nodiscard]] explicit VertElem(const GLint size)
+			: type(GL_FLOAT),
+			size(size) {
+		}
 	};
 
 	class AttributeLayout

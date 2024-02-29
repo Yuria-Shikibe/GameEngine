@@ -7,7 +7,7 @@ import Assets.TexturePacker;
 import Graphic.TextureAtlas;
 import GL.Shader.Manager;
 import Font;
-import File;
+import OS.File;
 import GlyphArrangement;
 import OS;
 import Core.Renderer;

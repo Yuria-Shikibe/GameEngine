@@ -10,7 +10,7 @@ module ;
 export module Platform;
 
 import <string>;
-import File;
+import OS.File;
 
 export namespace ext{
 	OS::File getSelf_runTime(){

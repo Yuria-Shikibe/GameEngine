@@ -1,6 +1,6 @@
 module ;
 
-export module File;
+export module OS.File;
 
 import Concepts;
 
@@ -21,45 +21,46 @@ using namespace std::filesystem;
 
 export namespace OS{
 	class File {
+	protected:
+		path rawPath{};
+
 	public:
 		static constexpr std::string_view EMPTY_EXTENSION = "[empty]";
 
-		path filePath{};
-
 		File() = default;
 
-		explicit File(const path& p) : filePath{p}{
+		explicit File(const path& p) : rawPath{p}{
 
 		}
 
-		explicit File(const directory_entry& p) : filePath(p){
+		explicit File(const directory_entry& p) : rawPath(p){
 
 		}
 
-		explicit File(directory_entry&& p) : filePath(std::move(p)){
+		explicit File(directory_entry&& p) : rawPath(std::move(p)){
 
 		}
 
 		File(const File& other) = default;
 
 		File(File&& other) noexcept
-			: filePath(std::move(other.filePath)) {
+			: rawPath(std::move(other.rawPath)) {
 		}
 
 		File& operator=(const File& other) {
 			if(this == &other) return *this;
-			filePath = other.filePath;
+			rawPath = other.rawPath;
 			return *this;
 		}
 
 		File& operator=(File&& other) noexcept {
 			if(this == &other) return *this;
-			filePath = std::move(other.filePath);
+			rawPath = std::move(other.rawPath);
 			return *this;
 		}
 
 		explicit operator directory_entry() const{
-			return directory_entry{filePath};
+			return directory_entry{rawPath};
 		}
 
 		explicit operator path() const{
@@ -67,7 +68,7 @@ export namespace OS{
 		}
 
 		bool operator==(const File &rhs) const {
-			return filePath == rhs.filePath;
+			return rawPath == rhs.rawPath;
 		}
 
 		bool operator!=(const File &rhs) const {
@@ -79,27 +80,31 @@ export namespace OS{
 		}
 
 		[[nodiscard]] std::string extension() const {
-			return filePath.extension().string();
+			return rawPath.extension().string();
 		}
 
 		[[nodiscard]] std::string stem() const {
-			return filePath.stem().string();
+			return rawPath.stem().string();
 		}
 
 		[[nodiscard]] std::string filename() const {
-			return filePath.filename().string();
+			return rawPath.filename().string();
 		}
 
 		[[nodiscard]] std::string filename_full() const {
-			return (isDir() ? "<Dir>" : "") + filePath.filename().string();
+			return (isDir() ? "<Dir>" : "") + rawPath.filename().string();
 		}
 
-		[[nodiscard]] path path() const {
-			return filePath;
+		[[nodiscard]] path& path() {
+			return rawPath;
+		}
+
+		[[nodiscard]] const std::filesystem::path& path() const {
+			return rawPath;
 		}
 
 		[[nodiscard]] bool exist() const {
-			return std::filesystem::exists(filePath);
+			return std::filesystem::exists(rawPath);
 		}
 
 		[[maybe_unused]] bool deleteFile() const {  // NOLINT(*-use-nodiscard)

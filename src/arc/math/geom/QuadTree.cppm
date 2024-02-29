@@ -27,8 +27,8 @@ export namespace Geom {
 
 	protected:
 		Obtainer transformer{ nullptr };
-		InersectCheck interscetExactJudger{ nullptr };
-		InersectCheck interscetRoughJudger{ nullptr };
+		InersectCheck interscetExactFunc{ nullptr };
+		InersectCheck interscetRoughFunc{ nullptr };
 		// The boundary of this node
 		Rect boundary{};
 
@@ -37,12 +37,12 @@ export namespace Geom {
 
 		bool isInersectedBetween(const Cont* subject, const Cont* object) {
 			if(subject == object) return false;
-			if(interscetRoughJudger && !interscetExactJudger(subject, object)) return false;
-			if(interscetExactJudger) {
-				return obtainBound(subject).overlap(obtainBound(object)) && interscetExactJudger(subject, object);
-			}
+			bool intersected = obtainBound(subject).overlap(obtainBound(object));
 
-			return obtainBound(subject).overlap(obtainBound(object));
+			intersected &= !interscetRoughFunc || interscetRoughFunc(subject, object);
+			intersected &= !interscetExactFunc || interscetExactFunc(subject, object);
+
+			return intersected;
 		}
 
 		const Rect& obtainBound(const Cont* const cont) {
@@ -74,11 +74,11 @@ export namespace Geom {
 		}
 
 		void setExactInterscet(const InersectCheck& interscetExactJudger) {
-			this->interscetExactJudger = interscetExactJudger;
+			this->interscetExactFunc = interscetExactJudger;
 		}
 
 		void setRoughInterscet(const InersectCheck& interscetRoughJudger) {
-			this->interscetExactJudger = interscetRoughJudger;
+			this->interscetExactFunc = interscetRoughJudger;
 		}
 
 		explicit QuadTree(unsigned int maxCount) {
@@ -90,7 +90,7 @@ export namespace Geom {
 		}
 
 		QuadTree(const Rect& boundary, const Obtainer& transformer, const InersectCheck& interectExactJudger,
-		         unsigned int maxCount) : transformer(transformer), interscetExactJudger(interectExactJudger),
+		         unsigned int maxCount) : transformer(transformer), interscetExactFunc(interectExactJudger),
 			boundary(boundary), maximumItemCount(maxCount) {
 			rectangles.reserve(maxCount);
 		}
@@ -333,10 +333,10 @@ export namespace Geom {
 			const Rect tl{ x, y + h, w, h };
 			const Rect tr{ x + w, y + h, w, h };
 
-			topLeft     = std::make_unique<QuadTree>(tl, transformer, interscetExactJudger, maximumItemCount);
-			topRight    = std::make_unique<QuadTree>(tr, transformer, interscetExactJudger, maximumItemCount);
-			bottomLeft  = std::make_unique<QuadTree>(bl, transformer, interscetExactJudger, maximumItemCount);
-			bottomRight = std::make_unique<QuadTree>(br, transformer, interscetExactJudger, maximumItemCount);
+			topLeft     = std::make_unique<QuadTree>(tl, transformer, interscetExactFunc, maximumItemCount);
+			topRight    = std::make_unique<QuadTree>(tr, transformer, interscetExactFunc, maximumItemCount);
+			bottomLeft  = std::make_unique<QuadTree>(bl, transformer, interscetExactFunc, maximumItemCount);
+			bottomRight = std::make_unique<QuadTree>(br, transformer, interscetExactFunc, maximumItemCount);
 
 			subTreelock.unlock();
 		}

@@ -7,16 +7,6 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (CMAKE_VERSION EQUAL 3.25)
-    set(CMAKE_EXPERIMENTAL_CXX_MODULE_CMAKE_API "3c375311-a3c9-4396-a187-3227ef642046")
-elseif (CMAKE_VERSION EQUAL 3.26)
-    set(CMAKE_EXPERIMENTAL_CXX_MODULE_CMAKE_API "2182bf5c-ef0d-489a-91da-49dbc3090d2a")
-elseif (CMAKE_VERSION EQUAL 3.27)
-    set(CMAKE_EXPERIMENTAL_CXX_MODULE_CMAKE_API "aa1f7df0-828a-4fcd-9afc-2dc80491aca7")
-else()
-    message(WARNING "Newer CMake version, CMAKE_EXPERIMENTAL_CXX_MODULE_CMAKE_API may not be set.")
-endif()
-
 project(GameEngine
     VERSION 0.0.1
 )
@@ -115,6 +105,7 @@ link_libraries(
     irrKlang.lib
 #    irrKlang.exp
 )
+
 
 message(STATUS "Building...")
 

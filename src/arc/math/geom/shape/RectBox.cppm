@@ -21,7 +21,7 @@ export namespace Geom {
 	 * v0 +-----+ v1
 	 * @endcode
 	 */
-	struct RectBox_Brief {
+	struct QuadBox {
 		using VertGroup = std::array<Vec2, 4>;
 
 		Vec2 v0{};
@@ -34,7 +34,6 @@ export namespace Geom {
 		 */
 		Shape::OrthoRectFloat maxOrthoBound{};
 
-		// ReSharper disable once CppDFAUnreachableFunctionCall
 		[[nodiscard]] constexpr Vec2 operator[](const int i) const {
 			switch(i) {
 				case 0 : return v0;
@@ -63,7 +62,14 @@ export namespace Geom {
 			maxOrthoBound.move(vec2.x * scl, vec2.y * scl);
 		}
 
-		[[nodiscard]] constexpr bool axisOverlap(const RectBox_Brief& other, const Vec2& axis) const {
+		constexpr void updateBound(const float margin = 0){
+			auto [xMin, xMax] = std::minmax({v0.x, v1.x, v2.x, v3.x});
+			auto [yMin, yMax] = std::minmax({v0.y, v1.y, v2.y, v3.y});
+
+			maxOrthoBound.setVert(xMin - margin, yMin - margin, xMax + margin * 2.0f, yMax + margin * 2.0f);
+		}
+
+		[[nodiscard]] constexpr bool axisOverlap(const QuadBox& other, const Vec2& axis) const {
 			float box1_min   = v0.dot(axis);
 			float box1_max   = box1_min;
 			float projection = v1.dot(axis);
@@ -91,7 +97,7 @@ export namespace Geom {
 			return box1_max >= other_min && other_max >= box1_min;
 		}
 
-		[[nodiscard]] constexpr bool overlapExact(const RectBox_Brief& other,
+		[[nodiscard]] constexpr bool overlapExact(const QuadBox& other,
 			const Vec2 axis_1, const Vec2 axis_2,
 			const Vec2 axis_3, const Vec2 axis_4
 		) const {
@@ -100,7 +106,7 @@ export namespace Geom {
 				axisOverlap(other, axis_3) && axisOverlap(other, axis_4);
 		}
 
-		[[nodiscard]] constexpr bool overlapRough(const RectBox_Brief& other) const {
+		[[nodiscard]] constexpr bool overlapRough(const QuadBox& other) const {
 			return
 				maxOrthoBound.overlap(other.maxOrthoBound);
 		}
@@ -123,17 +129,25 @@ export namespace Geom {
 		[[nodiscard]] constexpr VertGroup verts() const {
 			return VertGroup{v0, v1, v2, v3};
 		}
+
+		[[nodiscard]] constexpr Vec2 getNormalVec(const int index) const {
+			const auto begin = this->operator[](index);
+			const auto end   = this->operator[]((index + 1) % 4);
+
+			return (begin - end).rotateRT();
+		}
 	};
 
 
-	struct RectBox : RectBox_Brief{
+	struct RectBox : QuadBox{
 		/**
 		 * \brief x for rect width, y for rect height, static
 		 */
-		Vec2 edgeLength{};
+		Vec2 sizeVec2{};
 
 		/**
 		 * \brief Box Origin Point
+		 * Should Be Mass Center if possible!
 		 */
 		Vec2 originPoint{};
 		/**
@@ -145,8 +159,14 @@ export namespace Geom {
 		 * \brief Rect Rotation
 		 */
 		float rotation{0};
+
+		/** \brief OrthoRect Exbound margin*/
 		float margin{0};
-		int layer{0};
+
+		/**
+		 * \brief Physics Layer, mainly for Z index
+		 */
+		int phyLayer{0};
 
 		/**
 		 * \brief
@@ -154,6 +174,7 @@ export namespace Geom {
 		 * Edge Vector for v1-v2, v3-v0
 		 */
 		Vec2 normalU{};
+
 		/**
 		 * \brief
 		 * Normal Vector for v1-v2, v3-v0
@@ -161,18 +182,39 @@ export namespace Geom {
 		 */
 		Vec2 normalV{};
 
-		using RectBox_Brief::v0;
-		using RectBox_Brief::v1;
-		using RectBox_Brief::v2;
-		using RectBox_Brief::v3;
-		using RectBox_Brief::maxOrthoBound;
-		using RectBox_Brief::axisOverlap;
-		using RectBox_Brief::move;
-		using RectBox_Brief::overlapRough;
-		using RectBox_Brief::overlapExact;
+		using QuadBox::v0;
+		using QuadBox::v1;
+		using QuadBox::v2;
+		using QuadBox::v3;
+		using QuadBox::maxOrthoBound;
+		using QuadBox::axisOverlap;
+		using QuadBox::move;
+		using QuadBox::overlapRough;
+		using QuadBox::overlapExact;
 
 		constexpr void setSize(const float w, const float h) {
-			edgeLength.set(w, h);
+			sizeVec2.set(w, h);
+		}
+
+		[[nodiscard]] constexpr Vec2 getNormalVec(const int index) const {
+			switch(index) {
+				case 0 : return -normalU;
+				case 1 : return normalV;
+				case 2 : return normalU;
+				case 3 : return -normalV;
+				default: return Geom::NAN2;
+			}
+		}
+
+		/**
+		 * \param mass
+		 * \param scale Manually assign a correction scale
+		 * \param lengthRadiusRatio to decide the R(radius) scale for simple calculation
+		 * \brief From: [mr^2/4 + ml^2 / 12]
+		 * \return Rotational Inertia Estimation
+		 */
+		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
+			return sizeVec2.length2() * (scale + lengthRadiusRatio) * mass;
 		}
 
 		void update() {
@@ -180,8 +222,8 @@ export namespace Geom {
 			const float sin = Math::sinDeg(rotation);
 
 			v0.set(offset).rotate(cos, sin);
-			v1.set(edgeLength.x, 0).rotate(cos, sin);
-			v3.set(0, edgeLength.y).rotate(cos, sin);
+			v1.set(sizeVec2.x, 0).rotate(cos, sin);
+			v3.set(0, sizeVec2.y).rotate(cos, sin);
 			v2 = v1 + v3;
 
 			normalU = v3;
@@ -192,10 +234,7 @@ export namespace Geom {
 			v2 += v0;
 			v3 += v0;
 
-			auto [xMin, xMax] = std::minmax({v0.x, v1.x, v2.x, v3.x});
-			auto [yMin, yMax] = std::minmax({v0.y, v1.y, v2.y, v3.y});
-
-			maxOrthoBound.setVert(xMin - margin, yMin - margin, xMax + margin * 2.0f, yMax + margin * 2.0f);
+			updateBound(margin);
 		}
 
 		[[nodiscard]] constexpr bool overlapExact(const RectBox& other) const {
@@ -204,7 +243,7 @@ export namespace Geom {
 				axisOverlap(other, other.normalU) && axisOverlap(other, other.normalV);
 		}
 
-		[[nodiscard]] constexpr bool overlapExact(const RectBox_Brief& other, const Vec2 normalU, const Vec2 normalV) const {
+		[[nodiscard]] constexpr bool overlapExact(const QuadBox& other, const Vec2 normalU, const Vec2 normalV) const {
 			return
 				axisOverlap(other, this->normalU) && axisOverlap(other, this->normalV) &&
 				axisOverlap(other, normalU) && axisOverlap(other, normalV);

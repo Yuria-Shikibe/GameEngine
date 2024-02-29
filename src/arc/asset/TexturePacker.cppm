@@ -6,15 +6,17 @@ import Assets.Loader;
 import Math.StripPacker2D;
 import Graphic.Pixmap;
 import Geom.Shape.Rect_Orthogonal;
+import Geom.Vector2D;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
 import GL;
 // import GL.Constants;
 import Async;
 import RuntimeException;
-import File;
+import OS.File;
 import OS;
 import <algorithm>;
+import <execution>;
 import <string>;
 import <vector>;
 import <fstream>;
@@ -28,14 +30,18 @@ using namespace Graphic;
 
 export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
-	struct  TexturePackData{
+	struct  TextureRegionPackData{
 		OrthoRectUInt bound{};
 		GL::TextureRegionRect textureRegion{};
 		Graphic::Pixmap pixmap{};
 		OS::File sourceFile{};
 
+		//Uses this for multiple texture region align!
+		std::string familyName{};
+
 		int pageID{0};
 
+		bool copyModifier = false;
 		PixmapModifer modifer{nullptr};
 
 		[[nodiscard]] bool valid() const {
@@ -47,10 +53,12 @@ export namespace Assets {
 			stream.write(reinterpret_cast<const char*>(&bound), sizeof(bound));
 		}
 
-		[[nodiscard]] bool read(std::ifstream& stream, const std::vector<std::unique_ptr<GL::Texture2D>>& textures, const int margin = 0){
+		void read(std::ifstream& stream){
 			stream.read(reinterpret_cast<char*>(&pageID), sizeof(pageID));
 			stream.read(reinterpret_cast<char*>(&bound), sizeof(bound));
+		}
 
+		bool adaptTo(const std::vector<std::unique_ptr<GL::Texture2D>>& textures, const int margin = 0) {
 			if(pageID > textures.size())return false;
 
 			const auto tex = textures[pageID].get();
@@ -88,16 +96,24 @@ export namespace Assets {
 			return hasPixelData();
 		}
 
-		[[nodiscard]] explicit TexturePackData(const OS::File& source, const PixmapModifer& modifer = nullptr)
-			: sourceFile(source), modifer(modifer)  {
+		[[nodiscard]] explicit TextureRegionPackData(const OS::File& source, const PixmapModifer& modifer = nullptr)
+			: sourceFile(source), familyName(source.stem()), modifer(modifer)  {
 		}
 
-		[[nodiscard]] explicit TexturePackData(const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr)
+		[[nodiscard]] explicit TextureRegionPackData(const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr)
 			: pixmap(pixmap), modifer(modifer)  {
 		}
 
-		[[nodiscard]] explicit TexturePackData(Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr)
+		[[nodiscard]] explicit TextureRegionPackData(Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr)
 			: pixmap(std::move(pixmap)), modifer(modifer) {
+		}
+
+		[[nodiscard]] explicit TextureRegionPackData(const std::string& name, const OS::File& source, const PixmapModifer& modifer = nullptr)
+			: sourceFile(source), familyName(name), modifer(modifer) {
+		}
+
+		[[nodiscard]] explicit TextureRegionPackData(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr)
+			: pixmap(std::move(pixmap)), familyName(name), modifer(modifer) {
 		}
 	};
 
@@ -105,17 +121,32 @@ export namespace Assets {
 		polling, loading, packing, savingCache, readingCache, done
 	};
 
-
 	class TexturePackPage : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 	protected:
+		struct MergeTask {
+			std::vector<TextureRegionPackData*> datas{};
+			Geom::Vector2D<unsigned> size{};
+			unsigned id{0};
+
+			[[nodiscard]] MergeTask(std::vector<TextureRegionPackData*>&& datas,
+				const unsigned w, const unsigned h, const unsigned id)
+				: datas(std::forward<std::vector<TextureRegionPackData*>>(datas)),
+				size(w, h), id(id) {
+			}
+
+			[[nodiscard]] MergeTask() = default;
+		};
+
+		std::vector<MergeTask> toMerge{};
+
 		static constexpr int TotalWeight = 10;
 
 		std::vector<Graphic::Pixmap> mergedMaps{};
 		OS::File cacheDir{};
-		std::unordered_map<std::string, TexturePackData> packData{};
+		std::unordered_map<std::string, TextureRegionPackData> packData{};
 		PackState state{PackState::polling};
 
-		int margin = 1;
+		int margin = 0;
 
 	public:
 		OrthoRectUInt texMaxBound{2048, 2048};
@@ -126,6 +157,10 @@ export namespace Assets {
 		bool forcePack = false;
 
 		bool dynamic{false};
+
+		bool packDone{false};
+
+		const TexturePackPage* linkTarget = nullptr;
 
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
 			const OrthoRectUInt& texMaxBound, const bool forcePack)
@@ -144,11 +179,11 @@ export namespace Assets {
 			TexturePackPage(pageName, cacheDir, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}){
 		}
 
-		[[nodiscard]] const std::unordered_map<std::string, TexturePackData>& getData() const {
+		[[nodiscard]] const std::unordered_map<std::string, TextureRegionPackData>& getData() const {
 			return packData;
 		}
 
-		[[nodiscard]] std::unordered_map<std::string, TexturePackData>& getData() {
+		[[nodiscard]] std::unordered_map<std::string, TextureRegionPackData>& getData() {
 			return packData;
 		}
 
@@ -161,7 +196,7 @@ export namespace Assets {
 		}
 
 		GL::TextureRegionRect* pushRequest(const std::string& name, const OS::File& file, const PixmapModifer& modifer = nullptr) {
-			return &packData.try_emplace(name, file, modifer).first->second.textureRegion;
+			return &packData.try_emplace(name, name, file, modifer).first->second.textureRegion;
 		}
 
 		GL::TextureRegionRect* pushRequest(const std::string& name, const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr) {
@@ -169,21 +204,21 @@ export namespace Assets {
 		}
 
 		GL::TextureRegionRect* pushRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
-			return &packData.try_emplace(name, std::move(pixmap), modifer).first->second.textureRegion;
+			return &packData.try_emplace(name, name, std::move(pixmap), modifer).first->second.textureRegion;
 		}
 
 		GL::TextureRegionRect* overwriteRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
-			TexturePackData data{std::move(pixmap), modifer};
+			TextureRegionPackData data{name, std::move(pixmap), modifer};
 			packData.insert_or_assign(name, data);
 			return &data.textureRegion;
 		}
 
-		TexturePackData* findPackData(const std::string& name) {
+		TextureRegionPackData* findPackData(const std::string& name) {
 			const auto itr = packData.find(name);
 			return itr == packData.end() ? nullptr : &itr->second;
 		}
 
-		[[nodiscard]] const TexturePackData* findPackData(const std::string& name) const {
+		[[nodiscard]] const TextureRegionPackData* findPackData(const std::string& name) const {
 			const auto itr =  packData.find(name);
 			return itr == packData.end() ? nullptr : &itr->second;
 		}
@@ -207,34 +242,47 @@ export namespace Assets {
 
 		TexturePackPage(const TexturePackPage& other) = delete;
 
-		TexturePackPage(TexturePackPage&& other) noexcept
-			: ext::ProgressTask<void, Assets::AssetsTaskHandler>{ std::move(other) },
-			mergedMaps{ std::move(other.mergedMaps) },
-			cacheDir{ std::move(other.cacheDir) },
-			packData{ std::move(other.packData) },
-			state{ other.state },
-			texMaxBound{ std::move(other.texMaxBound) },
-			pageName{ std::move(other.pageName) },
-			textures{ std::move(other.textures) },
-			forcePack{ other.forcePack },
-			dynamic{ other.dynamic } {
-		}
-
 		TexturePackPage& operator=(const TexturePackPage& other) = delete;
 
-		TexturePackPage& operator=(TexturePackPage&& other) noexcept {
-			if(this == &other) return *this;
-			ext::ProgressTask<void, Assets::AssetsTaskHandler>::operator =(std::move(other));
-			mergedMaps = std::move(other.mergedMaps);
-			cacheDir = std::move(other.cacheDir);
-			packData = std::move(other.packData);
-			state = other.state;
-			texMaxBound = std::move(other.texMaxBound);
-			pageName = std::move(other.pageName);
-			textures = std::move(other.textures);
-			forcePack = other.forcePack;
-			dynamic = other.dynamic;
-			return *this;
+		void copyOffset(const TexturePackPage& target) {
+			packDone = false;
+
+			while(true) {
+				//TODO there should be a better way.
+				if(target.done && !target.packDone) {
+					throw ext::RuntimeException{"Failed To Pack Linked Texture Atlas: " + pageName};
+				}
+				if(target.packDone)break;
+				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+			}
+
+			toMerge.resize(target.toMerge.size());
+
+			for(int i = 0; i < toMerge.size(); ++i) {
+				const MergeTask& targetMerge = target.toMerge.at(i);
+				MergeTask& thisMerge = toMerge.at(i);
+
+				for(const auto& data : targetMerge.datas) {
+					auto itr = packData.find(data->familyName);
+
+					if(itr == packData.end()) {
+						continue;
+						//throw ext::RuntimeException{"Failed To Pack Linked Texture Atlas: " + pageName + "\n Region Doesn't Match: " + data->familyName};
+					}
+
+					auto& srcData = itr->second;
+
+					srcData.bound = data->bound;
+					if(data->copyModifier)srcData.modifer = data->modifer;
+
+					thisMerge.datas.push_back(&srcData);
+				}
+
+				thisMerge.size = targetMerge.size;
+				thisMerge.id = targetMerge.id;
+			}
+
+			packDone = true;
 		}
 
 		void load() {
@@ -254,7 +302,14 @@ export namespace Assets {
 				setProgress(TotalWeight, 1, 0);
 
 				state = PackState::packing;
-				pack();
+				if(linkTarget != nullptr) {
+					copyOffset(*linkTarget);
+				}else {
+					pack();
+				}
+
+				mergeTexture();
+
 				setProgress(TotalWeight, 2, 1);
 
 				state = PackState::savingCache;
@@ -299,13 +354,7 @@ export namespace Assets {
 			}
 
 			for(auto& data : packData | std::views::values) {
-				data.textureRegion.setData(textures[data.pageID].get());
-
-				if(margin > 0) {
-					data.bound.addSize(-margin, -margin);
-				}
-
-				data.textureRegion.fetchIntoCurrent(data.bound);
+				data.adaptTo(textures, margin);
 			}
 		}
 
@@ -371,7 +420,8 @@ export namespace Assets {
 			if(dataSize != packData.size())return false;
 
 			for(auto& data : packData | std::views::values) {
-				if(!data.read(stream, textures)) {
+				data.read(stream);
+				if(!data.adaptTo(textures, margin)) {
 					return false;
 				}
 			}
@@ -383,28 +433,29 @@ export namespace Assets {
 		 * \brief After this function, modifies to pixmaps wont work anymore.
 		 */
 		void pack() {
-			std::vector<TexturePackData*> all{};
+			packDone = false;
+			std::vector<TextureRegionPackData*> all{};
 
-			std::ranges::transform(packData | std::ranges::views::values, std::back_inserter(all),
-			                       [](auto& data)->TexturePackData*{ return &data; });
+			std::ranges::transform(packData, std::back_inserter(all),
+			                       [](auto& data)->TextureRegionPackData*{ return &data.second; });
 
 			loadRemains(std::move(all), 0);
+
+			packDone = true;
 		}
 
 
 	protected:
-		static OrthoRectUInt& transformBound(TexturePackData& d) {
+		static OrthoRectUInt& transformBound(TextureRegionPackData& d) {
 			return d.bound;
 		}
 
-		template <Concepts::Iterable<TexturePackData*> Range>
+		template <Concepts::Iterable<TextureRegionPackData*> Range>
 		void loadRemains(Range&& remains, const int currentID) {
 			if(remains.empty())return;
 			setProgress(TotalWeight, 2, 1, packData.size() - remains.size(), packData.size());
 
-			const std::function obtainer = &TexturePackPage::transformBound;
-
-			Math::StripPacker2D<TexturePackData, unsigned int> packer{obtainer};
+			Math::StripPacker2D<TextureRegionPackData, unsigned int, TexturePackPage::transformBound> packer{};
 
 			packer.push(remains);
 
@@ -412,18 +463,35 @@ export namespace Assets {
 			packer.sortDatas();
 			packer.process();
 			const OrthoRectUInt r = packer.resultBound();
-			mergeTexture(packer.packed, r.getWidth(), r.getHeight(), currentID);
+
+			//Move it
+			toMerge.emplace_back(std::move(packer.packed), r.getWidth(), r.getHeight(), currentID);
 			loadRemains(std::move(packer.remains()), currentID + 1);
 		}
 
-		void mergeTexture(const std::vector<TexturePackData*>& packedDatas, const unsigned int width, const unsigned int height, const int id) {
-			Graphic::Pixmap& mergedMap = mergedMaps.emplace_back();
+		void mergeTexture() {
+			mergedMaps.resize(toMerge.size());
 
-			mergedMap.create(std::max(width, 2u), std::max(height, 2u));
+			for(auto& mergeGroup : toMerge) {
+				Graphic::Pixmap& mergedMap = mergedMaps.at(mergeGroup.id);
 
-			for(const auto& data : packedDatas) {
-				mergedMap.set(data->pixmap, data->bound.getSrcX(), data->bound.getSrcY());
-				data->pixmap.free();
+				mergedMap.create(std::max(mergeGroup.size.x, 2u), std::max(mergeGroup.size.y, 2u));
+
+				for(const auto& data : mergeGroup.datas) {
+					mergedMap.set(data->pixmap, data->bound.getSrcX(), data->bound.getSrcY());
+					data->pixmap.free();
+				}
+			}
+		}
+	};
+
+	template <size_t size>
+	struct TexturePackPageGroup {
+		std::array<TexturePackPage*, size> group{};
+
+		void pushRequest(const std::string_view& name, std::array<OS::File, size> data) {
+			for(int i = 0; i < size; ++i) {
+				group[i]->pushRequest(std::string(name), data[i]);
 			}
 		}
 	};

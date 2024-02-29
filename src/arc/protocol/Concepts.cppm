@@ -49,7 +49,7 @@ export namespace Concepts {
 	};
 
 	/**
-	 * \brief Decide whether to use reference for template classes
+	 * \brief Decide whether to use reference or value version of the given of the given template classes
 	 * \tparam T Value Type
 	 */
 	template <typename T, size_t size>
@@ -89,11 +89,9 @@ export namespace Concepts {
 	concept Signed = !std::is_unsigned_v<T> && Number<T>;
 
 	template <typename T, typename Item>
-	concept Iterable = requires(T t){
+	concept Iterable = requires(T t){ //TODO uses std::ranges::... instead
 		std::begin(std::declval<T&>());
 		std::end(std::declval<T&>());
-		// requires std::is_same_v<decltype(std::begin(std::declval<T&>())), Item>;
-		// requires std::is_same_v<decltype(std::end(std::declval<T&>())), Item>;
 	};
 
 	template <typename T, typename Item>

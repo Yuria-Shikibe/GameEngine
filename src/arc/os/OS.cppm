@@ -254,7 +254,7 @@ export namespace OS{
 
 		for(const auto & listener : applicationListeners){
 			if(listener->pauseRestrictable) {
-				listener->update(_updateDeltaTick);
+				if(!paused)listener->update(_updateDeltaTick);
 			}else {
 				listener->update(_deltaTick);
 			}

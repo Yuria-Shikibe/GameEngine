@@ -5,7 +5,7 @@ export module Graphic.Pixmap;
 import RuntimeException;
 import GL.Texture.Texture2D;
 import GL.Buffer.FrameBuffer;
-import File;
+import OS.File;
 import Image;
 import Concepts;
 import Graphic.Color;
@@ -82,9 +82,6 @@ export namespace Graphic{
 
         Pixmap(const int width, const int height, unsigned char* data) : Pixmap(static_cast<unsigned int>(width), static_cast<unsigned int>(height) ,data) {
 
-        }
-
-        explicit Pixmap(const GL::FrameBuffer& buffer) : Pixmap(buffer.getWidth(), buffer.getHeight(), buffer.getTexture(true).localData.release()){
         }
 
         Pixmap(const Pixmap& other)

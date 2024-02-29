@@ -48,7 +48,9 @@ export namespace Core {
 	/* Basically Done */
 	inline Camera2D* camera = nullptr;
 	/* Basically Done */
-	inline Batch* batch = nullptr;
+	inline Batch* overlayBatch = nullptr;
+
+	inline Batch* worldBatch = nullptr;
 	/* Basically Done */
 	inline Renderer* renderer = nullptr;
 	/* 88.00% */

@@ -7,7 +7,7 @@ module;
 #include <native/stbi/stbi_image.h>
 
 export module Image;
-import File;
+import OS.File;
 import <string>;
 import <memory>;
 import <GLFW/glfw3.h>;
@@ -42,8 +42,12 @@ export namespace stbi{
 		stbi_flip_vertically_on_write(flag);
 	}
 
+	//byte per pixel
+	//RGBA ~ 4 ~ 32 [0 ~ 255]
+	//RGB ~ 3
 	unsigned char* loadPng(const OS::File& file, unsigned int& width, unsigned int& height, unsigned int& bpp, const int requiredBpp = 4) {
 		int w, h, b;
+
 		const auto data = stbi_load(file.absolutePath().string().data(), &w, &h, &b, requiredBpp);
 		width = w;
 		height = h;

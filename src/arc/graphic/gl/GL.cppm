@@ -22,6 +22,8 @@ namespace GL {
     int viewport_w{0};
     int viewport_h{0};
 
+    GLuint currentDrawFrameBufferID = 0;
+    GLuint currentReadFrameBufferID = 0;
 
     GLint scissor_x{0};
     GLint scissor_y{0};
@@ -112,6 +114,25 @@ export namespace GL {
             GL::enable(cap);
         }else{
             GL::disable(cap);
+        }
+    }
+
+    void bindFrameBuffer(const GLenum flag, const GLuint id = 0) {
+        if(flag == GL_FRAMEBUFFER) {
+            if(id != currentDrawFrameBufferID || id != currentReadFrameBufferID) {
+                currentDrawFrameBufferID = currentReadFrameBufferID = id;
+                glBindFramebuffer(flag, id);
+            }
+        }else if(flag == GL_READ_FRAMEBUFFER) {
+            if(id != currentReadFrameBufferID) {
+                currentReadFrameBufferID = id;
+                glBindFramebuffer(flag, id);
+            }
+        }else {
+            if(id != currentDrawFrameBufferID) {
+                currentDrawFrameBufferID = id;
+                glBindFramebuffer(flag, id);
+            }
         }
     }
 

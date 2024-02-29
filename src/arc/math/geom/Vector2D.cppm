@@ -21,7 +21,8 @@ export namespace Geom{
 	template <Concepts::Number T>
 	struct Vector2D
 	{
-		T x = 0, y = 0;
+		T x{0};
+		T y{0};
 
 		[[nodiscard]] constexpr Vector2D(const T x, const T y) : x(x), y(y) {
 		}
@@ -42,15 +43,31 @@ export namespace Geom{
 			return {x * tgt.x, y * tgt.y};
 		}
 
+		[[nodiscard]] constexpr Vector2D operator*(const T val) const {
+			return {x * val, y * val};
+		}
+
+		[[nodiscard]] constexpr Vector2D operator-() const {
+			return {- x, - y};
+		}
+
+		[[nodiscard]] constexpr Vector2D operator/(const T val) const {
+			return {x / val, y / val};
+		}
+
 		[[nodiscard]] constexpr Vector2D operator/(const PassType tgt) const {
 			return {x / tgt.x, y / tgt.y};
 		}
 
 		[[nodiscard]] constexpr Vector2D operator%(const PassType tgt) const {
-			return this->copy().mod(tgt.x, tgt.y);
+			return {Math::mod(x, tgt.x), Math::mod(y, tgt.y)};
 		}
 
 		constexpr Vector2D& operator+=(const PassType tgt) {
+			return this->add(tgt);
+		}
+
+		constexpr Vector2D& operator+=(const T tgt) {
 			return this->add(tgt);
 		}
 
@@ -134,6 +151,13 @@ export namespace Geom{
 			return *this;
 		}
 
+		constexpr Vector2D& add(const T val) {
+			x += val;
+			y += val;
+
+			return *this;
+		}
+
 		constexpr Vector2D& add(const PassType other) {
 			return this->add(other.x, other.y);
 		}
@@ -166,6 +190,12 @@ export namespace Geom{
 
 		constexpr Vector2D& mul(const T val) {
 			return this->mul(val, val);
+		}
+
+		constexpr Vector2D& inv() requires Concepts::Signed<T> {
+			x = -x;
+			y = -y;
+			return *this;
 		}
 
 		constexpr Vector2D& mul(const PassType other) {
@@ -214,6 +244,14 @@ export namespace Geom{
 
 		[[nodiscard]] constexpr float dst(const PassType other) const{
 			return std::sqrt(static_cast<float>(this->dst2(other)));
+		}
+
+		[[nodiscard]] constexpr float dst(const float tx, const float ty) const{
+			return Math::dst(x, y, tx, ty);
+		}
+
+		[[nodiscard]] constexpr float dst2(const float tx, const float ty) const{
+			return Math::dst2(x, y, tx, ty);
 		}
 
 		[[nodiscard]] constexpr bool within(const PassType other, const T dst) const{
@@ -311,10 +349,20 @@ export namespace Geom{
 			return x * tgt.y - y * tgt.x;
 		}
 
-		Vector2D& project(const PassType tgt) {
-			float scl = this->dot(tgt) / this->length();
+		[[nodiscard]] constexpr Vector2D cross(T val){
+			return {-y * val, x * val};
+		}
+
+		constexpr Vector2D& project_normalized(const PassType tgt) {
+			float scl = this->dot(tgt);
 
 			return this->set(tgt).mul(scl / tgt.length2());
+		}
+
+		constexpr Vector2D& project(const PassType tgt) {
+			const float scl = this->dot(tgt);
+
+			return this->set(tgt.x * scl, tgt.y * scl);
 		}
 
 		[[nodiscard]] constexpr float projLen2(const PassType axis) const {
@@ -455,10 +503,23 @@ export namespace Geom{
 		}
 
 		/**
-		 * \brief
-		 * \return
+		 * \brief clockwise rotation
+		 */
+		constexpr Vector2D& rotateRT_clockwise() requires std::is_signed_v<T> {
+			return this->set(-y, x);
+		}
+
+		/**
+		 * \brief clockwise rotation
 		 */
 		constexpr Vector2D& rotateRT() requires std::is_signed_v<T> {
+			return rotateRT_clockwise();
+		}
+
+		/**
+		 * \brief counterclockwise rotation
+		 */
+		constexpr Vector2D& rotateRT_counterclockwise() requires std::is_signed_v<T> {
 			return this->set(y, -x);
 		}
 
@@ -468,6 +529,10 @@ export namespace Geom{
 
 		[[nodiscard]] constexpr bool isZero(const float margin) const {
 			return length2() < margin;
+		}
+
+		[[nodiscard]] constexpr Vector2D sign() const {
+			return {Math::sign(x), Math::sign(y)};
 		}
 
 		auto constexpr operator<=>(const PassType v) const {

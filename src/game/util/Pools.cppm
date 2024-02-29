@@ -33,7 +33,6 @@ namespace Game::Pools{
 }
 
 export namespace Game::Pools{
-	//TODO fix this shit!
 	template <typename T>
 	Containers::Pool<T>* getPool(const size_t initSize = 5000) {
 		const auto index = std::type_index{typeid(T)};

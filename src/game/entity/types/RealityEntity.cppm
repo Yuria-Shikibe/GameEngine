@@ -48,10 +48,21 @@ export namespace Game {
 		static constexpr float speedLimit = 10000;
 
 		float inertialMass = 1000;
+
+		float rotationalInertiaScale = 1 / 12.0f;
+
+		/** [0, 1]*/
+		float frictionCoefficient = 0.25f;
+
+		float restitution = 0.0f;
+
+		/** Used For Force Correction*/
 		float collideForceScale = 1.0f;
 
 		Geom::Vec2 acceleration{};
 		Geom::Vec2 velocity{};
+		Geom::Vec2 velocityCollision{};
+
 		float rotation{};
 		float angularVelocity{};
 		float angularAcceleration{};
@@ -71,21 +82,47 @@ export namespace Game {
 		 * \brief Entity collided with self. Modifiy physics should only done to self as the const said.
 		 */
 		mutable std::unordered_map<const RealityEntity*, Geom::Vec2> intersectedPointWith{};
+		mutable std::mutex intersectionLock{};
 
 		/**
 		 * \brief This *is(or at least should, children should process its collision by its parent) relative to the global reference frame!
 		 */
-		Geom::RectBox hitBox{};
+		mutable Geom::RectBox hitBox{};
 
 		/**
 		 * @brief CCD usage;
 		 */
 		Geom::Shape::OrthoRectFloat maxCollisionBound{};
-		std::vector<Geom::RectBox_Brief> contiounsTraces{20};
+
+		struct Trace {
+			mutable std::vector<Geom::QuadBox> contiounsTraces{20};
+			mutable std::mutex traceLock{};
+			using sizeType = decltype(contiounsTraces)::size_type;
+			mutable std::atomic<sizeType> clampSize{0};
+
+			void clampTo(sizeType index) const {
+				++index;
+				if(index> clampSize)return;
+				clampSize = index;
+			}
+
+			void resize() const {
+				clampSize = contiounsTraces.size();
+			}
+
+			[[nodiscard]] sizeType size() const{
+				return clampSize;
+			}
+		};
+
+		Trace trace{};
+
 		float CCD_activeThresholdSpeed2 = 250; //TODO also relative to size and frames!
 
 		[[nodiscard]] virtual bool enableCCD() const {
-			return velocity.length2() > CCD_activeThresholdSpeed2;
+			const float len2 = velocity.length2();
+
+			return len2 >  CCD_activeThresholdSpeed2/* || len2 > hitBox.sizeVec2.length2() * 0.5f*/;
 		}
 
 		[[nodiscard]] virtual bool calrectAvgIntersections() const {
@@ -158,61 +195,120 @@ export namespace Game {
 
 		virtual void updateCollision(const float delatTick) {
 			if(!calPhysicsSimulate() || intersectedPointWith.empty())return;
+
+			if(enableCCD()) { //Pull Back
+				position = hitBox.originPoint;
+			}
+
+			velocityCollision = velocity;
 			for(auto& [entity, point] : intersectedPointWith) {
 				calCollideTo(entity, point, delatTick);
 			}
+
+			position = hitBox.originPoint;
 		}
 
-		virtual void calCollideTo(const Game::RealityEntity* object, const Geom::Vec2 intersection, const float delatTick) {
-			constexpr float scale = 1 / 60.0f;
-			constexpr float angularScale = 1 / 40.0f;
+		[[nodiscard]] constexpr float getRotationalInertia() const {
+			return hitBox.getRotationalInertia(inertialMass, rotationalInertiaScale);
+		}
 
-			const float massSacle = object->inertialMass / this->inertialMass;
+		[[nodiscard]] constexpr Geom::Vec2 collideVelAt(Geom::Vec2 dst) const {
+			return velocityCollision + dst.cross(angularVelocity * Math::DEGREES_TO_RADIANS);
+		}
 
-			if(Math::zero(massSacle, 0.005f))return;
+		virtual bool ignoreCollisionTo(const Game::RealityEntity* object) const {
+			return inertialMass / object->inertialMass < 0.0005f;
+		}
 
-			Geom::Vec2 dstTo1 = this->hitBox.originPoint;
-			dstTo1 -= intersection;
+		/*virtual*/ void intersectionCorrection(Geom::Vec2& intersection) const {
+			intersection.lerp(hitBox.originPoint, 0.0001f);
+		}
 
-			Geom::Vec2 dstTo2 = object->hitBox.originPoint;
-			dstTo2 -= intersection;
+		/*virtual*/ void calCollideTo(const Game::RealityEntity* object, Geom::Vec2 intersection, const float delatTick) {
+			//Pull in to correct calculation
 
-			if(dstTo1.isZero())return;
-			if(dstTo2.isZero())return;
+			if(object->ignoreCollisionTo(this))return;
 
-			dstTo1.clampMin(8.0f);
-			dstTo2.clampMin(8.0f);
+			intersectionCorrection(intersection);
 
-			Geom::Vec2 relativeVelo = object->velocity;
-			relativeVelo -= this->velocity;
-			relativeVelo.add(
-				(dstTo2.y * object->angularVelocity - dstTo1.y * this->angularVelocity) * Math::DEGREES_TO_RADIANS * angularScale,
-				(dstTo1.x * this->angularVelocity - dstTo2.x * object->angularVelocity) * Math::DEGREES_TO_RADIANS * angularScale
-			);
+			if(!hitBox.contains(intersection))return;
 
-			if(relativeVelo.isZero(0.05f) || relativeVelo.isNaN())return;
+			using Geom::Vec2;
 
-			relativeVelo.clampMax(speedLimit * 2);
 
-			const float dot = relativeVelo.dot(dstTo1);
-
-			const float div = std::max(5.0f, (1 + dot + (1 + dstTo2.dot(relativeVelo))) * scale);
-
-			float j = -(1 + this->collideForceScale) * dot / div / this->inertialMass;
-			j = Math::clamp(j, -5000.0f, 5000.0f);
-
-			if(hitBox.contains(intersection)) {
-				if(enableCCD()) {
-					Geom::Vec2 dst = intersection;
-					dst -= position;
-					const float dstP = dst.projLen(velocity);
-					this->position.sub(dst.set(velocity).normalize().scl(dstP));
-				}
-				this->position.add(object->velocity, delatTick * 0.01f * massSacle);
+			if(velocityCollision > object->velocityCollision && object->hitBox.contains(hitBox.originPoint)){
+				constexpr float PullBackScl = 1.5f;
+				hitBox.originPoint.add((hitBox.originPoint - object->hitBox.originPoint).normalize().scl(delatTick * PullBackScl * hitBox.sizeVec2.length()));
 			}
 
-			this->acceleration.sub(dstTo1, j).add(object->velocity, 0.01f * massSacle);
-			this->angularAcceleration += j * dot * angularScale;
+			if(!hitBox.contains(intersection)) {
+				throw ext::RuntimeException{"Intersection Out Of Bound!"};
+			}
+
+			//Origin Point To Hit Point
+			const Vec2 dstToSubject = intersection - hitBox.originPoint;
+			const Vec2 dstToObject  = intersection - object->hitBox.originPoint;
+
+			const Vec2 subjectVel = collideVelAt(dstToSubject);
+			const Vec2 objectVel = object->collideVelAt(dstToObject);
+
+			const Vec2 relVel = objectVel - subjectVel;
+
+			//TODO overlap quit process
+			if(relVel.isZero())return;
+
+			const Vec2 collisionNormalVec = -Geom::avgEdgeNormal(intersection, object->hitBox).normalize();
+			Vec2 collisionTangentVec = collisionNormalVec.copy().rotateRT_counterclockwise();
+
+			// collisionTangentVec.setZero();
+
+			if(collisionTangentVec.dot(relVel) < 0)collisionTangentVec.inv();
+
+			// position += collisionNormalVec * 200;
+			// return;
+
+			Vec2 relVelNormal{relVel};
+			relVelNormal.project(collisionNormalVec);
+
+			const float scale = 1 / inertialMass + 1 / object->inertialMass;
+
+			const float subjectRotationalInertia = this->getRotationalInertia();
+			const float objectRotationalInertia = object->getRotationalInertia();
+
+			Vec2 impulseNormal{relVelNormal};
+			impulseNormal *= -(1 + restitution) / (scale +
+				Math::sqr(dstToObject.cross(collisionNormalVec)) / objectRotationalInertia +
+				Math::sqr(dstToSubject.cross(collisionNormalVec)) / subjectRotationalInertia);
+
+			const Vec2 relVelTangent = relVel - relVelNormal;
+			const Vec2 impulseTangent = -relVelTangent.sign().cross(std::min(
+				frictionCoefficient * impulseNormal.length(),
+				relVelTangent.length() / (scale +
+				Math::sqr(dstToObject.cross(collisionTangentVec)) / objectRotationalInertia +
+				Math::sqr(dstToSubject.cross(collisionTangentVec)) / subjectRotationalInertia)
+			));
+
+			Vec2 additional = collisionNormalVec * impulseNormal.length() + collisionTangentVec * impulseTangent.length();
+
+			float veloAddScale = 0.65f;
+
+			if(relVel.dot(additional) < 0){
+				additional.inv();
+				if(velocityCollision.length() * inertialMass < object->velocityCollision.length() * object->inertialMass) {
+					auto correction = (hitBox.originPoint - object->hitBox.originPoint).setLength2(hitBox.sizeVec2.length());
+					hitBox.originPoint.add(correction.scl(0.15f));
+					velocity.add(correction.scl(0.15f));
+				}
+			}
+
+			// additional.limit2(40 * inertialMass * inertialMass);
+
+			acceleration += additional / inertialMass;
+
+
+			velocity.add(additional * (delatTick * veloAddScale / inertialMass));
+			//
+			angularAcceleration += dstToSubject.cross(additional) / subjectRotationalInertia * Math::RADIANS_TO_DEGREES;
 		}
 
 		virtual void updateHitbox(const float delta) {
@@ -221,8 +317,9 @@ export namespace Game {
 
 			if(enableCCD()) {
 				//TODO box rotation support
-				Geom::genContinousRectBox(contiounsTraces, velocity, delta, hitBox);
-				maxCollisionBound = Geom::maxContinousBoundOf(contiounsTraces);
+				Geom::genContinousRectBox(trace.contiounsTraces, velocity, delta, hitBox);
+				maxCollisionBound = Geom::maxContinousBoundOf(trace.contiounsTraces);
+				trace.resize();
 			}else {
 				maxCollisionBound = hitBox.maxOrthoBound;
 			}
@@ -242,7 +339,6 @@ export namespace Game {
 			}
 
 			//Loacl process
-
 			velocity.add(acceleration, delta);
 			angularVelocity += angularAcceleration * delta;
 
@@ -253,13 +349,21 @@ export namespace Game {
 			rotation += angularVelocity * delta;
 			rotation = std::fmod(rotation, Math::DEG_FULL);
 
-
-
-
 			angularAcceleration = 0;
 			acceleration.setZero();
 
 			updateHitbox(delta);
+		}
+
+		void addIntersection(const RealityEntity* object, Geom::Vec2 intersection) const {
+			if(object == nullptr)throw ext::NullPointerException{"Null Entity!"};
+
+			std::lock_guard guard{intersectionLock};
+			intersectedPointWith.emplace(object, intersection);
+		}
+
+		void positionCorrectionCCD(const Geom::Vec2 lastPosition_V0) const {
+			hitBox.originPoint += (lastPosition_V0 - hitBox.v0);
 		}
 
 		virtual void drawChildren() {
@@ -280,73 +384,106 @@ export namespace Game {
 		}
 
 		//TODO abstract these to other classes
+		//TODO is this a good idea? this actually modifies many state of the entities
 		static bool exactInterscet(const RealityEntity* subject, const RealityEntity* object) {
 			if(subject->deletable() || object->deletable() || subject == object)return false;
-			const bool needInterscetPointCalculation = subject->calrectAvgIntersections();
-			if(subject->enableCCD() && object->enableCCD()) {
-				const float ratio = static_cast<float>(object->contiounsTraces.size()) / static_cast<float>(subject->contiounsTraces.size());
 
-				for(int i = 0; i < subject->contiounsTraces.size(); ++i) {
-					const auto progress      = static_cast<float>(i);
-					const int objectIndex = Math::floor(progress * ratio);
+			const bool needInterscetPointCalculation_subject = subject->calrectAvgIntersections();
+			const bool needInterscetPointCalculation_object = subject->calrectAvgIntersections();
 
-					if(subject->contiounsTraces.at(i).overlapExact(object->contiounsTraces.at(objectIndex),
+			const bool subjectEnablesCCD = subject->enableCCD() && !subject->trace.contiounsTraces.empty();
+			const bool objectEnablesCCD = object->enableCCD() && !object->trace.contiounsTraces.empty();
+
+			//TODO why this performace so bad? Debug Mode Reason?
+			// if(const auto itr = object->intersectedPointWith.find(subject); itr != object->intersectedPointWith.end()) {
+			// 	if(needInterscetPointCalculation_subject) {
+			// 		subject->intersectedPointWith.emplace(object, itr->second);
+			// 	}
+			//
+			// 	return true;
+			// }
+
+			//Both enable CCD
+			if(subjectEnablesCCD && objectEnablesCCD) {
+				for(int i = 0; i < subject->trace.size(); ++i) {
+					const int objectIndex = //The subject's size may shrink, cause the ratio larger than 1, resulting in array index out of bound
+						Math::min(Math::floor(static_cast<float>(i) * static_cast<float>(object->trace.size()) / static_cast<float>(subject->trace.size())), Math::max(0, static_cast<int>(object->trace.size() - 1)));
+
+
+					if(subject->trace.contiounsTraces.at(i).overlapExact(object->trace.contiounsTraces.at(objectIndex),
 						subject->hitBox.normalU, subject->hitBox.normalV,
 						object->hitBox.normalU, object->hitBox.normalV
 					)) {
-						if(needInterscetPointCalculation) {
-							subject->intersectedPointWith.insert_or_assign(object, Geom::rectAvgIntersection(subject->contiounsTraces.at(i), object->contiounsTraces.at(objectIndex)));
+						if(needInterscetPointCalculation_subject || needInterscetPointCalculation_object) {
+							const auto intersection = Geom::rectAvgIntersection(subject->trace.contiounsTraces.at(i), object->trace.contiounsTraces.at(objectIndex));
+							if(needInterscetPointCalculation_subject) {
+								subject->addIntersection(object, intersection);
+							}
 						}
+
+						subject->trace.clampTo(i);
+						object->trace.clampTo(objectIndex);
+
+						subject->positionCorrectionCCD(subject->trace.contiounsTraces.at(i).v0);
+						object->positionCorrectionCCD(object->trace.contiounsTraces.at(objectIndex).v0);
+
 
 						return true;
 					}
 				}
 
 				return false;
-			}else{
-				bool usingCCD_S = false;
-				bool swapped = false;
-
-				if(!subject->enableCCD() && object->enableCCD()) {
-					std::swap(subject, object);
-					swapped = true;
-					usingCCD_S = true;
-				}
-
-				if(!usingCCD_S && subject->enableCCD() && !object->enableCCD()) {
-					usingCCD_S = true;
-				}
-
-				if(usingCCD_S) {
-					//Subject active CCD!
-					if(needInterscetPointCalculation) {
-						return std::ranges::any_of(subject->contiounsTraces, [subject, object, swapped](const decltype(subject->contiounsTraces)::value_type& currentBox) {
-							const bool success = currentBox.maxOrthoBound.overlap(object->maxCollisionBound) && object->hitBox.overlapExact(currentBox, subject->hitBox.normalU, subject->hitBox.normalV);
-							if(success) {
-								if(swapped)object->intersectedPointWith.insert_or_assign(subject, Geom::rectAvgIntersection(currentBox, object->hitBox));
-								else subject->intersectedPointWith.insert_or_assign(object, Geom::rectAvgIntersection(currentBox, object->hitBox));
-							}
-
-							return success;
-						});
-					}else {
-						return std::ranges::any_of(subject->contiounsTraces, [subject, object](const decltype(subject->contiounsTraces)::value_type& currentBox) {
-							return currentBox.maxOrthoBound.overlap(object->maxCollisionBound) && object->hitBox.overlapExact(currentBox, subject->hitBox.normalU, subject->hitBox.normalV);
-						});
-					}
-
-				}else {
-					if(needInterscetPointCalculation) {
-						if(subject->hitBox.overlapExact(object->hitBox)) {
-							subject->intersectedPointWith.emplace(object, Geom::rectAvgIntersection(subject->hitBox, object->hitBox));
-							return true;
-						}
-						return false;
-					}else {
-						return subject->hitBox.overlapExact(object->hitBox);
-					}
-				}
 			}
+
+			//One side enables CCD
+			const bool enableCCD = subjectEnablesCCD xor objectEnablesCCD;
+			bool swapped = false;
+			if(enableCCD && !subjectEnablesCCD) {
+				swapped = true;
+				std::swap(subject, object);
+			}
+
+			if(enableCCD) {
+				//Subject active CCD!
+				for(size_t index = 0; index < subject->trace.size(); ++index){
+					auto& currentBox = subject->trace.contiounsTraces.at(index);
+
+					if(currentBox.maxOrthoBound.overlap(object->maxCollisionBound) && object->hitBox.overlapExact(currentBox, subject->hitBox.normalU, subject->hitBox.normalV)) {
+						if(needInterscetPointCalculation_subject || needInterscetPointCalculation_object) {
+							const Geom::Vec2 intersection = Geom::rectAvgIntersection(currentBox, object->hitBox);
+
+							const auto subject_ = swapped ? object : subject;
+							const auto object_  = swapped ? subject : object;
+
+							if(needInterscetPointCalculation_subject) {
+								subject_->addIntersection(object_, intersection);
+							}
+						}
+
+						subject->trace.clampTo(index);
+
+						subject->positionCorrectionCCD(currentBox.v0);
+
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			//None enable CCD
+			if(subject->hitBox.overlapExact(object->hitBox)) {
+				if(needInterscetPointCalculation_subject || needInterscetPointCalculation_object) {
+					const Geom::Vec2 intersection = Geom::rectAvgIntersection(subject->hitBox, object->hitBox);
+
+					if(needInterscetPointCalculation_subject) {
+						subject->addIntersection(object, intersection);
+					}
+				}
+				return true;
+			}
+
+			return false;
 		}
 
 		static bool roughInterscet(const RealityEntity* subject, const RealityEntity* object) {
@@ -358,6 +495,7 @@ export namespace Game {
 		}
 
 		static void checkStateValid(const RealityEntity* subject) {
+			return;
 #ifndef _DEBUG
 			return;
 #endif

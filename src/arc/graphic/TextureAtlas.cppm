@@ -5,7 +5,7 @@ export module Graphic.TextureAtlas;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
 import Assets.TexturePacker;
-import File;
+import OS.File;
 
 import RuntimeException;
 

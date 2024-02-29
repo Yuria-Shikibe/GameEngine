@@ -25,7 +25,7 @@ export namespace Math {
 	constexpr float PI                   = std::numbers::pi_v<float>;
 	// ReSharper disable once CppInconsistentNaming
 	constexpr float pi        = PI, HALF_PI = PI / 2.0f;
-	constexpr double PI_EXACT = 3.14159265358979323846;
+	constexpr double PI_EXACT = std::numbers::pi_v<double>; //3.14159265358979323846;
 	constexpr float PI2       = PI * 2.0f;
 	constexpr float E         = 2.7182818f;
 	constexpr float SQRT2     = std::numbers::sqrt2_v<float>;
@@ -226,8 +226,18 @@ export namespace Math {
 	}
 
 	/**Returns -1 if f<0, 1 otherwise.*/
-	constexpr int sign(const float f) {
+	constexpr float sign(const float f) {
 		return f < 0 ? -1 : 1;
+	}
+
+	template <Concepts::Number T>
+	constexpr T sign(const T f) requires Concepts::Signed<T> {
+		return f < 0 ? -1 : 1;
+	}
+
+	template <Concepts::Number T>
+	constexpr T sign(const T f) requires Concepts::NonNegative<T> {
+		return f == 0 ? 0 : 1;
 	}
 
 	/** Returns 1 if true, -1 if false. */
@@ -246,6 +256,17 @@ export namespace Math {
 
 	int pow_int(const int a, const int b) {
 		return static_cast<int>(ceil(pow(a, b)));
+	}
+
+	template <unsigned Exponent, typename T>
+	constexpr T powIntegral(const T val) {
+		if constexpr(Exponent == 0) {
+			return 1;
+		}else if constexpr (Exponent % 2 == 0) {
+			return powIntegral<Exponent / 2, T>(val) * powIntegral<Exponent / 2, T>(val);
+		}else {
+			return val * powIntegral<(Exponent - 1) / 2, T>(val) * powIntegral<(Exponent - 1) / 2, T>(val);
+		}
 	}
 
 	/** Returns the next power of two. Returns the specified value if the value is already a power of two. */

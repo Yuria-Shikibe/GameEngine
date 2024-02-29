@@ -1,11 +1,14 @@
 module;
 
+#include <typeinfo>
+
 export module Game.Entity;
 
 import Game.Entity.RemoveCallalble;
 import <atomic>;
 import <memory>;
 import <string_view>;
+
 import <vector>;
 import <limits>;
 import RuntimeException;
@@ -132,16 +135,16 @@ export namespace Game {
 	};
 }
 
-export {
+export namespace std{
 	template<>
-	struct std::hash<Game::Entity>{
+	struct hash<Game::Entity>{
 		size_t operator()(const Game::Entity& entity) const noexcept {
 			return entity.getID();
 		}
 	};
 
 	template<Concepts::Derived<Game::Entity> K, typename V>
-	struct std::hash<std::pair<K*, V>>{
+	struct hash<std::pair<K*, V>>{
 		size_t operator()(const std::pair<K*, V>& entity) const noexcept {
 			return entity.first->getID();
 		}

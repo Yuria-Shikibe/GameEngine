@@ -26,7 +26,7 @@ import Geom.Shape.Rect_Orthogonal;
 import Geom.Vector2D;
 import Graphic.Pixmap;
 import RuntimeException;
-import File;
+import OS.File;
 import Image;
 import Event;
 

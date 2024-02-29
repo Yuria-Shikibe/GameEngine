@@ -1,12 +1,11 @@
 #include "src/application_head.h"
 
 import <iomanip>;
-
 import <functional>;
 import <iostream>;
 import <cmath>;
 import <numeric>;
-#include <ranges>
+import <ranges>;
 import <sstream>;
 import <unordered_set>;
 import <glad/glad.h>;
@@ -17,7 +16,7 @@ import Assets.LoaderRenderer;
 import Align;
 
 import Platform;
-import File;
+import OS.File;
 import Concepts;
 import Container.Pool;
 import Event;
@@ -244,8 +243,8 @@ int main(const int argc, char* argv[]) {
 
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Press, [] {
 		Geom::RectBox box{};
-		box.setSize(75, 15);
-		box.offset = box.edgeLength;
+		box.setSize(150, 20);
+		box.offset = box.sizeVec2;
 		box.offset.mul(-0.5f);
 
 		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
@@ -262,15 +261,10 @@ int main(const int argc, char* argv[]) {
 		ptr->activate();
 	});
 
-	Core::input->registerKeyBind(Ctrl::KEY_I, Ctrl::Act_Press, [] {
-		int i =  Game::EntityManage::entities.idMap.at(0).use_count();
-		std::cout << i << std::endl;
-	});
-
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Repeat, [] {
 		Geom::RectBox box{};
 		box.setSize(50, 15);
-		box.offset = box.edgeLength;
+		box.offset = box.sizeVec2;
 		box.offset.mul(-0.5f);
 
 		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
@@ -288,18 +282,19 @@ int main(const int argc, char* argv[]) {
 
 	{
 		Math::Rand rand = Math::globalRand;
-		for(int i = 0; i < 800; ++i) {
+		for(int i = 0; i < 300; ++i) {
 			Geom::RectBox box{};
-			box.setSize(rand.random(360), rand.random(360));
+			box.setSize(rand.random(40, 1200), rand.random(40, 1200));
 			box.rotation = rand.random(360);
-			box.offset = box.edgeLength;
+			box.offset = box.sizeVec2;
 			box.offset.mul(-0.5f);
 
 			const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
 			ptr->rotation  = rand.random(360.0f);
-			ptr->position.set(rand.range(40000), rand.range(40000));
+			ptr->position.set(rand.range(20000), rand.range(20000));
 			Game::EntityManage::add(ptr);
 			ptr->hitBox = box;
+			ptr->inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
 			ptr->velocity.set(1, 0).rotate(rand.random(360));
 			ptr->activate();
 		}
@@ -307,7 +302,7 @@ int main(const int argc, char* argv[]) {
 		Geom::RectBox box{};
 		box.setSize(20, 100);
 		box.rotation = 0;
-		box.offset = box.edgeLength;
+		box.offset = box.sizeVec2;
 		box.offset.mul(-0.5f);
 
 		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
@@ -348,22 +343,24 @@ int main(const int argc, char* argv[]) {
 			//
 			const auto cameraPos = Core::camera->screenCenter();
 			//
-			Draw::meshBegin(Core::batch->getMesh());
+			Draw::meshBegin(Core::overlayBatch->getMesh());
 			Draw::color();
 
-			Draw::setLineStroke(3);
-			Draw::color(Colors::BLUE_SKY);
+			// Draw::setLineStroke(3);
+			// Draw::color(Colors::BLUE_SKY);
+			//
+			// Draw::setLineStroke(5);
+			// Draw::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+			// 		   { &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
+			// );
 
-			Draw::setLineStroke(5);
-			Draw::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
-					   { &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
-			);
+			Draw::color();
 
-			Draw::color(); {
+			{
 				mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()),
 								  static_cast<float>(Core::renderer->getHeight()));
 
-				Core::batch->beginProjection(mat);
+				Core::overlayBatch->beginProjection(mat);
 				Draw::color();
 
 				ss.str("");
@@ -378,7 +375,8 @@ int main(const int argc, char* argv[]) {
 
 				currentCoordText = ss.str();
 				*currentCoord    = currentCoordText;
-				// Font::glyphParser->parse(coordCenter, *currentCoord);
+
+				// Font::glyphParser->parse(coordCenter, R"()");
 				//
 				// coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(45, 45);
 				// coordCenter->setAlign(Align::Mode::bottom_left);
@@ -387,11 +385,11 @@ int main(const int argc, char* argv[]) {
 				Draw::setLineStroke(4);
 				Draw::lineSquare(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
-				Core::batch->endProjection();
+				Core::overlayBatch->endProjection();
 			}
 
 			Draw::flush();
-			Draw::meshEnd(Core::batch->getMesh(), false);
+			Draw::meshEnd(Core::overlayBatch->getMesh(), false);
 
 			e.renderer->frameEnd(Assets::PostProcessors::blendMulti);
 			e.renderer->frameEnd(Assets::PostProcessors::bloom);

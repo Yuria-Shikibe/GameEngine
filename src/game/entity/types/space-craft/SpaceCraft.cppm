@@ -11,6 +11,10 @@ import Graphic.Draw.Lines;
 import Math;
 import OS;
 import <iostream>;
+import <ranges>;
+
+import Core;
+import Geom;
 
 export namespace Game {
 	std::atomic_int totalHit = 0;
@@ -18,9 +22,7 @@ export namespace Game {
 	class SpaceCraft : public RealityEntity{
 	public:
 		bool intersected = false;
-		[[nodiscard]] SpaceCraft() {
-			angularAcceleration = 0.0f;
-		}
+		[[nodiscard]] SpaceCraft() = default;
 
 		void updateCollision(const float deltaTick) override {
 			intersected = false;
@@ -51,28 +53,60 @@ export namespace Game {
 		}
 
 		void drawDebug() const override {
-			Graphic::Draw::alpha();
-			if(intersected)Graphic::Draw::color(Graphic::Colors::AQUA);
-			else Graphic::Draw::color(Graphic::Colors::LIGHT_GRAY);
-			Graphic::Draw::setLineStroke(2);
-			Graphic::Draw::quad(Graphic::Draw::defaultTexture, hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
+			using namespace Graphic;
+			Draw::alpha();
+			if(intersected)Draw::color(Colors::AQUA);
+			else Draw::color(Colors::LIGHT_GRAY);
+			Draw::setLineStroke(2);
+			Draw::quad(Draw::defaultTexture, hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
 
-			Graphic::Draw::color(Graphic::Colors::GRAY);
-			Graphic::Draw::alpha(0.3f);
+			Draw::color(Colors::GRAY);
+			Draw::alpha(0.3f);
 			if(enableCCD()) {
-				for(const auto& [v0, v1, v2, v3, maxOrthoBound] : contiounsTraces) {
-					Graphic::Draw::quad(Graphic::Draw::defaultTexture, v0, v1, v2, v3);
-					Graphic::Draw::rectLine(maxOrthoBound);
+				for(const auto& [v0, v1, v2, v3, maxOrthoBound] : trace.contiounsTraces) {
+					Draw::quad(Draw::defaultTexture, v0, v1, v2, v3);
+					Draw::rectLine(maxOrthoBound);
 				}
 			}
-			Graphic::Draw::alpha();
-			Graphic::Draw::color(Graphic::Colors::RED);
-			if(intersected)for(const auto& [tgt, vec2] : intersectedPointWith) {
-				Graphic::Draw::rect(vec2.x - 2, vec2.y - 2, 4, 4);
+			Draw::alpha();
+			Draw::color(Colors::RED);
+
+			if(intersected)for(const auto& vec2 : intersectedPointWith | std::views::values) {
+				Draw::rect(vec2.x - 2, vec2.y - 2, 4, 4);
 			}
 
-			Graphic::Draw::color(Graphic::Colors::BLACK);
-			Graphic::Draw::rect(hitBox.originPoint.x - 2, hitBox.originPoint.y - 2, 4, 4);
+			const Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
+			for(int i = 0; i < 4; ++i) {
+				Draw::color(colors[i]);
+				Draw::rect(hitBox[i].x - 2, hitBox[i].y - 2, 4, 4);
+			}
+
+			for(int i = 0; i < 4; ++i) {
+				Vec2 begin = hitBox[i];
+				Vec2 end = hitBox[(i + 1) % 4];
+				Vec2 center = (begin + end) / 2;
+				Draw::color(colors[i]);
+				Draw::setLineStroke(2.0f);
+				Draw::line(center, center + hitBox.getNormalVec(i).normalize().scl(25));
+			}
+			//
+			// auto normalNearest = Geom::avgEdgeNormal(Core::camera->getPosition(), hitBox);
+			// Draw::color(Colors::YELLOW);
+			// Draw::line(hitBox.originPoint, hitBox.originPoint + normalNearest.normalize().scl(100));
+
+			for(auto value : intersectedPointWith | std::ranges::views::values) {
+				intersectionCorrection(value);
+				auto nor = Geom::avgEdgeNormal(value, hitBox);
+
+				Draw::color(Colors::ORANGE);
+				Draw::setLineStroke(2.0f);
+				Draw::line(value, value + nor.setLength(150 + hitBox.sizeVec2.length2() / 30));
+				Draw::setLineStroke(0.80f);
+				Draw::line(value, hitBox.originPoint);
+			}
+
+			Draw::color(Colors::BLACK);
+			Draw::rect(hitBox.originPoint.x - 2, hitBox.originPoint.y - 2, 4, 4);
 		}
 
 		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {

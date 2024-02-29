@@ -23,15 +23,15 @@ class RenderBuffer : public GLBuffer, public Graphic::ResizeableUInt{
 			glBindRenderbuffer(targetFlag, 0);
 		}
 
-		~RenderBuffer() override{
+		~RenderBuffer() override {
 			glDeleteRenderbuffers(1, &bufferID);
 		}
 
-		void bind() const override{
+		void bind() const{
 			glBindRenderbuffer(targetFlag, bufferID);
 		}
 
-		void unbind() const override{
+		void unbind() const{
 			glBindRenderbuffer(targetFlag, 0);
 		}
 

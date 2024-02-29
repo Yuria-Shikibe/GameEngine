@@ -9,7 +9,7 @@ import <ostream>;
 import <memory>;
 import <glad/glad.h>;
 import Image;
-import File;
+import OS.File;
 
 export namespace GL{
 	enum TexParams{

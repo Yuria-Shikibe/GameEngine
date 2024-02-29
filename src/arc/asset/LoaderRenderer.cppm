@@ -50,8 +50,8 @@ export namespace Assets {
 
 			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h));
 
-			defaultMat = Core::batch->getProjection();
-			Core::batch->setProjection(mat);
+			defaultMat = Core::overlayBatch->getProjection();
+			Core::overlayBatch->setProjection(mat);
 
 			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
@@ -60,7 +60,7 @@ export namespace Assets {
 		}
 
 		~LoaderRenderer() override { // NOLINT(*-use-equals-default)
-			Core::batch->setProjection(defaultMat);
+			Core::overlayBatch->setProjection(defaultMat);
 			Draw::shader(false);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

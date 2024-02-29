@@ -3,7 +3,7 @@ module;
 export module Assets.SoundLoader;
 
 import Async;
-import File;
+import OS.File;
 import Assets.Loader;
 import RuntimeException;
 import <irrKlang.h>;

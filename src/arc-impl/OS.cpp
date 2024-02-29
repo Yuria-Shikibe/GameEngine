@@ -1,7 +1,7 @@
 module OS;
 
 import <sstream>;
-import File;
+import OS.File;
 import StackTrace;
 import Core;
 import Assets.Graphic;

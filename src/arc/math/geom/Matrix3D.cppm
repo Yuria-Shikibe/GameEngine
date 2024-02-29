@@ -140,11 +140,11 @@ export namespace Geom{
 		Matrix3D& setOrthogonal(const float x, const float y, const float width, const float height) {
 			const float right = x + width, top = y + height;
 
-			const float x_orth = 2.0f / (right - x);
-			const float y_orth = 2.0f / (top - y);
+			const float x_orth = 2.0f / width;
+			const float y_orth = 2.0f / height;
 
-			const float tx = -(right + x) / (right - x);
-			const float ty = -(top + y) / (top - y);
+			const float tx = -(right + x) / width;
+			const float ty = -(top + y) / height;
 
 			val[M00] = x_orth;
 			val[M11] = y_orth;

@@ -14,16 +14,14 @@ import <numeric>;
 import <unordered_set>;
 
 export namespace Math {
-    template <typename Cont, Concepts::Number T>
+    template <typename Cont, Concepts::Number T, auto trans>
+		requires Concepts::Invokable<decltype(trans), Geom::Shape::Rect_Orthogonal<T>&(Cont&)>
 	struct StripPacker2D {
     protected:
 		using Rect = Geom::Shape::Rect_Orthogonal<T>;
-    	using obtainer = std::function<Rect&(Cont&)>;
     	using subRectArr = std::array<Rect, 3>;
 
-    	const obtainer& trans;
-
-    	Rect& obtain(Cont& cont) {
+		static Rect& obtain(Cont& cont) {
     		return trans(cont);
     	}
 
@@ -44,12 +42,7 @@ export namespace Math {
     		this->maxWidth = maxWidth;
     	}
 
-		[[nodiscard]] explicit StripPacker2D(const obtainer& trans)
-    		: trans(trans) {
-#ifdef _DEBUG
-    		if(!trans)throw ext::RuntimeException{"Empty Obtainer!!"};
-#endif
-    	}
+		[[nodiscard]] explicit StripPacker2D() = default;
 
     	template <Concepts::Iterable<Cont*> Range>
     		requires requires (Range range){std::is_same_v<size_t, decltype(range.size())>;}

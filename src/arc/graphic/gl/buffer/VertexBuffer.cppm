@@ -19,7 +19,7 @@ export namespace GL{
 			targetFlag = GL_ARRAY_BUFFER;
 		}
 
-		~VertexBuffer() override {
+		~VertexBuffer() {
 			glDeleteBuffers(1, &bufferID);
 		}
 
@@ -31,7 +31,7 @@ export namespace GL{
 
 		VertexBuffer& operator=(VertexBuffer&& other) = delete;
 
-		void bind() const override {
+		void bind() const {
 			glBindBuffer(targetFlag, bufferID);
 		}
 
@@ -57,7 +57,7 @@ export namespace GL{
 			return bufferSize;
 		}
 
-		void unbind() const override {
+		void unbind() const {
 			glBindBuffer(targetFlag, 0);
 		}
 	};

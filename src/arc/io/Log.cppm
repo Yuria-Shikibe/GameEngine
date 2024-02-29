@@ -13,7 +13,7 @@ import <string>;
 import <sstream>;
 import <fstream>;
 import <utility>;
-export import File;
+export import OS.File;
 import <iostream>;
 
 export namespace Core{
@@ -37,7 +37,9 @@ export namespace Core{
 			: logDir(std::move(dir)) {
 
 			crahsDir = logDir.subFile("crashes");
-			crahsDir.createDirQuiet();
+			if(!crahsDir.exist() || !crahsDir.isDir()) {
+				crahsDir.createDirQuiet();
+			}
 
 #ifndef _DEBUG
 			// logOfStream.open(logFile.absolutePath(), std::ios::out);

@@ -61,14 +61,14 @@ void Core::Renderer::frameEnd() {
 }
 
 void Core::Renderer::renderUI() {
-	const Geom::Matrix3D* mat = Core::batch->getProjection();
+	const Geom::Matrix3D* mat = Core::overlayBatch->getProjection();
 
 	Renderer::frameBegin(&uiPostBuffer);
 	// Renderer::frameBegin(&uiBuffer);
-	Core::batch->setProjection(Core::uiRoot->getPorj());
+	Core::overlayBatch->setProjection(Core::uiRoot->getPorj());
 
 	Core::uiRoot->render();
-	Core::batch->flush();
+	Core::overlayBatch->flush();
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
@@ -76,7 +76,7 @@ void Core::Renderer::renderUI() {
 	// frameEnd(Assets::PostProcessors::blendMulti);
 	frameEnd(Assets::PostProcessors::bloom);
 
-	Core::batch->setProjection(mat);
+	Core::overlayBatch->setProjection(mat);
 	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
 }
 

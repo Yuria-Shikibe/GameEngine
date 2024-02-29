@@ -7,7 +7,7 @@ import GL.Constants;
 import OS.Key;
 import OS;
 
-import <iostream>;
+// # include  <iostream>;
 
 using namespace Core;
 
@@ -93,7 +93,7 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 		initializer();
 	}
 
-	if(!batch)throw ext::NullPointerException{"Empty Default Batch!"};
+	if(!overlayBatch)throw ext::NullPointerException{"Empty Default Batch!"};
 
 	OS::registerListener(input);
 	OS::registerListener(camera);
@@ -114,7 +114,7 @@ void Core::dispose() {
 
 	delete input;
 	delete camera;
-	delete batch;
+	delete overlayBatch;
 	delete renderer;
 	delete rootFileTree;
 

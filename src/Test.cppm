@@ -3,7 +3,7 @@ module;
 export module Test;
 
 import OS;
-import File;
+import OS.File;
 import OS.ApplicationListenerSetter;
 import Image;
 import Core;
@@ -46,7 +46,7 @@ export namespace Test {
 		OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")).get());
 
 		Core::initCore_Post([] {
-			Core::batch = new Core::SpriteBatch([](const Core::SpriteBatch& self) {
+			Core::overlayBatch = new Core::SpriteBatch<>([](const Core::SpriteBatch<>& self) {
 				auto* const shader = Assets::Shaders::screenSpace;
 
 				shader->setUniformer([&self](const GL::Shader& s){
@@ -57,7 +57,7 @@ export namespace Test {
 				return shader;
 			});
 
-			Core::batch->setProjection(&Core::camera->getWorldToScreen());
+			Core::overlayBatch->setProjection(&Core::camera->getWorldToScreen());
 
 			int w, h;
 
@@ -92,11 +92,19 @@ export namespace Test {
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
 			Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage("test", Assets::texCacheDir);
-			Assets::textureDir.subFile("test").forAllSubs([&testPage](OS::File&& file) {
+			Assets::textureDir.subFile("test").forAllSubs([testPage](OS::File&& file) {
 				testPage->pushRequest(file);
 			});
 
 			testPage->pushRequest(Assets::textureDir.find("white.png"));
+
+			Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerPage("normal", Assets::texCacheDir);
+			normalTexture->linkTarget = testPage;
+
+			Assets::textureDir.subFile("test").forAllSubs([normalTexture](OS::File&& file) {
+				normalTexture->pushRequest(file);
+			});
+
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const auto& event) {

@@ -4,7 +4,7 @@ export module Assets.Sound;
 
 import <irrKlang.h>;
 import Assets.SoundLoader;
-import File;
+import OS.File;
 
 using namespace irrklang;
 
