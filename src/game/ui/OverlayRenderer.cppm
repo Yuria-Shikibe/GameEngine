@@ -40,7 +40,7 @@ export namespace Game {
 		}
 
 		void update(float delta) override{
-			
+
 		}
 
 		void updateGlobal(float delta) override{

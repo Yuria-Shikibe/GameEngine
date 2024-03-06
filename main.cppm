@@ -216,7 +216,7 @@ int main(const int argc, char* argv[]) {
 	auto gameCore = std::make_unique<Game::Core>();
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([&gameCore]([[maybe_unused]] const auto& e){
-		gameCore->drawOverlay();
+		gameCore->overlayRenderer->drawAboveUI();
 	});
 
 	OS::registerListener(gameCore.get());
