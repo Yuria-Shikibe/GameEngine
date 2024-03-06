@@ -1,11 +1,9 @@
-module;
-
 export module Game.Entity.EntityManager;
 
 import Game.Entity.DrawMap;
 import Game.Entity.EntityMap;
-import Game.Entity.RealityEntity;
 import Game.Entity;
+import Game.Entity.RealityEntity;
 import Game.Entity.Drawable;
 import Game.Pool;
 import Concepts;
@@ -27,11 +25,12 @@ export namespace Game::EntityManage{
 	/** \brief The only place that update will be called*/
 	EntityMap<::Game::Entity> entities{};
 
-	EntityMap<::Game::RealityEntity> realEntities{};
+	EntityMap<Game::RealityEntity> realEntities{};
 
 	void init() {
 		realEntities.buildTree({-10000, -10000, 20000, 20000}, RealityEntity::getHitBoound);
 		realEntities.quadTree->setExactInterscet(RealityEntity::exactInterscet);
+		realEntities.quadTree->setPointInterscet(RealityEntity::pointInterscet);
 	}
 
 	void updateTree() {
@@ -42,12 +41,14 @@ export namespace Game::EntityManage{
 		drawables.processRemoves();
 		realEntities.processRemoves();
 
-		if(delta == 0.0f)return;
+		if(delta == 0.0F){
+			return;
+		}
 		entities.updateMain(delta);
 
 		updateTree();
 
-		realEntities.each([delta](const decltype(realEntities)::ValueType& t) {
+		realEntities.each([delta](const decltype(realEntities)::StoreType& t) {
 			t->updateCollision(delta);
 		});
 	}

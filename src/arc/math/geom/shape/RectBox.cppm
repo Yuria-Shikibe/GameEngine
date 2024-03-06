@@ -40,7 +40,7 @@ export namespace Geom {
 				case 1 : return v1;
 				case 2 : return v2;
 				case 3 : return v3;
-				default: return Geom::NAN2;
+				default: return Geom::QNAN2;
 			}
 		}
 
@@ -202,7 +202,7 @@ export namespace Geom {
 				case 1 : return normalV;
 				case 2 : return normalU;
 				case 3 : return -normalV;
-				default: return Geom::NAN2;
+				default: return Geom::QNAN2;
 			}
 		}
 

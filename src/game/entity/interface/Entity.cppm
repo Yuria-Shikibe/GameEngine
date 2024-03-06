@@ -126,7 +126,7 @@ export namespace Game {
 		/**
 		 * \brief Nullptr condition should be considered!
 		 */
-		[[nodiscard]] virtual std::shared_ptr<const Entity> obtainSharedSelf() const {\
+		[[nodiscard]] virtual std::shared_ptr<const Entity> obtainSharedSelf() const {
 			if(activated) {
 				return shared_from_this();
 			}

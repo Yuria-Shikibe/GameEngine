@@ -25,7 +25,7 @@ import UI.Table;
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{
 	class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationListener,
-	                    public OS::InputListener {
+	             public OS::InputListener {
 	protected:
 		mutable MouseActionPress pressAction{};
 		mutable MouseActionRelease releaseAction{};
@@ -64,6 +64,10 @@ export namespace UI{
 		// //
 		// // //Input Listeners
 		std::unique_ptr<Table> root{ nullptr };
+
+		[[nodiscard]] bool mouseFocusFree() const {
+			return currentCursorFocus == nullptr;
+		}
 
 		[[nodiscard]] bool focusScroll() const {
 			return currentScrollFocused != nullptr;
@@ -116,17 +120,9 @@ export namespace UI{
 
 		void onScroll() const;
 
-		void disable() {
-			root->setVisible(false);
-			root->setTouchbility(TouchbilityFlags::disabled);
-			allHidden = true;
-		}
+		void disable();
 
-		void enable() {
-			root->setVisible(true);
-			root->setTouchbility(TouchbilityFlags::childrenOnly);
-			allHidden = false;
-		}
+		void enable();
 
 		[[nodiscard]] bool onDrag(int id = 0) const;
 

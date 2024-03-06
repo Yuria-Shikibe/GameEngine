@@ -15,23 +15,6 @@ message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
-#if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-#    set(CMAKE_EXPERIMENTAL_CXX_MODULE_DYNDEP ON)
-#
-#    string(CONCAT CMAKE_EXPERIMENTAL_CXX_SCANDEP_SOURCE
-#            "<CMAKE_CXX_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -E -x c++ <SOURCE>"
-#            " -MT <DYNDEP_FILE> -MD -MF <DEP_FILE>"
-#            " -fmodules-ts -fdep-file=<DYNDEP_FILE> -fdep-output=<OBJECT>"
-#            " -fdep-format=trtbd")
-#
-#    set(CMAKE_EXPERIMENTAL_CXX_MODULE_MAP_FLAG
-#            " -fmodules-ts -fmodule-mapper=<MODULE_MAP_FILE>"
-#            " -fdep-format=trtbd -x c++")
-#
-#    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fmodules-ts")
-#
-#    message(STATUS "Flags: ${CMAKE_CXX_FLAGS}")
-#endif()
 
 set(SRC_DIR src)
 set(RES_DIR properties)
@@ -98,14 +81,13 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 link_libraries(
     freetype.lib
     glfw3.lib
+    irrKlang.lib
 #    opengl32.lib
 #    gdi32.lib
 #    shell32.lib
 #    User32.lib
-    irrKlang.lib
 #    irrKlang.exp
 )
-
 
 message(STATUS "Building...")
 
@@ -114,14 +96,15 @@ add_executable(
         ${PROJECT_NAME}      #[[Project Name]]
         ${SOURCE_FILES}      #[[.cpp]]
         ${CURRENT_HEADERS}   #[[.h]]
+        ${FAST_MODULES}      #[[Modules]]
         glad.c               #[[Glad Attachment]]
-        main.cpp
+        main.cppm
 )
 
-target_sources(${PROJECT_NAME}
-        PUBLIC
-        ${FAST_MODULES}      #[[Modules]]
-)
+#target_sources(${PROJECT_NAME}
+#        PUBLIC
+#
+#)
 
 message(STATUS "Compile Complete...")
 

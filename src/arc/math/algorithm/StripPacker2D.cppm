@@ -14,8 +14,7 @@ import <numeric>;
 import <unordered_set>;
 
 export namespace Math {
-    template <typename Cont, Concepts::Number T, auto trans>
-		requires Concepts::Invokable<decltype(trans), Geom::Shape::Rect_Orthogonal<T>&(Cont&)>
+    template <typename Cont, Concepts::Number T, Concepts::Invokable<Geom::Shape::Rect_Orthogonal<T>&(Cont&)> auto trans>
 	struct StripPacker2D {
     protected:
 		using Rect = Geom::Shape::Rect_Orthogonal<T>;
@@ -44,9 +43,7 @@ export namespace Math {
 
 		[[nodiscard]] explicit StripPacker2D() = default;
 
-    	template <Concepts::Iterable<Cont*> Range>
-    		requires requires (Range range){std::is_same_v<size_t, decltype(range.size())>;}
-		void push(const Range& targets){
+    	void push(Concepts::Iterable auto& targets){
     		all.reserve(targets.size());
     		boxes_widthAscend.reserve(targets.size());
     		boxes_heightAscend.reserve(targets.size());

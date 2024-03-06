@@ -1,21 +1,20 @@
-//
-// Created by Matrix on 2023/11/20.
-//
-module ;
+module;
+
+#include <glad/glad.h>
 
 export module Graphic.Draw;
 
 import Math;
 import Concepts;
 
-import Graphic.Color;
+export import Graphic.Color;
 
 import Geom.Vector2D;
 import Geom.Shape.Rect_Orthogonal;
 import Geom.Matrix3D;
 
 import GL;
-import GL.Blending;
+export import GL.Blending;
 import GL.Shader;
 import GL.Mesh;
 import GL.Buffer.IndexBuffer;
@@ -24,10 +23,10 @@ import GL.Buffer.FrameBuffer;
 import GL.VertexArray;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
-import GL.Texture.TextureRegionRect;
+export  import GL.Texture.TextureRegionRect;
 import RuntimeException;
+
 import <functional>;
-import <glad/glad.h>;
 import <memory>;
 import <stack>;
 
@@ -43,8 +42,6 @@ namespace Graphic::Draw {
 	Vec2 vec2_4{};
 	Vec2 vec2_5{};
 	Vec2 vec2_6{};
-
-	const Color* colors[2]{nullptr};
 }
 
 export
@@ -80,7 +77,7 @@ namespace Graphic::Draw {
 		}
 
 		rawMesh->bind();
-		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH);
+		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
 	}
 
 	inline void blit(const GL::FrameBuffer* const draw, const Shader* shader = blitter) {
@@ -93,7 +90,7 @@ namespace Graphic::Draw {
 		}
 
 		rawMesh->bind();
-		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH);
+		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
 	}
 
 	inline void blitCopy(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw,
@@ -132,10 +129,7 @@ namespace Graphic::Draw {
 	void endPorj();
 
 	void color(const Color& c1, const Color& c2, const float t) {
-		colors[0] = &c1;
-		colors[1] = &c2;
-
-		contextColor.lerp(colors, t);
+		contextColor.lerp(t, c1, c2);
 	}
 
 	void blend(const Blending& blending = Blendings::Normal);
@@ -153,28 +147,32 @@ namespace Graphic::Draw {
 	inline void meshBegin(const Mesh* const mesh) {
 		mesh->bind();
 
+#ifdef _DEBUG
 		formerMesh.push(mesh);
+#endif
 	}
 
 	//Use this for safety!
 	inline void meshEnd(const Mesh* const mesh, const bool render = false) {
+		if(render)mesh->render();
+#ifdef _DEBUG
 		if(mesh == formerMesh.top()) {
-			if(render) formerMesh.top()->render();
-
 			formerMesh.pop();
 
-			if(!formerMesh.empty()) formerMesh.top()->bind();
+			if(!formerMesh.empty())formerMesh.top()->bind();
 		} else {
 			throw ext::RuntimeException{ "Cannot end incorredt mesh!" };
 		}
+#endif
 	}
 
 	inline void meshEnd(const bool render = false) {
-		if(render) formerMesh.top()->render();
-
+		if(render)formerMesh.top()->render();
+#ifdef _DEBUG
 		formerMesh.pop();
 
 		if(!formerMesh.empty()) formerMesh.top()->bind();
+#endif
 	}
 
 	void shader(Shader* shader, bool flushContext = true);

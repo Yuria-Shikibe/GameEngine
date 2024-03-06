@@ -5,6 +5,8 @@ export module Graphic.Color;
 import <iomanip>;
 import <sstream>;
 import <string>;
+import <array>;
+import <span>;
 import Math;
 import Math.Bit;
 import Geom.Vector3D;
@@ -35,18 +37,17 @@ export namespace Graphic{
 		static constexpr unsigned int g_Mask   = 0x00'ff'00'00;
 		static constexpr unsigned int r_Mask   = 0xff'00'00'00;
 
-	public:
 		float r = 0, g = 0, b = 0, a = 0;
 
-		using colorBits = unsigned int;
+		using ColorBits = unsigned int;
 
-		Color() = default;
+		constexpr Color() = default;
 
-		explicit Color(const colorBits rgba8888V){
+		constexpr explicit Color(const ColorBits rgba8888V){
 			rgba8888(rgba8888V);
 		}
 
-		Color(const float tr, const float tg, const float tb, const float ta){
+		constexpr Color(const float tr, const float tg, const float tb, const float ta){
 			r = tr;
 			g = tg;
 			b = tb;
@@ -54,9 +55,9 @@ export namespace Graphic{
 			clamp();
 		}
 
-		Color(const float r, const float g, const float b): Color(r, g, b, 1){}
+		constexpr Color(const float r, const float g, const float b): Color(r, g, b, 1){}
 
-		static size_t hash_value(const Color& obj){
+		static constexpr size_t hash_value(const Color& obj){
 			return obj.hashCode();
 		}
 
@@ -69,20 +70,23 @@ export namespace Graphic{
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const Color& obj){
-			os << std::setw(8) << std::setfill('0') << std::hex << (static_cast<colorBits>(255 * obj.r) << 24 | static_cast<colorBits>(255 * obj.g) << 16 | static_cast<colorBits>(255 * obj.b) << 8 | static_cast<colorBits>(255 * obj.a));
+			os << std::setw(8) << std::setfill('0') << std::hex << (static_cast<ColorBits>(255 * obj.r) << 24 | static_cast<ColorBits>(255 * obj.g) << 16 | static_cast<ColorBits>(255 * obj.b) << 8 | static_cast<ColorBits>(255 * obj.a));
 
 			return os;
 		}
 
 		friend bool operator==(const Color& lhs, const Color& rhs){
-			return lhs.equals(rhs);
+			return lhs.r == rhs.r
+				&& lhs.g == rhs.g
+				&& lhs.b == rhs.b
+				&& lhs.a == rhs.a;
 		}
 
 		friend bool operator!=(const Color& lhs, const Color& rhs){
-			return !lhs.equals(rhs);
+			return !(lhs == rhs);
 		}
 
-		static Color valueOf(const std::string_view hex){
+		static constexpr Color valueOf(const std::string_view hex){
 			const int offset = hex[0] == '#' ? 1 : 0;
 
 			const int r = parseHex(hex, offset, offset + 2);
@@ -92,7 +96,7 @@ export namespace Graphic{
 			return Color{static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f};
 		}
 
-		static Color& valueOf(Color& color, const std::string_view hex){
+		static constexpr Color& valueOf(Color& color, const std::string_view hex){
 			const int offset = hex[0] == '#' ? 1 : 0;
 
 			const int r = parseHex(hex, offset, offset + 2);
@@ -102,7 +106,7 @@ export namespace Graphic{
 			return color.set(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
 		}
 
-		static int parseHex(const std::string_view string, const int from, const int to){
+		static constexpr int parseHex(const std::string_view string, const int from, const int to){
 			int total = 0;
 			for (int i = from; i < to; i++) {
 				total += Math::charToDigitValue(string[i], 16) * (i == from ? 16 : 1);
@@ -110,92 +114,88 @@ export namespace Graphic{
 			return total;
 		}
 
-		static float toFloatBits(const int r, const int g, const int b, const int a){
+		static constexpr float toFloatBits(const int r, const int g, const int b, const int a){
 			const int color = a << 24 | b << 16 | g << 8 | r;
 			return intToFloatColor(color);
 		}
 
-		static float toFloatBits(const float r, const float g, const float b, const float a){
+		static constexpr float toFloatBits(const float r, const float g, const float b, const float a){
 			const int color = static_cast<int>(255 * a) << 24 | static_cast<int>(255 * b) << 16 | static_cast<int>(255 * g) << 8 | static_cast<int>(255 * r);
 			return intToFloatColor(color);
 		}
 
-		static double toDoubleBits(const float r, const float g, const float b, const float a){
-			return Math::longBitsToDouble(rgba8888(r, g, b, a) & Math::INT_MASK_BACK);
+		static constexpr double toDoubleBits(const float r, const float g, const float b, const float a){
+			return std::bit_cast<double>(rgba8888(r, g, b, a) & Math::INT_MASK_BACK);
 		}
 
-		static double toDoubleBits(const int r, const int g, const int b, const int a){
-			return toDoubleBits(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f);
+		static constexpr double toDoubleBits(const int r, const int g, const int b, const int a){
+			return toDoubleBits(static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f); // NOLINT(*-narrowing-conversions)
 		}
 
-		Color& fromDouble(const double value){
-			return rgba8888(static_cast<int>(Math::doubleToUnsignedLongBits(value)));
-		}
-
-		static colorBits abgr(const int tr, const int tg, const int tb, const int ta){
+		static constexpr ColorBits abgr(const int tr, const int tg, const int tb, const int ta){
 			return ta << 24 | tb << 16 | tg << 8 | tr;
 		}
 
-		static colorBits alpha(const float alpha){
-			return static_cast<colorBits>(alpha * 255.0f);
+		static constexpr ColorBits alpha(const float alpha){
+			return static_cast<ColorBits>(alpha * 255.0f);
 		}
 
-		static colorBits luminanceAlpha(const float luminance, const float alpha){
-			return static_cast<colorBits>(luminance * 255.0f) << 8 | static_cast<colorBits>(alpha * 255.0f);
+		static constexpr ColorBits luminanceAlpha(const float luminance, const float alpha){
+			return static_cast<ColorBits>(luminance * 255.0f) << 8 | static_cast<ColorBits>(alpha * 255.0f);
 		}
 
-		static colorBits rgb565(const float r, const float g, const float b){
-			return static_cast<colorBits>(r * 31) << 11 | static_cast<colorBits>(g * 63) << 5 | static_cast<colorBits>(b * 31);
+		static constexpr ColorBits rgb565(const float r, const float g, const float b){
+			return static_cast<ColorBits>(r * 31) << 11 | static_cast<ColorBits>(g * 63) << 5 | static_cast<ColorBits>(b * 31);
 		}
 
-		static colorBits rgba4444(const float r, const float g, const float b, const float a){
-			return static_cast<colorBits>(r * 15) << 12 | static_cast<colorBits>(g * 15) << 8 | static_cast<colorBits>(b * 15) << 4 | static_cast<colorBits>(a * 15);
+		static constexpr ColorBits rgba4444(const float r, const float g, const float b, const float a){
+			return static_cast<ColorBits>(r * 15) << 12 | static_cast<ColorBits>(g * 15) << 8 | static_cast<ColorBits>(b * 15) << 4 | static_cast<ColorBits>(a * 15);
 		}
 
-		static colorBits rgb888(const float r, const float g, const float b){
-			return static_cast<colorBits>(r * 255) << 16 | static_cast<colorBits>(g * 255) << 8 | static_cast<colorBits>(b * 255);
+		static constexpr ColorBits rgb888(const float r, const float g, const float b){
+			return static_cast<ColorBits>(r * 255) << 16 | static_cast<ColorBits>(g * 255) << 8 | static_cast<ColorBits>(b * 255);
 		}
 
-		static colorBits rgba8888(const float r, const float g, const float b, const float a){
-			return static_cast<colorBits>(r * 255) << 24 | static_cast<colorBits>(g * 255) << 16 | static_cast<colorBits>(b * 255) << 8 | static_cast<colorBits>(a * 255);
+		static constexpr ColorBits rgba8888(const float r, const float g, const float b, const float a){
+			return static_cast<ColorBits>(r * 255) << 24 | static_cast<ColorBits>(g * 255) << 16 | static_cast<ColorBits>(b * 255) << 8 | static_cast<ColorBits>(a * 255);
 		}
 
-		static colorBits argb8888(const float a, const float r, const float g, const float b){
-			return static_cast<colorBits>(a * 255) << 24 | static_cast<colorBits>(r * 255) << 16 | static_cast<colorBits>(g * 255) << 8 | static_cast<colorBits>(b * 255);
+		static constexpr ColorBits argb8888(const float a, const float r, const float g, const float b){
+			return static_cast<ColorBits>(a * 255) << 24 | static_cast<ColorBits>(r * 255) << 16 | static_cast<ColorBits>(g * 255) << 8 | static_cast<ColorBits>(b * 255);
 		}
 
 		static int packRgba(const int r, const int g, const int b, const int a){
 			return r << 24 | g << 16 | b << 8 | a;
 		}
 
-		[[nodiscard]] colorBits rgb565() const{
-			return static_cast<colorBits>(r * 31) << 11 | static_cast<colorBits>(g * 63) << 5 | static_cast<colorBits>(b * 31);
+		[[nodiscard]] constexpr ColorBits rgb565() const{
+			return static_cast<ColorBits>(r * 31) << 11 | static_cast<ColorBits>(g * 63) << 5 | static_cast<ColorBits>(b * 31);
 		}
 
-		[[nodiscard]] colorBits rgba4444() const{
-			return static_cast<colorBits>(r * 15) << 12 | static_cast<colorBits>(g * 15) << 8 | static_cast<colorBits>(b * 15) << 4 | static_cast<colorBits>(a * 15);
+		[[nodiscard]] constexpr ColorBits rgba4444() const{
+			return static_cast<ColorBits>(r * 15) << 12 | static_cast<ColorBits>(g * 15) << 8 | static_cast<ColorBits>(b * 15) << 4 | static_cast<ColorBits>(a * 15);
 		}
 
-		[[nodiscard]] colorBits rgb888() const{
-			return static_cast<colorBits>(r * 255) << 16 | static_cast<colorBits>(g * 255) << 8 | static_cast<colorBits>(b * 255);
+		[[nodiscard]] constexpr ColorBits rgb888() const{
+			return static_cast<ColorBits>(r * 255) << 16 | static_cast<ColorBits>(g * 255) << 8 | static_cast<ColorBits>(b * 255);
 		}
 
-		[[nodiscard]] colorBits rgba8888() const{
-			return static_cast<colorBits>(r * 255) << 24 | static_cast<colorBits>(g * 255) << 16 | static_cast<colorBits>(b * 255) << 8 | static_cast<colorBits>(a * 255);
+		[[nodiscard]] constexpr ColorBits rgba8888() const{
+			return static_cast<ColorBits>(r * 255) << 24 | static_cast<ColorBits>(g * 255) << 16 | static_cast<ColorBits>(b * 255) << 8 | static_cast<ColorBits>(a * 255);
 		}
 
-		[[nodiscard]] colorBits argb8888() const{
-			return static_cast<colorBits>(a * 255) << 24 | static_cast<colorBits>(r * 255) << 16 | static_cast<colorBits>(g * 255) << 8 | static_cast<colorBits>(b * 255);
+		[[nodiscard]] constexpr ColorBits argb8888() const{
+			return static_cast<ColorBits>(a * 255) << 24 | static_cast<ColorBits>(r * 255) << 16 | static_cast<ColorBits>(g * 255) << 8 | static_cast<ColorBits>(b * 255);
 		}
 
-		Color& rgb565(const colorBits value){
+		constexpr Color& rgb565(const ColorBits value){
 			r = static_cast<float>((value & 0x0000F800) >> 11) / 31.0f;
 			g = static_cast<float>((value & 0x000007E0) >> 5) / 63.0f;
 			b = static_cast<float>((value & 0x0000001F)) / 31.0f;
 			return *this;
 		}
 
-		Color& rgba4444(const colorBits value){
+		constexpr Color& rgba4444(const ColorBits value){
 			r = static_cast<float>((value & 0x0000f000) >> 12) / 15.0f;
 			g = static_cast<float>((value & 0x00000f00) >> 8) / 15.0f;
 			b = static_cast<float>((value & 0x000000f0) >> 4) / 15.0f;
@@ -203,14 +203,14 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& rgb888(const colorBits value){
+		constexpr Color& rgb888(const ColorBits value){
 			r = static_cast<float>((value & 0x00ff0000) >> 16) / 255.0f;
 			g = static_cast<float>((value & 0x0000ff00) >> 8) / 255.0f;
 			b = static_cast<float>((value & 0x000000ff)) / 255.0f;
 			return *this;
 		}
 
-		Color& rgba8888(const colorBits value){
+		constexpr Color& rgba8888(const ColorBits value){
 			r = static_cast<float>((value & 0xff000000) >> 24) / 255.0f;
 			g = static_cast<float>((value & 0x00ff0000) >> 16) / 255.0f;
 			b = static_cast<float>((value & 0x0000ff00) >> 8) / 255.0f;
@@ -218,7 +218,7 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& argb8888(const colorBits value){
+		constexpr Color& argb8888(const ColorBits value){
 			a = static_cast<float>((value & 0xff000000) >> 24) / 255.0f;
 			r = static_cast<float>((value & 0x00ff0000) >> 16) / 255.0f;
 			g = static_cast<float>((value & 0x0000ff00) >> 8) / 255.0f;
@@ -226,7 +226,7 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& abgr8888(const float value){
+		constexpr Color& abgr8888(const float value){
 			const unsigned int c = floatToIntColor(value);
 			a = static_cast<float>((c & 0xff000000) >> 24) / 255.0f;
 			b = static_cast<float>((c & 0x00ff0000) >> 16) / 255.0f;
@@ -235,33 +235,33 @@ export namespace Graphic{
 			return *this;
 		}
 
-		static Color grays(const float value){
+		static constexpr Color grays(const float value){
 			return Color{ value, value, value };
 		}
 
-		static Color rgb(const int r, const int g, const int b){
+		static constexpr Color rgb(const int r, const int g, const int b){
 			return Color{ (static_cast<float>(r) / 255.0f), (static_cast<float>(g) / 255.0f), (static_cast<float>(b) / 255.0f) };
 		}
 
-		static unsigned floatToIntColor(const float value){
-			colorBits intBits = Math::floatToUnsignedIntBits(value);
-			intBits |= static_cast<colorBits>(static_cast<float>(intBits >> 24) * (255.0f / 254.0f)) << 24;
+		static constexpr unsigned floatToIntColor(const float value){
+			ColorBits intBits = std::bit_cast<ColorBits>(value);
+			intBits |= static_cast<ColorBits>(static_cast<float>(intBits >> 24) * (255.0f / 254.0f)) << 24;
 			return intBits;
 		}
 
-		static float intToFloatColor(const colorBits value){
-			return Math::intBitsToFloat(value & 0xfeffffff);
+		static constexpr float intToFloatColor(const ColorBits value){
+			return std::bit_cast<float>(value & 0xfeffffff);
 		}
 
-		[[nodiscard]] float diff(const Color& other) const {
-			return abs(hue() - other.hue()) / 360 + abs(value() - other.value()) + abs(saturation() - other.saturation());
+		[[nodiscard]] constexpr float diff(const Color& other) const {
+			return Math::abs(hue() - other.hue()) / 360 + Math::abs(value() - other.value()) + Math::abs(saturation() - other.saturation());
 		}
 
-		[[nodiscard]] colorBits rgba() const{
+		[[nodiscard]] constexpr ColorBits rgba() const{
 			return rgba8888();
 		}
 
-		Color& set(const Color& color){
+		constexpr Color& set(const Color& color){
 			this->r = color.r;
 			this->g = color.g;
 			this->b = color.b;
@@ -269,11 +269,7 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& set(const Geom::Vec3 vec){
-			return set(vec.x, vec.y, vec.z);
-		}
-
-		Color& mul(const Color& color){
+		constexpr Color& mul(const Color& color){
 			this->r *= color.r;
 			this->g *= color.g;
 			this->b *= color.b;
@@ -281,14 +277,14 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& mul_rgb(const float value){
+		constexpr Color& mul_rgb(const float value){
 			this->r *= value;
 			this->g *= value;
 			this->b *= value;
 			return clamp();
 		}
 
-		Color& mul_rgba(const float value){
+		constexpr Color& mul_rgba(const float value){
 			this->r *= value;
 			this->g *= value;
 			this->b *= value;
@@ -296,21 +292,21 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& add(const Color& color){
+		constexpr Color& add(const Color& color){
 			this->r += color.r;
 			this->g += color.g;
 			this->b += color.b;
 			return clamp();
 		}
 
-		Color& sub(const Color& color){
+		constexpr Color& sub(const Color& color){
 			this->r -= color.r;
 			this->g -= color.g;
 			this->b -= color.b;
 			return clamp();
 		}
 
-		Color& clamp(){
+		constexpr Color& clamp(){
 			if (r < 0)
 				r = 0;
 			else if (r > 1) r = 1;
@@ -329,7 +325,7 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& setForce(const float tr, const float tg, const float tb, const float ta){
+		constexpr Color& setForce(const float tr, const float tg, const float tb, const float ta){
 			this->r = tr;
 			this->g = tg;
 			this->b = tb;
@@ -338,7 +334,7 @@ export namespace Graphic{
 			return *this;
 		}
 
-		Color& set(const float tr, const float tg, const float tb, const float ta){
+		constexpr Color& set(const float tr, const float tg, const float tb, const float ta){
 			this->r = tr;
 			this->g = tg;
 			this->b = tb;
@@ -346,22 +342,22 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& set(const float tr, const float tg, const float tb){
+		constexpr Color& set(const float tr, const float tg, const float tb){
 			this->r = tr;
 			this->g = tg;
 			this->b = tb;
 			return clamp();
 		}
 
-		Color& set(const int rgba){
+		constexpr Color& set(const int rgba){
 			return rgba8888(rgba);
 		}
 
-		[[nodiscard]] float sum() const{
+		[[nodiscard]] constexpr float sum() const{
 			return r + g + b;
 		}
 
-		Color& add(const float tr, const float tg, const float tb, const float ta){
+		constexpr Color& add(const float tr, const float tg, const float tb, const float ta){
 			this->r += tr;
 			this->g += tg;
 			this->b += tb;
@@ -369,14 +365,14 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& add(const float tr, const float tg, const float tb){
+		constexpr Color& add(const float tr, const float tg, const float tb){
 			this->r += tr;
 			this->g += tg;
 			this->b += tb;
 			return clamp();
 		}
 
-		Color& sub(const float tr, const float tg, const float tb, const float ta){
+		constexpr Color& sub(const float tr, const float tg, const float tb, const float ta){
 			this->r -= tr;
 			this->g -= tg;
 			this->b -= tb;
@@ -384,46 +380,46 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& sub(const float tr, const float tg, const float tb){
+		constexpr Color& sub(const float tr, const float tg, const float tb){
 			this->r -= tr;
 			this->g -= tg;
 			this->b -= tb;
 			return clamp();
 		}
 
-		Color& inv(){
+		constexpr Color& inv(){
 			r = 1 - r;
 			g = 1 - g;
 			b = 1 - b;
 			return *this;
 		}
 
-		Color& setR(const float tr){
+		constexpr Color& setR(const float tr){
 			this->r -= tr;
 			return *this;
 		}
 
-		Color& setG(const float tg){
+		constexpr Color& setG(const float tg){
 			this->g -= tg;
 			return *this;
 		}
 
-		Color& setB(const float tb){
+		constexpr Color& setB(const float tb){
 			this->b -= tb;
 			return *this;
 		}
 
-		Color& setA(const float ta){
+		constexpr Color& setA(const float ta){
 			this->a = ta;
 			return *this;
 		}
 
-		Color& mulA(const float ta){
+		constexpr Color& mulA(const float ta){
 			this->a *= ta;
 			return *this;
 		}
 
-		Color& mul(const float tr, const float tg, const float tb, const float ta){
+		constexpr Color& mul(const float tr, const float tg, const float tb, const float ta){
 			this->r *= tr;
 			this->g *= tg;
 			this->b *= tb;
@@ -431,7 +427,7 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& mul(const float val){
+		constexpr Color& mul(const float val){
 			this->r *= val;
 			this->g *= val;
 			this->b *= val;
@@ -439,7 +435,7 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& lerp(const Color& target, const float t){
+		constexpr Color& lerp(const Color& target, const float t){
 			this->r += t * (target.r - this->r);
 			this->g += t * (target.g - this->g);
 			this->b += t * (target.b - this->b);
@@ -447,7 +443,7 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& lerp(const float tr, const float tg, const float tb, const float ta, const float t){
+		constexpr Color& lerp(const float tr, const float tg, const float tb, const float ta, const float t){
 			this->r += t * (tr - this->r);
 			this->g += t * (tg - this->g);
 			this->b += t * (tb - this->b);
@@ -455,96 +451,88 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& preMultiplyAlpha(){
+		constexpr Color& preMultiplyAlpha(){
 			r *= a;
 			g *= a;
 			b *= a;
 			return *this;
 		}
 
-		Color& write(Color& to) const{
+		constexpr Color& write(Color& to) const{
 			return to.set(*this);
 		}
 
-		static float TMP_HSV[3];
+		using HSVType = std::array<float, 3>;
 
-		[[nodiscard]] float hue() const{
-			toHsv(TMP_HSV);
-			return TMP_HSV[0];
+		[[nodiscard]] constexpr float hue() const{
+			return toHsv()[0];
 		}
 
-		[[nodiscard]] float saturation() const{
-			toHsv(TMP_HSV);
-			return TMP_HSV[1];
+		[[nodiscard]] constexpr float saturation() const{
+			return toHsv()[1];
 		}
 
-		[[nodiscard]] float value() const{
-			toHsv(TMP_HSV);
-			return TMP_HSV[2];
+		[[nodiscard]] constexpr float value() const{
+			return toHsv()[2];
 		}
 
-		Color& hue(const float amount){
-			toHsv(TMP_HSV);
+		Color& byHue(const float amount){
+			HSVType TMP_HSV = toHsv();
 			TMP_HSV[0] = amount;
 			fromHsv(TMP_HSV);
 			return *this;
 		}
 
-		Color& saturation(const float amount){
-			toHsv(TMP_HSV);
+		Color& bySaturation(const float amount){
+			HSVType TMP_HSV = toHsv();
 			TMP_HSV[1] = amount;
 			fromHsv(TMP_HSV);
 			return *this;
 		}
 
-		Color& value(const float amount){
-			toHsv(TMP_HSV);
+		Color& byValue(const float amount){
+			HSVType TMP_HSV = toHsv();
 			TMP_HSV[2] = amount;
 			fromHsv(TMP_HSV);
 			return *this;
 		}
 
 		Color& shiftHue(const float amount){
-			toHsv(TMP_HSV);
+			HSVType TMP_HSV = toHsv();
 			TMP_HSV[0] += amount;
 			fromHsv(TMP_HSV);
 			return *this;
 		}
 
 		Color& shiftSaturation(const float amount){
-			toHsv(TMP_HSV);
+			HSVType TMP_HSV = toHsv();
 			TMP_HSV[1] += amount;
 			fromHsv(TMP_HSV);
 			return *this;
 		}
 
 		Color& shiftValue(const float amount){
-			toHsv(TMP_HSV);
+			HSVType TMP_HSV = toHsv();
 			TMP_HSV[2] += amount;
 			fromHsv(TMP_HSV);
 			return *this;
 		}
 
-		[[nodiscard]] bool equals(const Color& o) const{
-			if (this == &o) return true;
-			return abgr() == o.abgr();
-		}
-
-		[[nodiscard]] size_t hashCode() const{
+		[[nodiscard]] constexpr size_t hashCode() const{
 			return rgba8888();
 		}
 
-		[[nodiscard]] float toFloatBits() const{
-			const colorBits color = static_cast<colorBits>(255 * a) << 24 | static_cast<colorBits>(255 * b) << 16 | static_cast<colorBits>(255 * g) << 8 | static_cast<colorBits>(255 * r);
+		[[nodiscard]] constexpr float toFloatBits() const{
+			const ColorBits color = static_cast<ColorBits>(255 * a) << 24 | static_cast<ColorBits>(255 * b) << 16 | static_cast<ColorBits>(255 * g) << 8 | static_cast<ColorBits>(255 * r);
 			return intToFloatColor(color);
 		}
 
-		[[nodiscard]] double toDoubleBits() const{
-			return toDoubleBits(r, g, b, a);
+		[[nodiscard]] constexpr double toDoubleBits() const{
+			return toDoubleBits(r, g, b, a); // NOLINT(*-narrowing-conversions)
 		}
 
-		[[nodiscard]] colorBits abgr() const{
-			return static_cast<colorBits>(255 * a) << 24 | static_cast<colorBits>(255 * b) << 16 | static_cast<colorBits>(255 * g) << 8 | static_cast<colorBits>(255 * r);
+		[[nodiscard]] constexpr ColorBits abgr() const{
+			return static_cast<ColorBits>(255 * a) << 24 | static_cast<ColorBits>(255 * b) << 16 | static_cast<ColorBits>(255 * g) << 8 | static_cast<ColorBits>(255 * r);
 		}
 
 		[[nodiscard]] std::string toString() const{
@@ -556,7 +544,7 @@ export namespace Graphic{
 		}
 
 		Color& fromHsv(const float h, const float s, const float v){
-			const float x = fmod(h / 60.0f + 6, static_cast<float>(6));
+			const float x = std::fmod(h / 60.0f + 6, static_cast<float>(6));
 			const int i = static_cast<int>(x);
 			const float f = x - static_cast<float>(i);
 			const float p = v * (1 - s);
@@ -597,23 +585,25 @@ export namespace Graphic{
 			return clamp();
 		}
 
-		Color& fromHsv(float hsv[]){
+		Color& fromHsv(const HSVType hsv){
 			return fromHsv(hsv[0], hsv[1], hsv[2]);
 		}
 
-		Color HSVtoRGB(const float h, const float s, const float v, const float alpha){
+		constexpr Color HSVtoRGB(const float h, const float s, const float v, const float alpha){
 			Color c = HSVtoRGB(h, s, v);
 			c.a = alpha;
 			return c;
 		}
 
-		Color HSVtoRGB(const float h, const float s, const float v){
+		constexpr Color HSVtoRGB(const float h, const float s, const float v){
 			Color c{ 1, 1, 1, 1 };
 			HSVtoRGB(h, s, v, c);
 			return c;
 		}
 
-		float* toHsv(float hsv[]) const{
+		[[nodiscard]] constexpr HSVType toHsv() const{
+			HSVType hsv = {};
+
 			const float maxV = max(max(r, g), b);
 			const float minV = min(min(r, g), b);
 			if (const float range = maxV - minV; range == 0) {
@@ -641,15 +631,15 @@ export namespace Graphic{
 			return hsv;
 		}
 
-		Color& HSVtoRGB(float h, float s, float v, Color& targetColor){
+		constexpr Color& HSVtoRGB(float h, float s, float v, Color& targetColor){
 			if (h == 360) h = 359;
-			h = static_cast<float>(max(0.0f, min(360.0f, h)));
-			s = static_cast<float>(max(0.0f, min(100.0f, s)));
-			v = static_cast<float>(max(0.0f, min(100.0f, v)));
+			h = Math::max(0.0f, Math::min(360.0f, h));
+			s = Math::max(0.0f, Math::min(100.0f, s));
+			v = Math::max(0.0f, Math::min(100.0f, v));
 			s /= 100.0f;
 			v /= 100.0f;
 			h /= 60.0f;
-			const int i = floor(h);
+			const int i = Math::floor(h);
 			const float f = h - static_cast<float>(i);
 			const float p = v * (1 - s);
 			const float q = v * (1 - s * f);
@@ -690,28 +680,28 @@ export namespace Graphic{
 			return targetColor;
 		}
 
-		static int clampf(const float value){
-			return min(max(static_cast<int>(value), 0), 255);
+		static constexpr int clampf(const float value){
+			return Math::min(Math::max(static_cast<int>(value), 0), 255);
 		}
 
-		static colorBits ri(const colorBits rgba){
+		static constexpr ColorBits ri(const ColorBits rgba){
 			return (rgba & 0xff000000) >> 24;
 		}
 
-		static colorBits gi(const colorBits rgba){
+		static constexpr ColorBits gi(const ColorBits rgba){
 			return (rgba & 0x00ff0000) >> 16;
 		}
 
-		static colorBits bi(const colorBits rgba){
+		static constexpr ColorBits bi(const ColorBits rgba){
 			return (rgba & 0x0000ff00) >> 8;
 		}
 
-		static colorBits ai(const colorBits rgba){
+		static constexpr ColorBits ai(const ColorBits rgba){
 			return rgba & 0x000000ff;
 		}
 
-		static colorBits muli(const colorBits ca, const colorBits cb){
-			const colorBits
+		static constexpr ColorBits muli(const ColorBits ca, const ColorBits cb){
+			const ColorBits
 					rV = (ca & r_Mask) >> r_Offset,
 					gV = (ca & g_Mask) >> g_Offset,
 					bV = (ca & b_Mask) >> b_Offset,
@@ -723,8 +713,8 @@ export namespace Graphic{
 			return clampf(static_cast<float>(rV * r2) / 255.0f) << 24 | clampf(static_cast<float>(gV * g2) / 255.0f) << 16 | clampf(static_cast<float>(bV * b2) / 255.0f) << 8 | clampf(static_cast<float>(aV * a2) / 255.0f);
 		}
 
-		static colorBits muli(const colorBits rgba, const float value){
-			const colorBits
+		static constexpr ColorBits muli(const ColorBits rgba, const float value){
+			const ColorBits
 					rV = (rgba & r_Mask) >> r_Offset,
 					gV = (rgba & g_Mask) >> g_Offset,
 					bV = (rgba & b_Mask) >> b_Offset,
@@ -732,9 +722,9 @@ export namespace Graphic{
 			return clampf(static_cast<float>(rV) * value) << 24 | clampf(static_cast<float>(gV) * value) << 16 | clampf(static_cast<float>(bV) * value) << 8 | aV;
 		}
 
-
+		//TODO: Really Bad Design!
 		template <int size>
-		static Color createLerp(const Color* const(&arr)[size], const float s) {
+		static constexpr Color createLerp(const Color* const(&arr)[size], const float s) {
 			const Color& ca = *arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
 			const Color& cb = *arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
 
@@ -743,83 +733,122 @@ export namespace Graphic{
 			return { ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n };
 		}
 
-		template <int size>
-		Color& lerp(const Color(&arr)[size], const float s) {
-			const Color& ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
-			const Color& cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+		// static constexpr Color createLerp(const float s, const std::initializer_list<const Color&>& colors) {
+		// 	const std::vector arr = colors;
+		// 	const size_t size = arr.size();
+		// 	const Color& ca = arr[Math::clamp(static_cast<size_t>(s * (size - 1)), 0ull, size - 1)];
+		// 	const Color& cb = arr[Math::clamp(static_cast<size_t>(s * (size - 1) + 1), 0ull, size - 1)];
+		//
+		// 	const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
+		// 	const float i = 1.0f - n;
+		// 	return { ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n};
+		// }
 
-			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
+		using LerpVal = std::tuple<const Color&, const Color&, float, float>;
+
+		static constexpr LerpVal getLerpVal(const float s, const auto&... colors) {
+			constexpr size_t size = sizeof...(colors);
+			constexpr size_t bound = size - 1;
+			const std::array<const Color*, size> arr = {&colors...};
+			const Color& ca = *arr[Math::clamp(static_cast<size_t>(s * bound), 0ull, bound)];
+			const Color& cb = *arr[Math::clamp(static_cast<size_t>(s * bound + 1), 0ull, bound)];
+
+			const float n = s * bound - static_cast<int>(s * bound);
 			const float i = 1.0f - n;
-			return set(ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n);
+			return LerpVal{ca, cb, n, i};
 		}
 
-		template <int size>
-		Color& lerp(const Color* const(&arr)[size], const float s) {
-			const Color* ca = arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
-			const Color* cb = arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+		static constexpr LerpVal getLerpVal(const float s, const std::span<const Color*>& colors) {
+			const size_t size = colors.size();
+			const size_t bound = size - 1;
+			const Color& ca = *colors[Math::clamp(static_cast<size_t>(s * bound), 0ull, bound)];
+			const Color& cb = *colors[Math::clamp(static_cast<size_t>(s * bound + 1), 0ull, bound)];
 
-			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
+			const float n = s * bound - static_cast<int>(s * bound);
 			const float i = 1.0f - n;
-			return set(ca->r * i + cb->r * n, ca->g * i + cb->g * n, ca->b * i + cb->b * n, ca->a * i + cb->a * n);
+			return LerpVal{ca, cb, n, i};
+		}
+
+		static constexpr Color createLerp(const float s, const auto&... colors) {
+			const auto& [ca, cb, n, i] = getLerpVal(s, colors...);
+			return { ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n};
+		}
+
+		constexpr Color& lerp(const float s, const auto&... colors) {
+			const auto& [ca, cb, n, i] = getLerpVal(s, colors...);
+			return set( ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n);
+		}
+
+		constexpr Color& lerp(const float s, const std::span<const Color*>& colors) {
+			const auto& [ca, cb, n, i] = getLerpVal(s, colors);
+			return set(ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n);
 		}
 	};
 
 	namespace Colors {
-		const Color WHITE{ 1, 1, 1, 1 };
-		const Color LIGHT_GRAY{ 0xbfbfbfff };
-		const Color GRAY{ 0x7f7f7fff };
-		const Color DARK_GRAY{ 0x3f3f3fff };
-		const Color BLACK{ 0, 0, 0, 1 };
-		const Color CLEAR{ 0, 0, 0, 0 };
+		constexpr Color WHITE{ 1, 1, 1, 1 };
+		constexpr Color LIGHT_GRAY{ 0xbfbfbfff };
+		constexpr Color GRAY{ 0x7f7f7fff };
+		constexpr Color DARK_GRAY{ 0x3f3f3fff };
+		constexpr Color BLACK{ 0, 0, 0, 1 };
+		constexpr Color CLEAR{ 0, 0, 0, 0 };
 		
-		const float WHITE_FLOAT_BITS = WHITE.toFloatBits();
-		const float CLEAR_FLOAT_BITS = CLEAR.toFloatBits();
-		const float BLACK_FLOAT_BITS = BLACK.toFloatBits();
+		constexpr float WHITE_FLOAT_BITS = WHITE.toFloatBits();
+		constexpr float CLEAR_FLOAT_BITS = CLEAR.toFloatBits();
+		constexpr float BLACK_FLOAT_BITS = BLACK.toFloatBits();
 
-		const unsigned int WHITE_RGBA = WHITE.rgba();
-		const unsigned int CLEAR_RGBA = CLEAR.rgba();
-		const unsigned int BLACK_RGBA = BLACK.rgba();
+		constexpr unsigned int WHITE_RGBA = WHITE.rgba();
+		constexpr unsigned int CLEAR_RGBA = CLEAR.rgba();
+		constexpr unsigned int BLACK_RGBA = BLACK.rgba();
 
-		const Color BLUE{ 0, 0, 1, 1 };
-		const Color NAVY{ 0, 0, 0.5f, 1 };
-		const Color ROYAL{ 0x4169e1ff };
-		const Color SLATE{ 0x708090ff };
-		const Color SKY{ 0x87ceebff };
+		constexpr Color BLUE{ 0, 0, 1, 1 };
+		constexpr Color NAVY{ 0, 0, 0.5f, 1 };
+		constexpr Color ROYAL{ 0x4169e1ff };
+		constexpr Color SLATE{ 0x708090ff };
+		constexpr Color SKY{ 0x87ceebff };
 
-		const Color AQUA{ 0x85A2F3ff };
+		constexpr Color AQUA{ 0x85A2F3ff };
 
-		const Color AQUA_SKY = Color::createLerp({&AQUA, &SKY}, 0.5f);
+		constexpr Color AQUA_SKY = Color::createLerp(0.5f, AQUA, SKY);
 
-		const Color BLUE_SKY = Color::createLerp({&BLUE, &SKY}, 0.745f);
+		constexpr Color BLUE_SKY = Color::createLerp(0.745f, BLUE, SKY);
 
-		const Color CYAN{ 0, 1, 1, 1 };
-		const Color TEAL{ 0, 0.5f, 0.5f, 1 };
+		constexpr Color CYAN{ 0, 1, 1, 1 };
+		constexpr Color TEAL{ 0, 0.5f, 0.5f, 1 };
 
-		const Color GREEN{ 0x00ff00ff };
-		const Color ACID{ 0x7fff00ff };
-		const Color LIME{ 0x32cd32ff };
-		const Color FOREST{ 0x228b22ff };
-		const Color OLIVE{ 0x6b8e23ff };
+		constexpr Color GREEN{ 0x00ff00ff };
+		constexpr Color ACID{ 0x7fff00ff };
+		constexpr Color LIME{ 0x32cd32ff };
+		constexpr Color FOREST{ 0x228b22ff };
+		constexpr Color OLIVE{ 0x6b8e23ff };
 
-		const Color YELLOW{ 0xffff00ff };
-		const Color GOLD{ 0xffd700ff };
-		const Color GOLDENROD{ 0xdaa520ff };
-		const Color ORANGE{ 0xffa500ff };
+		constexpr Color YELLOW{ 0xffff00ff };
+		constexpr Color GOLD{ 0xffd700ff };
+		constexpr Color GOLDENROD{ 0xdaa520ff };
+		constexpr Color ORANGE{ 0xffa500ff };
 
-		const Color BROWN{ 0x8b4513ff };
-		const Color TAN{ 0xd2b48cff };
-		const Color BRICK{ 0xb22222ff };
+		constexpr Color BROWN{ 0x8b4513ff };
+		constexpr Color TAN{ 0xd2b48cff };
+		constexpr Color BRICK{ 0xb22222ff };
 
-		const Color RED{ 0xff0000ff };
-		const Color SCARLET{ 0xff341cff };
-		const Color CRIMSON{ 0xdc143cff };
-		const Color CORAL{ 0xff7f50ff };
-		const Color SALMON{ 0xfa8072ff };
-		const Color PINK{ 0xff69b4ff };
-		const Color MAGENTA{ 1, 0, 1, 1 };
+		constexpr Color RED{ 0xff0000ff };
+		constexpr Color SCARLET{ 0xff341cff };
+		constexpr Color CRIMSON{ 0xdc143cff };
+		constexpr Color CORAL{ 0xff7f50ff };
+		constexpr Color SALMON{ 0xfa8072ff };
+		constexpr Color PINK{ 0xff69b4ff };
+		constexpr Color MAGENTA{ 1, 0, 1, 1 };
 
-		const Color PURPLE{ 0xa020f0ff };
-		const Color VIOLET{ 0xee82eeff };
-		const Color MAROON{ 0xb03060ff };
+		constexpr Color PURPLE{ 0xa020f0ff };
+		constexpr Color VIOLET{ 0xee82eeff };
+		constexpr Color MAROON{ 0xb03060ff };
 	}
 }
+
+export
+	template<>
+	struct ::std::hash<Graphic::Color>{
+		size_t operator()(const Graphic::Color& obj) const noexcept{
+			return obj.hashCode();
+		}
+	};

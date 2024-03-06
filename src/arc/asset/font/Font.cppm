@@ -364,7 +364,7 @@ export namespace Font {
 		[[nodiscard]] FontCache() = default;
 
 		[[nodiscard]] explicit FontCache(Graphic::Pixmap& textureBitmap, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
-			fontTexture.reset(new GL::Texture2D(textureBitmap.getWidth(), textureBitmap.getHeight(), textureBitmap.release()));
+			fontTexture.reset(new GL::Texture2D(textureBitmap.getWidth(), textureBitmap.getHeight(), std::move(textureBitmap).release()));
 
 			fontTexture->setScale(GL::TexParams::mipmap_linear_linear);
 

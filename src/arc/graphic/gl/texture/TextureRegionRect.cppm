@@ -1,15 +1,13 @@
-module;
-
 export module GL.Texture.TextureRegionRect;
 
 import Concepts;
 import Geom.Shape.Rect_Orthogonal;
-import GL.Texture.Texture2D;
-import GL.Texture.TextureRegion;
-import <tuple>;
+export import GL.Texture.Texture2D;
+export import GL.Texture.TextureRegion;
+
+import <utility>;
 
 export namespace GL{
-
 	/**
 	 * \brief
 	 * @code
@@ -34,14 +32,14 @@ export namespace GL{
 		TextureRegionRect() = default;
 
 
-		[[nodiscard]] TextureRegionRect(const float u0, const float v0, const float u1, const float v1)
+		[[nodiscard]] TextureRegionRect(const float u0, const float v0, const float u1, const float v1) // NOLINT(*-easily-swappable-parameters)
 			: u0(u0),
 			  v0(v0),
 			  u1(u1),
 			  v1(v1) {
 		}
 
-		[[nodiscard]] TextureRegionRect(const Texture2D* const data, const float u0, const float v0, const float u1, const float v1)
+		[[nodiscard]] TextureRegionRect(const GL::Texture2D* const data, const float u0, const float v0, const float u1, const float v1)
 			: TextureRegion(data),
 			  u0(u0),
 			  v0(v0),

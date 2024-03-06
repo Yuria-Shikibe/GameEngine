@@ -6,7 +6,7 @@ module ;
 
 export module Core.Camera;
 
-import <algorithm>;
+
 
 import Concepts;
 import Graphic.Viewport;
@@ -19,6 +19,7 @@ import Geom.Matrix3D;
 import <memory>;
 import <valarray>;
 import <numbers>;
+import <algorithm>;
 
 using namespace Geom;
 
@@ -30,6 +31,7 @@ export namespace Core{
 
 		Shape::OrthoRectUInt screenSize{};
 
+		//TODO this viewport design is so bad!
 		std::unique_ptr<Graphic::Viewport<>> viewport{std::make_unique<Graphic::Viewport_OrthoRect>()};
 
 		float scale{1.0f};
@@ -96,6 +98,14 @@ export namespace Core{
 
 		[[nodiscard]] Matrix3D& getWorldToScreen() {
 			return worldToScreen;
+		}
+
+		[[nodiscard]] Vec2 getWorldToScreen(const Vec2 vec2) const {
+			return worldToScreen * vec2;
+		}
+
+		[[nodiscard]] Vec2 getScreenToWorld(const Vec2 vec2) const {
+			return screenToWorld * vec2;
 		}
 
 		void setWorldToScreen(const Matrix3D& worldToScreen) {

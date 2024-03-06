@@ -5,17 +5,16 @@ export module Game.Logic.Strategy;
 import <string>;
 import <memory>;
 import <functional>;
-import Game.Logic.Objective;
-import Game.Entity.RealityEntity;
 import <algorithm>;
 import <vector>;
-import Geom.Vector2D;
 import <numbers>;
 
+import Geom.Vector2D;
+import Game.Logic.Objective;
+
 export namespace Game {
-	/**
-	 * \brief Should has static lifetime and keep living after being created.
-	 */
+	class RealityEntity;
+
 	class Strategy {
 	public:
 		virtual ~Strategy() = default;
@@ -81,7 +80,7 @@ export namespace Game {
 			});
 
 			if(caresTargetPriority()) {
-				std::sort(targets.begin(), targets.end(), [this](const ItemType& l, const ItemType& r) {
+				std::ranges::sort(targets, [this](const ItemType& l, const ItemType& r) {
 					return targetCmp(l.lock().get(), r.lock().get());
 				});
 			}
@@ -90,7 +89,7 @@ export namespace Game {
 		virtual void optimizeObjectives(std::vector<std::unique_ptr<Objective>>& objectives) const {
 			using ValueType = std::vector<std::unique_ptr<Objective>>::value_type;
 
-			std::sort(objectives.begin(), objectives.end(), [this](const ValueType& l, const ValueType& r) {
+			std::ranges::sort(objectives, [this](const ValueType& l, const ValueType& r) {
 				return objectiveCmp(l.get(), r.get());
 			});
 		}

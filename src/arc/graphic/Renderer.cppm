@@ -15,6 +15,8 @@ import Graphic.Color;
 import Graphic.Resizeable;
 import Graphic.PostProcessor;
 
+import Geom.Vector2D;
+
 
 using namespace GL;
 using namespace Graphic;
@@ -49,6 +51,12 @@ export namespace Event {
 			: DrawEvent(renderer) {
 		}
 	};
+
+	struct Draw_Overlay final : DrawEvent {
+		[[nodiscard]] explicit Draw_Overlay(::Core::Renderer* const renderer)
+			: DrawEvent(renderer) {
+		}
+	};
 }
 
 export namespace Core {
@@ -60,12 +68,14 @@ export namespace Core {
 		Event::EventManager drawControlHook{
 			Event::indexOf<Event::Draw_After>(),
 			Event::indexOf<Event::Draw_Post>(),
-			Event::indexOf<Event::Draw_Prepare>()
+			Event::indexOf<Event::Draw_Prepare>(),
+			Event::indexOf<Event::Draw_Overlay>()
 		};
 
 		Event::Draw_Post draw_post{this};
 		Event::Draw_Prepare draw_prepare{this};
 		Event::Draw_After draw_after{this};
+		Event::Draw_Overlay draw_overlay{this};
 
 	public:
 		GL::FrameBuffer defaultFrameBuffer{};
@@ -161,6 +171,8 @@ export namespace Core {
 
 			renderUI();
 
+			drawControlHook.fire(draw_overlay);
+
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer.getID());
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -194,6 +206,18 @@ export namespace Core {
 
 		virtual void removeSizeSynchronizedResizableObject(Resizeable* obj) {
 			std::erase(synchronizedSizedObjects, obj);
+		}
+
+		[[nodiscard]] Geom::Vec2 getSize() const {
+			return {getDrawWidth(), getDrawHeight()};
+		}
+
+		[[nodiscard]] Geom::Vec2 getNormalized(const Geom::Vec2 p) const {
+			return (p / getSize()).sub(0.5f, 0.5f).scl(2);
+		}
+
+		[[nodiscard]] Geom::Vec2& normalize(Geom::Vec2& p) const {
+			return p.div(getSize()).sub(0.5f, 0.5f).scl(2);
 		}
 	};
 }

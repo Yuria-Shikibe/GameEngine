@@ -25,7 +25,8 @@ export namespace Game {
 	public:
 		~EntityMap() override = default;
 
-		using ValueType = std::shared_ptr<T>;
+		using StoreType = std::shared_ptr<T>;
+		using ValueType = T;
 
 		struct AddEvent final : Event::EventType {T* entity{nullptr};};
 		struct RemoveEvent final : Event::EventType {T* entity{nullptr};};
@@ -38,7 +39,9 @@ export namespace Game {
 	public:
 		std::unordered_map<IDType, std::shared_ptr<T>> idMap{std::unordered_map<IDType, std::shared_ptr<T>>{5000}};
 
-		std::unique_ptr<Geom::QuadTreeF<T>> quadTree{nullptr};
+		using TreeType = Geom::QuadTreeF<T>;
+
+		std::unique_ptr<TreeType> quadTree{nullptr};
 
 		Event::EventManager groupListener{
 			Event::indexOf<AddEvent>(),
@@ -141,28 +144,22 @@ export namespace Game {
 
 		virtual void updateMain(const float delta) {
 			processRemoves();
-			auto range = idMap | std::ranges::views::values;
-			std::for_each(
-				std::execution::par,
-				range.begin(), range.end(),
-				[delta](std::shared_ptr<T>& t) {
-					if(!t->isSleeping())t->update(delta);
-				}
-			);
+			this->each([delta](std::shared_ptr<T>& t){
+				if(!t->isSleeping())t->update(delta);
+			});
 		}
 
 		void processRemoves() {
 			if(toRemove.empty())return;
 			for(T* entity : toRemove) {
-				remove(entity);
+				this->remove(entity);
 			}
 			toRemove.clear();
 		}
 
-		template <Concepts::Invokable<void(std::shared_ptr<T>&)> Func>
-		void each(Func&& func) {
+		void each(Concepts::Invokable<void(std::shared_ptr<T>&)> auto&& func) {
 			auto range = idMap | std::ranges::views::values;
-			std::for_each(std::execution::par, range.begin(), range.end(), std::forward<Func>(func));
+			std::for_each(std::execution::par, range.begin(), range.end(), std::forward<decltype(func)>(func));
 		}
 
 		void clear() {

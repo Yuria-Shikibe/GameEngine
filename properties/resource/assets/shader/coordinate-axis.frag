@@ -65,7 +65,7 @@ void main() {
 	}
 	
 	if(!modified(color.a)){
-		color = vec4(0.42f, 0.55f, 1.0f, 0.12f);
+		color = vec4(0.22f, 0.35f, 0.6f, 0.12f);
 	}
 	
 //	color.rg *= (gl_FragCoord.xy / screenSize);

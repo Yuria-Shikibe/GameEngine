@@ -1,5 +1,3 @@
-module;
-
 module OS.ApplicationListenerSetter;
 
 import Core;

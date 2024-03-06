@@ -41,7 +41,7 @@ export namespace Core{
 
 		const Geom::Matrix3D* projectionFallback = nullptr;
 
-		GLsizei index = 0;
+		unsigned index = 0;
 
 	public:
 		Batch() {
@@ -122,7 +122,7 @@ export namespace Core{
 			projection = &porj;
 		}
 
-		void beginProjection(const Geom::Matrix3D& porj) {
+		void beginTempProjection(const Geom::Matrix3D& porj) {
 			if(&porj == projection || porj == *projection)return;
 
 			if(projectionFallback != nullptr) {
@@ -135,7 +135,7 @@ export namespace Core{
 			projection = &porj;
 		}
 
-		void endProjection() {
+		void endTempProjection() {
 			if(projectionFallback == nullptr)return;
 
 			flush();

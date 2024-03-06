@@ -6,6 +6,7 @@ import Graphic.Draw;
 
 import UI.Root;
 import Graphic.Color;
+import Math;
 
 using UI::Root;
 

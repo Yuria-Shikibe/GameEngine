@@ -15,7 +15,7 @@ import <string>;
 import <iostream>;
 
 using Graphic::Color;
-using colorBits = Graphic::Color::colorBits;
+using colorBits = Graphic::Color::ColorBits;
 
 export namespace Graphic{
     class Pixmap{
@@ -23,7 +23,7 @@ export namespace Graphic{
         unsigned int width{ 1 };
         unsigned int height{ 1 };
         //TODO is this necessay?
-        // unsigned int bpp{ 4 };
+        //unsigned int bpp{ 4 };
 
         std::unique_ptr<unsigned char[]> data{nullptr};
 
@@ -44,7 +44,7 @@ export namespace Graphic{
         //     return bpp;
         // }
 
-        [[nodiscard]] unsigned char* release() {
+        [[nodiscard]] unsigned char* release() && {
             return data.release();
         }
 
@@ -52,9 +52,8 @@ export namespace Graphic{
             return data.get();
         }
 
-        [[nodiscard]] unsigned char* getData() && {
-            width = height = 0;
-            return data.release();
+        [[nodiscard]] std::unique_ptr<unsigned char[]> getData() && {
+            return std::move(data);
         }
 
         [[nodiscard]] Pixmap(const unsigned int width, const unsigned int height)
@@ -177,20 +176,20 @@ export namespace Graphic{
             return tex;
         }
 
-        [[nodiscard]] size_t dataIndex(const unsigned int x, const unsigned int y) const {
+        [[nodiscard]] constexpr auto dataIndex(const unsigned int x, const unsigned int y) const {
             if(x > width || y > height)throw ext::RuntimeException{"Array Index Out Of Bound!"};
             return (y * width + x) * Channels;
         }
 
         [[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
             const auto size = dataSize();
-            const auto dataN = new unsigned char[size];
+            auto *const dataN = new unsigned char[size];
             std::memcpy(dataN, data.get(), size);
 
             return std::unique_ptr<unsigned char[]>(dataN);
         }
 
-        [[nodiscard]] size_t dataSize() const {
+        [[nodiscard]] constexpr auto dataSize() const {
             return width * height;
         }
 
@@ -302,8 +301,10 @@ export namespace Graphic{
             }
 
             if(srcWidth == dstWidth && srcHeight == dstHeight){
-                unsigned int sx, dx;
-                unsigned int sy = srcy, dy = dsty;
+                unsigned int sx;
+                unsigned int dx;
+                unsigned int sy = srcy;
+                unsigned int dy = dsty;
 
                 if(blending){
                     for(; sy < srcy + srcHeight; sy++, dy++){

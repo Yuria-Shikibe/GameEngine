@@ -1,8 +1,10 @@
 module UI.Root;
 
 import UI.ElemDrawer;
+import UI.Table;
 import <memory>;
 import <algorithm>;
+
 
 UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-default)
 	root->setSrc(0.0f, 0.0f);
@@ -108,6 +110,18 @@ void UI::Root::onScroll() const {
 	if(currentScrollFocused == nullptr)return;
 	scrollAction.set(mouseScroll);
 	currentScrollFocused->getInputListener().fire(scrollAction);
+}
+
+void UI::Root::disable() {
+	root->setVisible(false);
+	root->setTouchbility(TouchbilityFlags::disabled);
+	allHidden = true;
+}
+
+void UI::Root::enable() {
+	root->setVisible(true);
+	root->setTouchbility(TouchbilityFlags::childrenOnly);
+	allHidden = false;
 }
 
 bool UI::Root::onDrag(const int id) const {

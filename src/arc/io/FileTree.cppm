@@ -98,7 +98,7 @@ export namespace OS{
 
 		static void output(std::ostream &os, const File& file, const unsigned char depth){
 			if(depth == 0){
-				os << file.path().parent_path().string() << "/\n";
+				os << file.getPath().parent_path().string() << "/\n";
 			}
 
 			for (int i = 0; i < depth; ++i) {

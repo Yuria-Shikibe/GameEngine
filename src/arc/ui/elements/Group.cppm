@@ -4,6 +4,8 @@ export module UI.Group;
 
 export import UI.Elem;
 
+import Concepts;
+
 import <execution>;
 import <memory>;
 import <vector>;
@@ -97,14 +99,13 @@ export namespace UI {
 			Elem::layout();
 		}
 
-		template <Concepts::Invokable<void(Elem*)> Func>
-		void iterateAll(const Func& func) {
+		void iterateAll(Concepts::Invokable<void(Elem*)> auto&& func) {
 			func(this);
 
 			for (const auto& child : getChildren()) {
 				auto group = dynamic_cast<Group*>(child.get());
 				if(!group)return;
-				group->iterateAll(func);
+				group->iterateAll(std::forward<decltype(func)>(func));
 			}
 		}
 
@@ -117,7 +118,8 @@ export namespace UI {
 		}
 
 		virtual void updateChildren(const float delta) {
-			std::for_each(std::execution::par, children.begin(), children.end(), [delta](const std::unique_ptr<Elem>& elem) {
+			//TODO worth it a 'par' ?
+			std::ranges::for_each(children, [delta](const std::unique_ptr<Elem>& elem) {
 				elem->update(delta);
 			});
 		}

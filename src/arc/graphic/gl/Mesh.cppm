@@ -12,6 +12,8 @@ import GL.Buffer.IndexBuffer;
 import GL.Buffer.VertexBuffer;
 import GL.VertexArray;
 
+import Concepts;
+
 export namespace GL{
 	struct Mesh
 	{
@@ -21,12 +23,9 @@ export namespace GL{
 		std::unique_ptr<IndexBuffer> indexBuffer{std::make_unique<IndexBuffer>()};
 		std::unique_ptr<VertexArray> vertexArray{std::make_unique<VertexArray>()};
 
-		//TODO Should Meshes obtain their own shaders?
-		//std::unique_ptr<Shader> defaultShader = nullptr;
-
 		Mesh() = default;
 
-		explicit Mesh(const auto& init){
+		explicit Mesh(Concepts::Invokable<void(Mesh&)> auto&& init){
 			init(*this);
 		}
 
@@ -91,6 +90,7 @@ export namespace GL{
 			return *this;
 		}
 
+		//TODO worth it a virtual?
 		virtual void render(const GLenum primitiveType, const int offset, const int count) const{
 
 			if (indexBuffer != nullptr && indexBuffer->getSize() > 0) {

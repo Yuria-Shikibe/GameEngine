@@ -86,10 +86,10 @@ export namespace GL {
 		return static_cast<GLuint>(type);
 	}
 
+	//TODO seperate the loader and handle?
 	class Shader {
 	protected:
 		mutable std::unordered_map <std::string, GLint> uniformLocationMap{};
-		mutable std::unordered_map <std::string, GLint> attribuLocationMap{};
 		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
 
 		bool valid{false};
@@ -215,13 +215,43 @@ export namespace GL {
 			glDeleteProgram(programID);
 		}
 
-		Shader &operator=(const Shader &other) = delete;
+		Shader(const Shader& other)
+			: uniformLocationMap{ other.uniformLocationMap },
+			valid{ other.valid },
+			programID{ other.programID },
+			drawer{ other.drawer } {
+			if(!other.isValid())throw ext::IllegalArguments{"Illegal Operation: Copy Invalid Shader!"};
+		}
 
-		Shader &operator=(Shader &&other) = delete;
+		Shader& operator=(const Shader& other) {
+			if(!other.isValid())throw ext::IllegalArguments{"Illegal Operation: Copy Invalid Shader!"};
+			if(this == &other) return *this;
+			uniformLocationMap = other.uniformLocationMap;
+			valid              = other.valid;
+			programID          = other.programID;
+			drawer             = other.drawer;
+			return *this;
+		}
 
-		Shader(const Shader &tgt) = delete;
+		Shader(Shader&& other) noexcept
+			: uniformLocationMap{ std::move(other.uniformLocationMap) },
+			typeList{ std::move(other.typeList) },
+			valid{ other.valid },
+			programID{ other.programID },
+			shaderDir{ other.shaderDir },
+			drawer{ std::move(other.drawer) }{
+		}
 
-		Shader(Shader &&tgt) = delete;
+		Shader& operator=(Shader&& other) noexcept {
+			if(this == &other) return *this;
+			uniformLocationMap = std::move(other.uniformLocationMap);
+			typeList           = std::move(other.typeList);
+			valid              = other.valid;
+			programID          = other.programID;
+			shaderDir          = other.shaderDir;
+			drawer             = std::move(other.drawer);
+			return *this;
+		}
 
 		struct ShaderSourceParser {
 			const std::string keyWord{};
@@ -241,7 +271,7 @@ export namespace GL {
 
 				}
 			}
-		}uniformParser{"uniform", uniformLocationMap}, attribuParser{"attribute", attribuLocationMap};
+		}uniformParser{"uniform", uniformLocationMap};
 
 		struct ShaderSourceParserMulti {
 			std::vector<ShaderSourceParser> parsers{};
@@ -255,7 +285,7 @@ export namespace GL {
 			}
 		};
 
-		ShaderSourceParserMulti multiParser = ShaderSourceParserMulti{uniformParser, attribuParser};
+		ShaderSourceParserMulti multiParser = ShaderSourceParserMulti{uniformParser};
 		/**
 		 * \brief Compile Methods:
 		 * */

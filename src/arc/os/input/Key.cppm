@@ -1,6 +1,6 @@
 module ;
 
-export module OS.Key;
+export module OS.KeyBind;
 
 import <GLFW/glfw3.h>;
 import <functional>;
@@ -11,14 +11,25 @@ export namespace OS{
 	protected:
 		int key = GLFW_KEY_UNKNOWN;
 		int expectedState = GLFW_PRESS;
-		int bindMode = 0;
+		int expectedMode = 0;
+		bool ignoreMode{true};
 
 		std::function<void()> action = nullptr;
 
 	public:
-		KeyBind(const int key, const int expectedState, const std::function<void()>& action) : key(key),
-		                                                                                          expectedState(expectedState),
-		                                                                                          action(action) {
+		[[nodiscard]] KeyBind(const int key, const int expected_state, const int expected_mode,
+			const std::function<void()>& action)
+			: key(key),
+			expectedState(expected_state),
+			expectedMode(expected_mode),
+			action(action), ignoreMode(false) {
+		}
+
+		[[nodiscard]] KeyBind(const int key, const int expected_state,
+			const std::function<void()>& action)
+			: key(key),
+			expectedState(expected_state),
+			action(action) {
 		}
 
 		KeyBind(const int key, const int expectedState) : KeyBind(key, expectedState, nullptr) {
@@ -56,8 +67,8 @@ export namespace OS{
 			return glfwGetKey(window, key) == expectedState;
 		}
 
-		[[nodiscard]] bool activated(const int targetState) const {
-			return targetState == expectedState;
+		[[nodiscard]] bool activated(const int state, const int mode) const {
+			return state == expectedState && modeMatch(mode);
 		}
 
 		[[nodiscard]] int code() const {
@@ -68,8 +79,12 @@ export namespace OS{
 			return expectedState;
 		}
 
-		void tryRun(const int state) const {
-			if (activated(state))act();
+		void tryRun(const int state, const int mode) const {
+			if (activated(state, mode))act();
+		}
+
+		[[nodiscard]] bool modeMatch(const int mode) const {
+			return ignoreMode || (mode & 0xff) == expectedMode;
 		}
 
 		void act() const {

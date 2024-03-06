@@ -1,20 +1,5 @@
-module;
-
 export module Assets.TexturePacker;
 
-import Assets.Loader;
-import Math.StripPacker2D;
-import Graphic.Pixmap;
-import Geom.Shape.Rect_Orthogonal;
-import Geom.Vector2D;
-import GL.Texture.TextureRegionRect;
-import GL.Texture.Texture2D;
-import GL;
-// import GL.Constants;
-import Async;
-import RuntimeException;
-import OS.File;
-import OS;
 import <algorithm>;
 import <execution>;
 import <string>;
@@ -24,6 +9,22 @@ import <functional>;
 import <ranges>;
 import <unordered_map>;
 import <unordered_set>;
+
+import Assets.Loader;
+import Math.StripPacker2D;
+import Graphic.Pixmap;
+import Geom.Shape.Rect_Orthogonal;
+import Geom.Vector2D;
+
+import GL;
+import GL.Texture.Texture2D;
+import GL.Texture.TextureRegionRect;
+
+// import GL.Constants;
+import Async;
+import RuntimeException;
+import OS.File;
+import OS;
 
 using Geom::Shape::OrthoRectUInt;
 using namespace Graphic;
@@ -123,6 +124,8 @@ export namespace Assets {
 
 	class TexturePackPage : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 	protected:
+		static constexpr int TotalProgressWeight = 10;
+
 		struct MergeTask {
 			std::vector<TextureRegionPackData*> datas{};
 			Geom::Vector2D<unsigned> size{};
@@ -137,27 +140,23 @@ export namespace Assets {
 			[[nodiscard]] MergeTask() = default;
 		};
 
-		std::vector<MergeTask> toMerge{};
-
-		static constexpr int TotalWeight = 10;
-
-		std::vector<Graphic::Pixmap> mergedMaps{};
-		OS::File cacheDir{};
+		std::vector<std::unique_ptr<GL::Texture2D>> textures{};
 		std::unordered_map<std::string, TextureRegionPackData> packData{};
-		PackState state{PackState::polling};
 
+		std::vector<MergeTask> toMerge{};
+		std::vector<Graphic::Pixmap> mergedMaps{};
 		int margin = 0;
+
+		OS::File cacheDir{};
+
+		PackState state{PackState::polling};
 
 	public:
 		OrthoRectUInt texMaxBound{2048, 2048};
 		std::string pageName{};
 
-		std::vector<std::unique_ptr<GL::Texture2D>> textures{};
-
-		bool forcePack = false;
-
+		bool forcePack{false};
 		bool dynamic{false};
-
 		bool packDone{false};
 
 		const TexturePackPage* linkTarget = nullptr;
@@ -223,6 +222,10 @@ export namespace Assets {
 			return itr == packData.end() ? nullptr : &itr->second;
 		}
 
+		[[nodiscard]] const std::vector<std::unique_ptr<GL::Texture2D>>& getTextures() const {
+			return textures;
+		}
+
 		[[nodiscard]] OS::File getDataFile() const {
 
 			return cacheDir.subFile(static_cast<std::string>(pageName) + ".bin");
@@ -242,7 +245,73 @@ export namespace Assets {
 
 		TexturePackPage(const TexturePackPage& other) = delete;
 
+		TexturePackPage(TexturePackPage&& other) noexcept
+			: ext::ProgressTask<void, Assets::AssetsTaskHandler>{ std::move(other) },
+			textures{ std::move(other.textures) },
+			packData{ std::move(other.packData) },
+			toMerge{ std::move(other.toMerge) },
+			mergedMaps{ std::move(other.mergedMaps) },
+			margin{ other.margin },
+			cacheDir{ std::move(other.cacheDir) },
+			state{ other.state },
+			texMaxBound{ std::move(other.texMaxBound) },
+			pageName{ std::move(other.pageName) },
+			forcePack{ other.forcePack },
+			dynamic{ other.dynamic },
+			packDone{ other.packDone },
+			linkTarget{ other.linkTarget } {
+		}
+
 		TexturePackPage& operator=(const TexturePackPage& other) = delete;
+
+		TexturePackPage& operator=(TexturePackPage&& other) noexcept {
+			if(this == &other) return *this;
+			ext::ProgressTask<void, Assets::AssetsTaskHandler>::operator =(std::move(other));
+			toMerge     = std::move(other.toMerge);
+			mergedMaps  = std::move(other.mergedMaps);
+			cacheDir    = std::move(other.cacheDir);
+			packData    = std::move(other.packData);
+			state       = other.state;
+			margin      = other.margin;
+			texMaxBound = std::move(other.texMaxBound);
+			pageName    = std::move(other.pageName);
+			textures    = std::move(other.textures);
+			forcePack   = other.forcePack;
+			dynamic     = other.dynamic;
+			packDone    = other.packDone;
+			linkTarget  = other.linkTarget;
+			return *this;
+		}
+
+		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
+			return std::async(policy, &TexturePackPage::load, this);
+		}
+
+		[[nodiscard]] std::future<void> launch() override {
+			return launch(std::launch::async);
+		}
+
+		[[nodiscard]] std::string_view getTaskName() const override {
+			switch(state) {
+				case PackState::readingCache : return "Reading Cache";
+				case PackState::loading : return "Loading Pixmaps";
+				case PackState::packing : return "Packing TextureRegions";
+				case PackState::savingCache : return "Saving Cache";
+				case PackState::done : return "Done";
+				default: return "Unknown";
+			}
+		}
+
+		void clearData() {
+			mergedMaps.clear();
+			toMerge.clear();
+		}
+
+	protected:
+		static OrthoRectUInt& transformBound(TextureRegionPackData& d) {
+			return d.bound;
+		}
+
 
 		void copyOffset(const TexturePackPage& target) {
 			packDone = false;
@@ -295,11 +364,11 @@ export namespace Assets {
 			) {
 				taskProgress = 0;
 
-				setProgress(TotalWeight, 0, 0);
+				setProgress(TotalProgressWeight, 0, 0);
 
 				state = PackState::loading;
 				loadRequest();
-				setProgress(TotalWeight, 1, 0);
+				setProgress(TotalProgressWeight, 1, 0);
 
 				state = PackState::packing;
 				if(linkTarget != nullptr) {
@@ -310,46 +379,25 @@ export namespace Assets {
 
 				mergeTexture();
 
-				setProgress(TotalWeight, 2, 1);
+				setProgress(TotalProgressWeight, 2, 1);
 
 				state = PackState::savingCache;
 				saveCache();
-				setProgress(TotalWeight, 6, 3);
+				setProgress(TotalProgressWeight, 6, 3);
 
 				state = PackState::readingCache;
 				postToHandler(std::bind(&TexturePackPage::apply, this)).get();
-				setProgress(TotalWeight, 1, 9);
+				setProgress(TotalProgressWeight, 1, 9);
 			}
 
 			state = PackState::done;
 			setDone();
 			done = true;
-
-			mergedMaps.clear();
-		}
-
-		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
-			return std::async(policy, &TexturePackPage::load, this);
-		}
-
-		[[nodiscard]] std::future<void> launch() override {
-			return launch(std::launch::async);
-		}
-
-		[[nodiscard]] std::string_view getTaskName() const override {
-			switch(state) {
-				case PackState::readingCache : return "Reading Cache";
-				case PackState::loading : return "Loading Pixmaps";
-				case PackState::packing : return "Packing TextureRegions";
-				case PackState::savingCache : return "Saving Cache";
-				case PackState::done : return "Done";
-				default: return "Unknown";
-			}
 		}
 
 		void apply() {
 			for(auto& map : mergedMaps) {
-				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), map.release()));
+				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), std::move(map).release()));
 				// textures.back()->setScale(GL_NEAREST, GL_NEAREST);
 			}
 
@@ -371,7 +419,7 @@ export namespace Assets {
 				}));
 			}
 
-			std::ofstream stream{getDataFile().path(), std::ios::binary | std::ios::out};
+			std::ofstream stream{getDataFile().getPath(), std::ios::binary | std::ios::out};
 
 
 			stream.write(reinterpret_cast<const char*>(&pageSize), sizeof(pageSize));
@@ -391,7 +439,7 @@ export namespace Assets {
 		 * \return false if the cache data doesn't match
 		 */
 		bool readCache() {
-			std::ifstream stream{getDataFile().path(), std::ios::binary | std::ios::in};
+			std::ifstream stream{getDataFile().getPath(), std::ios::binary | std::ios::in};
 
 			size_t pageSize{0}, dataSize{0};
 			stream.read(reinterpret_cast<char*>(&pageSize), sizeof(pageSize));
@@ -437,23 +485,16 @@ export namespace Assets {
 			std::vector<TextureRegionPackData*> all{};
 
 			std::ranges::transform(packData, std::back_inserter(all),
-			                       [](auto& data)->TextureRegionPackData*{ return &data.second; });
+								   [](auto& data)->TextureRegionPackData*{ return &data.second; });
 
 			loadRemains(std::move(all), 0);
 
 			packDone = true;
 		}
 
-
-	protected:
-		static OrthoRectUInt& transformBound(TextureRegionPackData& d) {
-			return d.bound;
-		}
-
-		template <Concepts::Iterable<TextureRegionPackData*> Range>
-		void loadRemains(Range&& remains, const int currentID) {
+		void loadRemains(Concepts::Iterable auto&& remains, const int currentID) {
 			if(remains.empty())return;
-			setProgress(TotalWeight, 2, 1, packData.size() - remains.size(), packData.size());
+			setProgress(TotalProgressWeight, 2, 1, packData.size() - remains.size(), packData.size());
 
 			Math::StripPacker2D<TextureRegionPackData, unsigned int, TexturePackPage::transformBound> packer{};
 

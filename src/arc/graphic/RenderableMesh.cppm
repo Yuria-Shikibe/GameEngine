@@ -12,15 +12,14 @@ import RuntimeException;
 import <glad/glad.h>;
 
 export namespace GL {
+	template <GLenum primitiveType = GL_TRIANGLES>
 	struct RenderableMesh final : Mesh {
 	protected:
 		const Shader* shader = nullptr;
-		GLenum primitiveType = GL_TRIANGLE_FAN;
-
 	public:
 		~RenderableMesh() override = default;
 
-		explicit RenderableMesh(const Shader* const shader, const auto& init) : shader(shader){
+		explicit RenderableMesh(const Shader* const shader, Concepts::Invokable<void(RenderableMesh&)> auto&& init) : shader(shader){
 			init(*this);
 		}
 

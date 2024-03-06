@@ -7,6 +7,7 @@ import <cmath>;
 import <numeric>;
 import <ranges>;
 import <sstream>;
+import <typeinfo>;
 import <unordered_set>;
 import <glad/glad.h>;
 import <GLFW/glfw3.h>;
@@ -36,15 +37,12 @@ import Graphic.TextureAtlas;
 
 import Font;
 
-
 import Math;
 import Math.Rand;
 import Math.StripPacker2D;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import Geom.Shape.Rect_Orthogonal;
-
-import Async;
 
 import OS;
 import OS.ApplicationListenerSetter;
@@ -63,7 +61,6 @@ import Core.Batch;
 import Core.Input;
 import Core.Camera;
 import Core.Renderer;
-import OS.FileTree;
 
 import Ctrl.ControlCommands;
 import Ctrl.Constants;
@@ -72,36 +69,30 @@ import Core.Batch.Batch_Sprite;
 import Assets.Graphic;
 import Graphic.Color;
 
-import Image;
-
 import GL.Buffer.MultiSampleFrameBuffer;
 import GL.Buffer.FrameBuffer;
-import GL.Buffer.IndexBuffer;
-import GL.VertexArray;
-import GL.Mesh;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureNineRegion;
 import GL.Blending;
 import Event;
 import GlyphArrangement;
 
-import GL.Shader.Manager;
-
 import Assets.TexturePacker;
 import Assets.Loader;
 import Assets.Manager;
 
-import TimeMark;
-
+//TODO 模块分区
 import UI.Elem;
 import UI.Root;
 import UI.Table;
 import UI.Label;
 import UI.ScrollPane;
 import UI.ElemDrawer;
-
 import UI.Styles;
+
+
 import Geom.Shape.RectBox;
+import Geom.QuadTree;
 
 import Test;
 import Game.Core;
@@ -115,6 +106,7 @@ using namespace GL;
 using Geom::Vec2;
 
 std::string currentCoordText{ " " };
+//This is totally a debug shit
 std::string_view* currentCoord = new std::string_view;
 
 void setupUITest() {
@@ -221,7 +213,11 @@ int main(const int argc, char* argv[]) {
 
 	::Test::setupAudioTest();
 
-	std::unique_ptr<Game::Core> gameCore = std::make_unique<Game::Core>();
+	auto gameCore = std::make_unique<Game::Core>();
+
+	::Core::renderer->getListener().on<Event::Draw_Overlay>([&gameCore]([[maybe_unused]] const auto& e){
+		gameCore->drawOverlay();
+	});
 
 	OS::registerListener(gameCore.get());
 
@@ -257,7 +253,7 @@ int main(const int argc, char* argv[]) {
 		ptr->velocity.set(180, 0).rotate(ptr->rotation);
 		Game::EntityManage::add(ptr);
 		ptr->hitBox = box;
-		ptr->inertialMass = 100;
+		ptr->physicsBody.inertialMass = 100;
 		ptr->activate();
 	});
 
@@ -280,6 +276,16 @@ int main(const int argc, char* argv[]) {
 		ptr->activate();
 	});
 
+	Core::input->registerMouseBind(
+		Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
+		Ctrl::Mode_Shift
+		, [] {
+		Game::EntityManage::realEntities.quadTree->intersectPoint(Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
+		[](const decltype(Game::EntityManage::realEntities)::ValueType* entity) {
+			entity->controller->selected = !entity->controller->selected;
+		});
+	});
+
 	{
 		Math::Rand rand = Math::globalRand;
 		for(int i = 0; i < 300; ++i) {
@@ -294,7 +300,7 @@ int main(const int argc, char* argv[]) {
 			ptr->position.set(rand.range(20000), rand.range(20000));
 			Game::EntityManage::add(ptr);
 			ptr->hitBox = box;
-			ptr->inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
+			ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
 			ptr->velocity.set(1, 0).rotate(rand.random(360));
 			ptr->activate();
 		}
@@ -325,7 +331,7 @@ int main(const int argc, char* argv[]) {
 
 		Draw::setLineStroke(5);
 		Draw::color(Colors::GRAY);
-		Game::EntityManage::realEntities.quadTree->each([](Geom::QuadTreeF<Game::RealityEntity>* t) {
+		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
 			Draw::rectLine(t->getBoundary());
 		});
 		e.renderer->frameEnd(Assets::PostProcessors::bloom);
@@ -333,11 +339,9 @@ int main(const int argc, char* argv[]) {
 
 	{
 		Core::renderer->getListener().on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& e) {
-			// e.renderer->frameBegin(&multiSample);
 			Draw::meshBegin(Assets::Meshes::coords);
 			Draw::meshEnd(true);
-			// e.renderer->frameEnd(Assets::PostProcessors::blendMulti);
-			//
+
 			e.renderer->frameBegin(&frameBuffer);
 			e.renderer->frameBegin(&multiSample);
 			//
@@ -360,10 +364,10 @@ int main(const int argc, char* argv[]) {
 				mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()),
 								  static_cast<float>(Core::renderer->getHeight()));
 
-				Core::overlayBatch->beginProjection(mat);
+				Core::overlayBatch->beginTempProjection(mat);
 				Draw::color();
 
-				ss.str("");
+				ss.str(""s);
 				ss << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " <<
 						cameraPos.getY() << ") | " << std::to_string(OS::getFPS());
 				ss << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
@@ -385,11 +389,11 @@ int main(const int argc, char* argv[]) {
 				Draw::setLineStroke(4);
 				Draw::lineSquare(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
-				Core::overlayBatch->endProjection();
+				Core::overlayBatch->endTempProjection();
 			}
 
 			Draw::flush();
-			Draw::meshEnd(Core::overlayBatch->getMesh(), false);
+			Draw::meshEnd(Core::overlayBatch->getMesh());
 
 			e.renderer->frameEnd(Assets::PostProcessors::blendMulti);
 			e.renderer->frameEnd(Assets::PostProcessors::bloom);

@@ -1,27 +1,27 @@
-// ReSharper disable CppDFAUnreachableCode
 module;
 
 export module Game.Entity.RealityEntity;
 
 import Concepts;
 
-import Game.Pool;
-
 import Game.Entity;
-import Game.Entity.BaseEntity;
 import Game.Entity.Drawable;
 import Game.Entity.Healthed;
 import Game.Entity.Factional;
 import Game.Entity.PosedEntity;
-import Game.Entity.Collidable;
+import Game.Entity.PhysicsAttribute;
+import Game.Entity.Controller;
 import Game.Faction;
 
 import Geom.Shape.RectBox;
+import Geom.Shape.Rect_Orthogonal;
 import Geom.Matrix3D;
 import Geom.Vector2D;
 import Geom;
 
 import RuntimeException;
+
+import Math;
 
 import <algorithm>;
 import <execution>;
@@ -47,17 +47,11 @@ export namespace Game {
 		static constexpr float accelerationLimit = 8000;
 		static constexpr float speedLimit = 10000;
 
-		float inertialMass = 1000;
+		//Physics Attribute
+		float collisionThickness = 0;
+		PhysicsAttribute_Rigid physicsBody{};
 
-		float rotationalInertiaScale = 1 / 12.0f;
-
-		/** [0, 1]*/
-		float frictionCoefficient = 0.25f;
-
-		float restitution = 0.0f;
-
-		/** Used For Force Correction*/
-		float collideForceScale = 1.0f;
+		std::unique_ptr<Controller> controller{std::make_unique<Controller>(this)};
 
 		Geom::Vec2 acceleration{};
 		Geom::Vec2 velocity{};
@@ -95,27 +89,30 @@ export namespace Game {
 		Geom::Shape::OrthoRectFloat maxCollisionBound{};
 
 		struct Trace {
-			mutable std::vector<Geom::QuadBox> contiounsTraces{20};
-			mutable std::mutex traceLock{};
+			std::vector<Geom::QuadBox> contiounsTraces{20};
 			using sizeType = decltype(contiounsTraces)::size_type;
-			mutable std::atomic<sizeType> clampSize{0};
+			std::atomic<sizeType> clampSize{0};
 
-			void clampTo(sizeType index) const {
+			void clampTo(sizeType index){
 				++index;
 				if(index> clampSize)return;
 				clampSize = index;
 			}
 
-			void resize() const {
+			void resize(){
 				clampSize = contiounsTraces.size();
 			}
 
 			[[nodiscard]] sizeType size() const{
 				return clampSize;
 			}
+
+			[[nodiscard]] bool empty() const{
+				return clampSize == 0;
+			}
 		};
 
-		Trace trace{};
+		mutable Trace trace{};
 
 		float CCD_activeThresholdSpeed2 = 250; //TODO also relative to size and frames!
 
@@ -125,11 +122,11 @@ export namespace Game {
 			return len2 >  CCD_activeThresholdSpeed2/* || len2 > hitBox.sizeVec2.length2() * 0.5f*/;
 		}
 
-		[[nodiscard]] virtual bool calrectAvgIntersections() const {
+		[[nodiscard]] virtual bool requiresCollisionIntersection() const {
 			return true;
 		}
 
-		[[nodiscard]] virtual bool calPhysicsSimulate() const {
+		[[nodiscard]] virtual bool enablePhysics() const {
 			return true;
 		}
 
@@ -177,9 +174,9 @@ export namespace Game {
 		virtual Geom::Vec2& transformToGlobal(Geom::Vec2& vec) const {
 			vec *= localToSuper;
 
-			auto current = this;
+			const auto* current = this;
 
-			while(current) {
+			while(current != nullptr) {
 				parent->transformToGlobal(vec);
 				current = current->parent;
 			}
@@ -187,14 +184,14 @@ export namespace Game {
 			return vec;
 		}
 
-		void update(float deltaTick) override {
+		void update(const float deltaTick) override {
 			updateMovement(deltaTick);
 
-			checkStateValid(this);
+			// checkStateValid(this);
 		}
 
 		virtual void updateCollision(const float delatTick) {
-			if(!calPhysicsSimulate() || intersectedPointWith.empty())return;
+			if(!enablePhysics() || intersectedPointWith.empty())return;
 
 			if(enableCCD()) { //Pull Back
 				position = hitBox.originPoint;
@@ -208,16 +205,27 @@ export namespace Game {
 			position = hitBox.originPoint;
 		}
 
+		virtual bool isOverrideCollisionTo(const Game::RealityEntity* object) const {
+			return false;
+		}
+
+		virtual void overrideCollisionTo(Game::RealityEntity* object) const {
+
+		}
+
 		[[nodiscard]] constexpr float getRotationalInertia() const {
-			return hitBox.getRotationalInertia(inertialMass, rotationalInertiaScale);
+			return hitBox.getRotationalInertia(physicsBody.inertialMass, physicsBody.rotationalInertiaScale);
 		}
 
 		[[nodiscard]] constexpr Geom::Vec2 collideVelAt(Geom::Vec2 dst) const {
 			return velocityCollision + dst.cross(angularVelocity * Math::DEGREES_TO_RADIANS);
 		}
 
+		/**
+		 * \param object To collide with, when [this] as the true object
+		 */
 		virtual bool ignoreCollisionTo(const Game::RealityEntity* object) const {
-			return inertialMass / object->inertialMass < 0.0005f;
+			return !enablePhysics() || physicsBody.inertialMass / object->physicsBody.inertialMass < 0.0005f;
 		}
 
 		/*virtual*/ void intersectionCorrection(Geom::Vec2& intersection) const {
@@ -228,6 +236,10 @@ export namespace Game {
 			//Pull in to correct calculation
 
 			if(object->ignoreCollisionTo(this))return;
+
+			if(object->isOverrideCollisionTo(this)) {
+				object->overrideCollisionTo(this);
+			}
 
 			intersectionCorrection(intersection);
 
@@ -270,19 +282,19 @@ export namespace Game {
 			Vec2 relVelNormal{relVel};
 			relVelNormal.project(collisionNormalVec);
 
-			const float scale = 1 / inertialMass + 1 / object->inertialMass;
+			const float scale = 1 / physicsBody.inertialMass + 1 / object->physicsBody.inertialMass;
 
 			const float subjectRotationalInertia = this->getRotationalInertia();
 			const float objectRotationalInertia = object->getRotationalInertia();
 
 			Vec2 impulseNormal{relVelNormal};
-			impulseNormal *= -(1 + restitution) / (scale +
+			impulseNormal *= -(1 + physicsBody.restitution) / (scale +
 				Math::sqr(dstToObject.cross(collisionNormalVec)) / objectRotationalInertia +
 				Math::sqr(dstToSubject.cross(collisionNormalVec)) / subjectRotationalInertia);
 
 			const Vec2 relVelTangent = relVel - relVelNormal;
 			const Vec2 impulseTangent = -relVelTangent.sign().cross(std::min(
-				frictionCoefficient * impulseNormal.length(),
+				physicsBody.frictionCoefficient * impulseNormal.length(),
 				relVelTangent.length() / (scale +
 				Math::sqr(dstToObject.cross(collisionTangentVec)) / objectRotationalInertia +
 				Math::sqr(dstToSubject.cross(collisionTangentVec)) / subjectRotationalInertia)
@@ -294,19 +306,19 @@ export namespace Game {
 
 			if(relVel.dot(additional) < 0){
 				additional.inv();
-				if(velocityCollision.length() * inertialMass < object->velocityCollision.length() * object->inertialMass) {
+				if(velocityCollision.length() * physicsBody.inertialMass < object->velocityCollision.length() * object->physicsBody.inertialMass) {
 					auto correction = (hitBox.originPoint - object->hitBox.originPoint).setLength2(hitBox.sizeVec2.length());
-					hitBox.originPoint.add(correction.scl(0.15f));
-					velocity.add(correction.scl(0.15f));
+					hitBox.originPoint.add(correction.scl(0.05f));
+					velocity.add(correction.scl(0.185f));
 				}
 			}
 
 			// additional.limit2(40 * inertialMass * inertialMass);
 
-			acceleration += additional / inertialMass;
+			acceleration += additional / physicsBody.inertialMass;
 
 
-			velocity.add(additional * (delatTick * veloAddScale / inertialMass));
+			velocity.add(additional * (delatTick * veloAddScale / physicsBody.inertialMass));
 			//
 			angularAcceleration += dstToSubject.cross(additional) / subjectRotationalInertia * Math::RADIANS_TO_DEGREES;
 		}
@@ -363,7 +375,7 @@ export namespace Game {
 		}
 
 		void positionCorrectionCCD(const Geom::Vec2 lastPosition_V0) const {
-			hitBox.originPoint += (lastPosition_V0 - hitBox.v0);
+			hitBox.originPoint += lastPosition_V0 - hitBox.v0;
 		}
 
 		virtual void drawChildren() {
@@ -376,23 +388,14 @@ export namespace Game {
 			return false;
 		}
 
-		static const Geom::Shape::OrthoRectFloat& getHitBoound(const RealityEntity* reality_entity) {
-			if(reality_entity->enableCCD()) {
-				return reality_entity->maxCollisionBound;
-			}
-			return reality_entity->hitBox.maxOrthoBound;
-		}
-
 		//TODO abstract these to other classes
 		//TODO is this a good idea? this actually modifies many state of the entities
 		static bool exactInterscet(const RealityEntity* subject, const RealityEntity* object) {
-			if(subject->deletable() || object->deletable() || subject == object)return false;
+			const bool needInterscetPointCalculation_subject = subject->requiresCollisionIntersection();
+			const bool needInterscetPointCalculation_object = subject->requiresCollisionIntersection();
 
-			const bool needInterscetPointCalculation_subject = subject->calrectAvgIntersections();
-			const bool needInterscetPointCalculation_object = subject->calrectAvgIntersections();
-
-			const bool subjectEnablesCCD = subject->enableCCD() && !subject->trace.contiounsTraces.empty();
-			const bool objectEnablesCCD = object->enableCCD() && !object->trace.contiounsTraces.empty();
+			const bool subjectEnablesCCD = subject->enableCCD() && !subject->trace.empty();
+			const bool objectEnablesCCD = object->enableCCD() && !object->trace.empty();
 
 			//TODO why this performace so bad? Debug Mode Reason?
 			// if(const auto itr = object->intersectedPointWith.find(subject); itr != object->intersectedPointWith.end()) {
@@ -427,7 +430,6 @@ export namespace Game {
 						subject->positionCorrectionCCD(subject->trace.contiounsTraces.at(i).v0);
 						object->positionCorrectionCCD(object->trace.contiounsTraces.at(objectIndex).v0);
 
-
 						return true;
 					}
 				}
@@ -452,8 +454,8 @@ export namespace Game {
 						if(needInterscetPointCalculation_subject || needInterscetPointCalculation_object) {
 							const Geom::Vec2 intersection = Geom::rectAvgIntersection(currentBox, object->hitBox);
 
-							const auto subject_ = swapped ? object : subject;
-							const auto object_  = swapped ? subject : object;
+							const auto *const subject_ = swapped ? object : subject;
+							const auto *const object_  = swapped ? subject : object;
 
 							if(needInterscetPointCalculation_subject) {
 								subject_->addIntersection(object_, intersection);
@@ -486,8 +488,21 @@ export namespace Game {
 			return false;
 		}
 
+		static const Geom::Shape::OrthoRectFloat& getHitBoound(const RealityEntity* reality_entity) {
+			if(reality_entity->enableCCD()) {
+				return reality_entity->maxCollisionBound;
+			}
+			return reality_entity->hitBox.maxOrthoBound;
+		}
+
 		static bool roughInterscet(const RealityEntity* subject, const RealityEntity* object) {
+			if(Math::abs(subject->layer - object->layer) > subject->collisionThickness + subject->collisionThickness)return false;
+			if(subject->deletable() || object->deletable() || subject == object)return false;
 			return subject->hitBox.overlapRough(object->hitBox);
+		}
+
+		static bool pointInterscet(const RealityEntity* subject, const Geom::Vec2 point) {
+			return subject->hitBox.contains(point);
 		}
 
 		static bool within(const float dst, const RealityEntity* subject, const RealityEntity* object) {
@@ -495,7 +510,7 @@ export namespace Game {
 		}
 
 		static void checkStateValid(const RealityEntity* subject) {
-			return;
+			// return;
 #ifndef _DEBUG
 			return;
 #endif

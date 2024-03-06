@@ -362,7 +362,6 @@ export namespace UI {
 
 		[[nodiscard]] Table() {
 			touchbility = TouchbilityFlags::childrenOnly;
-
 			color.a = 0.5f;
 		}
 
@@ -399,9 +398,9 @@ export namespace UI {
 			return maxElemPerRow;
 		}
 
-		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T&)> Func = nullptr_t>
-		LayoutCell& add(Func&& func = nullptr, const size_t depth = std::numeric_limits<size_t>::max()) {
-			LayoutCell& cell = cells.emplace_back(addChildren(std::make_unique<T>(), depth));
+		template <Concepts::Derived<Elem> T>
+		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func = nullptr, const size_t depth = std::numeric_limits<size_t>::max()) {
+			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
 
 			if(func) {

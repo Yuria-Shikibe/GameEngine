@@ -1,8 +1,6 @@
-module;
-
 export module Game.Entity.SpaceCraft;
 
-export import Game.Entity.RealityEntity;
+import Game.Entity.RealityEntity;
 
 import Game.Entity.EntityManager;
 import Graphic.Color;
@@ -12,6 +10,7 @@ import Math;
 import OS;
 import <iostream>;
 import <ranges>;
+import <unordered_map>;
 
 import Core;
 import Geom;
@@ -28,6 +27,8 @@ export namespace Game {
 			intersected = false;
 
 			intersectedPointWith.clear();
+
+			//TODO is this really good?
 			if(EntityManage::realEntities.quadTree->intersectAny(this)) {
 				intersected = true;
 			}
@@ -55,7 +56,9 @@ export namespace Game {
 		void drawDebug() const override {
 			using namespace Graphic;
 			Draw::alpha();
-			if(intersected)Draw::color(Colors::AQUA);
+			if(controller->selected) {
+				Draw::color(Colors::TAN);
+			}else if(intersected)Draw::color(Colors::AQUA);
 			else Draw::color(Colors::LIGHT_GRAY);
 			Draw::setLineStroke(2);
 			Draw::quad(Draw::defaultTexture, hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
@@ -71,22 +74,24 @@ export namespace Game {
 			Draw::alpha();
 			Draw::color(Colors::RED);
 
-			if(intersected)for(const auto& vec2 : intersectedPointWith | std::views::values) {
+			if(intersected)for(const auto& vec2 : intersectedPointWith | std::ranges::views::values) {
 				Draw::rect(vec2.x - 2, vec2.y - 2, 4, 4);
 			}
 
+			Draw::setLineStroke(1.0f);
+			Draw::color(Colors::MAGENTA);
+			Draw::lineAngle(position.x, position.y, rotation, hitBox.sizeVec2.length());
+			
+			Draw::setLineStroke(2.0f);
 			const Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
 			for(int i = 0; i < 4; ++i) {
 				Draw::color(colors[i]);
 				Draw::rect(hitBox[i].x - 2, hitBox[i].y - 2, 4, 4);
-			}
 
-			for(int i = 0; i < 4; ++i) {
-				Vec2 begin = hitBox[i];
-				Vec2 end = hitBox[(i + 1) % 4];
-				Vec2 center = (begin + end) / 2;
-				Draw::color(colors[i]);
-				Draw::setLineStroke(2.0f);
+				const Vec2 begin = hitBox[i];
+				const Vec2 end = hitBox[(i + 1) % 4];
+				const Vec2 center = (begin + end) / 2;
+
 				Draw::line(center, center + hitBox.getNormalVec(i).normalize().scl(25));
 			}
 			//

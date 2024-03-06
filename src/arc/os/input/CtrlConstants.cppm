@@ -15,6 +15,11 @@ export namespace Ctrl {
 	constexpr int Act_Continuous = 10;
 	constexpr int Act_DoubleClick = 11;
 
+	constexpr int Mode_Shift = 0b0000'0001;
+	constexpr int Mode_Ctrl = 0b0000'0010;
+	constexpr int Mode_Alt = 0b0000'0100;
+	constexpr int Mode_Win = 0b0000'1000;
+
 	constexpr float multiPressMaxSpaceing = 0.25f * 60; //ticks!
 	constexpr float doublePressMaxSpaceing = 0.25f * 60; //ticks!
 

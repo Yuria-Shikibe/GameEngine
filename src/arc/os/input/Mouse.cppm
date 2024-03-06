@@ -1,13 +1,8 @@
-//
-// Created by Matrix on 2023/11/19.
-//
+module;
 
-module ;
+export module OS.MouseBind;
 
-#include <GLFW/glfw3.h>
-
-export module OS.Mouse;
-
+import <GLFW/glfw3.h>;
 import <functional>;
 
 export namespace OS{
@@ -15,15 +10,25 @@ export namespace OS{
 	protected:
 		int button = 0;
 		int expectedState = 1;
+		int expectedMode = 0;
+		bool ignoreMode{true};
 
 		std::function<void()> action = nullptr;
 
-		int mod = 0;
-
 	public:
-		MouseBind(const int button, const int expectedState, const std::function<void()>& action) : button(button),
-		                                                                                               expectedState(expectedState),
-		                                                                                               action(action) {
+		[[nodiscard]] MouseBind(const int button, const int expected_state, const int expected_mode,
+			const std::function<void()>& action)
+			: button(button),
+			expectedState(expected_state),
+			expectedMode(expected_mode),
+			action(action), ignoreMode(false) {
+		}
+
+		[[nodiscard]] MouseBind(const int button, const int expected_state,
+			const std::function<void()>& action)
+			: button(button),
+			expectedState(expected_state),
+			action(action) {
 		}
 
 		MouseBind(const int button, const std::function<void()>& action) : MouseBind(button, GLFW_PRESS, action) {}
@@ -36,20 +41,20 @@ export namespace OS{
 			return expectedState;
 		}
 
-		[[nodiscard]] int getMod() const {
-			return mod;
-		}
-
 		bool activated(GLFWwindow* window) const {
 			return glfwGetMouseButton(window, button) == expectedState;
 		}
 
-		[[nodiscard]] bool activated(const int state) const {
-			return expectedState == state;
+		[[nodiscard]] bool activated(const int state, const int mode) const {
+			return expectedState == state && modeMatch(mode);
 		}
 
-		void tryRun(const int state) const {
-			if (activated(state))action();
+		[[nodiscard]] bool modeMatch(const int mode) const {
+			return ignoreMode || (mode & 0xff) == expectedMode;
+		}
+
+		void tryRun(const int state, const int mode) const {
+			if (activated(state, mode))action();
 		}
 
 		void act() const {

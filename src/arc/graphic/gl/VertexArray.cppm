@@ -102,7 +102,7 @@ export namespace GL{
 			glBindVertexArray(0);
 		}
 
-		void active(/*const VertexBuffer& vertices*/) const{
+		void applyLayout(/*const VertexBuffer& vertices*/) const{
 			bind();
 			// vertices.bind();
 

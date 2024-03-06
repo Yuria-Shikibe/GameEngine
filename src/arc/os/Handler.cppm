@@ -7,12 +7,16 @@ import OS;
 
 export namespace OS {
 	struct OSTaskHandler : ext::TaskHandler{
-		template <Concepts::Invokable<void()> Func>
-		void operator()(Func&& task, std::promise<void>&& promise) const {
-
+		void operator()(Concepts::Invokable<void()> auto&& func, std::promise<void>&& promise) const {
 			::OS::postAsync(
-				std::forward<Func>(task),
+				std::forward<decltype(func)>(func),
 				std::forward<std::promise<void>>(promise)
+			);
+		}
+
+		std::future<void> operator()(Concepts::Invokable<void()> auto&& func) const {
+			return ::OS::postAsync(
+				std::forward<decltype(func)>(func)
 			);
 		}
 

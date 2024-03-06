@@ -4,12 +4,14 @@ export module GL.Texture.Texture2D;
 
 import Graphic.Resizeable;
 import RuntimeException;
+import Image;
+import OS.File;
+
 import <string>;
 import <ostream>;
 import <memory>;
 import <glad/glad.h>;
-import Image;
-import OS.File;
+
 
 export namespace GL{
 	enum TexParams{
@@ -47,7 +49,7 @@ export namespace GL{
 		//TODO is this really necessay?
 		std::string texName{"null"};
 
-		std::unique_ptr<unsigned char, STBI_DataDeleter> localData{nullptr};
+		std::unique_ptr<unsigned char[], STBI_DataDeleter> localData{nullptr};
 
 		Texture2D() = default;
 
@@ -108,7 +110,7 @@ export namespace GL{
 			localData.reset(nullptr);
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override;
+		void resize(unsigned int w, unsigned int h) override;
 
 		[[nodiscard]] bool valid() const {
 			return localData != nullptr;
@@ -160,7 +162,7 @@ export namespace GL{
 			glBindTexture(targetFlag, 0);
 		}
 
-		[[nodiscard]] size_t dataSize() const { //How many bytes!
+		[[nodiscard]] unsigned dataSize() const { //How many bytes!
 			if(!localData)return 0;
 
 			return width * height * bpp;
@@ -172,7 +174,7 @@ export namespace GL{
 			return textureID;
 		}
 
-		void setID(const GLuint id){
+		void setID(const GLuint id){ // NOLINT(*-convert-member-functions-to-static)
 			textureID = id;;
 		}
 	};

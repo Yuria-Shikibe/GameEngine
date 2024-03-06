@@ -11,11 +11,11 @@ namespace Graphic {
 	}
 
 	void Draw::beginPorj(const Matrix3D& mat) {
-		Core::overlayBatch->beginProjection(mat);
+		Core::overlayBatch->beginTempProjection(mat);
 	}
 
 	void Draw::endPorj() {
-		Core::overlayBatch->endProjection();
+		Core::overlayBatch->endTempProjection();
 	}
 
 	void Draw::blend(const Blending& blending) {

@@ -9,6 +9,7 @@ export namespace Game {
 	class PosedEntity : public Geom::Position2D{
 	public:
 		Geom::Vec2 position{};
+		float layer{0};
 
 		~PosedEntity() override = default;
 

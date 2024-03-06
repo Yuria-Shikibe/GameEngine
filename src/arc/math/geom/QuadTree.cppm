@@ -4,6 +4,7 @@ module;
 export module Geom.QuadTree;
 
 export import Geom.Shape.Rect_Orthogonal;
+export import Geom.Vector2D;
 
 import <vector>;
 import Concepts;
@@ -21,14 +22,20 @@ export namespace Geom {
 		using Rect = Rect_Orthogonal<T>;
 
 	public:
+		using ValueType = Cont;
 		using SubTree = std::array<QuadTree *, 4>;
 		using Obtainer = std::function<const Rect&(const Cont*)>;
 		using InersectCheck = std::function<bool(const Cont*, const Cont*)>;
+
+		using PointType = Geom::Vector2D<T>;
+		using InersectPointCheck = std::function<bool(const Cont*, Vec2)>;
 
 	protected:
 		Obtainer transformer{ nullptr };
 		InersectCheck interscetExactFunc{ nullptr };
 		InersectCheck interscetRoughFunc{ nullptr };
+
+		InersectPointCheck interscetPointFunc{ nullptr };
 		// The boundary of this node
 		Rect boundary{};
 
@@ -81,6 +88,10 @@ export namespace Geom {
 			this->interscetExactFunc = interscetRoughJudger;
 		}
 
+		void setPointInterscet(const InersectPointCheck& interscetPointJudger) {
+			this->interscetPointFunc = interscetPointJudger;
+		}
+
 		explicit QuadTree(unsigned int maxCount) {
 			rectangles.reserve(maxCount);
 		}
@@ -89,8 +100,14 @@ export namespace Geom {
 			rectangles.reserve(maximumItemCount);
 		}
 
-		QuadTree(const Rect& boundary, const Obtainer& transformer, const InersectCheck& interectExactJudger,
-		         unsigned int maxCount) : transformer(transformer), interscetExactFunc(interectExactJudger),
+		QuadTree(const Rect& boundary, const Obtainer& transformer, unsigned int maxCount,
+			const InersectCheck& interectRoughJudger,
+			const InersectCheck& interectExactJudger,
+			const InersectPointCheck& interectPointJudger
+		) : transformer(transformer),
+		interscetExactFunc(interectExactJudger),
+		interscetRoughFunc(interectRoughJudger),
+		interscetPointFunc(interectPointJudger),
 			boundary(boundary), maximumItemCount(maxCount) {
 			rectangles.reserve(maxCount);
 		}
@@ -188,6 +205,31 @@ export namespace Geom {
 			return false;
 		}
 
+		bool intersectAny(const Vec2 point) {
+			if(!this->inbound(point)) {
+				return false;
+			}
+
+			if(std::ranges::any_of(rectangles, [this, point](const Cont* cont) {
+				return this->intersectWith(cont, point);
+			})) {
+				return true;
+			}
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				//TODO uses direction vector to get more possible results?
+				return
+						topLeft->intersectAny(point) ||
+						topRight->intersectAny(point) ||
+						bottomLeft->intersectAny(point) ||
+						bottomRight->intersectAny(point);
+			}
+
+			// Otherwise, the rectangle does not overlap with any rectangle in the quad tree
+			return false;
+		}
+
 		template <Concepts::Invokable<void(Cont*)> Pred>
 		void intersect(const Cont* object, Pred&& pred) {
 			if(!this->inbound(object)) return;
@@ -200,9 +242,28 @@ export namespace Geom {
 				bottomRight->intersect(object, pred);
 			}
 
-			std::ranges::for_each(rectangles, [this, object, pred = std::forward<Pred>(pred)](Cont* cont) {
+			std::ranges::for_each(rectangles, [this, object, pred = std::forward<Pred>(pred)](const Cont* cont) {
 				if(this->isInersectedBetween(object, cont)) {
-					pred(cont);
+					pred(const_cast<Cont*>(cont));
+				}
+			});
+		}
+
+		template <Concepts::Invokable<void(Cont*)> Pred>
+		void intersectPoint(const Vec2 point, Pred&& pred) {
+			if(!this->inbound(point)) return;
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				topLeft->intersectPoint(point, std::forward<Pred>(pred));
+				topRight->intersectPoint(point, std::forward<Pred>(pred));
+				bottomLeft->intersectPoint(point, std::forward<Pred>(pred));
+				bottomRight->intersectPoint(point, std::forward<Pred>(pred));
+			}
+
+			std::for_each(rectangles.begin(), rectangles.end(), [this, point, pred = std::forward<Pred>(pred)](const Cont* cont) {
+				if(this->intersectWith(cont, point)) {
+					pred(const_cast<Cont*>(cont));
 				}
 			});
 		}
@@ -219,9 +280,9 @@ export namespace Geom {
 				bottomRight->within(object, dst, pred);
 			}
 
-			std::ranges::for_each(rectangles, [this, object, dst, pred = std::forward<Pred>(pred)](Cont* cont) {
+			std::ranges::for_each(rectangles, [this, object, dst, pred = std::forward<Pred>(pred)](const Cont* cont) {
 				if(this->obtainBound(cont).getCenter().within(this->obtainBound(object), dst)) {
-					pred(cont);
+					pred(const_cast<Cont*>(cont));
 				}
 			});
 		}
@@ -240,20 +301,28 @@ export namespace Geom {
 
 			bool intersected = false;
 
-			std::ranges::for_each(rectangles, [this, object, &pred, &intersected](Cont* cont) {
+			std::ranges::for_each(rectangles, [this, object, pred = std::forward<Pred>(pred), &intersected](Cont* cont) {
 				if(intersected) return;
 				if(this->isInersectedBetween(object, cont)) {
 					intersected = true;
-					pred(cont);
+					pred(const_cast<Cont*>(cont));
 				}
 			});
 
 			return intersected;
 		}
 
+		bool intersectWith(const Cont* object, const Vec2 point) {
+			return this->obtainBound(object).containsPos_edgeExclusive(point) && (!static_cast<bool>(interscetPointFunc) || interscetPointFunc(object, point));
+		}
+
 		bool inbound(const Cont* object) {
 			if(strict) return boundary.contains(obtainBound(object));
 			return boundary.overlap(obtainBound(object));
+		}
+
+		bool inbound(const Vec2 object) {
+			return boundary.containsPos_edgeExclusive(object);
 		}
 
 		bool withinBound(const Cont* object, const T dst) {
@@ -321,40 +390,40 @@ export namespace Geom {
 			leaf = false;
 			if(topLeft != nullptr) return;
 
-			subTreelock.lock();
+			{
+				std::lock_guard guard{subTreelock};
+				const T x = boundary.getSrcX();
+				const T y = boundary.getSrcY();
+				const T w = boundary.getWidth() / static_cast<T>(2);
+				const T h = boundary.getHeight() / static_cast<T>(2);
 
-			const T x = boundary.getSrcX();
-			const T y = boundary.getSrcY();
-			const T w = boundary.getWidth() / static_cast<T>(2);
-			const T h = boundary.getHeight() / static_cast<T>(2);
+				const Rect bl{ x, y, w, h };
+				const Rect br{ x + w, y, w, h };
+				const Rect tl{ x, y + h, w, h };
+				const Rect tr{ x + w, y + h, w, h };
 
-			const Rect bl{ x, y, w, h };
-			const Rect br{ x + w, y, w, h };
-			const Rect tl{ x, y + h, w, h };
-			const Rect tr{ x + w, y + h, w, h };
-
-			topLeft     = std::make_unique<QuadTree>(tl, transformer, interscetExactFunc, maximumItemCount);
-			topRight    = std::make_unique<QuadTree>(tr, transformer, interscetExactFunc, maximumItemCount);
-			bottomLeft  = std::make_unique<QuadTree>(bl, transformer, interscetExactFunc, maximumItemCount);
-			bottomRight = std::make_unique<QuadTree>(br, transformer, interscetExactFunc, maximumItemCount);
-
-			subTreelock.unlock();
+				topLeft     = std::make_unique<QuadTree>(tl, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				topRight    = std::make_unique<QuadTree>(tr, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				bottomLeft  = std::make_unique<QuadTree>(bl, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				bottomRight = std::make_unique<QuadTree>(br, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+			}
 		}
 
 		void unsplit() {
 			if(isLeaf()) return;
 			leaf = true;
 
-			containerlock.lock();
-			rectangles.insert(rectangles.end(), std::make_move_iterator(topLeft->rectangles.begin()),
-			                  std::make_move_iterator(topLeft->rectangles.end()));
-			rectangles.insert(rectangles.end(), std::make_move_iterator(topRight->rectangles.begin()),
-			                  std::make_move_iterator(topRight->rectangles.end()));
-			rectangles.insert(rectangles.end(), std::make_move_iterator(bottomLeft->rectangles.begin()),
-			                  std::make_move_iterator(bottomLeft->rectangles.end()));
-			rectangles.insert(rectangles.end(), std::make_move_iterator(bottomRight->rectangles.begin()),
-			                  std::make_move_iterator(bottomRight->rectangles.end()));
-			containerlock.unlock();
+			{
+				std::lock_guard guard{containerlock};
+				rectangles.insert(rectangles.end(), std::make_move_iterator(topLeft->rectangles.begin()),
+								 std::make_move_iterator(topLeft->rectangles.end()));
+				rectangles.insert(rectangles.end(), std::make_move_iterator(topRight->rectangles.begin()),
+								  std::make_move_iterator(topRight->rectangles.end()));
+				rectangles.insert(rectangles.end(), std::make_move_iterator(bottomLeft->rectangles.begin()),
+								  std::make_move_iterator(bottomLeft->rectangles.end()));
+				rectangles.insert(rectangles.end(), std::make_move_iterator(bottomRight->rectangles.begin()),
+								  std::make_move_iterator(bottomRight->rectangles.end()));
+			}
 
 			topLeft->clearItemsOnly();
 			topRight->clearItemsOnly();

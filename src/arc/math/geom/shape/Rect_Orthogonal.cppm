@@ -6,7 +6,6 @@ import <vector>;
 import Concepts;
 import Math;
 import Geom.Vector2D;
-import Geom.Shape;
 import <ostream>;
 
 export namespace Geom::Shape{

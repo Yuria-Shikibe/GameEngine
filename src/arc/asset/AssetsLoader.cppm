@@ -38,7 +38,7 @@ export namespace Assets{
 
 		[[nodiscard]] AssetsTaskHandler() = default;
 
-		void operator()(std::function<void()>&& task, std::promise<void>&& promise) const;
+		std::future<void> operator()(Concepts::Invokable<void()> auto&& func) const;
 	};
 
 	class AssetsLoader{
@@ -51,7 +51,7 @@ export namespace Assets{
 		ext::Timestamper timer{};
 		std::unordered_map<Task, TaskFuture> tasks{};
 
-		std::unique_ptr<Handler> postHandler{nullptr};
+		std::unique_ptr<Handler> postHandler{std::make_unique<Handler>(this)};
 
 		mutable std::stringstream sstream{};
 
@@ -59,13 +59,13 @@ export namespace Assets{
 		bool done{false};
 
 	public:
-		[[nodiscard]] AssetsLoader() : postHandler(std::make_unique<Handler>(this)) {
+		[[nodiscard]] AssetsLoader() {
 			timer.mark();
 		}
 
 		~AssetsLoader()  = default;
 
-		std::queue<std::pair<std::function<void()>, std::promise<void>>> postedTasks{};
+		std::queue<std::packaged_task<void()>> postedTasks{};
 
 		void begin() {
 			// std::cout << "Assets Load Begin" << std::endl;
@@ -133,20 +133,16 @@ export namespace Assets{
 					this->postHandler->lock.unlock();
 					break;
 				}
-				auto [task, promise] = std::move(postedTasks.front());
+				auto task = std::move(postedTasks.front());
 				postedTasks.pop();
 
 				this->postHandler->lock.unlock();
 
-				if(!task) {
-					throw ext::RuntimeException{"Illegally Post Empty Functions!"};
-				}
-
 				try {
 					task();
-				}catch(...){throw std::current_exception();}
-
-				promise.set_value();
+				}catch(...){
+					throw std::current_exception();
+				}
 
 				duration = timer.toMark(1);
 			}
@@ -180,4 +176,10 @@ export namespace Assets{
 			return sstream.view();
 		}
 	};
+
+	std::future<void> AssetsTaskHandler::operator()(Concepts::Invokable<void()> auto&& func) const {
+		std::lock_guard guard{this->lock};
+		std::packaged_task<void()>& t = target->postedTasks.emplace(std::forward<decltype(func)>(func));
+		return t.get_future();
+	}
 }

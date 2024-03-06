@@ -8,7 +8,7 @@ import <vector>;
 import <execution>;
 import Concepts;
 import Math;
-import Interpolation;
+import Math.Interpolation;
 
 import Geom.Vector2D;
 
@@ -295,9 +295,9 @@ export namespace Geom {
 	}
 
 
-	Vec2 arrive(const Position2D& pos, const Position2D& target, const Vec2& curVel, const float radius,
+	Vec2 arrive(const Vec2 pos, const Vec2 target, const Vec2& curVel, const float radius,
 	            const float tolerance, const float speed, const float smoothTime) {
-		return arrive(pos.getX(), pos.getY(), target.getX(), target.getY(), curVel, radius, tolerance, speed,
+		return arrive(pos.x, pos.y, target.x, target.y, curVel, radius, tolerance, speed,
 		              smoothTime);
 	}
 

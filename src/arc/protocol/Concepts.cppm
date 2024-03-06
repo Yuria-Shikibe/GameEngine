@@ -70,8 +70,8 @@ export namespace Concepts {
     template <class DerivedT, class... Bases>
     concept DerivedMulti = (std::derived_from<Bases, DerivedT> && ...);;
 
-    template <class T>
-    concept DefConstructable = std::is_default_constructible_v<T>;
+	template <class T>
+	concept DefConstructable = std::is_default_constructible_v<T>;
 
 	template <typename T, typename functype>
 	concept Invokable = FunctionTraits<functype>::template invocableAs_v<T>();
@@ -88,16 +88,13 @@ export namespace Concepts {
 	template <typename T>
 	concept Signed = !std::is_unsigned_v<T> && Number<T>;
 
-	template <typename T, typename Item>
-	concept Iterable = requires(T t){ //TODO uses std::ranges::... instead
-		std::begin(std::declval<T&>());
-		std::end(std::declval<T&>());
-	};
+	template <typename T>
+	concept Iterable = std::ranges::range<T>;
 
 	template <typename T, typename Item>
-	concept IterableDerived = requires(T t){
-		requires std::is_base_of_v<decltype(std::begin(std::declval<T&>())), Item>;
-		requires std::is_base_of_v<decltype(std::end(std::declval<T&>())), Item>;
+	concept IterableDerived = std::ranges::range<T> && requires{
+		requires std::is_base_of_v<decltype(*std::begin(std::declval<T&>())), Item>;
+		requires std::is_base_of_v<decltype(*std::end(std::declval<T&>())), Item>;
 	};
 
 	template <typename T, typename NumberType = float>

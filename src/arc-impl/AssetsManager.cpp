@@ -1,5 +1,8 @@
 module Assets.Manager;
 
+import <ranges>;
+import <GLFW/glfw3.h>;
+
 import Assets.Graphic;
 import Assets.Loader;
 import Assets.LoaderRenderer;
@@ -12,9 +15,6 @@ import GlyphArrangement;
 import OS;
 import Core.Renderer;
 import Event;
-
-import <ranges>;
-import <GLFW/glfw3.h>;
 
 void Assets::Manager::pullRequest() {
 	loadEvents.fire(AssetsLoadPull{this});
@@ -80,6 +80,10 @@ void Assets::Manager::loadPost() {
 void Assets::Manager::loadEnd() {
 	loadEvents.fire(AssetsLoadEnd{this});
 	tempFontLoader.reset(nullptr);
+
+	for (auto& page : atlas.getPages() | std::ranges::views::values) {
+		page.clearData();
+	}
 }
 
 GL::ShaderManager& Assets::Manager::getShaders() {

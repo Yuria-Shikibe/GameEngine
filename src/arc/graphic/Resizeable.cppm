@@ -12,16 +12,6 @@ export namespace Graphic{
 		virtual ~Resizeable() = default;
 
 		[[maybe_unused]] virtual void resize(T w, T h) = 0;
-
-		Resizeable() = default;
-
-		Resizeable(const Resizeable& other) = default;
-
-		Resizeable(Resizeable&& other) = default;
-
-		Resizeable& operator=(const Resizeable& other) = default;
-
-		Resizeable& operator=(Resizeable&& other) noexcept = default;
 	};
 
 	using ResizeableUInt = Resizeable<unsigned int>;

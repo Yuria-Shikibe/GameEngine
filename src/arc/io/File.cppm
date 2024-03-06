@@ -22,7 +22,7 @@ using namespace std::filesystem;
 export namespace OS{
 	class File {
 	protected:
-		path rawPath{};
+		std::filesystem::path rawPath{};
 
 	public:
 		static constexpr std::string_view EMPTY_EXTENSION = "[empty]";
@@ -59,12 +59,22 @@ export namespace OS{
 			return *this;
 		}
 
+		File& operator=(const path& other) {
+			rawPath = other;
+			return *this;
+		}
+
+		File& operator=(path&& other) {
+			rawPath = std::move(other);
+			return *this;
+		}
+
 		explicit operator directory_entry() const{
 			return directory_entry{rawPath};
 		}
 
 		explicit operator path() const{
-			return path();
+			return rawPath;
 		}
 
 		bool operator==(const File &rhs) const {
@@ -76,7 +86,7 @@ export namespace OS{
 		}
 
 		[[nodiscard]] path absolutePath() const{
-			return absolute(this->path());
+			return absolute(this->getPath());
 		}
 
 		[[nodiscard]] std::string extension() const {
@@ -92,14 +102,14 @@ export namespace OS{
 		}
 
 		[[nodiscard]] std::string filename_full() const {
-			return (isDir() ? "<Dir>" : "") + rawPath.filename().string();
+			return (isDir() ? "<Dir>" : "<Fi>") + rawPath.filename().string();
 		}
 
-		[[nodiscard]] path& path() {
+		[[nodiscard]] path& getPath() {
 			return rawPath;
 		}
 
-		[[nodiscard]] const std::filesystem::path& path() const {
+		[[nodiscard]] const std::filesystem::path& getPath() const {
 			return rawPath;
 		}
 
@@ -108,16 +118,16 @@ export namespace OS{
 		}
 
 		[[maybe_unused]] bool deleteFile() const {  // NOLINT(*-use-nodiscard)
-			return exist() && (isDir() ? remove(path()) : std::filesystem::remove_all(path()));
+			return exist() && (isDir() ? remove(getPath()) : std::filesystem::remove_all(getPath()));
 		}
 
 		[[maybe_unused]] void deleteFileQuiet() const {  // NOLINT(*-use-nodiscard)
-			isDir() ? remove(path()) : std::filesystem::remove_all(path());
+			isDir() ? remove(getPath()) : std::filesystem::remove_all(getPath());
 		}
 
 		[[nodiscard]] bool copy(const std::filesystem::path& dest) const {
 			try {
-				std::filesystem::copy(path(), dest);
+				std::filesystem::copy(getPath(), dest);
 				return true;
 			}
 			catch ([[maybe_unused]] std::error_code& ignore) {
@@ -126,15 +136,15 @@ export namespace OS{
 		}
 
 		[[nodiscard]] bool copy(const File& dest) const {
-			return copy(dest.path());
+			return copy(dest.getPath());
 		}
 
 		[[nodiscard]] bool isDir() const {
-			return is_directory(path());
+			return is_directory(getPath());
 		}
 
 		[[nodiscard]] bool isRegular() const {
-			return is_regular_file(path());
+			return is_regular_file(getPath());
 		}
 
 		[[nodiscard]] bool isHidden() const {
@@ -146,7 +156,7 @@ export namespace OS{
 		}
 
 		[[maybe_unused]] bool createDir(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
-			return  autoCreateParents ? create_directories(path()) : create_directory(path());
+			return  autoCreateParents ? create_directories(getPath()) : create_directory(getPath());
 		}
 
 		void createDirQuiet(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
@@ -163,7 +173,8 @@ export namespace OS{
 				}
 			}
 
-			std::ofstream ofStream(path());
+			//TODO shit
+			std::ofstream ofStream(getPath());
 			const bool valid = ofStream.is_open();
 			ofStream.close();
 
@@ -176,7 +187,7 @@ export namespace OS{
 		}
 
 		[[nodiscard]] File getParent() const {
-			return File{ path().parent_path() };
+			return File{ getPath().parent_path() };
 		}
 
 		[[nodiscard]] File subFile(const std::string_view& name) const {
@@ -198,7 +209,7 @@ export namespace OS{
 		}
 
 		[[nodiscard]] File find(const std::string& name) const{
-			for (const auto & item : directory_iterator(path()))
+			for (const auto & item : directory_iterator(getPath()))
 			{
 				if (item.path().filename() == name)
 				{
@@ -213,7 +224,7 @@ export namespace OS{
 		 * Warning: This does not do append but erase and write!
 		 * */
 		void writeString(const std::string& data, const bool autoFlush = true) const {
-			if (std::ofstream ofStream(path()); ofStream.is_open()) {
+			if (std::ofstream ofStream(getPath()); ofStream.is_open()) {
 				ofStream << data;
 
 				if(autoFlush)ofStream.flush();
@@ -222,7 +233,7 @@ export namespace OS{
 
 		[[nodiscard]] std::vector<File> subs(const bool careDirs = false) const{
 			std::vector<File> files;
-			for (const auto& item : directory_iterator(path())){
+			for (const auto& item : directory_iterator(getPath())){
 				if(item.is_directory()) {
 					if(careDirs)files.emplace_back(item);
 				}else {
@@ -233,17 +244,14 @@ export namespace OS{
 			return files;
 		}
 
-
-		template<Concepts::Invokable<void(File&&)> T>
-		void forSubs(const T& consumer) const{
-			for (const auto& item : directory_iterator(path())){
+		void forSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
+			for (const auto& item : directory_iterator(getPath())){
 				consumer(File{item});
 			}
 		}
 
-		template<Concepts::Invokable<void(File&&)> T>
-		void forAllSubs(const T& consumer, const bool careDirs = false) const{
-			for (const auto& item : directory_iterator(path())){
+		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer, const bool careDirs = false) const{
+			for (const auto& item : directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
 				}else{
@@ -256,7 +264,7 @@ export namespace OS{
 		}
 
 		void allSubs(std::vector<File>& container, const bool careDirs = false) const{
-			for (const auto& item : directory_iterator(path())){
+			for (const auto& item : directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					container.emplace_back(std::move(f));
 				}else{
@@ -268,9 +276,8 @@ export namespace OS{
 			}
 		}
 
-		template<Concepts::Invokable<void(std::string&)> T>
-		[[nodiscard]] std::string readString(const T& consumer = nullptr) const {
-			std::ifstream file_stream(path());
+		[[nodiscard]] std::string readString(Concepts::Invokable<void(std::string&)> auto&& consumer = nullptr) const {
+			std::ifstream file_stream(getPath());
 
 			if(!file_stream.is_open())return "";
 
@@ -285,15 +292,14 @@ export namespace OS{
 			return file_contents.str();
 		}
 
-		template<Concepts::Invokable<void(const std::ofstream&)> Func>
-		void writeByte(const Func& func) {
+		void writeByte(Concepts::Invokable<void(const std::ofstream&)> auto&& func) {
 			if(std::ofstream ofStream(absolutePath(), std::ios::binary); ofStream.is_open()) {
 				func(ofStream);
 			}
 		}
 
 		[[nodiscard]] std::string readString() const {
-			std::ifstream file_stream(path());
+			std::ifstream file_stream(getPath());
 
 			if(!file_stream.is_open())return "";
 

@@ -120,14 +120,14 @@ export namespace GL{
 			GL::bindFrameBuffer(targetFlag, 0);
 		}
 
-		[[nodiscard]] unsigned char* readPixelsRaw(const unsigned int width, const unsigned int height, const int srcX = 0, const int srcY = 0) const {
+		[[nodiscard]] std::unique_ptr<unsigned char[]> readPixelsRaw(const unsigned int width, const unsigned int height, const int srcX = 0, const int srcY = 0) const {
 			bind();
-			auto* pixels = new unsigned char[width * height * 4]{0};
-			glReadPixels(srcX, srcY, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			auto pixels = std::make_unique<unsigned char[]>(static_cast<size_t>(width) * height * 4);
+			glReadPixels(srcX, srcY, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
 			return pixels;
 		}
 
-		[[nodiscard]] unsigned char* readPixelsRaw() const {
+		[[nodiscard]] std::unique_ptr<unsigned char[]> readPixelsRaw() const {
 			return readPixelsRaw(width, height, 0, 0);
 		}
 
@@ -135,8 +135,12 @@ export namespace GL{
 			return samples;
 		}
 
-		[[nodiscard]]  std::vector<std::unique_ptr<Texture2D>>& getTextures(){
+		[[nodiscard]] std::vector<std::unique_ptr<Texture2D>>& getTextures(){
 			return samples;
+		}
+
+		[[nodiscard]] const Texture2D* operator[](const size_t index) const{
+			return samples.at(index).get();
 		}
 
 		void clear(const Graphic::Color& initColor = Graphic::Colors::CLEAR, const GLbitfield mask = GL_COLOR_BUFFER_BIT) const {

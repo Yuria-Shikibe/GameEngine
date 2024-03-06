@@ -1,4 +1,4 @@
-module ;
+module;
 
 export module OS.ApplicationListenerSetter;
 
@@ -139,7 +139,7 @@ export namespace OS{
 		glfwSetWindowPosCallback(window, winPosCallBack);
 		// glfwSetWindowSizeCallback(window, framebufferSizeCallback);
 		// glfwMini
-		// setInputMode_Cursor(OS::CursorMode::disabled);
+		setInputMode_Cursor(OS::CursorMode::hidden, window);
 		// OS::setInputMode_StickyKeys(true);
 		// OS::setInputMode_LockKeyMods(true);
 	}

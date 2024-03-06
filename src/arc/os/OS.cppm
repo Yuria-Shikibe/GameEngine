@@ -1,5 +1,3 @@
-module ;
-
 export module OS;
 
 import <GLFW/glfw3.h>;
@@ -10,15 +8,17 @@ import <sstream>;
 import <functional>;
 import <iostream>;
 import <vector>;
+import <future>;
+import <queue>;
+import <utility>;
+
 import Event;
 import StackTrace;
 import Concepts;
 import OS.ApplicationListener;
-import <future>;
-import <utility>;
 
 namespace OS{
-	bool loopBegin = false;
+	inline bool loopBegin = false;
 
 	inline float _deltaTime = 0.0f;    //InTick
 	inline float _deltaTick = 0.0f;    //InTick
@@ -26,15 +26,20 @@ namespace OS{
 	inline float _updateDeltaTime = 0.0f;    //InTick
 	inline float _updateDeltaTick = 0.0f;    //InTick
 
-	inline float _globalTime = 0.0f;     //Sec
-	inline float _globalTick = 0.0f;     //Tick
+	inline float _globalTime = 0.0f;     //Sec    | No Pause
+	inline float _globalTick = 0.0f;     //Tick   | NO Pause
 
-	inline float _updateTime = 0.0f;     //Sec   | No Pause
-	inline float _updateTick = 0.0f;     //Tick  | NO Pause
+	inline float _updateTime = 0.0f;     //Sec
+	inline float _updateTick = 0.0f;     //Tick
 
-	std::vector<ApplicationListener*> applicationListeners;
+	std::vector<::OS::ApplicationListener*> applicationListeners;
+
+	std::mutex lockTask{};
+	std::mutex lockAsyncTask{};
+	std::mutex lockAsyncPackTask{};
 	std::vector<std::function<void()>> postTasks;
 	std::vector<std::pair<std::function<void()>, std::promise<void>>> postAsyncTasks;
+	std::vector<std::packaged_task<void()>> postAsyncPackedTasks;
 
 	std::thread::id mainThreadID{};
 
@@ -44,7 +49,6 @@ namespace OS{
 	float totalFrames = 0;
 	unsigned int FPS_last = 0;
 }
-
 
 export namespace OS{
 	std::vector<std::string> args{};
@@ -57,16 +61,17 @@ export namespace OS{
 
 
 	//Should Be Done In Application Launcher
+	//TODO isCallable good?
 	std::function<void(float&)> deltaSetter = nullptr;
 	std::function<void(float&)> globalTimeSetter = nullptr;
 	std::function<std::filesystem::path()> crashFileGetter = nullptr;
 
 
-/**\brief READ ONLY*/
+	/**\brief READ ONLY*/
 	int refreshRate = 60;
-/**\brief READ ONLY*/
+	/**\brief READ ONLY*/
 	int screenWidth = 60;
-/**\brief READ ONLY*/
+	/**\brief READ ONLY*/
 	int screenHeight = 60;
 
 	constexpr float TicksPerSecond = 60.0f;
@@ -134,27 +139,27 @@ export namespace OS{
 		paused = false;
 	}
 
+	//TODO fire an event?
 	void setPause(const bool v) {
 		if(v)pause();
 		else resume();
 	}
 
-	template <Concepts::Invokable<void()> Func>
-	void post(const Func& func) {
-		postTasks.push_back(&func);
+	void post(Concepts::Invokable<void()> auto&& func) {
+		std::lock_guard guard{lockTask};
+		postTasks.push_back(std::forward<decltype(func)>(func));
 	}
 
-	template <Concepts::Invokable<void()> Func>
-	std::future<void> postAsync(Func&& func) {
-		std::promise<void> promise;
-		std::future<void>&& fu = promise.get_future();
-		postAsyncTasks.emplace_back(std::forward<Func>(func), std::move(promise));
-		return fu;
+	void postAsync(Concepts::Invokable<void()> auto&& func, std::promise<void>&& promise) {
+		std::lock_guard guard{lockAsyncTask};
+		postAsyncTasks.emplace_back(std::forward<decltype(func)>(func), std::move(promise));
 	}
 
-	template <Concepts::Invokable<void()> Func>
-	void postAsync(Func&& func, std::promise<void>&& promise) {
-		postAsyncTasks.emplace_back(std::forward<Func>(func), std::move(promise));
+	[[nodiscard]] std::future<void> postAsync(Concepts::Invokable<void()> auto&& func) {
+		lockAsyncPackTask.lock();
+		std::packaged_task<void()>& task = postAsyncPackedTasks.emplace_back(std::forward<decltype(func)>(func));
+		lockAsyncPackTask.unlock();
+		return task.get_future();
 	}
 
 	/**
@@ -233,24 +238,42 @@ export namespace OS{
 	}
 
 	void update(){
-		for(const auto task : postTasks){
-			task();
-		}
-
-		postTasks.clear();
-
-		for(auto& [task, promise] : postAsyncTasks){
-#ifdef _DEBUG
-			try {task();}catch(...) {promise.set_exception(std::current_exception());}
-#else
-			task();
-#endif
-			promise.set_value();
-		}
-
-		postAsyncTasks.clear();
-
 		updateSignalManager.fire(Event::CycleSignalState::begin);
+
+		{
+			lockTask.lock();
+			const decltype(postTasks) tempTask = std::move(postTasks);
+			lockTask.unlock();
+
+			for(auto&& task : tempTask){
+				task();
+			}
+		}
+
+		{
+			lockAsyncPackTask.lock();
+			decltype(postAsyncPackedTasks) tempTask = std::move(postAsyncPackedTasks);
+			lockAsyncPackTask.unlock();
+
+			for(auto&& task : tempTask){
+				task();
+			}
+		}
+
+		{
+			lockAsyncTask.lock();
+			const decltype(postAsyncTasks) tempTask = std::move(postAsyncTasks);
+			lockAsyncTask.unlock();
+
+			for(auto& [task, promise] : postAsyncTasks){
+				try{
+					task();
+				}catch(...){
+					promise.set_exception(std::current_exception());
+				}
+				promise.set_value();
+			}
+		}
 
 		for(const auto & listener : applicationListeners){
 			if(listener->pauseRestrictable) {
@@ -259,6 +282,7 @@ export namespace OS{
 				listener->update(_deltaTick);
 			}
 
+			listener->updateGlobal(_deltaTick);
 		}
 
 		updateSignalManager.fire(Event::CycleSignalState::end);

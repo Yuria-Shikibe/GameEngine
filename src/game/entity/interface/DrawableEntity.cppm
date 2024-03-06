@@ -6,7 +6,7 @@ import Geom.Shape.Rect_Orthogonal;
 import Game.Entity;
 
 export namespace Game {
-	class DrawableEntity : virtual public Entity{
+	class DrawableEntity : public Entity{
 	protected:
 		/**
 		 * \brief When entity exit screen, part of its calculation can be roughly.

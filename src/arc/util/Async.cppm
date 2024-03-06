@@ -4,6 +4,7 @@ export module Async;
 
 export import <future>;
 import Concepts;
+import RuntimeException;
 import <string>;
 import <functional>;
 
@@ -12,10 +13,11 @@ export namespace ext {
 	 * \brief Uses this handler to post tasks to other threads, usually main thread, useful for GL functions which is main thread only
 	 */
 	struct TaskHandler {
-		template <Concepts::Invokable<void()> Func>
-		void operator()(Func&& task, std::promise<void>&& promise) const {
-			task();
-			promise.set_value();
+		std::future<void> operator()(Concepts::Invokable<void()> auto&& func) const {
+			std::packaged_task<void()> t{std::forward<decltype(func)>(func)};
+			auto f = t.get_future();
+			t();
+			return f;
 		}
 
 		explicit operator bool() const {
@@ -40,17 +42,12 @@ export namespace ext {
 			this->handler = handler;
 		}
 
-		template <Concepts::Invokable<void()> Func>
-		[[nodiscard]] std::future<void> postToHandler(Func&& function) {
-
-			std::promise<void> promise{};
-			std::future<void>&& future = promise.get_future();
-			if(*handler)handler->operator()(std::forward<Func>(function), std::move(promise));
-			else { //TODO may add exception throw?
-				function();
-				promise.set_value();
+		[[nodiscard]] std::future<void> postToHandler(Concepts::Invokable<void()> auto&& func) {
+			if(*handler){
+				return handler->operator()(std::forward<decltype(func)>(func));
 			}
-			return future;
+
+			throw ext::RuntimeException{"Unable To Post Task!"};
 		}
 	};
 
@@ -105,48 +102,4 @@ export namespace ext {
 			return done;
 		}
 	};
-
-	template <Concepts::Derived<TaskHandler> Handler, typename Func>
-	class FuncTask : public ProgressTask<std::invoke_result_t<Func>, Handler> {
-		using T = std::invoke_result_t<Func>;
-		Func func;
-
-
-	public:
-		[[nodiscard]] FuncTask() = default;
-
-		[[nodiscard]] explicit FuncTask(Func& func)
-			: func(func) {
-		}
-
-		[[nodiscard]] explicit FuncTask(Func&& func)
-			: func(std::forward<Func>(func)) {
-		}
-
-		template<typename _T = T> requires std::same_as<_T, void>
-		void run() {
-			func();
-			ProgressTask<T, Handler>::setDone();
-		}
-
-		T run() {
-			T ret = func();
-			ProgressTask<T, Handler>::setDone();
-			return ret;
-		}
-
-		std::future<T> launch(std::launch policy) override {
-			return std::async(policy, &FuncTask::run<T>, this);
-		}
-
-		[[nodiscard]] std::string_view getTaskName() const override {
-			return "Anonymous Function Running...";
-		}
-	};
-
-	template <Concepts::Derived<TaskHandler> Handler, typename Func>
-	[[nodiscard]] FuncTask<Handler, Func>create(Func&& func) {
-		return ext::FuncTask<Handler, Func>{func};
-	}
-
 }

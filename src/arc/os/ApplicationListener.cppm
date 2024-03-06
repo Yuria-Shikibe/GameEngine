@@ -10,6 +10,10 @@ export namespace OS{
 
 		virtual void update(float delta) = 0;
 
+		virtual void updateGlobal(float delta){
+
+		}
+
 		ApplicationListener() = default;
 
 		friend bool operator==(const ApplicationListener& lhs, const ApplicationListener& rhs){

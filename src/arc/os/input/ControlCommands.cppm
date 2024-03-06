@@ -15,8 +15,8 @@ import UI.Root;
 
 import Core.Input;
 import OS;
-import OS.Key;
-import OS.Mouse;
+import OS.KeyBind;
+import OS.MouseBind;
 import Graphic;
 import Core;
 import <array>;

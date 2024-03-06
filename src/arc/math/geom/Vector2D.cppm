@@ -10,11 +10,9 @@ import <complex>;
 import <algorithm>;
 import <type_traits>;
 
-export import Geom.Position;
-export import Geom.Vector3D;
-export import Math;
-export import Math.Bit;
-
+import Geom.Vector3D;
+import Math;
+import Math.Bit;
 import Concepts;
 
 export namespace Geom{
@@ -126,7 +124,7 @@ export namespace Geom{
 		}
 
 		constexpr Vector2D& setNaN() requires std::is_floating_point_v<T> {
-			return set(NAN, NAN);
+			return set(std::numeric_limits<float>::signaling_NaN(), std::numeric_limits<float>::signaling_NaN());
 		}
 
 		constexpr Vector2D& set(const T ox, const T oy) {
@@ -562,12 +560,14 @@ export namespace Geom{
 	using Point2US = Vector2D<unsigned short>;
 
 	constexpr Vec2 ZERO{ 0, 0 };
-	constexpr Vec2 NAN2{ NAN, NAN };
+	constexpr Point2U ZERO_U{ 0u, 0u };
+	constexpr Vec2 QNAN2{ std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN() };
+	constexpr Vec2 SNAN2{ std::numeric_limits<float>::signaling_NaN(), std::numeric_limits<float>::signaling_NaN() };
 	constexpr Vec2 X2{ 1, 0 };
 	constexpr Vec2 Y2{ 0, 1 };
 }
 
-export {
+export
 	template<>
 	struct std::hash<Geom::Vec2>{
 		size_t operator()(const Geom::Vec2& v) const noexcept {
@@ -575,6 +575,7 @@ export {
 		}
 	};
 
+export
 	template<>
 	struct std::hash<Geom::Point2>{
 		size_t operator()(const Geom::Point2& v) const noexcept {
@@ -582,11 +583,12 @@ export {
 		}
 	};
 
+export
 	template<>
 	struct std::hash<Geom::Point2U>{
 		size_t operator()(const Geom::Point2U& v) const noexcept {
 			return *reinterpret_cast<const size_t*>(&v.x);
 		}
 	};
-}
+
 

@@ -1,5 +1,3 @@
-module ;
-
 export module Math;
 
 import <memory>;
@@ -9,12 +7,12 @@ import <cmath>;
 import <numbers>;
 import <array>;
 import <span>;
+import <sstream>;
+import <string>;
 
 import SinTable;
 import Concepts;
 import RuntimeException;
-
-import <sstream>;
 
 export namespace Math {
 	constexpr int SIGNS[2]     = { -1, 1 };
@@ -378,7 +376,7 @@ export namespace Math {
 	 * Returns the largest integer less than or equal to the specified float. This method will only properly floor floats from
 	 * -(2^14) to (Float.MAX_VALUE - 2^14).
 	 */
-	inline int floor(const float value) {
+	constexpr int floor(const float value) {
 		return static_cast<int>(value + BIG_ENOUGH_FLOOR) - BIG_ENOUGH_INT;
 	}
 

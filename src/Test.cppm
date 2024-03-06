@@ -2,6 +2,8 @@ module;
 
 export module Test;
 
+import <GLFW/glfw3.h>;
+
 import OS;
 import OS.File;
 import OS.ApplicationListenerSetter;
@@ -14,13 +16,12 @@ import Assets.Sound;
 import Assets.Loader;
 import Assets.TexturePacker;
 import Assets.Manager;
+import Assets.Cursor;
 import Graphic.Draw;
 
 import GL;
 import GL.Texture.Texture2D;
 import GL.Shader;
-
-import <GLFW/glfw3.h>;
 import UI.Root;
 import UI.Styles;
 import Core.Renderer;
@@ -28,6 +29,9 @@ import Ctrl.Constants;
 import Ctrl.ControlCommands;
 
 export namespace Test {
+	// struct T {
+	// 	Core::SpriteBatch<> b;
+	// };
 	void init(const int argc, char* argv[]) {
 		//TODO move these into application loader
 		//Register Cmd
@@ -46,7 +50,7 @@ export namespace Test {
 		OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")).get());
 
 		Core::initCore_Post([] {
-			Core::overlayBatch = new Core::SpriteBatch<>([](const Core::SpriteBatch<>& self) {
+			Core::overlayBatch = new Core::SpriteBatch([](const Core::SpriteBatch<>& self) {
 				auto* const shader = Assets::Shaders::screenSpace;
 
 				shader->setUniformer([&self](const GL::Shader& s){
@@ -60,7 +64,6 @@ export namespace Test {
 			Core::overlayBatch->setProjection(&Core::camera->getWorldToScreen());
 
 			int w, h;
-
 			glfwGetWindowSize(Core::mainWindow, &w, &h);
 			Core::uiRoot = new UI::Root{};
 			Core::renderer = new Core::Renderer{static_cast<unsigned>(w), static_cast<unsigned>(h)};
@@ -83,42 +86,52 @@ export namespace Test {
 
 	void assetsLoad(){
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
-		   Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::texCacheDir);
-		   uiPage->forcePack = true;
-		   Assets::textureDir.subFile("ui").forAllSubs([&uiPage](OS::File&& file) {
-			   uiPage->pushRequest(file);
-		   });
-	   });
+			{
+				Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::texCacheDir);
+				uiPage->forcePack = true;
+				Assets::textureDir.subFile("ui").forAllSubs([uiPage](OS::File&& file) {
+					uiPage->pushRequest(file);
+				});
 
-		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
-			Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage("test", Assets::texCacheDir);
-			Assets::textureDir.subFile("test").forAllSubs([testPage](OS::File&& file) {
-				testPage->pushRequest(file);
-			});
+				Assets::TexturePackPage* cursorPage = event.manager->getAtlas().registerPage("cursor", Assets::texCacheDir);
+				cursorPage->forcePack = true;
+				Assets::textureDir.subFile("cursor").forAllSubs([cursorPage](OS::File&& file) {
+					cursorPage->pushRequest(file);
+				});
+			}
 
-			testPage->pushRequest(Assets::textureDir.find("white.png"));
+			{
+				Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage("test", Assets::texCacheDir);
+				Assets::textureDir.subFile("test").forAllSubs([testPage](OS::File&& file) {
+					testPage->pushRequest(file);
+				});
 
-			Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerPage("normal", Assets::texCacheDir);
-			normalTexture->linkTarget = testPage;
+				testPage->pushRequest(Assets::textureDir.find("white.png"));
 
-			Assets::textureDir.subFile("test").forAllSubs([normalTexture](OS::File&& file) {
-				normalTexture->pushRequest(file);
-			});
+				Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerPage("normal", Assets::texCacheDir);
+				normalTexture->linkTarget = testPage;
 
+				Assets::textureDir.subFile("test").forAllSubs([normalTexture](OS::File&& file) {
+					normalTexture->pushRequest(file);
+				});
+			}
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const auto& event) {
 			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("test-white");
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
 
-			for (auto& texture : event.manager->getAtlas().getPage("ui").textures) {
-				texture->setScale(GL::nearest, GL::linear);
+			for (auto& texture : event.manager->getAtlas().getPage("ui").getTextures()) {
+				texture->setScale(GL::TexParams::nearest, GL::TexParams::linear);
 			}
 
 			Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
 			Graphic::Draw::texture();
 
 			UI::Styles::load(event.manager->getAtlas());
+
+
+			Assets::getCursor(Assets::CursorType::general).setImage(event.manager->getAtlas().find("cursor-regular"));
 		});
 
 		//Majority Load

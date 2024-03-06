@@ -247,19 +247,19 @@ export namespace Assets{
 					-1.0f,  1.0f, 0.0f, 1.0f
 				}, GL_STATIC_DRAW);
 
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
+				mesh.getIndexBuffer().setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
 				layout.addFloat(2);
-				mesh.getVertexArray().active();
+				mesh.getVertexArray().applyLayout();
 
 				mesh.unbind();
 			}};
 		}
 
 		void load() {
-			coords = new GL::RenderableMesh(Assets::Shaders::coordAxis, [](const GL::RenderableMesh& mesh) {
+			coords = new GL::RenderableMesh<GL_TRIANGLE_FAN>(Assets::Shaders::coordAxis, [](const GL::RenderableMesh<GL_TRIANGLE_FAN>& mesh) {
 				mesh.bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f,
@@ -267,11 +267,11 @@ export namespace Assets{
 					 1.0f,  1.0f,
 					-1.0f,  1.0f
 				}, GL_STATIC_DRAW);
-				mesh.getIndexBuffer().setDataRaw(GL::IndexBuffer::ELEMENTS_STRIP_STD.data(), GL::IndexBuffer::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
+				mesh.getIndexBuffer().setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
-				mesh.getVertexArray().active();
+				mesh.getVertexArray().applyLayout();
 
 				mesh.unbind();
 			});

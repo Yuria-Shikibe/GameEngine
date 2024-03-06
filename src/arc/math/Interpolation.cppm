@@ -1,25 +1,14 @@
-module;
-
-export module Interpolation;
+export module Math.Interpolation;
 
 import <functional>;
+import <numbers>;
 import Math;
 import Concepts;
-import <numbers>;
 
+//TODO uses constexpr program to enhance the effiency
 export namespace Math::Interp {
+	template <float power>
 	struct Pow {
-		const float power;
-
-		[[nodiscard]] constexpr explicit Pow(const float power)
-			: power(power) {
-		}
-
-		template <typename T>
-		[[nodiscard]] constexpr explicit Pow(const T& power)
-			: power(static_cast<float>(power)) {
-		}
-
 		float operator()(const float a) const {
 			if(a <= 0.5f) return std::powf(a * 2, power) * 0.5f;
 			return std::powf((a - 1.0f) * 2.0f, power) / (std::fmod(power, 2.0f) == 0.0f ? -2.0f : 2.0f) + 1;
@@ -36,32 +25,27 @@ export namespace Math::Interp {
 		}
 	};
 
-	struct PowIn : Pow {
-		[[nodiscard]] constexpr explicit PowIn(const float power)
-			: Pow(power) {
-		}
-
+	template <float power>
+	struct PowIn{
 		float operator()(const float a) const {
 			return std::powf(a, power);
 		}
 	};
 
-	struct PowOut : Pow {
-		[[nodiscard]] constexpr explicit PowOut(const float power)
-			: Pow(power) {
-		}
-
+	template <float power>
+	struct PowOut{
 		float operator()(const float a) const {
 			return std::powf(a - 1.0f, power) * (std::fmod(power, 2.0f) == 0.0f ? -1.0f : 1.0f) + 1.0f;
 		}
 	};
+
 
 	struct Exp {
 		const float value{}, power{}, min{}, scale{};
 
 		Exp(const float value, const float power) : value(value),
 			power(power),
-			min{ std::powf(value, -power) },
+			min{ std::powf(value, -power) }, //Uses template param when powf is constexpr
 			scale(-1.0f / (1.0f - min)) {
 		}
 
@@ -91,49 +75,38 @@ export namespace Math::Interp {
 		}
 	};
 
+	template <float value, float power, float scale, int bounces>
 	struct Elastic {
-		const float value{}, power{}, scale{}, bounces{};
-
-		constexpr Elastic(const float value, const float power, const int bounces,
-		                  const float scale) : value(value),
-			power(power),
-			scale(scale),
-			bounces(bounces * std::numbers::pi_v<float> * (bounces % 2 == 0 ? 1 : -1)) {
-		}
+		static constexpr float RealBounces = bounces * std::numbers::pi_v<float> * (bounces % 2 == 0 ? 1 : -1);
 
 		float operator()(float a) const {
 			if(a <= 0.5f) {
 				a *= 2;
-				return std::powf(value, power * (a - 1)) * sin(a * bounces) * scale / 2;
+				return std::powf(value, power * (a - 1)) * sin(a * RealBounces) * scale / 2;
 			}
 			a = 1 - a;
 			a *= 2;
-			return 1 - std::powf(value, power * (a - 1)) * sin(a * bounces) * scale / 2;
+			return 1 - std::powf(value, power * (a - 1)) * sin(a * RealBounces) * scale / 2;
 		}
 	};
-
-	struct ElasticIn : Elastic {
-		[[nodiscard]] constexpr ElasticIn(const float value, const float power, const int bounces,
-		                                  const float scale)
-			: Elastic(value, power, bounces, scale) {
-		}
+	template <float value, float power, float scale, int bounces>
+	struct ElasticIn : Elastic<value, power, scale, bounces>{
+		using Elastic<value, power, scale, bounces>::RealBounces;
 
 		float operator()(const float a) const {
 			if(a >= 0.99) return 1;
-			return std::powf(value, power * (a - 1)) * sin(a * bounces) * scale;
+			return std::powf(value, power * (a - 1)) * sin(a * RealBounces) * scale;
 		}
 	};
 
-	struct ElasticOut : Elastic {
-		[[nodiscard]] constexpr ElasticOut(const float value, const float power, const int bounces,
-		                                   const float scale)
-			: Elastic(value, power, bounces, scale) {
-		}
+	template <float value, float power, float scale, int bounces>
+	struct ElasticOut : Elastic<value, power, scale, bounces>{
+		using Elastic<value, power, scale, bounces>::RealBounces;
 
 		float operator()(float a) const {
 			if(a == 0) return 0;
 			a = 1 - a;
-			return 1 - std::powf(value, power * (a - 1)) * sin(a * bounces) * scale;
+			return 1 - std::powf(value, power * (a - 1)) * sin(a * RealBounces) * scale;
 		}
 	};
 
@@ -329,12 +302,12 @@ export namespace Math::Interp {
 
 	InterpFunc burst = LinePow<Math::sqr, 0.925f>{};
 
-	InterpFunc pow2 = Pow(2);
+	InterpFunc pow2 = Pow<2>{};
 	/** Slow, then fast. */
-	InterpFunc pow2In    = PowIn(2);
+	InterpFunc pow2In    = PowIn<2>{};
 	InterpFunc& slowFast = pow2In;
 	/** Fast, then slow. */
-	InterpFunc pow2Out       = PowOut(2);
+	InterpFunc pow2Out       = PowOut<2>{};
 	InterpFunc& fastSlow     = pow2Out;
 	InterpFunc pow2InInverse = [](const float a) {
 		return std::sqrtf(a);
@@ -344,23 +317,23 @@ export namespace Math::Interp {
 		return std::sqrtf(-a + 1.0f);
 	};
 
-	InterpFunc pow3          = Pow(3);
-	InterpFunc pow3In        = PowIn(3);
-	InterpFunc pow3Out       = PowOut(3);
+	InterpFunc pow3          = Pow<3>{};
+	InterpFunc pow3In        = PowIn<3>{};
+	InterpFunc pow3Out       = PowOut<3>{};
 	InterpFunc pow3InInverse = [](const float a) {
 		return std::cbrtf(a);
 	};
 	InterpFunc pow3OutInverse = [](const float a) {
 		return std::cbrtf(1.0f - a);
 	};
-	InterpFunc pow4     = Pow(4);
-	InterpFunc pow4In   = PowIn(4);
-	InterpFunc pow4Out  = PowOut(4);
-	InterpFunc pow5     = Pow(5);
-	InterpFunc pow5In   = PowIn(5);
-	InterpFunc pow10In  = PowIn(10);
-	InterpFunc pow10Out = PowOut(10);
-	InterpFunc pow5Out  = PowOut(5);
+	InterpFunc pow4     = Pow<4>{};
+	InterpFunc pow4In   = PowIn<4>{};
+	InterpFunc pow4Out  = PowOut<4>{};
+	InterpFunc pow5     = Pow<5>{};
+	InterpFunc pow5In   = PowIn<5>{};
+	InterpFunc pow10In  = PowIn<10>{};
+	InterpFunc pow10Out = PowOut<10>{};
+	InterpFunc pow5Out  = PowOut<5>{};
 	InterpFunc sine     = [](const float a) {
 		return (1.0f - Math::cos(a * Math::PI)) * 0.5f;
 	};
@@ -393,9 +366,9 @@ export namespace Math::Interp {
 		return std::sqrtf(1 - a * a);
 	};
 
-	InterpFunc elastic    = Elastic(2, 10, 7, 1);
-	InterpFunc elasticIn  = ElasticIn(2, 10, 6, 1);
-	InterpFunc elasticOut = ElasticOut(2, 10, 7, 1);
+	InterpFunc elastic    = Elastic<2, 10, 7, 1>{};
+	InterpFunc elasticIn  = ElasticIn<2, 10, 6, 1>{};
+	InterpFunc elasticOut = ElasticOut<2, 10, 7, 1>{};
 	InterpFunc swing      = Swing(1.5f);
 	InterpFunc swingIn    = SwingIn(2.0f);
 	InterpFunc swingOut   = SwingOut(2.0f);

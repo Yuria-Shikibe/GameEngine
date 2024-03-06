@@ -25,6 +25,8 @@ export namespace Geom {
 
 		T x = 0, y = 0, z = 0;
 
+		using PassType = Concepts::ParamPassType<Vector3D, sizeof(T) * 2>;
+
 		/** @return The euclidean length */
 		[[nodiscard]] static constexpr float len(const T x, const T y, const T z) {
 			return std::sqrtf(static_cast<float>(x * x + y * y + z * z));
