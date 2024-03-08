@@ -17,6 +17,7 @@ export namespace UI {
 		using Vector2D::y;
 
 		unsigned int buttonID{0};
+		unsigned int mode{0};
 
 		[[nodiscard]] MouseAction() = default;
 

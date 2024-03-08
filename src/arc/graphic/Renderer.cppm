@@ -80,13 +80,14 @@ export namespace Core {
 	public:
 		GL::FrameBuffer defaultFrameBuffer{};
 		GL::FrameBuffer uiPostBuffer{};
+		GL::FrameBuffer effectBuffer{};
 
 		FrameBuffer* contextFrameBuffer = nullptr;
 
 		std::stack<FrameBuffer *> frameStack{};
 
 		[[nodiscard]] Renderer(const unsigned int w, const unsigned int h):
-			defaultFrameBuffer{ w, h }, uiPostBuffer{ w, h }{
+			defaultFrameBuffer{ w, h }, uiPostBuffer{ w, h }, effectBuffer{w, h} {
 			contextFrameBuffer = &defaultFrameBuffer;
 
 			frameStack.push(contextFrameBuffer);

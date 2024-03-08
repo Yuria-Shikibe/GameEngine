@@ -7,19 +7,50 @@ import Graphic.Draw;
 import GL.Texture.TextureRegionRect;
 
 import <array>;
+import <memory>;
 
 export namespace Assets{
+	using namespace Graphic;
+
 	enum struct CursorType : size_t {
-		general,
+		regular,
 		clickable,
+		select,
 		//...
 		count
 	};
 
-	struct Cursor {
+	struct CursorAdditionalDrawer {
+		virtual ~CursorAdditionalDrawer() = default;
+		virtual void operator()(float x, float y, float w, float h) = 0;
+	};
+
+	struct CursorThoroughSightDrawer : CursorAdditionalDrawer {
+		float stroke{4};
+		float margin{20};
+
+		CursorThoroughSightDrawer(const float stroke = 4.0f, const float margin = 36.0f)
+			: stroke(stroke),
+			  margin(margin){
+		}
+
+		void operator()(const float x, const float y, const float w, const float h) override{
+			Draw::setLineStroke(h * 2);
+			Draw::line(-1, y, x - w * margin, y);
+			Draw::line(x + w * margin, y, 1, y);
+
+			Draw::setLineStroke(w * 2);
+			Draw::line(x, -1, x, y - margin * h);
+			Draw::line(x, y + margin * h, x, 1);
+		}
+	};
+
+	struct Cursor { //TODO animation?
 		const GL::TextureRegionRect* image{nullptr};
 		Geom::Point2U offset{};
 		Geom::Point2U size{50, 50};
+
+		std::unique_ptr<CursorAdditionalDrawer> drawer{nullptr};
 
 		Cursor() = default;
 
@@ -29,11 +60,18 @@ export namespace Assets{
 			  size(size){
 		}
 
-		void draw(const float x, const float y, const Geom::Vec2 screenSize, const float scl = 1.0f) const{
-			const float width = size.x * scl / screenSize.x;
-			const float height = size.y * scl / screenSize.y;
-			Graphic::Draw::rect(
-				image, x + offset.x / screenSize.x - width / 2, y + offset.y / screenSize.y - height / 2,
+		virtual void draw(const float x, const float y, const Geom::Vec2 screenSize, const float progress = 0.0f, const float scl = 1.0f) const{
+			const float norX = 2 / screenSize.x;
+			const float norY = 2 / screenSize.y;
+			const float width = size.x * scl * norX;
+			const float height = size.y * scl * norY;
+			const float drawX = x + offset.x * norX;
+			const float drawY = y + offset.y * norY;
+			if(drawer){
+				drawer->operator()(drawX, drawY, norX, norY);
+			}
+			Draw::rect(
+				image, drawX - width / 2, drawY - height / 2,
 				width, height
 			);
 		}
@@ -46,9 +84,13 @@ export namespace Assets{
 	};
 
 	//TODO is unordered_map better for extension?
-	inline std::array<Cursor, static_cast<size_t>(CursorType::count)> allCursors{};
+	inline std::array<std::unique_ptr<Cursor>, static_cast<size_t>(CursorType::count)> allCursors{};
 
 	Cursor& getCursor(CursorType type){
+		return *allCursors[static_cast<size_t>(type)];
+	}
+
+	std::unique_ptr<Cursor>& getCursorRaw(CursorType type){
 		return allCursors[static_cast<size_t>(type)];
 	}
 }

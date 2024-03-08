@@ -47,15 +47,24 @@ export namespace Graphic{
 			rgba8888(rgba8888V);
 		}
 
-		constexpr Color(const float tr, const float tg, const float tb, const float ta){
-			r = tr;
-			g = tg;
-			b = tb;
-			a = ta;
+		constexpr explicit Color(const std::tuple<float, float, float, float>& datas){
+			set(datas);
+		}
+
+		constexpr Color(const float r, const float g, const float b, const float a)
+			: r(r),
+			  g(g),
+			  b(b),
+			  a(a){
 			clamp();
 		}
 
 		constexpr Color(const float r, const float g, const float b): Color(r, g, b, 1){}
+
+		constexpr Color& set(std::tuple<float, float, float, float> datas){
+			std::tie(r, g, b, a) = datas;
+			return  *this;
+		}
 
 		static constexpr size_t hash_value(const Color& obj){
 			return obj.hashCode();
@@ -244,7 +253,7 @@ export namespace Graphic{
 		}
 
 		static constexpr unsigned floatToIntColor(const float value){
-			ColorBits intBits = std::bit_cast<ColorBits>(value);
+			auto intBits = std::bit_cast<ColorBits>(value);
 			intBits |= static_cast<ColorBits>(static_cast<float>(intBits >> 24) * (255.0f / 254.0f)) << 24;
 			return intBits;
 		}
@@ -722,66 +731,44 @@ export namespace Graphic{
 			return clampf(static_cast<float>(rV) * value) << 24 | clampf(static_cast<float>(gV) * value) << 16 | clampf(static_cast<float>(bV) * value) << 8 | aV;
 		}
 
-		//TODO: Really Bad Design!
-		template <int size>
-		static constexpr Color createLerp(const Color* const(&arr)[size], const float s) {
-			const Color& ca = *arr[Math::clamp(static_cast<int>(s * (size - 1)), 0, size - 1)];
-			const Color& cb = *arr[Math::clamp(static_cast<int>(s * (size - 1) + 1), 0, size - 1)];
+		/** @brief [r, g, b, a] */
+		using ColorData = std::tuple<float, float, float, float>;
 
-			const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
-			const float i = 1.0f - n;
-			return { ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n };
-		}
-
-		// static constexpr Color createLerp(const float s, const std::initializer_list<const Color&>& colors) {
-		// 	const std::vector arr = colors;
-		// 	const size_t size = arr.size();
-		// 	const Color& ca = arr[Math::clamp(static_cast<size_t>(s * (size - 1)), 0ull, size - 1)];
-		// 	const Color& cb = arr[Math::clamp(static_cast<size_t>(s * (size - 1) + 1), 0ull, size - 1)];
-		//
-		// 	const float n = s * (size - 1) - static_cast<int>(s * (size - 1));
-		// 	const float i = 1.0f - n;
-		// 	return { ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n};
-		// }
-
-		using LerpVal = std::tuple<const Color&, const Color&, float, float>;
-
-		static constexpr LerpVal getLerpVal(const float s, const auto&... colors) {
+		[[nodiscard]] static constexpr ColorData getLerpVal(const float s, const auto&... colors) {
 			constexpr size_t size = sizeof...(colors);
 			constexpr size_t bound = size - 1;
-			const std::array<const Color*, size> arr = {&colors...};
-			const Color& ca = *arr[Math::clamp(static_cast<size_t>(s * bound), 0ull, bound)];
-			const Color& cb = *arr[Math::clamp(static_cast<size_t>(s * bound + 1), 0ull, bound)];
+			const std::array<Color, size> arr = {colors...};
 
-			const float n = s * bound - static_cast<int>(s * bound);
-			const float i = 1.0f - n;
-			return LerpVal{ca, cb, n, i};
+			const Color& from = arr[Math::clamp(static_cast<size_t>(s * bound), 0ull, bound)];
+			const Color& to = arr[Math::clamp(static_cast<size_t>(s * bound + 1), 0ull, bound)];
+
+			const float toWeight = s * bound - static_cast<int>(s * bound);
+			const float fromWeight = 1.0f - toWeight;
+			return ColorData{ from.r * fromWeight + to.r * toWeight, from.g * fromWeight + to.g * toWeight, from.b * fromWeight + to.b * toWeight, from.a * fromWeight + to.a * toWeight};
 		}
 
-		static constexpr LerpVal getLerpVal(const float s, const std::span<const Color*>& colors) {
+		[[nodiscard]] static constexpr ColorData getLerpVal(const float s, const std::span<const Color>& colors) {
 			const size_t size = colors.size();
 			const size_t bound = size - 1;
-			const Color& ca = *colors[Math::clamp(static_cast<size_t>(s * bound), 0ull, bound)];
-			const Color& cb = *colors[Math::clamp(static_cast<size_t>(s * bound + 1), 0ull, bound)];
+			const auto boundf = static_cast<float>(size);
+			const Color& ca = colors[Math::clamp(static_cast<size_t>(s * boundf), 0ull, bound)];
+			const Color& cb = colors[Math::clamp(static_cast<size_t>(s * boundf + 1), 0ull, bound)];
 
-			const float n = s * bound - static_cast<int>(s * bound);
+			const float n = s * boundf - static_cast<float>(static_cast<int>(s * boundf));
 			const float i = 1.0f - n;
-			return LerpVal{ca, cb, n, i};
+			return ColorData{ ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n};
 		}
 
 		static constexpr Color createLerp(const float s, const auto&... colors) {
-			const auto& [ca, cb, n, i] = getLerpVal(s, colors...);
-			return { ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n};
+			return Color{::Graphic::Color::getLerpVal(s, colors...)};
 		}
 
 		constexpr Color& lerp(const float s, const auto&... colors) {
-			const auto& [ca, cb, n, i] = getLerpVal(s, colors...);
-			return set( ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n);
+			return this->set(::Graphic::Color::getLerpVal(s, colors...));
 		}
 
-		constexpr Color& lerp(const float s, const std::span<const Color*>& colors) {
-			const auto& [ca, cb, n, i] = getLerpVal(s, colors);
-			return set(ca.r * i + cb.r * n, ca.g * i + cb.g * n, ca.b * i + cb.b * n, ca.a * i + cb.a * n);
+		constexpr Color& lerp(const float s, const std::span<const Color>& colors) {
+			return set(getLerpVal(s, colors));
 		}
 	};
 

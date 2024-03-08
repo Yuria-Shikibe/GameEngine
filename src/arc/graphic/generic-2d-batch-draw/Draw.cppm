@@ -146,16 +146,12 @@ namespace Graphic::Draw {
 
 	inline void meshBegin(const Mesh* const mesh) {
 		mesh->bind();
-
-#ifdef _DEBUG
 		formerMesh.push(mesh);
-#endif
 	}
 
 	//Use this for safety!
 	inline void meshEnd(const Mesh* const mesh, const bool render = false) {
 		if(render)mesh->render();
-#ifdef _DEBUG
 		if(mesh == formerMesh.top()) {
 			formerMesh.pop();
 
@@ -163,16 +159,13 @@ namespace Graphic::Draw {
 		} else {
 			throw ext::RuntimeException{ "Cannot end incorredt mesh!" };
 		}
-#endif
 	}
 
 	inline void meshEnd(const bool render = false) {
 		if(render)formerMesh.top()->render();
-#ifdef _DEBUG
 		formerMesh.pop();
 
 		if(!formerMesh.empty()) formerMesh.top()->bind();
-#endif
 	}
 
 	void shader(Shader* shader, bool flushContext = true);
@@ -299,12 +292,7 @@ namespace Graphic::Draw {
 	}
 
 	template <Concepts::Pos<float> T>
-	void quad(const TextureRegion* region,
-	          const T& v0,
-	          const T& v1,
-	          const T& v2,
-	          const T& v3
-	) {
+	void quad(const TextureRegion* region, const T& v0, const T& v1, const T& v2, const T& v3) {
 		vert_monochromeAll(
 			region->getData(), contextColor, contextMixColor,
 			v0.getX(), v0.getY(), region->u00(), region->v00(),
@@ -407,7 +395,7 @@ namespace Graphic::Draw {
 	}
 
 	void line(const TextureRegion* region, const float x, const float y, const float x2, const float y2,
-	          const bool cap = true) {
+	          const Color& c1 = contextColor, const Color& c2 = contextColor, const bool cap = true) {
 		const float h_stroke = contextStroke / 2.0f;
 		const float len      = Math::len(x2 - x, y2 - y);
 		const float diff_x   = (x2 - x) / len * h_stroke;
@@ -416,46 +404,28 @@ namespace Graphic::Draw {
 		if(cap) {
 			quad(
 				region,
-
-				x - diff_x - diff_y,
-				y - diff_y + diff_x,
-
-				x - diff_x + diff_y,
-				y - diff_y - diff_x,
-
-				x2 + diff_x + diff_y,
-				y2 + diff_y - diff_x,
-
-				x2 + diff_x - diff_y,
-				y2 + diff_y + diff_x
-
+				Vec2{x - diff_x - diff_y, y - diff_y + diff_x}, c1,
+				Vec2{x - diff_x + diff_y, y - diff_y - diff_x}, c1,
+				Vec2{x2 + diff_x + diff_y, y2 + diff_y - diff_x}, c2,
+				Vec2{x2 + diff_x - diff_y, y2 + diff_y + diff_x}, c2
 			);
 		} else {
 			quad(
 				region,
-
-				x - diff_y,
-				y + diff_x,
-
-				x + diff_y,
-				y - diff_x,
-
-				x2 + diff_y,
-				y2 - diff_x,
-
-				x2 - diff_y,
-				y2 + diff_x
-
+				Vec2{x - diff_y, y + diff_x}, c1,
+				Vec2{x + diff_y, y - diff_x}, c1,
+				Vec2{x2 + diff_y, y2 - diff_x}, c2,
+				Vec2{x2 - diff_y, y2 + diff_x}, c2
 			);
 		}
 	}
 
 	void line(const float x, const float y, const float x2, const float y2, const bool cap = true) {
-		line(defaultTexture, x, y, x2, y2, cap);
+		line(defaultTexture, x, y, x2, y2, contextColor, contextColor, cap);
 	}
 	
-	void line(const Vec2 v1, const Vec2 v2, const bool cap = true) {
-		line(defaultTexture, v1.x, v1.y, v2.x, v2.y, cap);
+	void line(const Vec2 v1, const Vec2 v2, const Color& c1 = contextColor, const Color& c2 = contextColor, const bool cap = true) {
+		line(defaultTexture, v1.x, v1.y, v2.x, v2.y, c1, c2, cap);
 	}
 
 	inline void setLineStroke(const float s) {
@@ -473,13 +443,13 @@ namespace Graphic::Draw {
 	                            const bool cap = true) {
 		vec2_0.setPolar(angle, length * 0.5f);
 
-		line(contextTexture, x - vec2_0.x, y - vec2_0.y, x + vec2_0.x, y + vec2_0.y, cap);
+		line(contextTexture, x - vec2_0.x, y - vec2_0.y, x + vec2_0.x, y + vec2_0.y, contextColor, contextColor, cap);
 	}
 
 	inline void lineAngle(const float x, const float y, const float angle, const float length, const bool cap = true) {
 		vec2_0.setPolar(angle, length);
 
-		line(contextTexture, x, y, x + vec2_0.x, y + vec2_0.y, cap);
+		line(contextTexture, x, y, x + vec2_0.x, y + vec2_0.y, contextColor, contextColor, cap);
 	}
 
 	inline void lineAngle(const float x, const float y, const float angle, const float length, const float offset) {
@@ -490,10 +460,10 @@ namespace Graphic::Draw {
 	}
 
 	void rectLine(const float srcx, const float srcy, const float width, const float height, const bool cap = true) {
-		line(defaultTexture, srcx, srcy, srcx, srcy + height - contextStroke, cap);
-		line(defaultTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height, cap);
-		line(defaultTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke, cap);
-		line(defaultTexture, srcx + width, srcy, srcx + contextStroke, srcy, cap);
+		line(defaultTexture, srcx, srcy, srcx, srcy + height - contextStroke, contextColor, contextColor, cap);
+		line(defaultTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height, contextColor, contextColor, cap);
+		line(defaultTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke, contextColor, contextColor, cap);
+		line(defaultTexture, srcx + width, srcy, srcx + contextStroke, srcy, contextColor, contextColor, cap);
 	}
 
 	void rectLine(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO) {
@@ -503,7 +473,7 @@ namespace Graphic::Draw {
 
 	void lineSquare(const float x, const float y, const float radius, float ang) {
 		ang += 45.000f;
-		const float dst = contextStroke * Math::SQRT2 / 2.0f;
+		const float dst = contextStroke / Math::SQRT2;
 
 		vec2_0.setPolar(ang, 1);
 
@@ -525,6 +495,20 @@ namespace Graphic::Draw {
 			vec2_1.set(vec2_3);
 			vec2_2.set(vec2_4);
 		}
+	}
+
+	void fillSquare(const float x, const float y, const float radius, float ang) {
+		ang += 45.000f;
+
+		vec2_0.setPolar(ang, radius / Math::SQRT2);
+
+		vec2_1.set(x, y).add(vec2_0);
+		vec2_2.set(x, y).add(vec2_0.rotateRT());
+
+		vec2_3.set(x, y).add(vec2_0.rotateRT());
+		vec2_4.set(x, y).add(vec2_0.rotateRT());
+
+		Draw::quad(defaultTexture, vec2_1, vec2_2, vec2_3, vec2_4);
 	}
 
 	void poly(const float x, const float y, const int sides, const float radius, const float angle) {

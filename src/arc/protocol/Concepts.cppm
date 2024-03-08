@@ -77,6 +77,9 @@ export namespace Concepts {
 	concept Invokable = FunctionTraits<functype>::template invocableAs_v<T>();
 
 	template <typename T, typename functype>
+	concept InvokeNullable = std::same_as<nullptr_t, T> || FunctionTraits<functype>::template invocableAs_v<T>();
+
+	template <typename T, typename functype>
 	concept InvokableFunc = std::is_convertible_v<T, functype>;
 
 	template <typename T>

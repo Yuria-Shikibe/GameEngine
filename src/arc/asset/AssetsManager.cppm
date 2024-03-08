@@ -2,6 +2,7 @@ module;
 
 export module Assets.Manager;
 
+import Core.Renderer;
 import Assets.Loader;
 import Assets.TexturePacker;
 import Assets.Sound;
@@ -9,11 +10,12 @@ import Assets.SoundLoader;
 import Graphic.TextureAtlas;
 import GL.Shader.Manager;
 import Font;
-import Core.Renderer;
-
 import Event;
+
 import <memory>;
 import <GLFW/glfw3.h>;
+
+
 
 export
 /**

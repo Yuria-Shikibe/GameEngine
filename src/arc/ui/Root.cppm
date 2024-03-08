@@ -112,11 +112,12 @@ export namespace UI{
 
 		virtual void render() const;
 
-		void onDoubleClick(int id);
+		//TODO mode support
+		void onDoubleClick(int id, int mode = 0) const;
 
-		void onPress(int id);
+		void onPress(const int id, int mode = 0);
 
-		void onRelease(int id);
+		void onRelease(const int id, int mode = 0);
 
 		void onScroll() const;
 
@@ -124,7 +125,7 @@ export namespace UI{
 
 		void enable();
 
-		[[nodiscard]] bool onDrag(int id = 0) const;
+		[[nodiscard]] bool onDrag(const int id, int mode = 0) const;
 
 		void onDragUpdate() const;
 

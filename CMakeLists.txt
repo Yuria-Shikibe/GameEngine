@@ -25,7 +25,8 @@ set(BUILD_DIR build)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
 
-set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR}/${CMAKE_BUILD_TYPE})
+set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
+set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
@@ -39,14 +40,9 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     file(COPY ${BIN} DESTINATION
             ${EXE_DIR}
     )
-    
 else()
     message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
-    
-    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ DESTINATION
-            ${EXE_DIR}
-    )
 endif ()
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
@@ -96,31 +92,22 @@ add_executable(
         ${PROJECT_NAME}      #[[Project Name]]
         ${SOURCE_FILES}      #[[.cpp]]
         ${CURRENT_HEADERS}   #[[.h]]
-        ${FAST_MODULES}      #[[Modules]]
         glad.c               #[[Glad Attachment]]
         main.cppm
 )
 
-#target_sources(${PROJECT_NAME}
-#        PUBLIC
-#
-#)
+target_sources(${PROJECT_NAME}
+        PUBLIC
+        ${FAST_MODULES}      #[[Modules]]
+)
+
+if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+    message(STATUS "Copy Properties Setup")
+
+    add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ ${EXE_DIR}
+    )
+endif ()
+
 
 message(STATUS "Compile Complete...")
-
-#if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-#    message(STATUS "Destination Dir: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Done")
-#
-#    message(STATUS "Build Dir: ${EXE_DIR}")
-#
-#    file(ARCHIVE_CREATE
-#        OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Done/${PROJECT_NAME}.zip"
-#        PATHS ${EXE_DIR}
-#        FORMAT "zip"
-#    )
-#endif()
-
-#if(0#[[CMAKE_CXX_COMPILER_ID STREQUAL "GNU"]])
-#
-
-#endif()

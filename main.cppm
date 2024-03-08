@@ -97,6 +97,7 @@ import Geom.QuadTree;
 import Test;
 import Game.Core;
 import Game.Entity.EntityManager;
+import Game.Entity.RealityEntity;
 import Game.Entity.SpaceCraft;
 
 using namespace std;
@@ -216,7 +217,11 @@ int main(const int argc, char* argv[]) {
 	auto gameCore = std::make_unique<Game::Core>();
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([&gameCore]([[maybe_unused]] const auto& e){
-		gameCore->overlayRenderer->drawAboveUI();
+		gameCore->overlayManager->drawAboveUI(e.renderer);
+	});
+
+	::Core::renderer->getListener().on<Event::Draw_After>([&gameCore]([[maybe_unused]] const auto& e){
+		gameCore->overlayManager->drawBeneathUI(e.renderer);
 	});
 
 	OS::registerListener(gameCore.get());
@@ -279,10 +284,11 @@ int main(const int argc, char* argv[]) {
 	Core::input->registerMouseBind(
 		Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
 		Ctrl::Mode_Shift
-		, [] {
+		, [&gameCore] {
 		Game::EntityManage::realEntities.quadTree->intersectPoint(Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
-		[](const decltype(Game::EntityManage::realEntities)::ValueType* entity) {
+		[&gameCore](decltype(Game::EntityManage::realEntities)::ValueType* entity) {
 			entity->controller->selected = !entity->controller->selected;
+			gameCore->overlayManager->registerSelected(std::dynamic_pointer_cast<Game::RealityEntity>(entity->obtainSharedSelf()));
 		});
 	});
 

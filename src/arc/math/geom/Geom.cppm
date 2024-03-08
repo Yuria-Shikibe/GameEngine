@@ -92,9 +92,9 @@ export namespace Geom {
 		}
 	}
 
-	Vec2 arrive(const float x, const float y, const float destX, const float destY, const Vec2 curVel,
-	            const float radius, const float tolerance, const float speed, const float accel) {
-		auto toTarget = Vec2{ destX - x, destY - y };
+	Vec2 arrive(const Vec2 position, const Vec2 dest, const Vec2 curVel,
+	            const float speed, const float smooth, const float radius, const float tolerance) {
+		auto toTarget = Vec2{ dest - position };
 
 		const float distance = toTarget.length();
 
@@ -102,7 +102,7 @@ export namespace Geom {
 		float targetSpeed = speed;
 		if(distance <= radius) targetSpeed *= distance / radius;
 
-		return toTarget.sub(curVel.x / accel, curVel.y / accel).limit(targetSpeed);
+		return toTarget.sub(curVel.x / smooth, curVel.y / smooth).limit(targetSpeed);
 	}
 
 	/**
@@ -264,7 +264,7 @@ export namespace Geom {
 		const size_t seg = Math::ceil(std::sqrtf(dst2 / size2) * scl + 0.00001f);
 
 		move.div(static_cast<float>(seg));
-		traces.assign(seg + 1, static_cast<QuadBox>(subject));
+		traces.assign(seg + 1, static_cast<QuadBox>(subject)); // NOLINT(*-slicing)
 
 		for(size_t i = 1; i <= seg; ++i) {
 			traces[i].move(move, static_cast<float>(i));
@@ -292,13 +292,6 @@ export namespace Geom {
 		auto [minY, maxY] = std::minmax({ front.getSrcY(), front.getEndY(), back.getSrcY(), back.getEndY() });
 
 		return OrthoRectFloat{ minX, minY, maxX - minX, maxY - minY };
-	}
-
-
-	Vec2 arrive(const Vec2 pos, const Vec2 target, const Vec2& curVel, const float radius,
-	            const float tolerance, const float speed, const float smoothTime) {
-		return arrive(pos.x, pos.y, target.x, target.y, curVel, radius, tolerance, speed,
-		              smoothTime);
 	}
 
 	template <Concepts::Number T>

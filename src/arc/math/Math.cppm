@@ -52,6 +52,8 @@ export namespace Math {
 
 	constexpr auto sinTable = genTable<SIN_MASK, DEG_TO_INDEX>();
 
+	using Progress = float;
+
 	[[nodiscard]] std::string printSinTable() {
 		const SinTable<SIN_COUNT, SIN_MASK, DEG_TO_INDEX> table{};
 
@@ -178,9 +180,15 @@ export namespace Math {
 		return x + y; // returns 0 for 0,0 or NaN if either y or x is NaN
 	}
 
-	float angle(const float x, const float y) {
+	[[nodiscard]] float angle(const float x, const float y) {
 		float result = atan2(x, y) * RAD_DEG;
 		if(result < 0) result += DEG_FULL;
+		return result;
+	}
+
+	[[nodiscard]] float angleRad(const float x, const float y) {
+		float result = atan2(x, y);
+		if(result < 0) result += PI2;
 		return result;
 	}
 
@@ -225,12 +233,12 @@ export namespace Math {
 
 	/**Returns -1 if f<0, 1 otherwise.*/
 	constexpr float sign(const float f) {
-		return f < 0 ? -1 : 1;
+		return f == 0.0f ? 0.0f : f < 0.0f ? -1.0f : 1.0f;
 	}
 
 	template <Concepts::Number T>
 	constexpr T sign(const T f) requires Concepts::Signed<T> {
-		return f < 0 ? -1 : 1;
+		return f == 0 ? 0 : f < 0 ? -1 : 1;
 	}
 
 	template <Concepts::Number T>
@@ -431,22 +439,12 @@ export namespace Math {
 		return lround(value + 0.5f);
 	}
 
-	/** Returns true if the value is zero (using the default tolerance as upper bound) */
-	inline bool zero(const float value) {
-		return abs(value) <= FLOAT_ROUNDING_ERROR;
-	}
-
-	/** Returns true if the value is zero (using the default tolerance as upper bound) */
-	inline bool zero(const double value) {
-		return abs(value) <= FLOAT_ROUNDING_ERROR;
-	}
-
 	/**
 	 * Returns true if the value is zero.
 	 * @param value N/A
 	 * @param tolerance represent an upper bound below which the value is considered zero.
 	 */
-	inline bool zero(const float value, const float tolerance) {
+	inline bool zero(const float value, const float tolerance = FLOAT_ROUNDING_ERROR) {
 		return abs(value) <= tolerance;
 	}
 
@@ -486,17 +484,12 @@ export namespace Math {
 	// }
 
 	/** Mod function that works properly for negative numbers. */
-	inline float mod(const float f, const float n) {
-		return std::fmod(std::fmod(f, n) + n, n);
-	}
-
-	/** Mod function that works properly for negative numbers. */
 	inline int mod(const int x, const int n) {
 		return (x % n + n) % n;
 	}
 
 	template <Concepts::Number T>
-	constexpr T mod(const T x, const T n) {
+	T mod(const T x, const T n) {
 		if constexpr(std::is_floating_point_v<T>) {
 			return std::fmod(x, n);
 		} else {
@@ -630,6 +623,54 @@ export namespace Math {
 			return a > b ? a - b : b - a;
 		}
 	}
-}
 
-module : private;
+	namespace Angle{
+		float getAngleInPi2(float a){
+			a = Math::mod(a, DEG_FULL);
+			if(a < 0)a += DEG_FULL;
+			return a;
+		}
+
+		float forwardDistance(const float angle1, const float angle2){
+			return Math::abs(angle1 - angle2);
+		}
+
+		float backwardDistance(const float angle1, const float angle2){
+			return DEG_FULL - Math::abs(angle1 - angle2);
+		}
+
+
+		float angleDist(float a, float b){
+			a = getAngleInPi2(a);
+			b = getAngleInPi2(b);
+			return Math::min((a - b) < 0 ? a - b + DEG_FULL : a - b, (b - a) < 0 ? b - a + DEG_FULL : b - a);
+		}
+
+		float angleDistSign(float a, float b){
+			a = getAngleInPi2(a);
+			b = getAngleInPi2(b);
+
+			float dst = -(a - b);
+
+			if(abs(dst) > 180){
+				dst *= -1;
+			}
+
+			return sign(dst);
+		}
+
+		float moveToward(float angle, float to, const float speed){
+			if(Math::abs(angleDist(angle, to)) < speed) return to;
+			angle = getAngleInPi2(angle);
+			to = getAngleInPi2(to);
+
+			if((angle > to) == (backwardDistance(angle, to) > forwardDistance(angle, to))){
+				angle -= speed;
+			}else{
+				angle += speed;
+			}
+
+			return angle;
+		}
+	}
+}

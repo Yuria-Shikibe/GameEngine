@@ -331,11 +331,19 @@ export namespace Geom{
 			return this->set(target);
 		}
 
-		Vector2D& setPolar(const float angDeg, const float length) {
+		[[nodiscard]] static constexpr Vector2D byPolar(const float angDeg, const float length) {
+			return {length * Math::cos(angDeg * Math::DEGREES_TO_RADIANS), length * Math::sin(angDeg * Math::DEGREES_TO_RADIANS)};
+		}
+
+		[[nodiscard]] static constexpr Vector2D byPolarRad(const float angRad, const float length) {
+			return {length * Math::cos(angRad), length * Math::sin(angRad)};
+		}
+
+		constexpr Vector2D& setPolar(const float angDeg, const float length) {
 			return set(length * Math::cos(angDeg * Math::DEGREES_TO_RADIANS), length * Math::sin(angDeg * Math::DEGREES_TO_RADIANS));
 		}
 
-		Vector2D& setPolar(const float angDeg) {
+		constexpr Vector2D& setPolar(const float angDeg) {
 			return setPolar(angDeg, length());
 		}
 

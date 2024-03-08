@@ -91,8 +91,6 @@ export namespace Assets{
 		void setDone() {
 			done = true;
 			tasks.clear();
-
-			// std::cout << "Assets Load End: Costs" << std::chrono::duration_cast<std::chrono::seconds>(timer.toMark()).count() << "sec." << std::endl;
 		}
 
 		[[nodiscard]] bool finished() const {

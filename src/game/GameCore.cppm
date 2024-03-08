@@ -5,14 +5,14 @@ export module Game.Core;
 import OS.ApplicationListener;
 
 export import Game.Entity.EntityManager;
-export import Game.UI.OverlayRenderer;
+export import Game.UI.OverlayManager;
 
 import <memory>;
 
 export namespace Game {
 	class Core : public OS::ApplicationListener {
 	public:
-		std::unique_ptr<OverlayRenderer> overlayRenderer{std::make_unique<OverlayRenderer>()};
+		std::unique_ptr<OverlayManager> overlayManager{std::make_unique<OverlayManager>()};
 
 		[[nodiscard]] Core(){
 			pauseRestrictable = true;
@@ -23,7 +23,7 @@ export namespace Game {
 		}
 
 		void updateGlobal(const float delta) override{
-			overlayRenderer->updateGlobal(delta);
+			overlayManager->updateGlobal(delta);
 		}
 	};
 }

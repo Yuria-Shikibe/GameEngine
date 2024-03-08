@@ -89,6 +89,7 @@ void Core::Renderer::resize(const unsigned w, const unsigned h) {
 	defaultFrameBuffer.resize(w, h);
 	// uiPostBuffer.resize(w + Core::uiRoot->marginX * 2, h + Core::uiRoot->marginY * 2);
 	uiPostBuffer.resize(w, h);
+	effectBuffer.resize(w, h);
 	// uiBuffer.resize(w, h);
 
 	contextFrameBuffer->resize(w, h);

@@ -76,10 +76,12 @@ namespace Font {
 			data[size * 4 + 3] = map.buffer[size];
 		}
 	}
+
+	constexpr unsigned int TexturePackGap{2};
 }
 
 export namespace Font {
-	FT_Library freeTypeLib{};
+	FT_Library GlobalFreeTypeLib{};
 
 	enum struct Style : unsigned char{
 		null    = 0x00'00,
@@ -93,8 +95,6 @@ export namespace Font {
 	constexpr std::string_view italic{"Italic"};
 	constexpr std::string_view data_suffix{".bin"};
 	constexpr std::string_view tex_suffix{".png"};
-
-	constexpr unsigned int TexturePackGap{2};
 
 	unsigned char getStyleID(const std::string_view str) {
 		unsigned char id = 0x00;
@@ -115,7 +115,7 @@ export namespace Font {
 	}
 
 	void loadLib() {
-		if(FT_Init_FreeType(&freeTypeLib)) {
+		if(FT_Init_FreeType(&GlobalFreeTypeLib)) {
 			throw ext::RuntimeException{"Failed to initialize FreeType Library!"};
 		}
 	}
@@ -248,7 +248,7 @@ export namespace Font {
 
 		FontFlags* tryLoad(const FT_ULong charCode){
 			if(!face) { //Fall back may roll to font that doesn't need cache, just load its face
-				if(FT_New_Face(freeTypeLib, fontFile.absolutePath().string().data(), 0, &face)) {
+				if(FT_New_Face(GlobalFreeTypeLib, fontFile.absolutePath().string().data(), 0, &face)) {
 					exitLoad(fullname());
 				}
 			}
@@ -600,7 +600,7 @@ export namespace Font {
 				if(!params->face) {
 					FT_Face face;
 
-					if(FT_New_Face(freeTypeLib, params->fontFile.absolutePath().string().data(), 0, &face)) {
+					if(FT_New_Face(GlobalFreeTypeLib, params->fontFile.absolutePath().string().data(), 0, &face)) {
 						exitLoad(params->fullname());
 					}
 
@@ -724,7 +724,7 @@ export namespace Font {
 				// ReSharper disable once CppUseStructuredBinding
 				auto& flag = *flags[i];
 
-				const auto itr = std::find(loadedFamily.begin(), loadedFamily.end(), flag.familyName);
+				const auto itr = std::ranges::find(loadedFamily, flag.familyName);
 				const size_t dst = itr - loadedFamily.cbegin();
 
 				if(itr == loadedFamily.end()){

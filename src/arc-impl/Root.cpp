@@ -86,20 +86,20 @@ void UI::Root::render() const {
 	root->draw();
 }
 
-void UI::Root::onDoubleClick(const int id) {
+void UI::Root::onDoubleClick(const int id, int mode) const{
 	if(currentCursorFocus == nullptr)return;
 	doubleClickAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(doubleClickAction);
 }
 
-void UI::Root::onPress(const int id) {
+void UI::Root::onPress(const int id, int mode) {
 	if(currentCursorFocus == nullptr)return;
 	pressAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(pressAction);
 	pressedMouseButtons[id] = true;
 }
 
-void UI::Root::onRelease(const int id) {
+void UI::Root::onRelease(const int id, int mode) {
 	if(currentCursorFocus == nullptr)return;
 	releaseAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(releaseAction);
@@ -124,7 +124,7 @@ void UI::Root::enable() {
 	allHidden = false;
 }
 
-bool UI::Root::onDrag(const int id) const {
+bool UI::Root::onDrag(const int id, int mode) const {
 	return pressedMouseButtons[id] && currentCursorFocus != nullptr;
 }
 

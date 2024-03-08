@@ -3,6 +3,7 @@ module Assets.Manager;
 import <ranges>;
 import <GLFW/glfw3.h>;
 
+import Core.Renderer;
 import Assets.Graphic;
 import Assets.Loader;
 import Assets.LoaderRenderer;
@@ -13,7 +14,6 @@ import Font;
 import OS.File;
 import GlyphArrangement;
 import OS;
-import Core.Renderer;
 import Event;
 
 void Assets::Manager::pullRequest() {
@@ -94,7 +94,7 @@ Graphic::TextureAtlas& Assets::Manager::getAtlas() {
 	return atlas;
 }
 
-Font::FontCache& Assets::Manager::getonts() const {
+Font::FontCache& Assets::Manager::getonts() const{
 	return *fonts.manager;
 }
 

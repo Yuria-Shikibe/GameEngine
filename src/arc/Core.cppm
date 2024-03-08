@@ -12,17 +12,18 @@ import <GLFW/glfw3.h>;
 
 import Geom.Shape.Rect_Orthogonal;
 
-import Core.Audio;
-import Assets.Manager;
-import Assets.Bundle;
-import Core.Settings;
-import Core.Log;
+export import Core.Audio;
+export import Assets.Manager;
+export import Assets.Bundle;
+export import Core.Settings;
+export import Core.Log;
 
-import UI.Root;
-import Core.Batch;
-import Core.Input;
-import Core.Camera;
-import Core.Renderer;
+export import UI.Root;
+export import Core.Batch;
+export import Core.Input;
+export import Core.Camera;
+export import Core.Renderer;
+
 import OS.FileTree;
 import GL;
 

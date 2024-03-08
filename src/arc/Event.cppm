@@ -29,7 +29,7 @@ export namespace Event {
 			requires std::is_final_v<T>
 		void fire(const T& event) const {
 #ifdef _DEBUG
-			if(!registered.empty() && !registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
+			checkRegister<T>();
 #endif
 			if (const auto itr = events.find(indexOf<T>()); itr != events.end()) {
 				for (const auto& listener : itr->second) {
@@ -38,13 +38,13 @@ export namespace Event {
 			}
 		}
 
-		template <Concepts::Derived<EventType> T, Concepts::Invokable<void(const T&)> Func>
+		template <Concepts::Derived<EventType> T>
 			requires std::is_final_v<T>
-		void on(Func&& func){
+		void on(Concepts::Invokable<void(const T&)> auto&& func){
 #ifdef _DEBUG
-			if(!registered.empty() && !registered.contains(std::type_index(typeid(T))))throw ext::RuntimeException{"Unexpected Event Type!"};
+			checkRegister<T>();
 #endif
-			events[indexOf<T>()].emplace_back([fun = std::forward<Func>(func)](const void* event) {
+			events[indexOf<T>()].emplace_back([fun = std::forward<decltype(func)>(func)](const void* event) {
 				fun(*static_cast<const T*>(event));
 			});
 		}
@@ -52,7 +52,7 @@ export namespace Event {
 		template <Concepts::Derived<EventType> ...T>
 		void registerType() {
 #ifdef _DEBUG
-			(registered.insert(std::type_index(typeid(T))), ...);
+			(registered.insert(indexOf<T>()), ...);
 #endif
 		}
 
@@ -62,13 +62,21 @@ export namespace Event {
 #endif
 		{}
 
-		[[nodiscard]] explicit EventManager(const std::initializer_list<std::type_index> registeredList)
+		[[nodiscard]] EventManager(const std::initializer_list<std::type_index> registeredList)
 #ifdef _DEBUG
 			: registered(registeredList)
 #endif
 		{}
 
 		[[nodiscard]] EventManager() = default;
+	protected:
+		template <Concepts::Derived<EventType> T>
+		void checkRegister() const {
+#ifdef _DEBUG
+			if(!registered.empty() && !registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
+#endif
+		}
+
 	};
 
 	/**
@@ -87,9 +95,8 @@ export namespace Event {
 			}
 		}
 
-		template <Concepts::Invokable<void()> Func>
-		void on(const T index, Func&& func){
-			events[static_cast<size_t>(index)].emplace_back(std::forward<Func>(func));
+		void on(const T index, Concepts::Invokable<void(const T&)> auto&& func){
+			events[static_cast<size_t>(index)].emplace_back(std::forward<decltype(func)>(func));
 		}
 	};
 

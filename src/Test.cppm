@@ -29,9 +29,6 @@ import Ctrl.Constants;
 import Ctrl.ControlCommands;
 
 export namespace Test {
-	// struct T {
-	// 	Core::SpriteBatch<> b;
-	// };
 	void init(const int argc, char* argv[]) {
 		//TODO move these into application loader
 		//Register Cmd
@@ -130,8 +127,18 @@ export namespace Test {
 
 			UI::Styles::load(event.manager->getAtlas());
 
+			{
+				auto& ptr = Assets::getCursorRaw(Assets::CursorType::regular);
+				ptr = std::make_unique<Assets::Cursor>();
+				ptr->setImage(event.manager->getAtlas().find("cursor-regular"));
+			}
 
-			Assets::getCursor(Assets::CursorType::general).setImage(event.manager->getAtlas().find("cursor-regular"));
+			{
+				auto& ptr = Assets::getCursorRaw(Assets::CursorType::select);
+				ptr = std::make_unique<Assets::Cursor>();
+				ptr->setImage(event.manager->getAtlas().find("cursor-select"));
+				ptr->drawer = std::make_unique<Assets::CursorThoroughSightDrawer>();
+			}
 		});
 
 		//Majority Load

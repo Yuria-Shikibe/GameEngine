@@ -185,6 +185,7 @@ export namespace Game {
 		}
 
 		void update(const float deltaTick) override {
+			controller->update();
 			updateMovement(deltaTick);
 
 			// checkStateValid(this);

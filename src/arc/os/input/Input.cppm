@@ -68,7 +68,7 @@ export namespace Core{
 				pressed[code] = 0;
 			}
 
-			bool hasAction(const int key) {
+			bool hasAction(const int key) const {
 				return static_cast<bool>(pressed[key]);
 			}
 
@@ -184,6 +184,10 @@ export namespace Core{
 		template<Concepts::Invokable<void()> Func>
 		void registerKeyBind(const int key, const int expectedState, Func&& func) {
 			registerKeyBind(new KeyBind{key, expectedState, std::forward<Func>(func)});
+		}
+
+		[[nodiscard]] bool isPressedKey(const int key) const{
+			return keyGroup.hasAction(key);
 		}
 
 		void registerKeyBind(KeyBind* keyBind) {

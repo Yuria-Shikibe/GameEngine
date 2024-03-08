@@ -40,7 +40,25 @@ export namespace Game {
 			}
 		}
 
-		void update(float deltaTick) override {
+		void updateMovement(const float delta) override{
+			if(controller->moveCommand.activated()){
+				const auto dest = controller->moveCommand.nextDest();
+				float angleDst = Math::Angle::angleDist(rotation, controller->moveCommand.expectedFaceAngle);
+				if(!Math::zero(angleDst)){
+					angularAcceleration = Math::approach(angularAcceleration, Math::Angle::angleDistSign(rotation, controller->moveCommand.expectedFaceAngle) * 0.5f, delta * 0.5f);
+				}
+
+				if(controller->moveCommand.requiresMovement(dest)){
+					const auto dir = (dest - position).normalize();
+					acceleration.approach(dir * 1.5f, delta);
+				}
+			}
+
+
+			RealityEntity::updateMovement(delta);
+		}
+
+		void update(const float deltaTick) override {
 			RealityEntity::update(deltaTick);
 
 			if(const auto t = position.copy().abs(); t.x > 50000 || t.y > 50000) {
@@ -83,7 +101,7 @@ export namespace Game {
 			Draw::lineAngle(position.x, position.y, rotation, hitBox.sizeVec2.length());
 			
 			Draw::setLineStroke(2.0f);
-			const Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
+			constexpr Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
 			for(int i = 0; i < 4; ++i) {
 				Draw::color(colors[i]);
 				Draw::rect(hitBox[i].x - 2, hitBox[i].y - 2, 4, 4);

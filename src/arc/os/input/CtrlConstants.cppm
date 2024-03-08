@@ -7,6 +7,8 @@ module;
 export module Ctrl.Constants;
 
 import GL.Constants;
+import Math;
+import <array>;
 
 export namespace Ctrl {
 	constexpr int Act_Press = GLFW_PRESS;
@@ -19,6 +21,9 @@ export namespace Ctrl {
 	constexpr int Mode_Ctrl = 0b0000'0010;
 	constexpr int Mode_Alt = 0b0000'0100;
 	constexpr int Mode_Win = 0b0000'1000;
+	constexpr std::array Modes{
+		Mode_Shift, Mode_Ctrl, Mode_Alt, Mode_Win
+	};
 
 	constexpr float multiPressMaxSpaceing = 0.25f * 60; //ticks!
 	constexpr float doublePressMaxSpaceing = 0.25f * 60; //ticks!
@@ -26,6 +31,18 @@ export namespace Ctrl {
 	inline bool isContinuous(const int mode) {
 		return mode == Ctrl::Act_Continuous;
 	}
+
+	// constexpr std::array allModes{
+	// 	[]() constexpr {
+	// 		std::array<>
+	// 		int mode{0};
+	// 		for(int i = 0; i < Math::powIntegral<Modes.size()>(2); ++i){
+	// 			for(int j = 0; j < Modes.size(); ++j){
+	//
+	// 			}
+	// 		}
+	// 	}();
+	// }
 
 	constexpr auto HAT_CENTERED = 0;
 	constexpr auto HAT_UP = 1;

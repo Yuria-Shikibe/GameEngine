@@ -37,6 +37,10 @@ export namespace Game {
 
 		bool enableCommand{false};
 
+		bool translatory{false};
+
+		float positionTolerance{32.0f};
+
 		//Should This Be Queue? or uses this index mode
 		int currentRouteIndex{0};
 		std::vector<PosedTarget> route{};
@@ -56,12 +60,102 @@ export namespace Game {
 			return expectedVelocity.angle();
 		}
 
+		[[nodiscard]] Geom::Vec2 lastDest() const{
+			const auto currentRouteIndex = this->currentRouteIndex - 1;
+			if(currentRouteIndex < 0){
+				return currentPosition;
+			}
+			if(currentRouteIndex >= route.size()){
+				return destination;
+			}
+
+			return route.at(currentRouteIndex);
+		}
+
+		[[nodiscard]] Geom::Vec2 nextDest() const{
+			if(currentRouteIndex < 0){
+				return currentPosition;
+			}
+			if(currentRouteIndex >= route.size()){
+				return destination;
+			}
+
+			return route.at(currentRouteIndex);
+		}
+
+		[[nodiscard]] bool hasNextDest() const{
+			return currentRouteIndex >= 0 && currentRouteIndex < route.size();
+		}
+
+		void setRouteAssigningEnd(){
+			currentRouteIndex = 0;
+		}
+
+		void setRouteAssigningBegin(){
+			currentRouteIndex = -1;
+		}
+
+		[[nodiscard]] bool isAssigningRoute() const{
+			return currentRouteIndex < 0;
+		}
+
+		[[nodiscard]] bool hasRoute() const{
+			return isAssigningRoute() || !route.empty();
+		}
+
+		[[nodiscard]] bool requiresMovement(const Geom::Vec2 next) const{
+			return (currentPosition - next).length2() > positionTolerance * positionTolerance;
+		}
+
 		void updateCurrent(const Geom::Vec2 data) {
 			currentPosition = data;
+
+			const auto dest = nextDest();
+
+			expectedVelocity.set(dest - currentPosition).normalize().scl(15);
+
+			if(translatory){
+
+			}else{
+				expectedFaceAngle = expectedMoveAngle();
+			}
+
+			if(activated()){
+				if(!requiresMovement(dest)){
+					currentRouteIndex ++;
+					if(!hasNextDest()){
+						completeMove();
+						deactivate();
+					}
+				}
+			}
 		}
 
 		void activate() {
 			enableCommand = true;
+		}
+
+		void deactivate() {
+			enableCommand = false;
+		}
+
+		void completeMove(){
+			destination = currentPosition;
+			clearRoute();
+		}
+
+		void completeRotate(){
+
+		}
+
+		void clearRoute(){
+			route.clear();
+			currentRouteIndex = 0;
+		}
+
+		void assignTarget(const Geom::Vec2 dest){
+			destination = dest;
+			activate();
 		}
 
 		[[nodiscard]] bool activated() const {
@@ -106,7 +200,7 @@ export namespace Game {
 			: owner(owner) {
 		}
 
-		virtual bool isValidTo(std::shared_ptr<RealityEntity> entity) {
+		virtual bool isValidTo(const std::shared_ptr<RealityEntity>& entity) {
 			return true;
 		}
 
@@ -131,13 +225,13 @@ export namespace Game {
 		virtual void updateTarget() {
 			findTarget();
 
-			strategy->optimizeTarget(targets);
+			if(strategy)strategy->optimizeTarget(targets);
 		}
 
 		virtual void update(/*const float delta*/);
 
 		virtual void postObjective(std::unique_ptr<Objective>&& objective) {
-			strategy->postObjective(objectives, std::forward<std::unique_ptr<Objective>>(objective));
+			if(strategy)strategy->postObjective(objectives, std::forward<std::unique_ptr<Objective>>(objective));
 		}
 	};
 }
