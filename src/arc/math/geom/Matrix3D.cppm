@@ -82,10 +82,6 @@ export namespace Geom{
 			return vec2.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
 		}
 
-		friend constexpr Matrix3D& operator*=(const Matrix3D& lhs, Matrix3D& rhs) {
-			return rhs.mulLeft(lhs);
-		}
-
 		constexpr Matrix3D& operator*=(const Matrix3D& lhs) {
 			return mulLeft(lhs);
 		}
@@ -130,6 +126,10 @@ export namespace Geom{
 			val[M22] = 1.0f;
 
 			return *this;
+		}
+
+		constexpr Matrix3D& setOrthogonal(const Geom::Vec2 size) {
+			return setOrthogonal(0, 0, size.x, size.y);
 		}
 
 		constexpr Matrix3D& idt() {
@@ -284,6 +284,19 @@ export namespace Geom{
 			val[M20] = 0;
 			val[M01] = 0;
 			val[M11] = scaleY;
+			val[M21] = 0;
+			val[M02] = 0;
+			val[M12] = 0;
+			val[M22] = 1;
+			return *this;
+		}
+
+		constexpr Matrix3D& setToScaling(const float scale) {
+			val[M00] = scale;
+			val[M10] = 0;
+			val[M20] = 0;
+			val[M01] = 0;
+			val[M11] = scale;
 			val[M21] = 0;
 			val[M02] = 0;
 			val[M12] = 0;

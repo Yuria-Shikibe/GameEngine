@@ -147,7 +147,7 @@ export namespace Test {
 
 	void setupAudioTest() {
 		Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Press, [] {
-			Core::audio->play(Assets::Sounds::laser5);
+
 		});
 	}
 }

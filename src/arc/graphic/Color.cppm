@@ -819,6 +819,7 @@ export namespace Graphic{
 		constexpr Color BRICK{ 0xb22222ff };
 
 		constexpr Color RED{ 0xff0000ff };
+		constexpr Color RED_DUSK{ 0xDE6663ff };
 		constexpr Color SCARLET{ 0xff341cff };
 		constexpr Color CRIMSON{ 0xdc143cff };
 		constexpr Color CORAL{ 0xff7f50ff };

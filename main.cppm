@@ -24,6 +24,7 @@ import Event;
 import StackTrace;
 
 import Graphic.Draw;
+import Graphic.Draw.Lines;
 import Graphic.Pixmap;
 import Core.Renderer;
 import Graphic.Viewport.Viewport_OrthoRect;
@@ -51,6 +52,7 @@ import Core;
 
 import Core.Audio;
 import Assets.Manager;
+import Assets.Effects;
 import Assets.Sound;
 import Assets.Bundle;
 import Core.Settings;
@@ -75,7 +77,8 @@ import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureNineRegion;
 import GL.Blending;
 import Event;
-import GlyphArrangement;
+import Font.GlyphArrangement;
+import Interval;
 
 import Assets.TexturePacker;
 import Assets.Loader;
@@ -99,6 +102,9 @@ import Game.Core;
 import Game.Entity.EntityManager;
 import Game.Entity.RealityEntity;
 import Game.Entity.SpaceCraft;
+import Game.Entity.Bullet;
+
+import Game.Content.Type.BasicBulletType;
 
 using namespace std;
 using namespace Graphic;
@@ -205,6 +211,52 @@ void setupUITest() {
 	}
 }
 
+void setupCtrl(){
+
+	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press, [] {
+		const auto pos = Game::core->overlayManager->getMouseInWorld();
+		auto* effect = Game::core->effectManager->suspend();
+		effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
+	});
+
+	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, [] {
+		static ext::Interval<> timer{};
+
+		timer.run<15>(OS::updateDeltaTick(), []{
+			Core::audio->play(Assets::Sounds::laser5);
+			Geom::RectBox box{};
+		box.setSize(180, 12);
+			box.offset = box.sizeVec2;
+			box.offset.mul(-0.5f);
+
+			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
+			ptr->trait = &Game::Content::base;
+			ptr->position.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
+			ptr->rotation =
+				Core::input->getMousePos()
+					.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
+					.angle();
+
+			ptr->velocity.set(320, 0).rotate(ptr->rotation);
+			Game::EntityManage::add(ptr);
+			ptr->hitBox = box;
+			ptr->physicsBody.inertialMass = 100;
+			ptr->activate();
+			ptr->damage.materialDamage.fullDamage = 100;
+		});
+	});
+
+	Core::input->registerMouseBind(
+		Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
+		Ctrl::Mode_Shift
+		, [] {
+		Game::EntityManage::realEntities.quadTree->intersectPoint(Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
+		[](decltype(Game::EntityManage::realEntities)::ValueType* entity) {
+			entity->controller->selected = !entity->controller->selected;
+			Game::core->overlayManager->registerSelected(std::dynamic_pointer_cast<Game::RealityEntity>(entity->obtainSharedSelf()));
+		});
+	});
+}
 
 int main(const int argc, char* argv[]) {
 	//Init
@@ -214,20 +266,26 @@ int main(const int argc, char* argv[]) {
 
 	::Test::setupAudioTest();
 
-	auto gameCore = std::make_unique<Game::Core>();
+	Game::core = std::make_unique<Game::Core>();
+	OS::registerListener(Game::core.get());
 
-	::Core::renderer->getListener().on<Event::Draw_Overlay>([&gameCore]([[maybe_unused]] const auto& e){
-		gameCore->overlayManager->drawAboveUI(e.renderer);
+	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
+		Game::core->overlayManager->drawAboveUI(e.renderer);
 	});
 
-	::Core::renderer->getListener().on<Event::Draw_After>([&gameCore]([[maybe_unused]] const auto& e){
-		gameCore->overlayManager->drawBeneathUI(e.renderer);
+	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
+		Game::core->overlayManager->drawBeneathUI(e.renderer);
 	});
 
-	OS::registerListener(gameCore.get());
+	::Core::renderer->getListener().on<Event::Draw_Post>([]([[maybe_unused]] const auto& e){
+		Game::core->effectManager->render();
+	});
+
 
 	// UI Test
 	setupUITest();
+
+	setupCtrl();
 
 	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
@@ -236,61 +294,11 @@ int main(const int argc, char* argv[]) {
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 
 	std::stringstream ss{};
-	Geom::Matrix3D mat{};
+
 	const auto coordCenter = Font::obtainLayoutPtr();
 
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
-
-	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Press, [] {
-		Geom::RectBox box{};
-		box.setSize(150, 20);
-		box.offset = box.sizeVec2;
-		box.offset.mul(-0.5f);
-
-		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-		ptr->position.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
-		ptr->rotation =
-			Core::input->getMousePos()
-				.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
-				.angle();
-
-		ptr->velocity.set(180, 0).rotate(ptr->rotation);
-		Game::EntityManage::add(ptr);
-		ptr->hitBox = box;
-		ptr->physicsBody.inertialMass = 100;
-		ptr->activate();
-	});
-
-	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Repeat, [] {
-		Geom::RectBox box{};
-		box.setSize(50, 15);
-		box.offset = box.sizeVec2;
-		box.offset.mul(-0.5f);
-
-		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-		ptr->position.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
-		ptr->rotation =
-			Core::input->getMousePos()
-				.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
-				.angle();
-
-		ptr->velocity.set(120, 0).rotate(ptr->rotation);
-		Game::EntityManage::add(ptr);
-		ptr->hitBox = box;
-		ptr->activate();
-	});
-
-	Core::input->registerMouseBind(
-		Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
-		Ctrl::Mode_Shift
-		, [&gameCore] {
-		Game::EntityManage::realEntities.quadTree->intersectPoint(Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
-		[&gameCore](decltype(Game::EntityManage::realEntities)::ValueType* entity) {
-			entity->controller->selected = !entity->controller->selected;
-			gameCore->overlayManager->registerSelected(std::dynamic_pointer_cast<Game::RealityEntity>(entity->obtainSharedSelf()));
-		});
-	});
 
 	{
 		Math::Rand rand = Math::globalRand;
@@ -306,6 +314,7 @@ int main(const int argc, char* argv[]) {
 			ptr->position.set(rand.range(20000), rand.range(20000));
 			Game::EntityManage::add(ptr);
 			ptr->hitBox = box;
+			ptr->setHealth(500);
 			ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
 			ptr->velocity.set(1, 0).rotate(rand.random(360));
 			ptr->activate();
@@ -335,10 +344,10 @@ int main(const int argc, char* argv[]) {
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
 		Game::EntityManage::render();
 
-		Draw::setLineStroke(5);
+		Draw::Line::setLineStroke(5);
 		Draw::color(Colors::GRAY);
 		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
-			Draw::rectLine(t->getBoundary());
+			Draw::Line::rect(t->getBoundary());
 		});
 		e.renderer->frameEnd(Assets::PostProcessors::bloom);
 	});
@@ -356,21 +365,16 @@ int main(const int argc, char* argv[]) {
 			Draw::meshBegin(Core::overlayBatch->getMesh());
 			Draw::color();
 
-			// Draw::setLineStroke(3);
-			// Draw::color(Colors::BLUE_SKY);
-			//
-			// Draw::setLineStroke(5);
-			// Draw::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
-			// 		   { &Colors::SKY, &Colors::ROYAL, &Colors::SKY, &Colors::WHITE, &Colors::ROYAL, &Colors::SKY }
-			// );
+			Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+					   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
+			);
 
 			Draw::color();
 
 			{
-				mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(Core::renderer->getWidth()),
-								  static_cast<float>(Core::renderer->getHeight()));
+				static Geom::Matrix3D mat{};
 
-				Core::overlayBatch->beginTempProjection(mat);
+				Draw::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 				Draw::color();
 
 				ss.str(""s);
@@ -380,8 +384,6 @@ int main(const int argc, char* argv[]) {
 				ss << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, [](const decltype(Game::EntityManage::drawables.idMap)::value_type::second_type& i) {
 					return i->isInScreen();
 				});
-				ss << "\nTotal hit: " << Game::totalHit;
-
 
 				currentCoordText = ss.str();
 				*currentCoord    = currentCoordText;
@@ -392,10 +394,10 @@ int main(const int argc, char* argv[]) {
 				// coordCenter->setAlign(Align::Mode::bottom_left);
 				// coordCenter->render();
 
-				Draw::setLineStroke(4);
-				Draw::lineSquare(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
+				Draw::Line::setLineStroke(4);
+				Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
-				Core::overlayBatch->endTempProjection();
+				Draw::endPorj();
 			}
 
 			Draw::flush();

@@ -35,7 +35,8 @@ export namespace Game {
 
 		PosedTarget destination{};
 
-		bool enableCommand{false};
+		bool enableMoveCommand{false};
+		bool enableRotateCommand{false};
 
 		bool translatory{false};
 
@@ -63,7 +64,7 @@ export namespace Game {
 		[[nodiscard]] Geom::Vec2 lastDest() const{
 			const auto currentRouteIndex = this->currentRouteIndex - 1;
 			if(currentRouteIndex < 0){
-				return currentPosition;
+				return destination;
 			}
 			if(currentRouteIndex >= route.size()){
 				return destination;
@@ -74,7 +75,7 @@ export namespace Game {
 
 		[[nodiscard]] Geom::Vec2 nextDest() const{
 			if(currentRouteIndex < 0){
-				return currentPosition;
+				return destination;
 			}
 			if(currentRouteIndex >= route.size()){
 				return destination;
@@ -107,8 +108,8 @@ export namespace Game {
 			return (currentPosition - next).length2() > positionTolerance * positionTolerance;
 		}
 
-		void updateCurrent(const Geom::Vec2 data) {
-			currentPosition = data;
+		void updateCurrent(const Geom::Vec2 curPos) {
+			currentPosition = curPos;
 
 			const auto dest = nextDest();
 
@@ -120,32 +121,32 @@ export namespace Game {
 				expectedFaceAngle = expectedMoveAngle();
 			}
 
-			if(activated()){
+			if(moveActivated()){
 				if(!requiresMovement(dest)){
 					currentRouteIndex ++;
 					if(!hasNextDest()){
 						completeMove();
-						deactivate();
 					}
 				}
 			}
 		}
 
-		void activate() {
-			enableCommand = true;
+		void activateMove() {
+			enableMoveCommand = true;
 		}
 
-		void deactivate() {
-			enableCommand = false;
+		void deactivateMove() {
+			enableMoveCommand = false;
 		}
 
 		void completeMove(){
 			destination = currentPosition;
 			clearRoute();
+			deactivateMove();
 		}
 
 		void completeRotate(){
-
+			enableRotateCommand = false;
 		}
 
 		void clearRoute(){
@@ -155,11 +156,15 @@ export namespace Game {
 
 		void assignTarget(const Geom::Vec2 dest){
 			destination = dest;
-			activate();
+			activateMove();
 		}
 
-		[[nodiscard]] bool activated() const {
-			return enableCommand;
+		[[nodiscard]] bool moveActivated() const {
+			return enableMoveCommand;
+		}
+
+		[[nodiscard]] bool shouldDrawUI() const{
+			return enableMoveCommand || enableRotateCommand || isAssigningRoute();
 		}
 	};
 
@@ -172,6 +177,8 @@ export namespace Game {
 
 		std::vector<HittableTarget> targets{};
 
+		std::vector<Geom::Vec2> turretTargets{};
+
 		MoveCommand moveCommand{};
 
 		bool selected{false};
@@ -181,6 +188,8 @@ export namespace Game {
 		std::unique_ptr<Strategy> strategy{nullptr};
 		/** \brief Command shouldn't modify it's commanded entity directly. */
 		const RealityEntity* owner{nullptr};
+
+		std::unique_ptr<Controller> fallbackController{nullptr};
 
 	public:
 		/**
@@ -196,9 +205,7 @@ export namespace Game {
 		 */
 		ReflectSensor* sensor{nullptr};
 
-		[[nodiscard]] explicit Controller(const RealityEntity* const owner)
-			: owner(owner) {
-		}
+		[[nodiscard]] explicit Controller(const RealityEntity* const owner);
 
 		virtual bool isValidTo(const std::shared_ptr<RealityEntity>& entity) {
 			return true;

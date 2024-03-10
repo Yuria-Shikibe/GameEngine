@@ -34,7 +34,7 @@ using namespace Graphic;
 using namespace Geom;
 using namespace GL;
 
-namespace Graphic::Draw {
+namespace Graphic::Draw{
 	Vec2 vec2_0{};
 	Vec2 vec2_1{};
 	Vec2 vec2_2{};
@@ -48,7 +48,7 @@ export
 /**
  * \brief Main Thread Only!
  */
-namespace Graphic::Draw {
+namespace Graphic::Draw{
 	inline float vertices[VERT_LENGTH_STD] = { 0 };
 
 	inline Color contextColor    = Colors::WHITE;
@@ -59,12 +59,18 @@ namespace Graphic::Draw {
 
 	inline float contextStroke = 1.0f;
 
+	inline float circleVertPrecision{8};
+
 	inline const Matrix3D MAT_IDT{};
 
 	inline const Mesh* rawMesh{ nullptr };
 	inline const Shader* blitter{ nullptr };
 
 	inline std::stack<const Mesh *> formerMesh{};
+
+	constexpr int getCircleVerts(const float radius){
+		return Math::max(Math::ceil(radius * Math::PI / circleVertPrecision), 12);
+	}
 
 	template <Concepts::Invokable<void(const Shader&)> func>
 	void blit(const GL::FrameBuffer* const draw, const Shader* shader, const func& f) {
@@ -394,44 +400,6 @@ namespace Graphic::Draw {
 		);
 	}
 
-	void line(const TextureRegion* region, const float x, const float y, const float x2, const float y2,
-	          const Color& c1 = contextColor, const Color& c2 = contextColor, const bool cap = true) {
-		const float h_stroke = contextStroke / 2.0f;
-		const float len      = Math::len(x2 - x, y2 - y);
-		const float diff_x   = (x2 - x) / len * h_stroke;
-		const float diff_y   = (y2 - y) / len * h_stroke;
-
-		if(cap) {
-			quad(
-				region,
-				Vec2{x - diff_x - diff_y, y - diff_y + diff_x}, c1,
-				Vec2{x - diff_x + diff_y, y - diff_y - diff_x}, c1,
-				Vec2{x2 + diff_x + diff_y, y2 + diff_y - diff_x}, c2,
-				Vec2{x2 + diff_x - diff_y, y2 + diff_y + diff_x}, c2
-			);
-		} else {
-			quad(
-				region,
-				Vec2{x - diff_y, y + diff_x}, c1,
-				Vec2{x + diff_y, y - diff_x}, c1,
-				Vec2{x2 + diff_y, y2 - diff_x}, c2,
-				Vec2{x2 - diff_y, y2 + diff_x}, c2
-			);
-		}
-	}
-
-	void line(const float x, const float y, const float x2, const float y2, const bool cap = true) {
-		line(defaultTexture, x, y, x2, y2, contextColor, contextColor, cap);
-	}
-	
-	void line(const Vec2 v1, const Vec2 v2, const Color& c1 = contextColor, const Color& c2 = contextColor, const bool cap = true) {
-		line(defaultTexture, v1.x, v1.y, v2.x, v2.y, c1, c2, cap);
-	}
-
-	inline void setLineStroke(const float s) {
-		contextStroke = s;
-	}
-
 	inline void reset() {
 		contextStroke = 1.0f;
 		color();
@@ -439,65 +407,7 @@ namespace Graphic::Draw {
 		texture();
 	}
 
-	inline void lineAngleCenter(const float x, const float y, const float angle, const float length,
-	                            const bool cap = true) {
-		vec2_0.setPolar(angle, length * 0.5f);
-
-		line(contextTexture, x - vec2_0.x, y - vec2_0.y, x + vec2_0.x, y + vec2_0.y, contextColor, contextColor, cap);
-	}
-
-	inline void lineAngle(const float x, const float y, const float angle, const float length, const bool cap = true) {
-		vec2_0.setPolar(angle, length);
-
-		line(contextTexture, x, y, x + vec2_0.x, y + vec2_0.y, contextColor, contextColor, cap);
-	}
-
-	inline void lineAngle(const float x, const float y, const float angle, const float length, const float offset) {
-		vec2_0.setPolar(angle, 1.0f);
-
-		line(contextTexture, x + vec2_0.x * offset, y + vec2_0.y * offset, x + vec2_0.x * (length + offset),
-		     y + vec2_0.y * (length + offset));
-	}
-
-	void rectLine(const float srcx, const float srcy, const float width, const float height, const bool cap = true) {
-		line(defaultTexture, srcx, srcy, srcx, srcy + height - contextStroke, contextColor, contextColor, cap);
-		line(defaultTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height, contextColor, contextColor, cap);
-		line(defaultTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke, contextColor, contextColor, cap);
-		line(defaultTexture, srcx + width, srcy, srcx + contextStroke, srcy, contextColor, contextColor, cap);
-	}
-
-	void rectLine(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO) {
-		rectLine(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(), rect.getHeight(),
-		         cap);
-	}
-
-	void lineSquare(const float x, const float y, const float radius, float ang) {
-		ang += 45.000f;
-		const float dst = contextStroke / Math::SQRT2;
-
-		vec2_0.setPolar(ang, 1);
-
-		vec2_1.set(vec2_0);
-		vec2_2.set(vec2_0);
-
-		vec2_1.scl(radius - dst);
-		vec2_2.scl(radius + dst);
-
-		for(int i = 0; i < 4; ++i) {
-			vec2_0.rotateRT();
-
-			vec2_3.set(vec2_0).scl(radius - dst);
-			vec2_4.set(vec2_0).scl(radius + dst);
-
-			quad(vec2_1.x + x, vec2_1.y + y, vec2_2.x + x, vec2_2.y + y, vec2_4.x + x, vec2_4.y + y, vec2_3.x + x,
-			     vec2_3.y + y);
-
-			vec2_1.set(vec2_3);
-			vec2_2.set(vec2_4);
-		}
-	}
-
-	void fillSquare(const float x, const float y, const float radius, float ang) {
+	void fillSquare(const float x, const float y, const float radius, float ang){
 		ang += 45.000f;
 
 		vec2_0.setPolar(ang, radius / Math::SQRT2);
@@ -509,90 +419,6 @@ namespace Graphic::Draw {
 		vec2_4.set(x, y).add(vec2_0.rotateRT());
 
 		Draw::quad(defaultTexture, vec2_1, vec2_2, vec2_3, vec2_4);
-	}
-
-	void poly(const float x, const float y, const int sides, const float radius, const float angle) {
-		const float space  = 360.0f / static_cast<float>(sides);
-		const float h_step = contextStroke / 2.0f / Math::cosDeg(space / 2.0f);
-		const float r1     = radius - h_step;
-		const float r2     = radius + h_step;
-
-		for(int i = 0; i < sides; i++) {
-			const float a    = space * static_cast<float>(i) + angle;
-			const float cos1 = Math::cosDeg(a);
-			const float sin1 = Math::sinDeg(a);
-			const float cos2 = Math::cosDeg(a + space);
-			const float sin2 = Math::sinDeg(a + space);
-			quad(
-				x + r1 * cos1, y + r1 * sin1,
-				x + r1 * cos2, y + r1 * sin2,
-				x + r2 * cos2, y + r2 * sin2,
-				x + r2 * cos1, y + r2 * sin1
-			);
-		}
-	}
-
-	template <size_t size>
-	void poly(const float x, const float y, const int sides, const float radius, const float angle, const float ratio,
-	          const Color* const(&colorGroup)[size]) {
-		const auto fSides = static_cast<float>(sides);
-
-		const float space  = 360.0f / fSides;
-		const float h_step = contextStroke / 2.0f / Math::cosDeg(space / 2.0f);
-		const float r1     = radius - h_step;
-		const float r2     = radius + h_step;
-
-		float currentRatio = 0;
-
-		float currentAng = angle;
-		float sin1       = Math::sinDeg(currentAng);
-		float cos1       = Math::cosDeg(currentAng);
-		float sin2, cos2;
-
-		float progress   = 0;
-		Color lerpColor1 = *colorGroup[0x000000];
-		Color lerpColor2 = *colorGroup[size - 1];
-
-		for(; progress < fSides * ratio - 1.0f; progress += 1.0f) {
-			// NOLINT(cert-flp30-c)
-			currentAng = angle + (progress + 1.0f) * space;
-
-			sin2 = Math::sinDeg(currentAng);
-			cos2 = Math::cosDeg(currentAng);
-
-			currentRatio = progress / fSides;
-
-			lerpColor2.lerp(colorGroup, currentRatio);
-
-			quad(defaultTexture,
-			     cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
-			     cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
-			     cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
-			     cos2 * r1 + x, sin2 * r1 + y, lerpColor2
-			);
-
-			lerpColor1.set(lerpColor2);
-
-			sin1 = sin2;
-			cos1 = cos2;
-		}
-
-		currentRatio            = ratio;
-		const float remainRatio = currentRatio * fSides - progress;
-
-		currentAng = angle + (progress + 1.0f) * space;
-
-		sin2 = Math::lerp(sin1, Math::sinDeg(currentAng), remainRatio);
-		cos2 = Math::lerp(cos1, Math::cosDeg(currentAng), remainRatio);
-
-		lerpColor2.lerp(colorGroup, progress / fSides).lerp(lerpColor1, 1.0f - remainRatio);
-
-		quad(defaultTexture,
-		     cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
-		     cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
-		     cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
-		     cos2 * r1 + x, sin2 * r1 + y, lerpColor2
-		);
 	}
 }
 

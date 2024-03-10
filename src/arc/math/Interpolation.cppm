@@ -121,8 +121,8 @@ export namespace Math::Interp {
 		[[nodiscard]] constexpr BounceOut() {
 			static_assert(bounces >= 2 && bounces <= 5, "bounces cannot be < 2 or > 5");
 
-			Bounce& widths = const_cast<Bounce&>(this->widths);
-			Bounce& heights = const_cast<Bounce&>(this->heights);
+			auto& widths = const_cast<Bounce&>(this->widths);
+			auto& heights = const_cast<Bounce&>(this->heights);
 
 			heights[0] = 1;
 
@@ -375,4 +375,10 @@ export namespace Math::Interp {
 	InterpFunc bounce     = Bounce<4>();
 	InterpFunc bounceIn   = BounceIn<4>();
 	InterpFunc bounceOut  = BounceOut<4>();
+
+}
+
+
+export float operator |(const float val, Concepts::Invokable<float(float)> auto&& interp){
+	return interp(val);
 }

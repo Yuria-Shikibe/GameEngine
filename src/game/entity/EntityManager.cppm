@@ -59,9 +59,11 @@ export namespace Game::EntityManage{
 
 	template<Concepts::Derived<Entity> T>
 	[[nodiscard]] std::shared_ptr<T> obtain() {
-		auto ptr = Pools::obtainShared<T>();
+		auto ptr = Pools::obtainRaw<T>();
+		new (ptr) T{};
+
 		ptr->setID(allocateID());
-		return ptr;
+		return std::shared_ptr<T>{ptr, std::move(Pools::getPool<T>()->getDeleter())};
 	}
 
 	template<Concepts::Derived<Entity> T>

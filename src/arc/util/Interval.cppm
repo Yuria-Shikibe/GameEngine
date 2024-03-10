@@ -29,7 +29,7 @@ export namespace ext{
 			auto& reload = reloads[Index];
 			reload += delta;
 
-			if(reload >= delta){
+			if(reload >= Spacing){
 				if constexpr(Strict){
 					const int total = Math::floor(reload / Spacing);
 					for(int i = 0; i < total; ++i){

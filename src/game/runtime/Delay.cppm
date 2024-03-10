@@ -1,6 +1,6 @@
 module;
 
-export module Gmae.Delay;
+export module Game.Delay;
 
 import Container.Pool;
 import Concepts;

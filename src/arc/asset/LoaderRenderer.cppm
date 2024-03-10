@@ -1,5 +1,7 @@
 module;
 
+#include <glad/glad.h>
+
 export module Assets.LoaderRenderer;
 
 import Align;
@@ -7,6 +9,7 @@ import Align;
 import Core.Renderer;
 
 import Graphic.Draw;
+import Graphic.Draw.Lines;
 import Graphic.Color;
 
 import Geom.Matrix3D;
@@ -18,9 +21,8 @@ import GL.Buffer.FrameBuffer;
 import Assets.Loader;
 import Assets.Graphic;
 
-import GlyphArrangement;
+import Font.GlyphArrangement;
 
-import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 import <memory>;
 import <iomanip>;
@@ -103,8 +105,8 @@ export namespace Assets {
 			Draw::color(Colors::DARK_GRAY);
 
 			Draw::alpha(0.177f);
-			Draw::setLineStroke((stroke + slideLineSize) * 2.0f);
-			Draw::line(0, y, w, y);
+			Draw::Line::setLineStroke((stroke + slideLineSize) * 2.0f);
+			Draw::Line::line(0, y, w, y);
 
 
 			Draw::alpha();
@@ -123,7 +125,7 @@ export namespace Assets {
 			);
 
 			Draw::shader(Assets::Shaders::sildeLines, true);
-			Draw::setLineStroke(stroke);
+			Draw::Line::setLineStroke(stroke);
 			Draw::color(Colors::GRAY);
 
 			Draw::flush();
@@ -155,7 +157,7 @@ export namespace Assets {
 			glStencilFunc(GL_EQUAL, 1, 0xFF);
 			glStencilMask(0x00);
 
-			Draw::setLineStroke(stroke * 4);
+			Draw::Line::setLineStroke(stroke * 4);
 			Draw::alpha(0.9f);
 
 			const Color& begin = loader->postedTasks.empty() ? Colors::ROYAL : Colors::RED;

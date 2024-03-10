@@ -4,6 +4,7 @@ export module Assets.Cursor;
 
 import Geom.Vector2D;
 import Graphic.Draw;
+import Graphic.Draw.Lines;
 import GL.Texture.TextureRegionRect;
 
 import <array>;
@@ -35,13 +36,13 @@ export namespace Assets{
 		}
 
 		void operator()(const float x, const float y, const float w, const float h) override{
-			Draw::setLineStroke(h * 2);
-			Draw::line(-1, y, x - w * margin, y);
-			Draw::line(x + w * margin, y, 1, y);
+			Draw::Line::setLineStroke(h * 2);
+			Draw::Line::line(-1, y, x - w * margin, y);
+			Draw::Line::line(x + w * margin, y, 1, y);
 
-			Draw::setLineStroke(w * 2);
-			Draw::line(x, -1, x, y - margin * h);
-			Draw::line(x, y + margin * h, x, 1);
+			Draw::Line::setLineStroke(w * 2);
+			Draw::Line::line(x, -1, x, y - margin * h);
+			Draw::Line::line(x, y + margin * h, x, 1);
 		}
 	};
 

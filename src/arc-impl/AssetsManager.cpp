@@ -12,7 +12,7 @@ import Graphic.TextureAtlas;
 import GL.Shader.Manager;
 import Font;
 import OS.File;
-import GlyphArrangement;
+import Font.GlyphArrangement;
 import OS;
 import Event;
 

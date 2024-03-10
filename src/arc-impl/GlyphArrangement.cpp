@@ -1,6 +1,6 @@
 module;
 
-module GlyphArrangement;
+module Font.GlyphArrangement;
 
 import Graphic.Draw;
 import RuntimeException;

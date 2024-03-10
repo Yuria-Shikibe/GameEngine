@@ -12,6 +12,7 @@ import RuntimeException;
 
 
 export namespace Containers{
+    //TODO this class is a totoally failure
     template <class T>
         requires Concepts::DefConstructable<T>
     class Pool{
@@ -108,13 +109,16 @@ export namespace Containers{
     protected:
         size_t maxSize{5000};
         std::vector<ItemRef> vault;
+
         Deleter deleter;
-
         std::mutex vaultLock{};
-
         // std::unique_ptr<std::pmr::monotonic_buffer_resource> monotonicPool{nullptr};
 
     public:
+        Deleter getDeleter(){
+            return deleter;
+        }
+        using UniquePtr = std::unique_ptr<T, Deleter>;
         [[nodiscard]] Pool(const size_t maxSize, std::function<void(ItemRef)>&& func)
             : maxSize(maxSize),
             vault(vault), deleter(Deleter{this, std::forward<std::function<void(ItemRef)>>(func)})  {
@@ -197,12 +201,12 @@ export namespace Containers{
             return Allocator_Unique{this};
         }
 
-        [[nodiscard]] std::unique_ptr<T, Deleter> obtainUnique() {
+        [[nodiscard]] UniquePtr obtainUnique() {
             if (vault.empty()) {
-                return std::unique_ptr<T, Deleter>{new T, deleter};
+                return UniquePtr{new T, deleter};
             }
 
-            ItemRef ptr = nullptr;
+            ItemRef ptr;
 
             {
                 std::lock_guard guard{vaultLock};

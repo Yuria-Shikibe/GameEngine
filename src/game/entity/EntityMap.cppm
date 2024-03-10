@@ -134,9 +134,9 @@ export namespace Game {
 			}
 		}
 
-		void postAddPrimitive(Game::Entity* entity) override {
-
-		}
+		// void postAddPrimitive(Game::Entity* entity) override {
+		//
+		// }
 
 		virtual void cancelRemove(T* entity) {
 			toRemove.erase(entity);

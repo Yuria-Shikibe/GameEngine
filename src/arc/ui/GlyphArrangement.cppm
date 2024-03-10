@@ -4,7 +4,7 @@
 
 module;
 
-export module GlyphArrangement;
+export module Font.GlyphArrangement;
 
 import Container.Pool;
 import Font;
@@ -15,7 +15,7 @@ import Geom.Shape.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import Geom.Vector2D;
 
-import Align;
+export import Align;
 
 import <vector>;
 import <string>;

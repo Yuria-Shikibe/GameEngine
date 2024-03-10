@@ -5,7 +5,7 @@ export module UI.Label;
 import RuntimeException;
 import Align;
 import UI.Elem;
-import GlyphArrangement;
+import Font.GlyphArrangement;
 import <memory>;
 import <string>;
 

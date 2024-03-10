@@ -92,14 +92,13 @@ export namespace Geom {
 		}
 	}
 
-	Vec2 arrive(const Vec2 position, const Vec2 dest, const Vec2 curVel,
-	            const float speed, const float smooth, const float radius, const float tolerance) {
+	Vec2 arrive(const Vec2 position, const Vec2 dest, const Vec2 curVel, const float smooth, const float radius, const float tolerance) {
 		auto toTarget = Vec2{ dest - position };
 
 		const float distance = toTarget.length();
 
 		if(distance <= tolerance) return toTarget.setZero();
-		float targetSpeed = speed;
+		float targetSpeed = curVel.length();
 		if(distance <= radius) targetSpeed *= distance / radius;
 
 		return toTarget.sub(curVel.x / smooth, curVel.y / smooth).limit(targetSpeed);

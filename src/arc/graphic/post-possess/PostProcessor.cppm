@@ -85,10 +85,10 @@ export namespace Graphic {
 
 
 		//TODO pipe process mode support?
-		FrameBuffer* operator|=(FrameBuffer* target) const{
-			this->begin(this->toProcess);
-			this->process();
-			this->end(target);
+		friend FrameBuffer* operator|(FrameBuffer* target, const PostProcessor& processor){
+			processor.begin(processor.toProcess);
+			processor.process();
+			processor.end(target);
 
 			return target;
 		}

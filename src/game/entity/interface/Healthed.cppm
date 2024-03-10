@@ -5,6 +5,8 @@ export module Game.Entity.Healthed;
 import Game.Entity;
 import <limits>;
 
+import Game.Settings.DamageTrait;
+
 export namespace Game {
 	class Healthed{
 	protected:
@@ -12,8 +14,8 @@ export namespace Game {
 	public:
 		virtual ~Healthed() = default;
 
-		virtual void dealDamage(const float val) {
-			health -= val;
+		virtual void dealDamage(const DamageComposition& val) {
+			health -= val.sum();
 		}
 
 		[[nodiscard]] virtual float getHealth() const {

@@ -30,6 +30,9 @@ import <ranges>;
 import <unordered_map>;
 
 export namespace Game {
+	class BasicRealityEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {
+
+	};
 	/**
 	 * \brief
 	 * RealityEntity should exist in Reality,
@@ -40,7 +43,7 @@ export namespace Game {
 	 *
 	 * TODO z layer necessity?
 	 */
-	class RealityEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {
+	class RealityEntity : public BasicRealityEntity {
 	public:
 		static constexpr float angularVelocityLimit = 180;
 		static constexpr float angularAccelerationLimit = 90;
@@ -57,7 +60,6 @@ export namespace Game {
 		Geom::Vec2 velocity{};
 		Geom::Vec2 velocityCollision{};
 
-		float rotation{};
 		float angularVelocity{};
 		float angularAcceleration{};
 
@@ -86,7 +88,7 @@ export namespace Game {
 		/**
 		 * @brief CCD usage;
 		 */
-		Geom::Shape::OrthoRectFloat maxCollisionBound{};
+		Geom::Shape::OrthoRectFloat maxBound{};
 
 		struct Trace {
 			std::vector<Geom::QuadBox> contiounsTraces{20};
@@ -184,6 +186,11 @@ export namespace Game {
 			return vec;
 		}
 
+
+		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {
+			return maxBound;
+		}
+
 		void update(const float deltaTick) override {
 			controller->update();
 			updateMovement(deltaTick);
@@ -206,11 +213,19 @@ export namespace Game {
 			position = hitBox.originPoint;
 		}
 
+		[[nodiscard]] virtual bool selectable() const {
+			return false;
+		}
+
+		virtual void assignController() const {
+
+		}
+
 		virtual bool isOverrideCollisionTo(const Game::RealityEntity* object) const {
 			return false;
 		}
 
-		virtual void overrideCollisionTo(Game::RealityEntity* object) const {
+		virtual void overrideCollisionTo(Game::RealityEntity* object, Geom::Vec2 intersection) {
 
 		}
 
@@ -239,7 +254,8 @@ export namespace Game {
 			if(object->ignoreCollisionTo(this))return;
 
 			if(object->isOverrideCollisionTo(this)) {
-				object->overrideCollisionTo(this);
+				const_cast<Game::RealityEntity*>(object)->overrideCollisionTo(this, intersection);
+				return;
 			}
 
 			intersectionCorrection(intersection);
@@ -331,10 +347,10 @@ export namespace Game {
 			if(enableCCD()) {
 				//TODO box rotation support
 				Geom::genContinousRectBox(trace.contiounsTraces, velocity, delta, hitBox);
-				maxCollisionBound = Geom::maxContinousBoundOf(trace.contiounsTraces);
+				maxBound = Geom::maxContinousBoundOf(trace.contiounsTraces);
 				trace.resize();
 			}else {
-				maxCollisionBound = hitBox.maxOrthoBound;
+				maxBound = hitBox.maxOrthoBound;
 			}
 
 			hitBox.update();
@@ -451,7 +467,7 @@ export namespace Game {
 				for(size_t index = 0; index < subject->trace.size(); ++index){
 					auto& currentBox = subject->trace.contiounsTraces.at(index);
 
-					if(currentBox.maxOrthoBound.overlap(object->maxCollisionBound) && object->hitBox.overlapExact(currentBox, subject->hitBox.normalU, subject->hitBox.normalV)) {
+					if(currentBox.maxOrthoBound.overlap(object->maxBound) && object->hitBox.overlapExact(currentBox, subject->hitBox.normalU, subject->hitBox.normalV)) {
 						if(needInterscetPointCalculation_subject || needInterscetPointCalculation_object) {
 							const Geom::Vec2 intersection = Geom::rectAvgIntersection(currentBox, object->hitBox);
 
@@ -491,7 +507,7 @@ export namespace Game {
 
 		static const Geom::Shape::OrthoRectFloat& getHitBoound(const RealityEntity* reality_entity) {
 			if(reality_entity->enableCCD()) {
-				return reality_entity->maxCollisionBound;
+				return reality_entity->maxBound;
 			}
 			return reality_entity->hitBox.maxOrthoBound;
 		}

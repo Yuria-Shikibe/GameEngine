@@ -16,8 +16,6 @@ import Core;
 import Geom;
 
 export namespace Game {
-	std::atomic_int totalHit = 0;
-
 	class SpaceCraft : public RealityEntity{
 	public:
 		bool intersected = false;
@@ -34,14 +32,10 @@ export namespace Game {
 			}
 
 			RealityEntity::updateCollision(deltaTick);
-
-			if(intersected) {
-				if(enableCCD())++totalHit;
-			}
 		}
 
 		void updateMovement(const float delta) override{
-			if(controller->moveCommand.activated()){
+			if(controller->moveCommand.moveActivated()){
 				const auto dest = controller->moveCommand.nextDest();
 				float angleDst = Math::Angle::angleDist(rotation, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst)){
@@ -49,8 +43,18 @@ export namespace Game {
 				}
 
 				if(controller->moveCommand.requiresMovement(dest)){
-					const auto dir = (dest - position).normalize();
-					acceleration.approach(dir * 1.5f, delta);
+					//TODO perform according to moveCommand.expected velocity
+					constexpr float tolerance = 20.0f;
+					auto dir = (dest - position);
+
+					float dst2 = dir.length2();
+					if(dst2 < Math::sqr(tolerance)){
+						acceleration = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance)));
+					}else{
+						acceleration.approach(dir.setLength2(2.25f), delta);
+					}
+
+
 				}
 			}
 
@@ -65,6 +69,17 @@ export namespace Game {
 				deactivate();
 			}
 
+			if(health < 0){
+				deactivate();
+			}
+		}
+
+		[[nodiscard]] bool selectable() const override{
+			return true;
+		}
+
+		void assignController() const override{
+
 		}
 
 		void draw() const override {
@@ -78,7 +93,7 @@ export namespace Game {
 				Draw::color(Colors::TAN);
 			}else if(intersected)Draw::color(Colors::AQUA);
 			else Draw::color(Colors::LIGHT_GRAY);
-			Draw::setLineStroke(2);
+			Draw::Line::setLineStroke(2);
 			Draw::quad(Draw::defaultTexture, hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
 
 			Draw::color(Colors::GRAY);
@@ -86,7 +101,7 @@ export namespace Game {
 			if(enableCCD()) {
 				for(const auto& [v0, v1, v2, v3, maxOrthoBound] : trace.contiounsTraces) {
 					Draw::quad(Draw::defaultTexture, v0, v1, v2, v3);
-					Draw::rectLine(maxOrthoBound);
+					Draw::Line::rect(maxOrthoBound);
 				}
 			}
 			Draw::alpha();
@@ -96,11 +111,11 @@ export namespace Game {
 				Draw::rect(vec2.x - 2, vec2.y - 2, 4, 4);
 			}
 
-			Draw::setLineStroke(1.0f);
+			Draw::Line::setLineStroke(1.0f);
 			Draw::color(Colors::MAGENTA);
-			Draw::lineAngle(position.x, position.y, rotation, hitBox.sizeVec2.length());
-			
-			Draw::setLineStroke(2.0f);
+			Draw::Line::lineAngle(position.x, position.y, rotation, hitBox.sizeVec2.length());
+
+			Draw::Line::setLineStroke(2.0f);
 			constexpr Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
 			for(int i = 0; i < 4; ++i) {
 				Draw::color(colors[i]);
@@ -110,7 +125,7 @@ export namespace Game {
 				const Vec2 end = hitBox[(i + 1) % 4];
 				const Vec2 center = (begin + end) / 2;
 
-				Draw::line(center, center + hitBox.getNormalVec(i).normalize().scl(25));
+				Draw::Line::line(center, center + hitBox.getNormalVec(i).normalize().scl(25));
 			}
 			//
 			// auto normalNearest = Geom::avgEdgeNormal(Core::camera->getPosition(), hitBox);
@@ -122,18 +137,14 @@ export namespace Game {
 				auto nor = Geom::avgEdgeNormal(value, hitBox);
 
 				Draw::color(Colors::ORANGE);
-				Draw::setLineStroke(2.0f);
-				Draw::line(value, value + nor.setLength(150 + hitBox.sizeVec2.length2() / 30));
-				Draw::setLineStroke(0.80f);
-				Draw::line(value, hitBox.originPoint);
+				Draw::Line::setLineStroke(2.0f);
+				Draw::Line::line(value, value + nor.setLength(150 + hitBox.sizeVec2.length2() / 30));
+				Draw::Line::setLineStroke(0.80f);
+				Draw::Line::line(value, hitBox.originPoint);
 			}
 
 			Draw::color(Colors::BLACK);
 			Draw::rect(hitBox.originPoint.x - 2, hitBox.originPoint.y - 2, 4, 4);
-		}
-
-		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {
-			return hitBox.maxOrthoBound;
 		}
 	};
 }

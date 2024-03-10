@@ -3,6 +3,7 @@ module;
 export module Game.UI.OverlayManager;
 
 import Game.Entity.RealityEntity;
+import Game.Entity;
 import Core;
 import Geom.Vector2D;
 import Geom.Matrix3D;
@@ -12,6 +13,7 @@ import Assets.Cursor;
 import Graphic.Draw;
 import Graphic.Draw.Lines;
 import Graphic.Trail;
+import Font.GlyphArrangement;
 import Assets.Graphic;
 
 import Ctrl.Constants;
@@ -24,7 +26,7 @@ import <ranges>;
 
 export namespace Game {
 	using namespace Graphic;
-	class OverlayManager : public OS::ApplicationListener{
+	class OverlayManager : public OS::ApplicationListener, public Game::RemoveCallalble{
 	public:
 		Geom::Vec2 mousePos{};
 		Geom::Vec2 mousePosNormalized{};
@@ -110,36 +112,36 @@ export namespace Game {
 		}
 
 		void drawBeneathUI(Core::Renderer* renderer) const{
+			static auto coordText = Font::obtainLayoutPtr();
 			renderer->frameBegin(&renderer->effectBuffer);
 			for(auto& entity : selected){
-				Draw::setLineStroke(3 + (entity->controller->moveCommand.isAssigningRoute() ? 0 : 3));
+				if(!entity->controller->moveCommand.shouldDrawUI())continue;
+				Draw::Line::setLineStroke(3 + (entity->controller->moveCommand.isAssigningRoute() ? 0 : 3));
 				Draw::color(Colors::SLATE);
-
-				Draw::Line::setLerpColor(Colors::RED, Colors::SLATE);
-				Draw::Line::beginLineVert();
-				Draw::Line::push(
-					entity->controller->moveCommand.route | std::ranges::views::take(entity->controller->moveCommand.currentRouteIndex)
-				);
-				Draw::Line::endLineVert();
-
-				Draw::line(entity->controller->moveCommand.lastDest(), entity->controller->moveCommand.nextDest(), Colors::SLATE, Colors::GREEN);
 
 				Draw::Line::setLerpColor(Colors::SLATE, Colors::AQUA);
 				Draw::Line::beginLineVert();
-				Draw::Line::push(
-					entity->controller->moveCommand.route | std::ranges::views::drop(entity->controller->moveCommand.currentRouteIndex)
-				);
+				Draw::Line::push(entity->controller->moveCommand.route);
 				Draw::Line::endLineVert([](const Geom::Vec2 p, const Graphic::Color color){
 					Draw::color(color);
 					Draw::fillSquare(p.x, p.y, 14, 45);
 				});
 
-				const auto next = entity->controller->moveCommand.nextDest();
-				Draw::lineSquare(next.x, next.y, 25, 45);
+				auto dest = entity->controller->moveCommand.destination;
+				Font::glyphParser->parse(coordText, std::format(
+					"${{scl#[0.85]}}${{color#[eeeeeeff]}}[{:.1f}, {:.1f}]",
+				dest.x, dest.y));
 
-				Draw::setLineStroke(6);
+				const auto next = entity->controller->moveCommand.nextDest();
+				Draw::Line::square(next.x, next.y, 25, 45);
+
+				Draw::Line::setLineStroke(6);
 				Draw::color(Colors::BRICK);
-				Draw::line(entity->controller->moveCommand.currentPosition, entity->controller->moveCommand.destination);
+				Draw::Line::line(entity->controller->moveCommand.currentPosition, entity->controller->moveCommand.destination);
+
+				coordText->offset.set(dest).add(45, 45);
+				coordText->setAlign(Align::Mode::bottom_left);
+				coordText->render();
 			}
 
 			renderer->frameEnd(Assets::PostProcessors::bloom);
@@ -163,6 +165,12 @@ export namespace Game {
 
 				entity->controller->moveCommand.route.push_back(mouseWorldPos);
 			}
+		}
+
+		void postRemovePrimitive(Game::Entity* entity) override{
+			std::erase_if(selected, [entity](const decltype(selected)::value_type& ptr){
+				return ptr.get() == entity;
+			});
 		}
 
 		void removeRoute(){

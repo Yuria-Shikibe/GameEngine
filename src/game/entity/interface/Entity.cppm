@@ -29,7 +29,7 @@ export namespace Game {
 
 		virtual void postRemovePrimitive(Game::Entity* entity) = 0;
 
-		virtual void postAddPrimitive(Game::Entity* entity) = 0;
+		// virtual void postAddPrimitive(Game::Entity* entity) = 0;
 	};
 
 	class Entity : public std::enable_shared_from_this<Entity> {
@@ -92,7 +92,6 @@ export namespace Game {
 			for(const auto& group : sharedGroup) {
 				group->postRemovePrimitive(this);
 			}
-			sharedGroup.clear();
 		}
 
 		virtual void registerGroup(RemoveCallalble* callalble) {

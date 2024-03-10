@@ -230,6 +230,22 @@ export namespace Geom {
 			return false;
 		}
 
+		void intersectAll(const Cont* object) {
+			if(!this->inbound(object)) return;
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				this->topLeft->intersectAll(object);
+				this->topRight->intersectAll(object);
+				this->bottomLeft->intersectAll(object);
+				this->bottomRight->intersectAll(object);
+			}
+
+			for(auto& element : rectangles){
+				this->isInersectedBetween(object, element);
+			}
+		}
+
 		template <Concepts::Invokable<void(Cont*)> Pred>
 		void intersect(const Cont* object, Pred&& pred) {
 			if(!this->inbound(object)) return;

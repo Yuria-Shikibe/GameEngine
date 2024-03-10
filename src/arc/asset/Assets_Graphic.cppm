@@ -7,7 +7,7 @@ import GL.Buffer.IndexBuffer;
 import GL.Buffer.VertexBuffer;
 import GL.VertexArray;
 import Font;
-import GlyphArrangement;
+import Font.GlyphArrangement;
 import OS.FileTree;
 import GL.Shader;
 import GL.Uniform;
