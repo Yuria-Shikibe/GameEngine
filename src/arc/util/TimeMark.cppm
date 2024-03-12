@@ -2,7 +2,7 @@ module;
 
 export module TimeMark;
 
-import <chrono>;
+export import <chrono>;
 import <unordered_map>;
 
 export namespace ext {

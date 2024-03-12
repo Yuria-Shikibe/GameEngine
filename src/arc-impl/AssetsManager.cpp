@@ -3,7 +3,6 @@ module;
 #include <ranges>
 #include <chrono>
 #include <iostream>
-#include <GLFW/glfw3.h>
 
 module Assets.Manager;
 
