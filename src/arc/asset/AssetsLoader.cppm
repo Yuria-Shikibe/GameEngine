@@ -125,7 +125,7 @@ export namespace Assets{
 
 			auto duration = timer.toMark(1);
 
-			while(duration < maxLoadSpacing) {
+			while(duration < maxLoadSpacing.count()) {
 				this->postHandler->lock.lock();
 
 				if(postedTasks.empty()) {
