@@ -222,7 +222,7 @@ void setupCtrl(){
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, [] {
 		static ext::Interval<> timer{};
 
-		timer.run<15>(OS::updateDeltaTick(), []{
+		timer.run<20>(OS::updateDeltaTick(), []{
 			Core::audio->play(Assets::Sounds::laser5);
 			Geom::RectBox box{};
 		box.setSize(180, 12);

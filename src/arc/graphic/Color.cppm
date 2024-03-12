@@ -61,6 +61,10 @@ export namespace Graphic{
 
 		constexpr Color(const float r, const float g, const float b): Color(r, g, b, 1){}
 
+		[[nodiscard]] const float* asRaw() const{
+			return reinterpret_cast<const float*>(this);
+		}
+
 		constexpr Color& set(std::tuple<float, float, float, float> datas){
 			std::tie(r, g, b, a) = datas;
 			return  *this;

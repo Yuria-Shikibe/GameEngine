@@ -93,6 +93,7 @@ export namespace Game {
 		}
 
 		void setRouteAssigningBegin(){
+			deactivateMove();
 			currentRouteIndex = -1;
 		}
 

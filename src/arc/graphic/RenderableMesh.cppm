@@ -25,14 +25,6 @@ export namespace GL {
 
 		using Mesh::render;
 
-		void bind() const override {
-			Mesh::bind();
-		}
-
-		void unbind() const override {
-			Mesh::unbind();
-		}
-
 		void render() const override {
 			if(!shader)throw ext::RuntimeException{"Empty Shader Applied to a RenderableMesh!!"};
 

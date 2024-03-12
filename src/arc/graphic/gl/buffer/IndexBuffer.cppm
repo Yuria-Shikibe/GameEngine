@@ -24,43 +24,36 @@ export namespace GL{
 
 	public:
 		IndexBuffer(){
-			glGenBuffers(1, &bufferID);
+			glCreateBuffers(1, &bufferID);
 			targetFlag = GL_ELEMENT_ARRAY_BUFFER;
 		}
 
 		~IndexBuffer(){
-			glDeleteBuffers(1, &bufferID);
+			if(bufferID)glDeleteBuffers(1, &bufferID);
 		}
-
-		IndexBuffer(const IndexBuffer& other) = delete;
-
-		IndexBuffer(IndexBuffer&& other) = delete;
-
-		IndexBuffer& operator=(const IndexBuffer& other) = delete;
-
-		IndexBuffer& operator=(IndexBuffer&& other) = delete;
 
 		template <GLuint size>
 		void setData(GLuint(&arr)[size], const GLenum mode = GL_DYNAMIC_DRAW) {
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * size, &arr, mode);
+			glNamedBufferData(bufferID, sizeof(GLuint) * size, &arr, mode);
 			bufferSize = size;
 		}
 
-		void bind() const{
-			glBindBuffer(targetFlag, bufferID);
-		}
-
 		void setDataRaw(const GLuint* data, const GLsizei count, const GLenum mode = GL_DYNAMIC_DRAW){
-			glBufferData(targetFlag, static_cast<long long>(sizeof(GLuint)) * count, data, mode);
+			glNamedBufferData(bufferID, static_cast<long long>(sizeof(GLuint)) * count, data, mode);
 			bufferSize = count;
-		}
-
-		void unbind() const{
-			glBindBuffer(targetFlag, 0);
 		}
 
 		[[nodiscard]] GLsizei getSize() const{
 			return bufferSize;
+		}
+
+
+		void bind() const {
+			GL::bindBuffer(targetFlag, bufferID);
+		}
+
+		void unbind() const {
+			GL::unbindBuffer(targetFlag);
 		}
 	};
 }

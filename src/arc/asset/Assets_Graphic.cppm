@@ -238,7 +238,7 @@ export namespace Assets{
 		;
 
 		void loadPrevious() {
-			raw = new Mesh{[](const Mesh& mesh) {
+			raw = new Mesh{[]( Mesh& mesh) {
 				mesh.bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f, 0.0f, 0.0f,
@@ -252,14 +252,14 @@ export namespace Assets{
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
 				layout.addFloat(2);
-				mesh.getVertexArray().applyLayout();
+				mesh.applyLayout();
 
 				mesh.unbind();
 			}};
 		}
 
 		void load() {
-			coords = new GL::RenderableMesh<GL_TRIANGLE_FAN>(Assets::Shaders::coordAxis, [](const GL::RenderableMesh<GL_TRIANGLE_FAN>& mesh) {
+			coords = new GL::RenderableMesh<GL_TRIANGLE_FAN>(Assets::Shaders::coordAxis, [](GL::RenderableMesh<GL_TRIANGLE_FAN>& mesh) {
 				mesh.bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f,
@@ -271,7 +271,7 @@ export namespace Assets{
 
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
-				mesh.getVertexArray().applyLayout();
+				mesh.applyLayout();;
 
 				mesh.unbind();
 			});

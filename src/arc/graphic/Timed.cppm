@@ -8,22 +8,27 @@ export import Math;
 export import Math.Interpolation;
 import Concepts;
 
+//TODO is this namespace appropriate
 export namespace Graphic{
 	struct Timed {
-		/**
-		 * @brief Should Between [0, 1]
-		 */
 		float lifetime{};
 		float time{};
 
+		template <bool autoClamp = false>
 		constexpr void set(const float time, const float lifetime){
-			this->time = time;
-			this->lifetime = lifetime;
+			if constexpr (autoClamp){
+				this->lifetime = Math::max(lifetime, 0.0f);
+				this->time = Math::clamp(time, 0.0f, lifetime);
+			}else{
+				this->lifetime = lifetime;
+				this->time = time;
+			}
+
 		}
 
-		template <bool clamp = false>
+		template <bool autoClamp = false>
 		[[nodiscard]] constexpr float get() const{
-			if constexpr (clamp){
+			if constexpr (autoClamp){
 				return Math::clamp(time / lifetime);
 			}
 

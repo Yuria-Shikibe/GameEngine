@@ -150,6 +150,7 @@ export namespace Core{
 
 	public:
 		explicit Input(GLFWwindow* w) : window(w) {
+
 		}
 
 		~Input() override = default;

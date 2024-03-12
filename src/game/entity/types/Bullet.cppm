@@ -9,30 +9,52 @@ export import Game.Entity.RealityEntity;
 export import Game.Settings.DamageTrait;
 
 import Game.Entity.EntityManager;
+// import GL.Texture.TextureRegionRect;
+import Graphic.TextureAtlas;
+import OS.File;
+import Geom.Vector2D;
 
-
+import Graphic.Timed;
 
 export namespace Game{
 	class Bullet;
 
 	struct BulletTrait {
 		DamageComposition initDamage{};
+		float maximumLifetime{60.0f};
+		float initSpeed{20.0f};
+
 		virtual ~BulletTrait() = default;
 
 		virtual void update(Bullet& bullet) const = 0;
 
-		virtual void init(Bullet& bullet) const = 0;
+		virtual void onShoot(Bullet& bullet) const;
 
 		virtual void hit(Bullet& bullet, RealityEntity& entity, Geom::Vec2 actualPosition) const = 0;
 
 		virtual void despawn(Bullet& bullet) const = 0;
 
 		virtual void draw(const Bullet& bullet) const = 0;
+
+		[[nodiscard]]
+		virtual bool despawnable(const Bullet& bullet) const;
+
+		virtual void loadTexture(const OS::File& dir, const Graphic::TextureAtlas& atlas){
+
+		}
+
+		virtual void init(){
+
+		}
+
+
 	};
 
 	class Bullet : public Game::RealityEntity {
 	public:
 		const BulletTrait* trait{nullptr};
+
+		Graphic::Timed life{};
 
 		DamageComposition damage{};
 
@@ -44,7 +66,7 @@ export namespace Game{
 		void activate() override{
 			RealityEntity::activate();
 
-			trait->init(*this);
+			trait->onShoot(*this);
 		}
 
 		bool isOverrideCollisionTo(const Game::RealityEntity* object) const override{
@@ -67,10 +89,15 @@ export namespace Game{
 
 			RealityEntity::update(dt);
 
-			if(velocity.isZero(0.005f))remove();
+
+			if(trait->despawnable(*this))despawn();
 		}
 
-		void remove(){
+		void calCollideTo(const Game::RealityEntity* object, Geom::Vec2 intersection, const float delatTick) override{
+
+		}
+
+		void despawn(){
 			removeable = true;
 			trait->despawn(*this);
 		}
@@ -90,4 +117,15 @@ export namespace Game{
 
 		}
 	};
+
+
+
+	void BulletTrait::onShoot(Bullet& bullet) const{
+		bullet.damage = initDamage;
+		bullet.life.lifetime = maximumLifetime;
+	}
+
+	bool BulletTrait::despawnable(const Bullet& bullet) const{
+		return bullet.velocity.isZero(0.005f);
+	}
 }

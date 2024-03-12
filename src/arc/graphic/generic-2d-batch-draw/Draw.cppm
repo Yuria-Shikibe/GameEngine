@@ -171,7 +171,7 @@ namespace Graphic::Draw{
 		if(render)formerMesh.top()->render();
 		formerMesh.pop();
 
-		if(!formerMesh.empty()) formerMesh.top()->bind();
+		if(!formerMesh.empty())formerMesh.top()->bind();
 	}
 
 	void shader(Shader* shader, bool flushContext = true);

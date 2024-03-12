@@ -9,18 +9,69 @@ import GL.GL_Exception;
 import RuntimeException;
 import <string>;
 import <sstream>;
+import <iostream>;
 
-inline void throw_GL_Exception(const int error_code, const char* description) {
-	throw ext::IllegalArguments{"ERROR CODE: " + std::to_string(error_code) + "\n\n" + std::string(description) + "\n\n"};
+namespace Graphic{
+	void glDebugCallback(GLenum source, GLenum type, const GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
+	{
+		const std::string_view src_str = [source]{
+			switch (source)
+			{
+				case GL_DEBUG_SOURCE_API: return "API";
+				case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
+				case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
+				case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
+				case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
+				case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+				default: return "UNKNOWN";
+			}
+		}();
+
+		const std::string_view type_str = [type]() {
+			switch (type)
+			{
+				case GL_DEBUG_TYPE_ERROR: return "ERROR";
+				case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
+				case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
+				case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
+				case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
+				case GL_DEBUG_TYPE_MARKER: return "MARKER";
+				case GL_DEBUG_TYPE_OTHER: return "OTHER";
+				default: return "UNKNOWN";
+			}
+		}();
+
+		const std::string_view severity_str = [severity]{
+			switch (severity) {
+				case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
+				case GL_DEBUG_SEVERITY_LOW: return "LOW";
+				case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
+				case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+				default: return "UNKNOWN";
+			}
+		}();
+
+		std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
+	}
+
+	inline void throw_GL_Exception(const int error_code, const char* description) {
+		throw ext::IllegalArguments{"ERROR CODE: " + std::to_string(error_code) + "\n\n" + std::string(description) + "\n\n"};
+	}
 }
 
+
+
 export namespace Graphic{
-	inline void enableMSAA(const int scale = 2){
+	void enableMSAA(const int scale = 2){
 		glfwWindowHint(GLFW_SAMPLES, scale);
 	}
 
-	// ReSharper disable once CppInconsistentNaming
-	inline void initOpenGL(){
+	void setupGLDebug(){
+		// glEnable(GL_DEBUG_OUTPUT);
+		// glDebugMessageCallback(glDebugCallback, nullptr);
+	}
+
+	void initOpenGL(){
 		glfwSetErrorCallback(throw_GL_Exception);
 		if(!glfwInit()) {
 			throw ext::RuntimeException{"Unable to initialize GLFW!"};
@@ -56,12 +107,15 @@ export namespace Graphic{
 		// glfwSetFramebufferSizeCallback(windowMain, framebufferSizeCallback);
 		// glfwSetInputMode(windowMain, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+
 		// glad: load all OpenGL function pointers
 		// ---------------------------------------
 		if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
 		{
 			throw GL_Exception("Failed to create GLFW windowMain");
 		}
+
+		setupGLDebug();
 
 		return windowMain;
 	}

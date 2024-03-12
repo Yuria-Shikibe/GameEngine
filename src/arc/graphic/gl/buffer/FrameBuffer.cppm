@@ -21,7 +21,9 @@ export namespace GL{
 	{
 	protected:
 		unsigned int width = 0, height = 0;
-		std::vector<std::unique_ptr<Texture2D>> samples{};
+		std::vector<std::unique_ptr<Texture2D>> attachmentsColor{};
+		std::unique_ptr<Texture2D> attachmentsDepth{nullptr};
+		std::unique_ptr<Texture2D> attachmentsStencil{nullptr};
 
 		std::unique_ptr<RenderBuffer> renderBuffer{nullptr};
 
@@ -46,32 +48,42 @@ export namespace GL{
 
 		FrameBuffer(const unsigned int w, const unsigned int h, const int colorAttachments = 1) : width(w), height(h){
 			targetFlag = GL_FRAMEBUFFER;
-			glGenFramebuffers(1, &bufferID);
-			FrameBuffer::bind();
+			glCreateFramebuffers(1, &bufferID);
+
 			bindColorAttachments<Texture2D>(colorAttachments);
 			bindRenderBuffer<RenderBuffer>();
-			FrameBuffer::unbind();
 		}
 
 		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
 		void bindColorAttachments(const int colorAttachments = 1, Args... args) {
-			samples.resize(colorAttachments);
-			samples.reserve(colorAttachments);
+			attachmentsColor.resize(colorAttachments);
 
 			for(int i = 0; i < getColorAttachmentsCount(); ++i) {
-				auto& sample = samples.at(i);
+				auto& sample = attachmentsColor.at(i);
 				sample = std::make_unique<TexType>(width, height, args...);
 				sample->setScale(GL_LINEAR, GL_LINEAR);
-				glFramebufferTexture2D(targetFlag, GL_COLOR_ATTACHMENT0 + i, samples.at(i)->getTargetFlag(), samples.at(i)->getID(), 0);
+				glNamedFramebufferTexture(bufferID, GL_COLOR_ATTACHMENT0, attachmentsColor.at(i)->getID(), 0);
 			}
 
 			enableMainOnly();
 		}
 
+		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
+		void bindDepthAttachments(Args... args) {
+			attachmentsDepth = std::make_unique<TexType>(width, height, args...);
+			glNamedFramebufferTexture(bufferID, GL_COLOR_ATTACHMENT0, attachmentsDepth->getID(), 0);
+		}
+
+		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
+		void bindStencilAttachments(Args... args) {
+			attachmentsStencil = std::make_unique<TexType>(width, height, args...);
+			glNamedFramebufferTexture(bufferID, GL_COLOR_ATTACHMENT0, attachmentsStencil->getID(), 0);
+		}
+
 		template <Concepts::Derived<RenderBuffer> RBType, typename ...Args>
 		void bindRenderBuffer(Args... args) {
 			renderBuffer = std::make_unique<RBType>(width, height, args...);
-			glFramebufferRenderbuffer(targetFlag, GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer->getTargetFlag(), renderBuffer->getID());
+			glNamedFramebufferRenderbuffer(bufferID, GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer->getTargetFlag(), renderBuffer->getID());
 		}
 
 		~FrameBuffer() override{
@@ -88,7 +100,7 @@ export namespace GL{
 		}
 
 		[[nodiscard]] size_t getColorAttachmentsCount() const {
-			return samples.size();
+			return attachmentsColor.size();
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
@@ -96,7 +108,7 @@ export namespace GL{
 			width = w;
 			height = h;
 
-			for(const auto& sample : samples) {
+			for(const auto& sample : attachmentsColor) {
 				sample->resize(w, h);
 			}
 
@@ -132,25 +144,39 @@ export namespace GL{
 		}
 
 		[[nodiscard]] const std::vector<std::unique_ptr<Texture2D>>& getTextures() const{
-			return samples;
+			return attachmentsColor;
 		}
 
 		[[nodiscard]] std::vector<std::unique_ptr<Texture2D>>& getTextures(){
-			return samples;
+			return attachmentsColor;
 		}
 
 		[[nodiscard]] const Texture2D* operator[](const size_t index) const{
-			return samples.at(index).get();
+			return attachmentsColor.at(index).get();
 		}
 
-		void clear(const Graphic::Color& initColor = Graphic::Colors::CLEAR, const GLbitfield mask = GL_COLOR_BUFFER_BIT) const {
-			bind();
-			glClearColor(initColor.r, initColor.g, initColor.b, initColor.a);
-			glClear(mask);
+		void clear(const Graphic::Color& initColor = Graphic::Colors::CLEAR) const {
+			clearColor(initColor);
+		}
+
+		void clearColor(const Graphic::Color& initColor = Graphic::Colors::CLEAR, const unsigned attachmentID = 0) const{
+			glClearNamedFramebufferfv(bufferID, GL_COLOR, attachmentID, initColor.asRaw());
+		}
+
+		void clearDepth(const float depth) const{
+			if(attachmentsDepth){
+				glClearNamedFramebufferfv(bufferID, GL_DEPTH, 0, &depth);
+			}
+		}
+
+		void clearStencil(const float stencil) const{
+			if(attachmentsStencil){
+				glClearNamedFramebufferfv(bufferID, GL_STENCIL, 0, &stencil);
+			}
 		}
 
 		Texture2D& getTexture() const {
-			return *samples.front().get();
+			return *attachmentsColor.front().get();
 		}
 
 		[[nodiscard]] unsigned int getWidth() const { return width; }

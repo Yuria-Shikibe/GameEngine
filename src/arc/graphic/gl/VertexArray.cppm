@@ -1,15 +1,9 @@
-//
-// Created by Matrix on 2023/11/18.
-//
-
-module ;
-
 export module GL.VertexArray;
 
 import <glad/glad.h>;
 import <vector>;
 import GL.Buffer.VertexBuffer;
-
+import GL.Buffer;
 import GL.Constants;
 // All VAOs should be constructed at one load function.
 
@@ -33,7 +27,7 @@ export namespace GL{
 		}
 	};
 
-	class AttributeLayout
+	class AttributeLayout //TODO make this impl by template and finish layout in compile
 	{
 	protected:
 		GLsizei stride = 0;
@@ -41,7 +35,7 @@ export namespace GL{
 
 	public:
 		void add(const GLenum type, const GLint size, const GLboolean normalized = true){
-			elems.push_back({ type, normalized, size });
+			elems.emplace_back( type, normalized, size );
 			stride += sizeofType(type) * size;
 		}
 
@@ -49,14 +43,22 @@ export namespace GL{
 			add(GL_FLOAT, size);
 		}
 
-		void generateAttributePointer() const{
-			unsigned long long offset = 0;
+		[[nodiscard]] GLsizei getStride() const{
+			return stride;
+		}
 
-			for(unsigned int i = 0; i < elems.size(); i++){
+		/**
+		 * @brief VAO, IBO must have binded!!!
+		 */
+		void generateAttributePointer(const GLuint vao) const{
+			GLuint offset = 0;
+
+			for(GLuint i = 0; i < elems.size(); i++){
 				const auto& [type, normalized, size] = elems.at(i);
-				glEnableVertexAttribArray(i);
-				glVertexAttribPointer(i, size, type, normalized, stride, reinterpret_cast<const void*>(offset));  // NOLINT(performance-no-int-to-ptr)
-				offset += static_cast<unsigned long long>(size) * sizeofType(type);
+				glEnableVertexArrayAttrib(vao, i);
+				glVertexArrayAttribFormat(vao, i, size, type, normalized, offset);
+				glVertexArrayAttribBinding(vao, i, 0);
+				offset += size * sizeofType(type);
 			}
 		}
 	};
@@ -65,51 +67,60 @@ export namespace GL{
 	class VertexArray
 	{
 	protected:
-		GLuint arrayID = 0;
-		AttributeLayout layout;
+		GLuint vaoID = 0;
+		AttributeLayout layout{};
 
 	public:
 		VertexArray(const VertexArray& other) = delete;
 
-		VertexArray(VertexArray&& other) = delete;
+		VertexArray(VertexArray&& other) noexcept
+			: vaoID(other.vaoID),
+			  layout(std::move(other.layout)){
+			other.vaoID = 0;
+		}
 
 		VertexArray& operator=(const VertexArray& other) = delete;
 
-		VertexArray& operator=(VertexArray&& other) = delete;
-
+		VertexArray& operator=(VertexArray&& other) noexcept{
+			if(this == &other) return *this;
+			vaoID = other.vaoID;
+			layout = std::move(other.layout);
+			other.vaoID = 0;
+			return *this;
+		}
 
 		VertexArray() {
-			glGenVertexArrays(1, &arrayID);
+			glCreateVertexArrays(1, &vaoID);
 		}
 
 		~VertexArray() {
-			glDeleteVertexArrays(1, &arrayID);
+			if(vaoID)glDeleteVertexArrays(1, &vaoID);
 		}
 
 		[[nodiscard]] GLuint getID() const{
-			return arrayID;
+			return vaoID;
 		}
 
 		AttributeLayout& getLayout(){
 			return layout;
 		}
 
+		void bindBuffer(const GL::GLBuffer& VBO, const GL::GLBuffer& IBO) const {
+			glVertexArrayVertexBuffer(vaoID, 0, VBO.getID(), 0, layout.getStride());
+			glVertexArrayElementBuffer(vaoID, IBO.getID());
+		}
+
 		void bind() const {
-			glBindVertexArray(arrayID);
+			glBindVertexArray(vaoID);
 		}
 
 		void unbind() const {
 			glBindVertexArray(0);
 		}
 
-		void applyLayout(/*const VertexBuffer& vertices*/) const{
-			bind();
-			// vertices.bind();
-
-			layout.generateAttributePointer();
-
-			// vertices.unbind();
-			unbind();
+		void applyLayout(const GL::GLBuffer& VBO, const GL::GLBuffer& IBO) const{
+			bindBuffer(VBO, IBO);
+			layout.generateAttributePointer(vaoID);
 		}
 	};
 }

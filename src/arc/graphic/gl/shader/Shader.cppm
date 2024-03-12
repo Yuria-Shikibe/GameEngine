@@ -88,15 +88,21 @@ export namespace GL {
 
 	//TODO seperate the loader and handle?
 	class Shader {
+	public:
+		struct UniformInfo{
+			GLint location{};
+			GLsizei count{};
+		};
+
 	protected:
-		mutable std::unordered_map <std::string, GLint> uniformLocationMap{};
+		mutable std::unordered_map <std::string, UniformInfo> uniformInfoMap{};
 		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
 
 		bool valid{false};
 
 		GLuint programID = 0;
 
-		const OS::File* shaderDir = nullptr;
+		OS::File shaderDir{};
 
 		std::function<void(const Shader &)> drawer = [](const Shader&) {};
 
@@ -143,7 +149,7 @@ export namespace GL {
 			return shaderProgram;
 		}
 
-		static GLuint compileCode(const std::string &src, const ShaderType shaderType) {
+		[[nodiscard]] static GLuint compileCode(const std::string &src, const ShaderType shaderType) {
 			const GLuint shader = glCreateShader(typeID(shaderType));
 			const char *vert = src.c_str();
 
@@ -168,31 +174,48 @@ export namespace GL {
 		}
 
 		void bindLoaction() const {
-			for(auto& [key, pos] : uniformLocationMap) {
-				if(pos == -1) {
-					pos = glGetUniformLocation(programID, key.data());
+			GLint uniform_count = 0;
+			glGetProgramiv(programID, GL_ACTIVE_UNIFORMS, &uniform_count);
+
+			if (uniform_count != 0){
+				GLint 	maxUniformLength = 0;
+				GLsizei length = 0;
+				GLsizei count = 0;
+				GLenum 	type = GL_NONE;
+				glGetProgramiv(programID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformLength);
+
+				const auto uniform_name = std::make_unique<char[]>(maxUniformLength);
+
+				for (GLint i = 0; i < uniform_count; ++i)
+				{
+					glGetActiveUniform(programID, i, maxUniformLength, &length, &count, &type, uniform_name.get());
+
+					uniformInfoMap.try_emplace(
+						std::string(uniform_name.get(), length),
+						glGetUniformLocation(programID, uniform_name.get()), count
+					);
 				}
 			}
 		}
 
 	public:
 		[[nodiscard]] GLint getLocation(const std::string_view &uniform) const {
-			return uniformLocationMap.at(static_cast<std::string>(uniform));
+			return uniformInfoMap.at(static_cast<std::string>(uniform)).location;
 		}
 
 		void reDirectDir(const OS::File& file){
-			shaderDir = &file;
+			shaderDir = file;
 		}
 
 		using compileTypeList = std::pair<ShaderType, std::string>;
 
-		explicit Shader(const OS::File& directory, std::span<compileTypeList> list) : shaderDir{&directory}{
+		explicit Shader(const OS::File& directory, std::span<compileTypeList> list) : shaderDir{directory}{
 			for (const auto& [type, name] : list) {
 				pushSource(type, name);
 			}
 		}
 
-		Shader(const OS::File& directory, std::initializer_list<compileTypeList> list) : shaderDir{&directory}{
+		Shader(const OS::File& directory, std::initializer_list<compileTypeList> list) : shaderDir{directory}{
 			std::vector<unsigned int> programs;
 
 			for (const auto& [type, name] : list) {
@@ -200,13 +223,13 @@ export namespace GL {
 			}
 		}
 
-		Shader(const OS::File& directory, const std::string& name, const std::initializer_list<ShaderType> list) : shaderDir{&directory}{
+		Shader(const OS::File& directory, const std::string& name, const std::initializer_list<ShaderType> list) : shaderDir{directory}{
 			for (const auto& type : list) {
 				pushSource(type, name);
 			}
 		}
 
-		explicit Shader(const OS::File& directory, const std::string& name) : shaderDir{&directory}{
+		explicit Shader(const OS::File& directory, const std::string& name) : shaderDir{directory}{
 			pushSource(ShaderType::vert, name);
 			pushSource(ShaderType::frag, name);
 		}
@@ -216,7 +239,7 @@ export namespace GL {
 		}
 
 		Shader(const Shader& other)
-			: uniformLocationMap{ other.uniformLocationMap },
+			: uniformInfoMap{ other.uniformInfoMap },
 			valid{ other.valid },
 			programID{ other.programID },
 			drawer{ other.drawer } {
@@ -226,7 +249,7 @@ export namespace GL {
 		Shader& operator=(const Shader& other) {
 			if(!other.isValid())throw ext::IllegalArguments{"Illegal Operation: Copy Invalid Shader!"};
 			if(this == &other) return *this;
-			uniformLocationMap = other.uniformLocationMap;
+			uniformInfoMap = other.uniformInfoMap;
 			valid              = other.valid;
 			programID          = other.programID;
 			drawer             = other.drawer;
@@ -234,7 +257,7 @@ export namespace GL {
 		}
 
 		Shader(Shader&& other) noexcept
-			: uniformLocationMap{ std::move(other.uniformLocationMap) },
+			: uniformInfoMap{ std::move(other.uniformInfoMap) },
 			typeList{ std::move(other.typeList) },
 			valid{ other.valid },
 			programID{ other.programID },
@@ -244,7 +267,7 @@ export namespace GL {
 
 		Shader& operator=(Shader&& other) noexcept {
 			if(this == &other) return *this;
-			uniformLocationMap = std::move(other.uniformLocationMap);
+			uniformInfoMap = std::move(other.uniformInfoMap);
 			typeList           = std::move(other.typeList);
 			valid              = other.valid;
 			programID          = other.programID;
@@ -253,39 +276,6 @@ export namespace GL {
 			return *this;
 		}
 
-		struct ShaderSourceParser {
-			const std::string keyWord{};
-			std::unordered_map<std::string, GLint>& target;
-
-			[[nodiscard]] ShaderSourceParser(const std::string& keyWord, std::unordered_map<std::string, GLint>& target)
-				: keyWord(keyWord), target(target) {}
-
-			void operator()(const std::string& line) const {
-				if (
-					line.find("//") == std::string::npos && line.find(keyWord) != std::string::npos
-				){
-					const size_t endLine = line.find_last_of(';');
-					const size_t beginWord = line.find_last_of(' ') + 1;
-
-					target[line.substr(beginWord, endLine - beginWord)] = -1;
-
-				}
-			}
-		}uniformParser{"uniform", uniformLocationMap};
-
-		struct ShaderSourceParserMulti {
-			std::vector<ShaderSourceParser> parsers{};
-
-			[[nodiscard]] explicit ShaderSourceParserMulti(const std::initializer_list<ShaderSourceParser> list){
-				for(auto parser: list)parsers.push_back(parser);
-			}
-
-			void operator()(const std::string& line) const {
-				for(const auto& parser: parsers)parser(line);
-			}
-		};
-
-		ShaderSourceParserMulti multiParser = ShaderSourceParserMulti{uniformParser};
 		/**
 		 * \brief Compile Methods:
 		 * */
@@ -295,11 +285,11 @@ export namespace GL {
 
 		void readSource() const {
 			for(auto& [file, source] : typeList | std::views::values) {
-				source = shaderDir->find(file).readString(uniformParser);
+				source = shaderDir.find(file).readString();
 			}
 		}
 
-		void compile(const bool freeSource = true) {
+		void compile(const bool freeSource = true){
 			std::vector<GLuint> code{};
 			code.reserve(typeList.size());
 
@@ -326,11 +316,6 @@ export namespace GL {
 		// ReSharper disable once CppMemberFunctionMayBeStatic
 		void unbind() const {
 			GL::useProgram(0);
-		}
-
-		//TODO Automatize this function during initialization
-		void registerUniform(const std::string &param) const{
-			uniformLocationMap.insert_or_assign(param, glGetUniformLocation(programID, param.data()));
 		}
 
 		template<typename ...T>

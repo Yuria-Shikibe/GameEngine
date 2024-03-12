@@ -13,7 +13,9 @@ namespace GL {
     GLuint lastProgram{0};
 
     std::unordered_set<GLenum> currentState;
-    std::unordered_map<GLuint, std::unordered_set<GLenum>> bufferState;
+    std::unordered_map<GLuint, std::unordered_set<GLenum>> states;
+
+    std::unordered_map<GLenum, GLuint> bufferBindState;
 
     int maxTexSize = 4096;
 
@@ -57,6 +59,19 @@ export namespace GL {
         return lastProgram;
     }
 
+    void bindBuffer(const GLenum flag, const GLuint id) {
+        // auto& current = bufferBindState[flag];
+
+        // if(current == id)return;
+
+        glBindBuffer(flag, id);
+        // current = id;
+    }
+
+    void unbindBuffer(const GLenum flag) {
+        bindBuffer(flag, 0);
+    }
+
     void enable(const GLenum cap) {
         if(!currentState.contains(cap)) {
             currentState.insert(cap);
@@ -73,21 +88,21 @@ export namespace GL {
     }
 
     void enablei(const GLenum cap, const GLuint id) {
-        if(auto& state = bufferState[cap]; !state.contains(cap)) {
+        if(auto& state = states[cap]; !state.contains(cap)) {
             state.insert(cap);
             glEnablei(cap, id);
         }
     }
 
     void disablei(const GLenum cap, const GLuint id) {
-        if(auto& state = bufferState[cap]; state.contains(cap)) {
+        if(auto& state = states[cap]; state.contains(cap)) {
             state.erase(cap);
             glDisablei(cap, id);
         }
     }
 
     bool cleari(const GLuint id) {
-        if(const auto itr = bufferState.find(id); itr != bufferState.end()) {
+        if(const auto itr = states.find(id); itr != states.end()) {
             itr->second.clear();
             return true;
         }

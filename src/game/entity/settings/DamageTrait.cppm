@@ -12,11 +12,11 @@ export namespace Game{
 		float splashRadius{-1.0f};
 		float splashAngle{360.0f};
 
-		[[nodiscard]] bool isSplashes() const{
+		[[nodiscard]] constexpr bool isSplashes() const{
 			return splashRadius > 0;
 		}
 
-		[[nodiscard]] bool heal() const{
+		[[nodiscard]] constexpr bool heal() const{
 			return fullDamage < 0;
 		}
 	};
@@ -25,7 +25,9 @@ export namespace Game{
 		DamageTrait materialDamage{}; //Maybe basic damage
 		DamageTrait fieldDamage{}; //Maybe real damage
 
-		[[nodiscard]] float sum() const {
+		constexpr DamageComposition() = default;
+
+		[[nodiscard]] constexpr float sum() const {
 			return materialDamage.fullDamage + fieldDamage.fullDamage;
 		}
 	};

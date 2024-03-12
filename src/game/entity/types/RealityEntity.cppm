@@ -248,7 +248,7 @@ export namespace Game {
 			intersection.lerp(hitBox.originPoint, 0.0001f);
 		}
 
-		/*virtual*/ void calCollideTo(const Game::RealityEntity* object, Geom::Vec2 intersection, const float delatTick) {
+		virtual void calCollideTo(const Game::RealityEntity* object, Geom::Vec2 intersection, const float delatTick) {
 			//Pull in to correct calculation
 
 			if(object->ignoreCollisionTo(this))return;

@@ -18,7 +18,7 @@ export namespace Game::Content{
 
 		}
 
-		void init(Bullet& bullet) const override{
+		void onShoot(Bullet& bullet) const override{
 			Assets::Effects::CircleDrawer.suspendOn(Game::core->effectManager.get())->
 				set(bullet.position, 0, Graphic::Colors::SKY);
 		}

@@ -30,6 +30,8 @@ export namespace GL{
 
 	class Texture2D : public Graphic::ResizeableUInt
 	{
+	public:
+		static constexpr GLuint MipMapGeneralLevel = 4;
 
 	protected:
 		GLuint textureID = 0;
@@ -58,7 +60,7 @@ export namespace GL{
 		}
 
 		~Texture2D() override{ // NOLINT(*-use-equals-default)
-			if(textureID > 0)glDeleteTextures(1, &textureID);
+			if(textureID)glDeleteTextures(1, &textureID);
 		}
 
 		/**
@@ -72,9 +74,7 @@ export namespace GL{
 		}
 
 		Texture2D(const unsigned int w, const unsigned int h, std::unique_ptr<unsigned char[]>&& data) :
-		Texture2D(w, h, data.release()) {
-
-		}
+		Texture2D(w, h, data.release()) {}
 
 		Texture2D(const unsigned int w, const unsigned int h) : Texture2D(w, h, nullptr) {
 
@@ -110,7 +110,15 @@ export namespace GL{
 			localData.reset(nullptr);
 		}
 
-		void resize(unsigned int w, unsigned int h) override;
+		void resize(unsigned int w, unsigned int h) override{
+			if(w == width && h == height)return;
+
+			free();
+			width  = w;
+			height = h;
+
+			glTextureStorage2D(textureID, 1, GL_RGBA8, width, height);
+		}
 
 		[[nodiscard]] bool valid() const {
 			return localData != nullptr;
@@ -124,34 +132,59 @@ export namespace GL{
 			return height;
 		}
 
-		unsigned char* loadFromFile(const OS::File& file);
+		unsigned char* loadFromFile(const OS::File& file){
+			//TODO File Support
+			return stbi::loadPng(file, width, height, bpp);
+		}
 
 
 		/**
 		 * \brief The data will be released after init, uses rv-ref to pass the pointer
 		 * \param data
 		 */
-		void init(unsigned char*&& data);
+		void init(unsigned char*&& data){
+			if(data != localData.get())localData.reset(data);
+
+			if(bpp != 4) {
+				throw ext::RuntimeException{"Illegal Bpp Size: " + bpp};
+			}
+
+			glCreateTextures(targetFlag, 1, &textureID);
+			glTextureStorage2D(textureID, MipMapGeneralLevel, GL_RGBA8, width, height);
+
+			if(localData)glTextureSubImage2D(textureID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
+			//TODO : Check if needed here.
+			setParameters();
+			glGenerateTextureMipmap(textureID);
+		}
 
 		void init() {
 			init(localData.get());
 		}
 
-		void updateData();
+		void setParameters(GLint downScale = GL::mipmap_linear_linear, GLint upScale = GL::linear, GLint clampX = GL_CLAMP_TO_EDGE, GLint clampY = GL_CLAMP_TO_EDGE) const{
+			glTextureParameteri(textureID, GL_TEXTURE_MIN_FILTER, downScale);
+			glTextureParameteri(textureID, GL_TEXTURE_MAG_FILTER, upScale);
+			glTextureParameteri(textureID, GL_TEXTURE_WRAP_S, clampX);
+			glTextureParameteri(textureID, GL_TEXTURE_WRAP_T, clampY);
+		}
 
-		void setParameters(GLint downScale = GL_LINEAR_MIPMAP_LINEAR, GLint upScale = GL_LINEAR, GLint clampX = GL_CLAMP_TO_EDGE, GLint clampY = GL_CLAMP_TO_EDGE) const;
+		void setScale(const GLint downScale = GL::mipmap_nearest_linear, const GLint upScale = GL::linear) const{
+			glTextureParameteri(textureID, GL_TEXTURE_MIN_FILTER, downScale);
+			glTextureParameteri(textureID, GL_TEXTURE_MAG_FILTER, upScale);
+		}
 
-		void setScale(GLint downScale = GL::mipmap_nearest_linear, GLint upScale = GL::linear) const;
-
-		void setWrap(GLint clamp) const;
+		void setWrap(const GLint clamp) const{
+			glTextureParameteri(textureID, GL_TEXTURE_WRAP_S, clamp);
+			glTextureParameteri(textureID, GL_TEXTURE_WRAP_T, clamp);
+		}
 
 		void bind() const{
 			glBindTexture(targetFlag, textureID);
 		}
 
 		void active(const unsigned char slotOffset = 0) const{ // NOLINT(*-convert-member-functions-to-static)
-			glActiveTexture(GL_TEXTURE0 + slotOffset);
-			bind();
+			glBindTextureUnit(slotOffset, textureID);
 		}
 
 		void bindParam(const GLenum target) const{
@@ -163,12 +196,32 @@ export namespace GL{
 		}
 
 		[[nodiscard]] unsigned dataSize() const { //How many bytes!
-			if(!localData)return 0;
-
 			return width * height * bpp;
 		}
 
-		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const;
+		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const{
+			if(!valid()) {
+				return loadGPUData();
+			}
+
+			const size_t size = dataSize();
+			auto ptr = std::make_unique<unsigned char[]>(size);
+
+			std::memcpy(ptr.get(), localData.get(), size);
+
+			return ptr;
+		}
+
+
+		[[nodiscard]] std::unique_ptr<unsigned char[]> loadGPUData() const { // NOLINT(*-make-member-function-const)
+			const unsigned int size = dataSize();
+
+			auto ptr = std::make_unique<unsigned char[]>(size);
+
+			glGetTextureImage(textureID, 0, GL_RGBA, GL_UNSIGNED_BYTE, size, ptr.get());
+
+			return ptr;
+		}
 
 		[[nodiscard]] GLuint getID() const{
 			return textureID;

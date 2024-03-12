@@ -17,7 +17,9 @@ import GL.Shader;
 import GL.Constants;
 import GL.Mesh;
 import GL.Buffer.IndexBuffer;
+import GL.Buffer.VertexBuffer;
 import GL.VertexArray;
+import GL;
 
 import Concepts;
 
@@ -51,35 +53,30 @@ export namespace Core{
 		}()};
 
 	public:
-		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, std::span<VertElem> layoutElems){
-			mesh = std::make_unique<Mesh>(Mesh{
-				[
-					&layoutElems,
-					this
-				](const Mesh& mesh){
-					mesh.getIndexBuffer().bind();
-					mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
-					mesh.getVertexBuffer().bind();
-					mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), sizeof(float) * maxVertSize * vertGroupSize);
+		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, const std::span<VertElem> layoutElems){
+			mesh = std::make_unique<Mesh>([layoutElems, this](Mesh& mesh){
+				mesh.getIndexBuffer().bind();
+				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
+				mesh.getVertexBuffer().bind();
+				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), sizeof(float) * maxVertSize * vertGroupSize);
 
-					//TODO: Uses flexible mode by using attrib names as position reference? or just keep it hard and quick?
-					AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				//TODO: Uses flexible mode by using attrib names as position reference? or just keep it hard and quick?
+				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 
-					if(!layoutElems.empty()){
-						for (const auto& [type, normalized, size] : layoutElems) {
-							layout.add(type, normalized, size);
-						}
-					}else{
-						//Default Layout
-
-						layout.addFloat(2); //Position 2D
-						layout.addFloat(2); //UV offset
-						layout.addFloat(4); //mix rgba
-						layout.addFloat(4); //src rgba
+				if(!layoutElems.empty()){
+					for (const auto& [type, normalized, size] : layoutElems) {
+						layout.add(type, normalized, size);
 					}
+				}else{
+					//Default Layout
 
-					mesh.getVertexArray().applyLayout();
+					layout.addFloat(2); //Position 2D
+					layout.addFloat(2); //UV offset
+					layout.addFloat(4); //mix rgba
+					layout.addFloat(4); //src rgba
 				}
+
+				mesh.applyLayout();
 			});
 
 			generalShader = shader(*this);
