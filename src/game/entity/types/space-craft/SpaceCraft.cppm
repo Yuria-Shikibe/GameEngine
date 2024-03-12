@@ -27,9 +27,9 @@ export namespace Game {
 			intersectedPointWith.clear();
 
 			//TODO is this really good?
-			if(EntityManage::realEntities.quadTree->intersectAny(this)) {
+			EntityManage::realEntities.quadTree->intersect(this, [this](auto t){
 				intersected = true;
-			}
+			});
 
 			RealityEntity::updateCollision(deltaTick);
 		}

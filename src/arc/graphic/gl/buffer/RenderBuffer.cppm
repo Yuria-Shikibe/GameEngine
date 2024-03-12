@@ -4,31 +4,27 @@ export module GL.Buffer.RenderBuffer;
 
 import <glad/glad.h>;
 
-export import GL.Buffer;
+export import GL.Object;
 export import Graphic.Resizeable;
 
 export namespace GL{
-class RenderBuffer : public GLBuffer, public Graphic::ResizeableUInt{
+class RenderBuffer : public GLObject, public Graphic::ResizeableUInt{
 	protected:
 		unsigned int width, height;
 	public:
-		RenderBuffer() : width(2), height(2){}
+		RenderBuffer() : GLObject{GL_RENDERBUFFER}, width(2), height(2){}
 
-		RenderBuffer(const unsigned int w, const unsigned int h) : width(w), height(h){
-			glGenRenderbuffers(1, &bufferID);
-			targetFlag = GL_RENDERBUFFER;
-
-			glBindRenderbuffer(targetFlag, bufferID);
-			glRenderbufferStorage(targetFlag, GL_DEPTH24_STENCIL8, w, h);
-			glBindRenderbuffer(targetFlag, 0);
+		RenderBuffer(const unsigned int w, const unsigned int h) : GLObject{GL_RENDERBUFFER}, width(w), height(h){
+			glCreateRenderbuffers(1, &nameID);
+			glNamedRenderbufferStorage(nameID, GL_DEPTH24_STENCIL8, w, h);
 		}
 
 		~RenderBuffer() override {
-			glDeleteRenderbuffers(1, &bufferID);
+			if(nameID)glDeleteRenderbuffers(1, &nameID);
 		}
 
 		void bind() const{
-			glBindRenderbuffer(targetFlag, bufferID);
+			glBindRenderbuffer(targetFlag, nameID);
 		}
 
 		void unbind() const{
@@ -36,11 +32,10 @@ class RenderBuffer : public GLBuffer, public Graphic::ResizeableUInt{
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
+			if(w == width && h == height)return;
 			width = w;
 			height = h;
-			bind();
-			glRenderbufferStorage(targetFlag, GL_DEPTH24_STENCIL8, w, h);
-			unbind();
+			glNamedRenderbufferStorage(nameID, GL_DEPTH24_STENCIL8, w, h);
 		}
 	};
 }

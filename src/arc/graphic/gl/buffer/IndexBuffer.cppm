@@ -3,7 +3,7 @@ module;
 export module GL.Buffer.IndexBuffer;
 
 import <glad/glad.h>;
-import GL.Buffer;
+import GL.Object;
 import <array>;
 
 export namespace GL{
@@ -17,29 +17,29 @@ export namespace GL{
 	/**Inbuilt Indexes*/
 	inline constexpr std::array<GLuint, ELEMENTS_QUAD_STRIP_LENGTH> ELEMENTS_STRIP_STD = {0, 1, 2, 3};
 
-	class IndexBuffer final : public GLBuffer
+	class IndexBuffer final : public GLObject
 	{
 	protected:
 		GLsizei bufferSize = 0;
 
 	public:
 		IndexBuffer(){
-			glCreateBuffers(1, &bufferID);
+			glCreateBuffers(1, &nameID);
 			targetFlag = GL_ELEMENT_ARRAY_BUFFER;
 		}
 
 		~IndexBuffer(){
-			if(bufferID)glDeleteBuffers(1, &bufferID);
+			if(nameID)glDeleteBuffers(1, &nameID);
 		}
 
 		template <GLuint size>
 		void setData(GLuint(&arr)[size], const GLenum mode = GL_DYNAMIC_DRAW) {
-			glNamedBufferData(bufferID, sizeof(GLuint) * size, &arr, mode);
+			glNamedBufferData(nameID, sizeof(GLuint) * size, &arr, mode);
 			bufferSize = size;
 		}
 
 		void setDataRaw(const GLuint* data, const GLsizei count, const GLenum mode = GL_DYNAMIC_DRAW){
-			glNamedBufferData(bufferID, static_cast<long long>(sizeof(GLuint)) * count, data, mode);
+			glNamedBufferData(nameID, static_cast<long long>(sizeof(GLuint)) * count, data, mode);
 			bufferSize = count;
 		}
 
@@ -49,7 +49,7 @@ export namespace GL{
 
 
 		void bind() const {
-			GL::bindBuffer(targetFlag, bufferID);
+			GL::bindBuffer(targetFlag, nameID);
 		}
 
 		void unbind() const {

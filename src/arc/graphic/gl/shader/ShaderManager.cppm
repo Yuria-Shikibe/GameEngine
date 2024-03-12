@@ -8,7 +8,7 @@ import Async;
 import Assets.Loader;
 import <vector>;
 
-export namespace GL {
+export namespace GL { //TODO this isn't a good namespace, I thought
 	class ShaderManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 		std::vector<std::unique_ptr<GL::Shader>> shaders{};
 
@@ -16,6 +16,13 @@ export namespace GL {
 		GL::Shader* registerShader(GL::Shader* shader) {
 			shaders.emplace_back(shader);
 			return shader;
+		}
+
+		GL::Shader* registerShader(auto&&...args) {
+			auto ptr = std::make_unique<GL::Shader>(args...);
+			auto retPtr = ptr.get();
+			shaders.push_back(std::move(ptr));
+			return retPtr;
 		}
 
 		void compileAll() {

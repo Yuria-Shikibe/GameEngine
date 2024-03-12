@@ -231,7 +231,7 @@ export namespace Geom {
 		}
 
 		void intersectAll(const Cont* object) {
-			if(!this->inbound(object)) return;
+			if(!this->inbound(object))return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
 			if(!isLeaf()) {

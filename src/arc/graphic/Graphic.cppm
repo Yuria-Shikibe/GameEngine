@@ -51,7 +51,7 @@ namespace Graphic{
 			}
 		}();
 
-		std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
+		std::println(std::cout, "[GL {}-{}-{} | {}]: {}", src_str, type_str, severity_str, id, message);
 	}
 
 	inline void throw_GL_Exception(const int error_code, const char* description) {
@@ -67,8 +67,10 @@ export namespace Graphic{
 	}
 
 	void setupGLDebug(){
-		// glEnable(GL_DEBUG_OUTPUT);
-		// glDebugMessageCallback(glDebugCallback, nullptr);
+		glEnable(GL_DEBUG_OUTPUT);
+		glDebugMessageCallback(glDebugCallback, nullptr);
+
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 	}
 
 	void initOpenGL(){

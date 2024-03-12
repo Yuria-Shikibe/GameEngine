@@ -1,7 +1,11 @@
-module Assets.Manager;
+module;
 
-import <ranges>;
-import <GLFW/glfw3.h>;
+#include <ranges>
+#include <chrono>
+#include <iostream>
+#include <GLFW/glfw3.h>
+
+module Assets.Manager;
 
 import Core.Renderer;
 import Assets.Graphic;
@@ -84,6 +88,8 @@ void Assets::Manager::loadEnd() {
 	for (auto& page : atlas.getPages() | std::ranges::views::values) {
 		page.clearData();
 	}
+
+	std::cout << std::format("[Info]: Loading Cost Time: {}.sec", static_cast<float>(loader.getTimer().toMark().count()) / 1000.0f) << std::endl;
 }
 
 GL::ShaderManager& Assets::Manager::getShaders() {

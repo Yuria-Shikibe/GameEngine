@@ -15,12 +15,10 @@ export namespace GL {
 				: FrameBuffer() {
 			width = w;
 			height = h;
-			targetFlag = GL_FRAMEBUFFER;
-			glGenFramebuffers(1, &bufferID);
-			FrameBuffer::bind();
+			glCreateFramebuffers(1, &nameID);
+
 			bindColorAttachments<MultiSampleTexture2D>(colorAttachments, samples);
 			bindRenderBuffer<MultiSampleRenderBuffer>(samples);
-			FrameBuffer::unbind();
 		}
 
 		[[nodiscard]] MultiSampleFrameBuffer() = default;

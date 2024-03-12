@@ -135,9 +135,7 @@ export namespace Graphic{
 
         void loadFrom(const OS::File& file) {
             unsigned b;
-            const auto pixels = stbi::loadPng(file, width, height, b, Channels);
-
-            this->data = std::unique_ptr<unsigned char[]>(pixels);
+            this->data = stbi::loadPng(file, width, height, b, Channels);
         }
 
         void loadFrom(const GL::Texture2D& texture2D) {

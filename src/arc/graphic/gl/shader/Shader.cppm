@@ -178,6 +178,7 @@ export namespace GL {
 			glGetProgramiv(programID, GL_ACTIVE_UNIFORMS, &uniform_count);
 
 			if (uniform_count != 0){
+				uniformInfoMap.reserve(uniform_count);
 				GLint 	maxUniformLength = 0;
 				GLsizei length = 0;
 				GLsizei count = 0;

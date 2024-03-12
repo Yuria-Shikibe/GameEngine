@@ -54,15 +54,15 @@ void Assets::Shaders::loadPrevious() {
 }
 
 void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-parameter)
-	texPost = manager->registerShader(new Shader{ shaderDir, "tex-std" });
+	texPost = manager->registerShader(shaderDir, "tex-std");
 	texPost->setUniformer([]([[maybe_unused]] const Shader& shader) {});
 
-	stdPost = manager->registerShader(new Shader{ shaderDir, "std" });
+	stdPost = manager->registerShader(shaderDir, "std");
 	stdPost->setUniformer([]([[maybe_unused]] const Shader& shader) {
 		// GL::uniformColor(0, Graphic::Colors::WHITE);
 	});
 
-	coordAxis = manager->registerShader(new Shader(shaderDir, "coordinate-axis"));
+	coordAxis = manager->registerShader(shaderDir, "coordinate-axis");
 	coordAxis->setUniformer([]([[maybe_unused]] const Shader& shader) {
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
@@ -71,7 +71,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setVec2("cameraPos", Core::camera->screenCenter());
 	});
 
-	filter = manager->registerShader(new Shader(shaderDir, "filter"));
+	filter = manager->registerShader(shaderDir, "filter");
 	filter->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("tex");
 	});

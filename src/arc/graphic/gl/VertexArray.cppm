@@ -3,7 +3,7 @@ export module GL.VertexArray;
 import <glad/glad.h>;
 import <vector>;
 import GL.Buffer.VertexBuffer;
-import GL.Buffer;
+import GL.Object;
 import GL.Constants;
 // All VAOs should be constructed at one load function.
 
@@ -105,7 +105,7 @@ export namespace GL{
 			return layout;
 		}
 
-		void bindBuffer(const GL::GLBuffer& VBO, const GL::GLBuffer& IBO) const {
+		void bindBuffer(const GL::GLObject& VBO, const GL::GLObject& IBO) const {
 			glVertexArrayVertexBuffer(vaoID, 0, VBO.getID(), 0, layout.getStride());
 			glVertexArrayElementBuffer(vaoID, IBO.getID());
 		}
@@ -118,7 +118,7 @@ export namespace GL{
 			glBindVertexArray(0);
 		}
 
-		void applyLayout(const GL::GLBuffer& VBO, const GL::GLBuffer& IBO) const{
+		void applyLayout(const GL::GLObject& VBO, const GL::GLObject& IBO) const{
 			bindBuffer(VBO, IBO);
 			layout.generateAttributePointer(vaoID);
 		}

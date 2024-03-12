@@ -105,7 +105,7 @@ export namespace Assets{
 			blendMulti = new Graphic::PipeProcessor{Assets::PostProcessors::multiToBasic, blend};
 		}
 
-		void dispose() {
+		void dispose() { //TODO This is so bad!
 			delete multiToBasic;
 
 			delete blurX;

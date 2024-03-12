@@ -12,25 +12,20 @@ export namespace GL{
 		int samples = 4;
 
 		MultiSampleRenderBuffer(const unsigned int w, const unsigned int h, const int samples) : RenderBuffer() {
-			targetFlag = GL_RENDERBUFFER;
 			this->samples = samples;
 
 			width = w;
 			height = h;
 
-			glGenRenderbuffers(1, &bufferID);
-			RenderBuffer::bind();
-			glRenderbufferStorageMultisample(targetFlag, samples, GL_DEPTH24_STENCIL8, w, h);
-			RenderBuffer::unbind();
+			glCreateRenderbuffers(1, &nameID);
+			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH24_STENCIL8, w, h);
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;
-			bind();
-			glRenderbufferStorageMultisample(targetFlag, samples, GL_DEPTH24_STENCIL8, w, h);
-			unbind();
+			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH24_STENCIL8, w, h);
 		}
 	};
 }

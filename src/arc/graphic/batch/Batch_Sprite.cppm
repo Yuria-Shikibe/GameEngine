@@ -55,10 +55,8 @@ export namespace Core{
 	public:
 		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, const std::span<VertElem> layoutElems){
 			mesh = std::make_unique<Mesh>([layoutElems, this](Mesh& mesh){
-				mesh.getIndexBuffer().bind();
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
-				mesh.getVertexBuffer().bind();
-				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), sizeof(float) * maxVertSize * vertGroupSize);
+				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), sizeof(float) * maxDataSize);
 
 				//TODO: Uses flexible mode by using attrib names as position reference? or just keep it hard and quick?
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
