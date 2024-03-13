@@ -1,6 +1,8 @@
 module;
 
 #include <ranges>
+#include <chrono>
+#include <ratio>
 #include <iostream>
 
 module Assets.Manager;

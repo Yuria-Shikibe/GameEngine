@@ -1,9 +1,12 @@
+module;
+
+#include <csignal>
+
 export module OS;
 
 import <GLFW/glfw3.h>;
 import <chrono>;
 import <ctime>;
-import <csignal>;
 import <sstream>;
 import <functional>;
 import <iostream>;
