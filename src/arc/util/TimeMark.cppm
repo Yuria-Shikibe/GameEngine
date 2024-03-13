@@ -30,7 +30,8 @@ export namespace ext {
 
 			stamps.erase(begin);
 
-			return std::chrono::duration_cast<Duration>(current - begin->second);
+			const auto duration = current - begin->second;
+			return std::chrono::duration_cast<Duration>(duration);
 		}
 
 		Duration toMark(const StampID stampID = 0) {
@@ -39,9 +40,11 @@ export namespace ext {
 			const auto begin = stamps.find(stampID);
 			if(begin == stamps.end()) {
 				return Duration(-1);
+
 			}
 
-			return std::chrono::duration_cast<Duration>(current - begin->second);
+			const auto duration = current - begin->second;
+			return std::chrono::duration_cast<Duration>(duration);
 		}
 	};
 }
