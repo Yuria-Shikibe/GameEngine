@@ -323,7 +323,7 @@ export namespace Assets {
 					throw ext::RuntimeException{"Failed To Pack Linked Texture Atlas: " + pageName};
 				}
 				if(target.packDone)break;
-				std::this_thread::sleep_for(std::chrono::milliseconds(250));
+				// std::this_thread::sleep_for(std::chrono::milliseconds(250));
 			}
 
 			toMerge.resize(target.toMerge.size());

@@ -32,7 +32,7 @@ export namespace Core{
 	{
 	public:
 		static constexpr auto maxDataSize = maxVertSize * vertGroupSize;
-		static constexpr auto maxIndexSize = static_cast<unsigned long long>(maxVertSize) * GL::ELEMENTS_QUAD_LENGTH;
+		static constexpr auto maxIndexSize = maxVertSize * GL::ELEMENTS_QUAD_LENGTH;
 
 	protected:
 		std::array<float, maxDataSize> cachedVertices{};
