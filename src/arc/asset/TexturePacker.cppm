@@ -9,6 +9,7 @@ import <functional>;
 import <ranges>;
 import <unordered_map>;
 import <unordered_set>;
+import <chrono>;
 
 import Assets.Loader;
 import Math.StripPacker2D;
