@@ -2,7 +2,7 @@ export module GL.VertexArray;
 
 import <glad/glad.h>;
 import <vector>;
-import GL.Buffer.VertexBuffer;
+import GL.Buffer.DataBuffer;
 import GL.Object;
 import GL.Constants;
 // All VAOs should be constructed at one load function.

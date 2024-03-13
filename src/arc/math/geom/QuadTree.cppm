@@ -16,6 +16,7 @@ import <mutex>;
 
 using Geom::Shape::Rect_Orthogonal;
 
+//TODO The design is so bad!
 export namespace Geom {
 	template <typename Cont, Concepts::Number T>
 	class QuadTree {

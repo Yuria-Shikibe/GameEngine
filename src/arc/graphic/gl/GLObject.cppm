@@ -1,8 +1,8 @@
 export module GL.Object;
 
-export import GL.Constants;
 export import GL;
 import <functional>;
+import GL.Constants;
 
 export namespace GL{
 	struct  GLObject{

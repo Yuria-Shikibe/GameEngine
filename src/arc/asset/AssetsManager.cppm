@@ -13,6 +13,8 @@ import Font;
 import Event;
 
 import <memory>;
+import <chrono>;
+import <ratio>;
 import <GLFW/glfw3.h>;
 
 

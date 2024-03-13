@@ -10,7 +10,7 @@ import <execution>;
 
 void Font::GlyphLayout::render() const {
 	if(count <= 0) return;
-	std::ranges::for_each_n(toRender.begin(), count, [this](const auto& glyph) {
+	std::ranges::for_each_n(toRender.begin(), count, [this](const decltype(toRender)::value_type& glyph) {
 		Graphic::Draw::vert_monochromeAll(
 			glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
 			glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0,

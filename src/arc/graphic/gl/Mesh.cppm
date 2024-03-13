@@ -4,8 +4,7 @@ import <glad/glad.h>;
 import <functional>;
 import <memory>;
 
-export import GL.Buffer.IndexBuffer;
-export import GL.Buffer.VertexBuffer;
+export import GL.Buffer.DataBuffer;
 export import GL.VertexArray;
 
 import Concepts;
@@ -65,7 +64,7 @@ export namespace GL{
 
 		Mesh& setVertices(const float* arr, const int offset, const int count) {
 			vertexBuffer.bind();
-			vertexBuffer.setData(arr + offset, count);
+			vertexBuffer.setDataRaw(arr + offset, count);
 
 			return *this;
 		}

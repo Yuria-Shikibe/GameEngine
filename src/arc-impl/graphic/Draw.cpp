@@ -3,8 +3,6 @@ module Graphic.Draw;
 import Core;
 import Core.Batch;
 
-import GL.Buffer.IndexBuffer;
-
 namespace Graphic {
 	const Matrix3D& Draw::getPorj() {
 		return *Core::overlayBatch->getProjection();

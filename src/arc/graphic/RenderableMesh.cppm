@@ -9,7 +9,7 @@ export module GL.Mesh.RenderableMesh;
 export import GL.Mesh;
 import GL.Shader;
 import RuntimeException;
-import <glad/glad.h>;
+import GL.Constants;
 
 export namespace GL {
 	template <GLenum primitiveType = GL_TRIANGLES>

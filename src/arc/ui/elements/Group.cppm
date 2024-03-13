@@ -33,7 +33,13 @@ export namespace UI {
 			toRemove.insert(elem);
 		}
 
-		void setRoot(Root* root) override;
+		void setRoot(Root* root) override{
+			Elem::setRoot(root);
+
+			for(auto& elem : children){
+				elem->setRoot(root);
+			}
+		}
 
 		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem) {
 			modifyAddedChildren(elem.get());

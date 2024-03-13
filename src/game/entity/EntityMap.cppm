@@ -4,7 +4,6 @@ module;
 export module Game.Entity.EntityMap;
 
 export import Game.Entity;
-export import Game.Entity.RemoveCallalble;
 import Container.Pool;
 import Event;
 import Concepts;

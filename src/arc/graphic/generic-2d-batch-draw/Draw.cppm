@@ -15,15 +15,15 @@ import Geom.Matrix3D;
 
 import GL;
 export import GL.Blending;
+import GL.Constants;
 import GL.Shader;
 import GL.Mesh;
-import GL.Buffer.IndexBuffer;
-import GL.Buffer.VertexBuffer;
+import GL.Buffer.DataBuffer;
 import GL.Buffer.FrameBuffer;
 import GL.VertexArray;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
-export  import GL.Texture.TextureRegionRect;
+export import GL.Texture.TextureRegionRect;
 import RuntimeException;
 
 import <functional>;

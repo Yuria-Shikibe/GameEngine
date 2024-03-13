@@ -16,8 +16,7 @@ import GL.GL_Exception;
 import GL.Shader;
 import GL.Constants;
 import GL.Mesh;
-import GL.Buffer.IndexBuffer;
-import GL.Buffer.VertexBuffer;
+import GL.Buffer.DataBuffer;
 import GL.VertexArray;
 import GL;
 
@@ -56,7 +55,7 @@ export namespace Core{
 		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, const std::span<VertElem> layoutElems){
 			mesh = std::make_unique<Mesh>([layoutElems, this](Mesh& mesh){
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
-				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), sizeof(float) * maxDataSize);
+				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
 
 				//TODO: Uses flexible mode by using attrib names as position reference? or just keep it hard and quick?
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();

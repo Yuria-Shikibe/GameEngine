@@ -4,7 +4,6 @@ module;
 
 export module Game.Entity;
 
-import Game.Entity.RemoveCallalble;
 import <atomic>;
 import <memory>;
 import <string_view>;

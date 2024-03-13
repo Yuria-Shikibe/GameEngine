@@ -3,8 +3,7 @@ module;
 export module Assets.Graphic;
 
 import GL.Mesh.RenderableMesh;
-import GL.Buffer.IndexBuffer;
-import GL.Buffer.VertexBuffer;
+import GL.Buffer.DataBuffer;
 import GL.VertexArray;
 import Font;
 import Font.GlyphArrangement;

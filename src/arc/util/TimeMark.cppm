@@ -3,14 +3,13 @@ module;
 export module TimeMark;
 
 export import <chrono>;
-export import <ratio>;
+import <ratio>;
 import <unordered_map>;
 
 export namespace ext {
 	class Timestamper {
 		using StampID = unsigned int;
-		using StdUnit = std::chrono::milliseconds;
-		using Duration = std::chrono::duration<long long, std::milli>;
+		using Duration = std::chrono::milliseconds;
 		std::unordered_map<StampID, std::chrono::time_point<std::chrono::system_clock>> stamps{};
 
 	public:
@@ -24,24 +23,25 @@ export namespace ext {
 
 		Duration popMark(const StampID stampID = 0) {
 			const auto current = std::chrono::system_clock::now();
-			auto&& begin = stamps.find(stampID);
+			const auto begin = stamps.find(stampID);
 			if(begin == stamps.end()) {
 				return Duration(-1);
 			}
 
 			stamps.erase(begin);
 
-			return std::chrono::duration_cast<StdUnit>(current - begin->second);
+			return std::chrono::duration_cast<Duration>(current - begin->second);
 		}
 
 		Duration toMark(const StampID stampID = 0) {
+			return Duration(-1);
 			const auto current = std::chrono::system_clock::now();
-			auto&& begin = stamps.find(stampID);
+			const auto begin = stamps.find(stampID);
 			if(begin == stamps.end()) {
 				return Duration(-1);
 			}
 
-			return std::chrono::duration_cast<StdUnit>(current - begin->second);
+			return std::chrono::duration_cast<Duration>(current - begin->second);
 		}
 	};
 }
