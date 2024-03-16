@@ -11,6 +11,10 @@ export namespace Game {
 	class Healthed{
 	protected:
 		float health{0};
+		float healthMaximum{100};
+
+		float empResistance{0};
+		float empMaximumResistance{0};
 	public:
 		virtual ~Healthed() = default;
 
@@ -30,8 +34,12 @@ export namespace Game {
 			health += val;
 		}
 
-		virtual bool invalid() {
+		[[nodiscard]] virtual bool invalid() const {
 			return health < 0;
+		}
+
+		[[nodiscard]] virtual float getHealthRatio() const{
+			return health / healthMaximum;
 		}
 
 		virtual void kill() {

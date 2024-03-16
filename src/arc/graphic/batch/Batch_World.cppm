@@ -7,7 +7,6 @@ export import Core.Batch.Batch_Sprite;
 
 import GL;
 import GL.Constants;
-import GL.Texture.Texture2D;
 import <memory>;
 import <glad/glad.h>;
 
@@ -19,7 +18,7 @@ export namespace Core {
 		//
 		// }
 
-		void post(const ::GL::Texture2D* texture, float* vertices, const int length, const int offset, const int count) override {
+		void post(const ::GL::Texture* texture, float* vertices, const int length, const int offset, const int count) override {
 
 		}
 	};

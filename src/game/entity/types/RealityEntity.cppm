@@ -31,7 +31,9 @@ import <unordered_map>;
 
 export namespace Game {
 	class BasicRealityEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {
+		virtual void init(){
 
+		}
 	};
 	/**
 	 * \brief
@@ -140,6 +142,10 @@ export namespace Game {
 			hitBox.update();
 		}
 
+		virtual void targetUpdated(){
+
+		}
+
 		virtual RealityEntity* addChild(const IDType id, std::unique_ptr<RealityEntity>&& ptr) {
 			return childrenObjects.insert_or_assign(id, std::forward<std::unique_ptr<RealityEntity>>(ptr)).first->second.get();
 		}
@@ -168,32 +174,50 @@ export namespace Game {
 			return parent == nullptr;
 		}
 
-		virtual Geom::Vec2& transformToSuper(Geom::Vec2& vec) const {
+		[[nodiscard]] virtual Geom::Vec2 transformToSuper(Geom::Vec2 vec) const {
 			vec *= localToSuper;
 			return vec;
 		}
 
-		virtual Geom::Vec2& transformToGlobal(Geom::Vec2& vec) const {
-			vec *= localToSuper;
-
+		[[nodiscard]] virtual Geom::Vec2 transformToGlobal(Geom::Vec2 vec) const {
 			const auto* current = this;
 
 			while(current != nullptr) {
-				parent->transformToGlobal(vec);
+				vec = current->transformToSuper(vec);
 				current = current->parent;
 			}
 
 			return vec;
 		}
 
+		[[nodiscard]] virtual float transformToSuperAngle(const float ang) const {
+			return ang + rotation;
+		}
+
+		[[nodiscard]] virtual float transformToGlobalAngle(float ang) const {
+			const auto* current = this;
+
+			while(current != nullptr) {
+				ang = current->transformToSuperAngle(ang);
+				current = current->parent;
+			}
+
+			return ang;
+		}
 
 		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {
 			return maxBound;
 		}
 
+		virtual void updateTransition(){
+			localToSuper.setToRotation(rotation).translateTo(position);
+		}
+
 		void update(const float deltaTick) override {
 			controller->update();
 			updateMovement(deltaTick);
+
+			updateTransition();
 
 			// checkStateValid(this);
 		}
@@ -250,8 +274,6 @@ export namespace Game {
 
 		virtual void calCollideTo(const Game::RealityEntity* object, Geom::Vec2 intersection, const float delatTick) {
 			//Pull in to correct calculation
-
-			if(object->ignoreCollisionTo(this))return;
 
 			if(object->isOverrideCollisionTo(this)) {
 				const_cast<Game::RealityEntity*>(object)->overrideCollisionTo(this, intersection);
@@ -407,6 +429,9 @@ export namespace Game {
 
 		//TODO abstract these to other classes
 		//TODO is this a good idea? this actually modifies many state of the entities
+		/**
+		 * @brief WARNING: this function may change the position of an entity enabling CCD!!!
+		 */
 		static bool exactInterscet(const RealityEntity* subject, const RealityEntity* object) {
 			const bool needInterscetPointCalculation_subject = subject->requiresCollisionIntersection();
 			const bool needInterscetPointCalculation_object = subject->requiresCollisionIntersection();
@@ -515,6 +540,7 @@ export namespace Game {
 		static bool roughInterscet(const RealityEntity* subject, const RealityEntity* object) {
 			if(Math::abs(subject->layer - object->layer) > subject->collisionThickness + subject->collisionThickness)return false;
 			if(subject->deletable() || object->deletable() || subject == object)return false;
+			if(subject->ignoreCollisionTo(object) || object->ignoreCollisionTo(subject))return false;
 			return subject->hitBox.overlapRough(object->hitBox);
 		}
 

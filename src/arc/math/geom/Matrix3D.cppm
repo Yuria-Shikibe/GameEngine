@@ -71,7 +71,7 @@ export namespace Geom{
 			return !(lhs == rhs);
 		}
 
-		~Matrix3D() = default;
+		constexpr ~Matrix3D() = default;
 
 		friend constexpr Vec2 operator*(const Matrix3D& mat, const Vec2& vec2) {
 			Vec2 vector2D{};
@@ -238,7 +238,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Matrix3D& setToTranslation(const float x, const float y) {
+		constexpr Matrix3D& setTranslation(const float x, const float y) {
 			val[M00] = 1;
 			val[M10] = 0;
 			val[M20] = 0;
@@ -254,7 +254,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Matrix3D& setTranslation(const float x, const float y) {
+		constexpr Matrix3D& translateTo(const float x, const float y) {
 			val[M02] = x;
 			val[M12] = y;
 			val[M22] = 1;
@@ -262,7 +262,15 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Matrix3D& setToTranslation(const Vec2& translation) {
+		constexpr Matrix3D& translateTo(const Vec2 translation) {
+			val[M02] = translation.x;
+			val[M12] = translation.y;
+			val[M22] = 1;
+
+			return *this;
+		}
+
+		constexpr Matrix3D& setTranslation(const Vec2 translation) {
 			val[M00] = 1;
 			val[M10] = 0;
 			val[M20] = 0;
@@ -278,7 +286,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Matrix3D& setToScaling(const float scaleX, const float scaleY) {
+		constexpr Matrix3D& setScaling(const float scaleX, const float scaleY) {
 			val[M00] = scaleX;
 			val[M10] = 0;
 			val[M20] = 0;
@@ -291,7 +299,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Matrix3D& setToScaling(const float scale) {
+		constexpr Matrix3D& setScaling(const float scale) {
 			val[M00] = scale;
 			val[M10] = 0;
 			val[M20] = 0;
@@ -304,7 +312,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Matrix3D& setToScaling(const Vec2& scale) {
+		constexpr Matrix3D& setScaling(const Vec2& scale) {
 			val[M00] = scale.x;
 			val[M10] = 0;
 			val[M20] = 0;

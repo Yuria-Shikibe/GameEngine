@@ -188,7 +188,7 @@ export namespace Game {
 		/** \brief Command modify it's strategy. This is only a const reference*/
 		std::unique_ptr<Strategy> strategy{nullptr};
 		/** \brief Command shouldn't modify it's commanded entity directly. */
-		const RealityEntity* owner{nullptr};
+		RealityEntity* owner{nullptr};
 
 		std::unique_ptr<Controller> fallbackController{nullptr};
 
@@ -206,7 +206,7 @@ export namespace Game {
 		 */
 		ReflectSensor* sensor{nullptr};
 
-		[[nodiscard]] explicit Controller(const RealityEntity* const owner);
+		[[nodiscard]] explicit Controller(RealityEntity* const owner);
 
 		virtual bool isValidTo(const std::shared_ptr<RealityEntity>& entity) {
 			return true;
@@ -224,6 +224,8 @@ export namespace Game {
 			strategy->optimizeObjectives(objectives);
 			strategy->optimizeTarget(targets);
 		}
+
+		virtual void assignTurretTarget(std::vector<Geom::Vec2>&& targets);
 
 		virtual void findTarget() {
 

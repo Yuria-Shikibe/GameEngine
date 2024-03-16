@@ -1,13 +1,8 @@
-//
-// Created by Matrix on 2023/11/18.
-//
-
-module;
-
 export module GL.Texture.TextureRegion;
 
 export import GL.Texture.Texture2D;
-import <tuple>;
+
+import <utility>;
 
 export namespace GL{
 	class TextureRegion{
@@ -25,14 +20,6 @@ export namespace GL{
 			: data(data) {
 		}
 
-		TextureRegion(const TextureRegion& other)
-			: data(other.data) {
-		}
-
-		TextureRegion(TextureRegion&& other) noexcept
-			: data(other.data) {
-		}
-
 		friend bool operator==(const TextureRegion& lhs, const TextureRegion& rhs) {
 			return lhs.data == rhs.data;
 		}
@@ -44,18 +31,6 @@ export namespace GL{
 		friend void swap(TextureRegion& lhs, TextureRegion& rhs) noexcept {
 			using std::swap;
 			swap(lhs.data, rhs.data);
-		}
-
-		TextureRegion& operator=(const TextureRegion& other) {
-			if(this == &other) return *this;
-			data = other.data;
-			return *this;
-		}
-
-		TextureRegion& operator=(TextureRegion&& other) noexcept {
-			if(this == &other) return *this;
-			data = other.data;
-			return *this;
 		}
 
 		[[nodiscard]] const Texture2D* getData() const {

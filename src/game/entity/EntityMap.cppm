@@ -18,7 +18,7 @@ import <unordered_map>;
 import <unordered_set>;
 
 export namespace Game {
-	template <Concepts::Derived<Entity> T>
+	template <Concepts::Derived<Entity> T, auto transformer = nullptr>
 	class EntityMap : public RemoveCallalble{
 
 	public:
@@ -38,7 +38,7 @@ export namespace Game {
 	public:
 		std::unordered_map<IDType, std::shared_ptr<T>> idMap{std::unordered_map<IDType, std::shared_ptr<T>>{5000}};
 
-		using TreeType = Geom::QuadTreeF<T>;
+		using TreeType = Geom::QuadTreeF<T, transformer>;
 
 		std::unique_ptr<TreeType> quadTree{nullptr};
 
@@ -48,19 +48,13 @@ export namespace Game {
 		};
 
 		std::mutex removeLock{};
+		std::mutex addLock{};
 
 		[[nodiscard]] EntityMap() = default;
 
-		[[nodiscard]] explicit EntityMap(typename Geom::QuadTree<T, float>::Obtainer&& transformer)
-		: quadTree(std::make_unique<Geom::QuadTreeF<T>>(
-			{0, 0, 0, 0},
-			std::forward<typename Geom::QuadTree<T, float>::Obtainer>(transformer)
-		))
-		{
-		}
-
 
 		virtual void add(std::shared_ptr<T> t) {
+			std::lock_guard guard{addLock};
 			if(const auto pair = idMap.try_emplace(t->getID(), t); pair.second) {
 				addEvent.entity = t.get();
 				groupListener.fire(addEvent);
@@ -84,11 +78,8 @@ export namespace Game {
 			}
 		}
 
-		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound, typename Geom::QuadTree<T, float>::Obtainer&& transformer) {
-			quadTree = std::make_unique<Geom::QuadTreeF<T>>(
-				worldBound,
-				std::forward<typename Geom::QuadTree<T, float>::Obtainer>(transformer)
-			);
+		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound) {
+			quadTree = std::make_unique<Geom::QuadTreeF<T, transformer>>(worldBound);
 		}
 
 		virtual void resizeTree(const Geom::Shape::OrthoRectFloat& worldBound) {

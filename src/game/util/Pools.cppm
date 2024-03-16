@@ -3,7 +3,7 @@ module;
 export module Game.Pool;
 
 import Concepts;
-import Container.Pool;
+export import Container.Pool;
 import RuntimeException;
 import <unordered_map>;
 import <typeindex>;
@@ -56,7 +56,7 @@ export namespace Game::Pools{
 	}
 
 	template <typename T>
-	std::unique_ptr<T> obtainUnique() {
+	typename Containers::Pool<T>::UniquePtr obtainUnique() {
 		return getPool<T>()->obtainUnique();
 	}
 

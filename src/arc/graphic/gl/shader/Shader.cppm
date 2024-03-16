@@ -1,6 +1,3 @@
-//
-// Created by Matrix on 2023/11/18.
-//
 module;
 
 export module GL.Shader;
@@ -23,7 +20,7 @@ import RuntimeException;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import GL.GL_Exception;
-import GL.Texture.Texture2D;
+import GL.Texture;
 import GL.Uniform;
 
 import Graphic.Color;
@@ -92,9 +89,11 @@ export namespace GL {
 		struct UniformInfo{
 			GLint location{};
 			GLsizei count{};
+			GLenum type{};
 		};
 
 	protected:
+		std::vector<std::string> uniformCache{};
 		mutable std::unordered_map <std::string, UniformInfo> uniformInfoMap{};
 		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
 
@@ -173,7 +172,7 @@ export namespace GL {
 			return shader;
 		}
 
-		void bindLoaction() const {
+		void bindLoaction() {
 			GLint uniform_count = 0;
 			glGetProgramiv(programID, GL_ACTIVE_UNIFORMS, &uniform_count);
 
@@ -185,23 +184,31 @@ export namespace GL {
 				GLenum 	type = GL_NONE;
 				glGetProgramiv(programID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformLength);
 
-				const auto uniform_name = std::make_unique<char[]>(maxUniformLength);
 
 				for (GLint i = 0; i < uniform_count; ++i)
 				{
+					const auto uniform_name = std::make_unique<char[]>(maxUniformLength);
+
 					glGetActiveUniform(programID, i, maxUniformLength, &length, &count, &type, uniform_name.get());
 
+					auto str = std::string(uniform_name.get(), length);
+
 					uniformInfoMap.try_emplace(
-						std::string(uniform_name.get(), length),
-						glGetUniformLocation(programID, uniform_name.get()), count
+						str,
+						glGetUniformLocation(programID, str.c_str()), count
 					);
+
 				}
 			}
 		}
 
 	public:
-		[[nodiscard]] GLint getLocation(const std::string_view &uniform) const {
-			return uniformInfoMap.at(static_cast<std::string>(uniform)).location;
+		[[nodiscard]] GLint getLocation(const std::string& uniform) const {
+			return uniformInfoMap.at(uniform).location;
+		}
+
+		[[nodiscard]] UniformInfo getUniformInfo(const std::string& uniform) const {
+			return uniformInfoMap.at(uniform);
 		}
 
 		void reDirectDir(const OS::File& file){
@@ -210,7 +217,7 @@ export namespace GL {
 
 		using compileTypeList = std::pair<ShaderType, std::string>;
 
-		explicit Shader(const OS::File& directory, std::span<compileTypeList> list) : shaderDir{directory}{
+		Shader(const OS::File& directory, std::span<compileTypeList> list) : shaderDir{directory}{
 			for (const auto& [type, name] : list) {
 				pushSource(type, name);
 			}
@@ -328,40 +335,40 @@ export namespace GL {
 			drawer = run;
 		}
 
-		void setColor(const std::string_view &name, const Graphic::Color& color) const {
+		void setColor(const std::string& name, const Graphic::Color& color) const {
 			uniformColor(getLocation(name), color);
 		}
 
-		void setBool(const std::string_view &name, const bool value) const {
+		void setBool(const std::string& name, const bool value) const {
 			glUniform1i(getLocation(name), static_cast<int>(value));
 		}
 
 		// ------------------------------------------------------------------------
-		void setInt(const std::string_view &name, const int value) const {
+		void setInt(const std::string& name, const int value) const {
 			glUniform1i(getLocation(name), value);
 		}
 
 		// ------------------------------------------------------------------------
-		void setFloat(const std::string_view &name, const float value) const {
+		void setFloat(const std::string& name, const float value) const {
 			glUniform1f(getLocation(name), value);
 		}
 
 		// ------------------------------------------------------------------------
-		void setVec2(const std::string_view &name, const float x, const float y) const {
+		void setVec2(const std::string& name, const float x, const float y) const {
 			glUniform2f(getLocation(name), x, y);
 		}
 
-		void setVec2(const std::string_view &name, const Geom::Vec2 &vector) const {
+		void setVec2(const std::string& name, const Geom::Vec2 &vector) const {
 			setVec2(name, vector.getX(), vector.getY());
 		}
 
 		// ------------------------------------------------------------------------
-		void setMat3(const std::string_view &name, const Geom::Matrix3D &mat) const {
+		void setMat3(const std::string& name, const Geom::Matrix3D &mat) const {
 			glUniformMatrix3fv(getLocation(name), 1, GL_FALSE, mat.getRawVal());
 		}
 
-		void setTexture2D(const std::string_view &name, const Texture2D &texture, const int offset = 0) const {
-			texture.active(offset);
+		void setTexture2D(const std::string& name, const Texture* texture, const int offset = 0) const {
+			texture->active(offset);
 
 			uniformTexture(getLocation(name), offset);
 		}

@@ -1,10 +1,3 @@
-//
-// Created by Matrix on 2023/12/3.
-//
-module;
-
-#include <glad/glad.h>
-
 export module Graphic.PostProcessor.BloomProcessor;
 
 import Graphic.PostProcessor;
@@ -75,7 +68,7 @@ export namespace Graphic {
 			temp1.getTexture().active(1);
 
 			GL::enable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			Draw::blit(target, bloomRenderer, [this](const Shader& shader) {
 				shader.setFloat("intensity_blo", intensity_blo);

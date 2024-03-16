@@ -5,6 +5,8 @@ export module Graphic.Draw.Lines;
 export import Graphic.Draw;
 export import Geom.Vector2D;
 
+import Geom.Shape.Rect_Orthogonal;
+
 import Math;
 
 import <span>;

@@ -1,12 +1,11 @@
-module;
-
-#include <ranges>
-#include <chrono>
-#include <iostream>
-
 module Assets.Manager;
 
-import Core.Renderer;
+import <ranges>;
+import <chrono>;
+import <iostream>;
+
+import Core;
+
 import Assets.Graphic;
 import Assets.Loader;
 import Assets.LoaderRenderer;
@@ -57,6 +56,8 @@ void Assets::Manager::load_Visible(const unsigned width, const unsigned height, 
 
 		OS::poll(window);
 	}
+
+	Core::overlayBatch->reset();
 
 	if(!loader.finished()) { //TODO better interruption
 		loader.interrupt();

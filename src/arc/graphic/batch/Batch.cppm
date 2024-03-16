@@ -10,9 +10,9 @@ import <memory>;
 import <functional>;
 import GL.Blending;
 import GL.Constants;
-import GL.Mesh;
-import GL.Shader;
-import GL.Texture.Texture2D;
+export import GL.Mesh;
+export import GL.Shader;
+export import GL.Texture;
 import RuntimeException;
 
 import Geom.Matrix3D;
@@ -25,7 +25,7 @@ export namespace Core{
 	protected:
 		std::unique_ptr<Mesh> mesh = nullptr;
 
-		const Texture2D* lastTexture = nullptr;
+		const Texture* lastTexture = nullptr;
 
 		Shader* generalShader = nullptr;
 		Shader* customShader = nullptr;
@@ -60,6 +60,10 @@ export namespace Core{
 			mesh->bind();
 		}
 
+		virtual void reset(){
+			lastTexture = nullptr;
+		}
+
 		[[nodiscard]] bool hasShader() const {
 			return customShader || generalShader;
 		}
@@ -72,7 +76,7 @@ export namespace Core{
 			return generalShader;
 		}
 
-		[[nodiscard]] const Texture2D* getTexture() const{
+		[[nodiscard]] const Texture* getTexture() const{
 			return lastTexture;
 		}
 
@@ -168,7 +172,7 @@ export namespace Core{
 
 		virtual void flush() = 0;
 
-		virtual void post(const Texture2D* texture, float* vertices, int length, int offset, int count) = 0;
+		virtual void post(const Texture* texture, float* vertices, int length, int offset, int count) = 0;
 
 		virtual void post(const std::function<void()>& drawPost){
 			drawPost();

@@ -640,13 +640,13 @@ export namespace Math {
 		}
 
 
-		float angleDist(float a, float b){
+		float angleDst(float a, float b){
 			a = getAngleInPi2(a);
 			b = getAngleInPi2(b);
 			return Math::min((a - b) < 0 ? a - b + DEG_FULL : a - b, (b - a) < 0 ? b - a + DEG_FULL : b - a);
 		}
 
-		float angleDistSign(float a, float b){
+		float angleDstSign(float a, float b){
 			a = getAngleInPi2(a);
 			b = getAngleInPi2(b);
 
@@ -660,7 +660,7 @@ export namespace Math {
 		}
 
 		float moveToward(float angle, float to, const float speed){
-			if(Math::abs(angleDist(angle, to)) < speed) return to;
+			if(Math::abs(angleDst(angle, to)) < speed) return to;
 			angle = getAngleInPi2(angle);
 			to = getAngleInPi2(to);
 
@@ -671,6 +671,15 @@ export namespace Math {
 			}
 
 			return angle;
+		}
+
+		inline bool within(const float a, const float b, const float margin){
+			return angleDst(a, b) <= margin;
+		}
+
+		inline float clampRange(const float angle, const float dest, const float range){
+			const float dst = angleDst(angle, dest);
+			return dst <= range ? angle : moveToward(angle, dest, dst - range);
 		}
 	}
 }

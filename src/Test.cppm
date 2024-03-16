@@ -20,7 +20,7 @@ import Assets.Cursor;
 import Graphic.Draw;
 
 import GL;
-import GL.Texture.Texture2D;
+import GL.Texture;
 import GL.Shader;
 import UI.Root;
 import UI.Styles;
@@ -51,7 +51,7 @@ export namespace Test {
 				auto* const shader = Assets::Shaders::screenSpace;
 
 				shader->setUniformer([&self](const GL::Shader& s){
-					s.setTexture2D("u_texture", *self.getTexture());
+					s.setTexture2D("u_texture", self.getTexture());
 					s.setMat3("view", *self.getProjection());
 				});
 

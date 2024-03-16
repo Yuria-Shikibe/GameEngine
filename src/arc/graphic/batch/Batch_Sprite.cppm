@@ -1,17 +1,12 @@
-//
-// Created by Matrix on 2023/11/20.
-//
 module;
 
 export module Core.Batch.Batch_Sprite;
 
-import <glad/glad.h>;
 import <memory>;
 import <functional>;
 import <span>;
-
+import <glad/glad.h>;
 export import Core.Batch;
-import GL.Texture.Texture2D;
 import GL.GL_Exception;
 import GL.Shader;
 import GL.Constants;
@@ -52,6 +47,11 @@ export namespace Core{
 		}()};
 
 	public:
+		void reset() override{
+			Batch::reset();
+			index = 0;
+		}
+
 		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, const std::span<VertElem> layoutElems){
 			mesh = std::make_unique<Mesh>([layoutElems, this](Mesh& mesh){
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
@@ -96,10 +96,8 @@ export namespace Core{
 		void flush() override{
 			if(index == 0)return;
 
-			// glDepthMask(false);
-
 			mesh->bind();
-			mesh->getVertexBuffer().setDataRaw(cachedVertices.data(), sizeof(float) * index);
+			mesh->getVertexBuffer().setDataRaw(cachedVertices.data(), index);
 
 			bindShader();
 			applyShader();
@@ -109,7 +107,7 @@ export namespace Core{
 			index = 0;
 		}
 
-		void post(const Texture2D* texture, float* vertices, const int length, const int offset, const int count) override{
+		void post(const Texture* texture, float* vertices, const int length, const int offset, const int count) override{
 			if(lastTexture != texture){
 				flush();
 				lastTexture = texture;

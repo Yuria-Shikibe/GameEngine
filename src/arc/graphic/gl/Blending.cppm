@@ -1,8 +1,8 @@
-module ;
+module;
 
 export module GL.Blending;
 
-import <glad/glad.h>;
+import GL.Constants;
 import GL;
 
 export namespace GL{
@@ -16,17 +16,17 @@ export namespace GL{
 		                                                                                            dstAlpha(dstAlpha){
 		}
 
-		[[nodiscard]] Blending() = default;
+		[[nodiscard]] constexpr Blending() = default;
 
-		Blending(const Blending& other) = default;
+		constexpr Blending(const Blending& other) = default;
 
-		Blending(Blending&& other) noexcept: src(other.src),
+		constexpr Blending(Blending&& other) noexcept: src(other.src),
 		                                     dst(other.dst),
 		                                     srcAlpha(other.srcAlpha),
 		                                     dstAlpha(other.dstAlpha){
 		}
 
-		Blending& operator=(const Blending& other){
+		constexpr Blending& operator=(const Blending& other){
 			if(this == &other) return *this;
 			src = other.src;
 			dst = other.dst;
@@ -35,7 +35,7 @@ export namespace GL{
 			return *this;
 		}
 
-		Blending& operator=(Blending&& other) noexcept{
+		constexpr Blending& operator=(Blending&& other) noexcept{
 			if(this == &other) return *this;
 			src = other.src;
 			dst = other.dst;

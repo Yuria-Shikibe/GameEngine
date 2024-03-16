@@ -1,7 +1,5 @@
 module;
 
-#include <glad/glad.h>
-
 export module Graphic.Draw;
 
 import Math;
@@ -26,6 +24,7 @@ import GL.Texture.TextureRegion;
 export import GL.Texture.TextureRegionRect;
 import RuntimeException;
 
+import <glad/glad.h>;
 import <functional>;
 import <memory>;
 import <stack>;
@@ -109,11 +108,11 @@ namespace Graphic::Draw{
 	}
 
 
-	inline void color(const Color& color = Colors::WHITE) {
+	inline void color(const Color color = Colors::WHITE) {
 		contextColor = color;
 	}
 
-	inline void mixColor(const Color& color = Colors::CLEAR) {
+	inline void mixColor(const Color color = Colors::CLEAR) {
 		contextMixColor = color;
 	}
 
@@ -135,7 +134,7 @@ namespace Graphic::Draw{
 
 	void endPorj();
 
-	void color(const Color& c1, const Color& c2, const float t) {
+	void color(const Color c1, const Color c2, const float t) {
 		contextColor.lerp(t, c1, c2);
 	}
 
@@ -181,22 +180,22 @@ namespace Graphic::Draw{
 
 	void vert(
 		const Texture2D* texture,
-		float x1, float y1, float texSrc1, float texDest1, const Color& c1, const Color& cm1,
-		float x2, float y2, float texSrc2, float texDest2, const Color& c2, const Color& cm2,
-		float x3, float y3, float texSrc3, float texDest3, const Color& c3, const Color& cm3,
-		float x4, float y4, float texSrc4, float texDest4, const Color& c4, const Color& cm4
+		float x1, float y1, float texSrc1, float texDest1, const Color c1, const Color cm1,
+		float x2, float y2, float texSrc2, float texDest2, const Color c2, const Color cm2,
+		float x3, float y3, float texSrc3, float texDest3, const Color c3, const Color cm3,
+		float x4, float y4, float texSrc4, float texDest4, const Color c4, const Color cm4
 	);
 
 	void vert_monochromeMix(
-		const Texture2D* texture, const Color& cm,
-		float x1, float y1, float texSrc1, float texDest1, const Color& c1,
-		float x2, float y2, float texSrc2, float texDest2, const Color& c2,
-		float x3, float y3, float texSrc3, float texDest3, const Color& c3,
-		float x4, float y4, float texSrc4, float texDest4, const Color& c4
+		const Texture2D* texture, const Color cm,
+		float x1, float y1, float texSrc1, float texDest1, const Color c1,
+		float x2, float y2, float texSrc2, float texDest2, const Color c2,
+		float x3, float y3, float texSrc3, float texDest3, const Color c3,
+		float x4, float y4, float texSrc4, float texDest4, const Color c4
 	);
 
 	void vert_monochromeAll(
-		const Texture2D* texture, const Color& c, const Color& cm,
+		const Texture2D* texture, const Color c, const Color cm,
 		float x1, float y1, float texSrc1, float texDest1,
 		float x2, float y2, float texSrc2, float texDest2,
 		float x3, float y3, float texSrc3, float texDest3,
@@ -205,10 +204,10 @@ namespace Graphic::Draw{
 
 	inline void vert(
 		const Texture2D* texture,
-		const float x1, const float y1, const Color& c1, const Color& cm1,
-		const float x2, const float y2, const Color& c2, const Color& cm2,
-		const float x3, const float y3, const Color& c3, const Color& cm3,
-		const float x4, const float y4, const Color& c4, const Color& cm4
+		const float x1, const float y1, const Color c1, const Color cm1,
+		const float x2, const float y2, const Color c2, const Color cm2,
+		const float x3, const float y3, const Color c3, const Color cm3,
+		const float x4, const float y4, const Color c4, const Color cm4
 	) {
 		vert(
 			texture,
@@ -221,10 +220,10 @@ namespace Graphic::Draw{
 
 	inline void vert(
 		const Texture2D* texture,
-		const float x1, const float y1, const Color& c1,
-		const float x2, const float y2, const Color& c2,
-		const float x3, const float y3, const Color& c3,
-		const float x4, const float y4, const Color& c4
+		const float x1, const float y1, const Color c1,
+		const float x2, const float y2, const Color c2,
+		const float x3, const float y3, const Color c3,
+		const float x4, const float y4, const Color c4
 	) {
 		vert_monochromeMix(
 			texture, contextMixColor,
@@ -268,10 +267,10 @@ namespace Graphic::Draw{
 	}
 
 	inline void quad(const TextureRegion* region,
-	                 const float x1, const float y1, const Color& c1,
-	                 const float x2, const float y2, const Color& c2,
-	                 const float x3, const float y3, const Color& c3,
-	                 const float x4, const float y4, const Color& c4
+	                 const float x1, const float y1, const Color c1,
+	                 const float x2, const float y2, const Color c2,
+	                 const float x3, const float y3, const Color c3,
+	                 const float x4, const float y4, const Color c4
 	) {
 		vert_monochromeMix(
 			region->getData(), contextMixColor,
@@ -284,12 +283,12 @@ namespace Graphic::Draw{
 
 	template <Concepts::Pos<float> T>
 	void quad(const TextureRegion* region,
-	          const T& v0, const Color& c1,
-	          const T& v1, const Color& c2,
-	          const T& v2, const Color& c3,
-	          const T& v3, const Color& c4
+	          const T& v0, const Color c1,
+	          const T& v1, const Color c2,
+	          const T& v2, const Color c3,
+	          const T& v3, const Color c4
 	) {
-		vert_monochromeMix(
+		::Graphic::Draw::vert_monochromeMix(
 			region->getData(), contextMixColor,
 			v0.getX(), v0.getY(), region->u00(), region->v00(), c1,
 			v1.getX(), v1.getY(), region->u10(), region->v10(), c2,
@@ -300,7 +299,7 @@ namespace Graphic::Draw{
 
 	template <Concepts::Pos<float> T>
 	void quad(const TextureRegion* region, const T& v0, const T& v1, const T& v2, const T& v3) {
-		vert_monochromeAll(
+		::Graphic::Draw::vert_monochromeAll(
 			region->getData(), contextColor, contextMixColor,
 			v0.getX(), v0.getY(), region->u00(), region->v00(),
 			v1.getX(), v1.getY(), region->u10(), region->v10(),
@@ -420,6 +419,25 @@ namespace Graphic::Draw{
 		vec2_4.set(x, y).add(vec2_0.rotateRT());
 
 		Draw::quad(defaultTexture, vec2_1, vec2_2, vec2_3, vec2_4);
+	}
+
+	void poly(const float x, const float y, const int sides, const float radius, const float angle, const Color inner = contextColor, const Color exter = contextColor) {
+		const float space  = 360.0f / static_cast<float>(sides);
+
+		for(int i = 0; i < sides; i++) {
+			const float a    = space * static_cast<float>(i) + angle;
+			const float cos1 = Math::cosDeg(a);
+			const float sin1 = Math::sinDeg(a);
+			const float cos2 = Math::cosDeg(a + space);
+			const float sin2 = Math::sinDeg(a + space);
+			quad(
+				defaultTexture,
+				x, y, inner,
+				x, y, inner,
+				x + radius * cos2, y + radius * sin2, exter,
+				x + radius * cos1, y + radius * sin1, exter
+			);
+		}
 	}
 }
 

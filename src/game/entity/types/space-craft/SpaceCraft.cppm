@@ -3,23 +3,75 @@ export module Game.Entity.SpaceCraft;
 import Game.Entity.RealityEntity;
 
 import Game.Entity.EntityManager;
+import Game.Entity.Turrets;
 import Graphic.Color;
 import Graphic.Draw;
 import Graphic.Draw.Lines;
 import Math;
-import OS;
+import Math.Rand;
+
+import Geom;
+
 import <iostream>;
 import <ranges>;
 import <unordered_map>;
 
-import Core;
-import Geom;
-
 export namespace Game {
+	class SpaceCraft;
+
+	struct SpaceCraftTrait {
+		virtual void init(SpaceCraft* spaceCraft) = 0;
+
+		virtual void draw(const SpaceCraft* spaceCraft) = 0;
+
+
+	};
+
 	class SpaceCraft : public RealityEntity{
 	public:
+		const SpaceCraftTrait* trait{nullptr};
+
 		bool intersected = false;
+
+		std::vector<Containers::Pool<TurretEntity>::UniquePtr> turretEntities{};
+
 		[[nodiscard]] SpaceCraft() = default;
+
+		void init() override{
+			auto rand = Math::globalRand;
+
+			const int turrets = rand.random(2, 5);
+
+			turretEntities.reserve(turrets);
+
+			for(int i = 0; i < turrets; ++i){
+				turretEntities.push_back(EntityManage::obtainUnique<TurretEntity>());
+			}
+
+
+			for(const auto& turret : turretEntities){
+				turret->relativePosition.x = rand.random(hitBox.offset.x, hitBox.offset.x + hitBox.sizeVec2.x);
+				turret->relativePosition.y = rand.random(hitBox.offset.y, hitBox.offset.y + hitBox.sizeVec2.y);
+			}
+		}
+
+		void setTurretType(const TurretTrait* trait){
+			for(const auto& turret : turretEntities){
+				turret->init(trait, this);
+			}
+		}
+
+		void acceptTurretTargets() const{
+			if(controller->turretTargets.empty())return;
+			for(const auto& turret : turretEntities){
+				turret->setTargetPosition(controller->turretTargets.front());
+				turret->activateFiring();
+			}
+		}
+
+		void targetUpdated() override{
+			acceptTurretTargets();
+		}
 
 		void updateCollision(const float deltaTick) override {
 			intersected = false;
@@ -37,9 +89,9 @@ export namespace Game {
 		void updateMovement(const float delta) override{
 			if(controller->moveCommand.moveActivated()){
 				const auto dest = controller->moveCommand.nextDest();
-				float angleDst = Math::Angle::angleDist(rotation, controller->moveCommand.expectedFaceAngle);
+				float angleDst = Math::Angle::angleDst(rotation, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst)){
-					angularAcceleration = Math::approach(angularAcceleration, Math::Angle::angleDistSign(rotation, controller->moveCommand.expectedFaceAngle) * 0.5f, delta * 0.5f);
+					angularAcceleration = Math::approach(angularAcceleration, Math::Angle::angleDstSign(rotation, controller->moveCommand.expectedFaceAngle) * 0.5f, delta * 0.5f);
 				}
 
 				if(controller->moveCommand.requiresMovement(dest)){
@@ -71,6 +123,10 @@ export namespace Game {
 
 			if(health < 0){
 				deactivate();
+			}
+
+			for(auto& turretEntity : turretEntities){
+				turretEntity->update(deltaTick);
 			}
 		}
 
@@ -145,6 +201,10 @@ export namespace Game {
 
 			Draw::color(Colors::BLACK);
 			Draw::rect(hitBox.originPoint.x - 2, hitBox.originPoint.y - 2, 4, 4);
+
+			for(auto& turretEntity : turretEntities){
+				turretEntity->draw();
+			}
 		}
 	};
 }

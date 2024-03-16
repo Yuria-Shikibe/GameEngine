@@ -1,13 +1,8 @@
-//
-// Created by Matrix on 2023/12/3.
-//
-module;
-
 export module GL;
 
+import <glad/glad.h>;
 import <unordered_map>;
 import <unordered_set>;
-import <glad/glad.h>;
 
 namespace GL {
     GLuint lastProgram{0};
@@ -46,6 +41,27 @@ export namespace GL {
         constexpr GLenum SCISSOR = 0x0C11;
     }
 
+    enum class Func : GLenum {
+        NEVER = GL_NEVER,
+        LESS = GL_LESS,
+        EQUAL = GL_EQUAL,
+        LEQUAL = GL_LEQUAL,
+        GREATER = GL_GREATER,
+        NOTEQUAL = GL_NOTEQUAL,
+        GEQUAL = GL_GEQUAL,
+        ALWAYS = GL_ALWAYS,
+    };
+
+    enum class Operation : GLenum {
+        KEEP = GL_KEEP,
+        ZERO = GL_ZERO,
+        REPLACE = GL_REPLACE,
+        INCR = GL_INCR,
+        INCR_WRAP = GL_INCR_WRAP,
+        DECR = GL_DECR,
+        DECR_WRAP = GL_DECR_WRAP,
+        INVERT = GL_INVERT,
+    };
 
     unsigned int getMaxTextureSize() {
         return maxTexSize;
@@ -195,6 +211,30 @@ export namespace GL {
 
     void blendFunci(const GLuint buf, const GLenum src, const GLenum dst, const GLenum srcAlpha, const GLenum dstAlpha) {
         glBlendFuncSeparatei(buf, src, dst, srcAlpha, dstAlpha);
+    }
+
+    template <GLenum Type>
+    void setFunc(Func func, GLint ref, GLuint mask);
+
+    template <GLenum Type>
+    void setMask(GLuint mask);
+
+    template <GLenum Type>
+    void setOperation(Operation, Operation, Operation);
+
+    template <>
+    void setFunc<Test::STENCIL>(const Func func, const GLint ref, const GLuint mask){
+        glStencilFunc(static_cast<const GLenum>(func), ref, mask);
+    }
+
+    template <>
+    void setMask<Test::STENCIL>(const GLuint mask){
+        glStencilMask(mask);
+    }
+
+    template <>
+    void setOperation<Test::STENCIL>(Operation stencilFail, Operation depthFail, Operation pass){
+        glStencilOp(static_cast<GLenum>(stencilFail), static_cast<GLenum>(depthFail), static_cast<GLenum>(pass));
     }
 }
 

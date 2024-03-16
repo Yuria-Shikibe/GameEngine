@@ -71,6 +71,13 @@ export namespace Game {
 			[this] {
 				assignRouteEnd();
 			});
+
+			Core::input->registerMouseBind(
+				Ctrl::MOUSE_BUTTON_3, Ctrl::Act_Press,
+				Ctrl::Mode_Shift,
+			[this] {
+				assignTurretTarget();
+			});
 		}
 
 		enum IntervalIndex{
@@ -103,7 +110,7 @@ export namespace Game {
 			}
 		}
 
-		Assets::Cursor& getCursor() const{
+		[[nodiscard]] Assets::Cursor& getCursor() const{
 			if(Core::input->isPressedKey(Ctrl::KEY_LEFT_SHIFT)){
 				return Assets::getCursor(Assets::CursorType::select);
 			}
@@ -135,13 +142,20 @@ export namespace Game {
 				const auto next = entity->controller->moveCommand.nextDest();
 				Draw::Line::square(next.x, next.y, 25, 45);
 
-				Draw::Line::setLineStroke(6);
+				Draw::Line::setLineStroke(5);
 				Draw::color(Colors::BRICK);
 				Draw::Line::line(entity->controller->moveCommand.currentPosition, entity->controller->moveCommand.destination);
 
 				coordText->offset.set(dest).add(45, 45);
 				coordText->setAlign(Align::Mode::bottom_left);
 				coordText->render();
+			}
+
+			Draw::color(Colors::RED_DUSK);
+			for(auto& realityEntity : selected){
+				for (auto turretTarget : realityEntity->controller->turretTargets){
+					Draw::Line::square(turretTarget.x, turretTarget.y, 32, 45);
+				}
 			}
 
 			renderer->frameEnd(Assets::PostProcessors::bloom);
@@ -164,6 +178,12 @@ export namespace Game {
 				}
 
 				entity->controller->moveCommand.route.push_back(mouseWorldPos);
+			}
+		}
+
+		void assignTurretTarget() const{
+			for(const auto& entity : selected){
+				entity->controller->assignTurretTarget(std::vector{mouseWorldPos});
 			}
 		}
 

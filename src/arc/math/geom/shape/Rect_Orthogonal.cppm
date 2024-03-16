@@ -361,8 +361,12 @@ export namespace Geom::Shape{
 			return collector;
 		}
 
-		constexpr void setVert(const float srcX, const float srcY, const float endX, const float endY) {
-			set(srcX, srcY, endX - srcX, endY - srcY);
+		constexpr void setVert(const T srcX, const T srcY, const T endX, const T endY) {
+			this->set(srcX, srcY, endX - srcX, endY - srcY);
+		}
+
+		constexpr void expand(const T x, const T y){
+			this->set(srcX - x, srcY - y, width + x * 2,  height + y * 2);
 		}
 	};
 

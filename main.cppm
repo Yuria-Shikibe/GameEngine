@@ -1,5 +1,8 @@
 #include "src/application_head.h"
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 import <iomanip>;
 import <functional>;
 import <iostream>;
@@ -9,8 +12,7 @@ import <ranges>;
 import <sstream>;
 import <typeinfo>;
 import <unordered_set>;
-import <glad/glad.h>;
-import <GLFW/glfw3.h>;
+
 
 import Assets.LoaderRenderer;
 
@@ -103,8 +105,10 @@ import Game.Entity.EntityManager;
 import Game.Entity.RealityEntity;
 import Game.Entity.SpaceCraft;
 import Game.Entity.Bullet;
+import Game.Entity.Turrets;
 
 import Game.Content.Type.BasicBulletType;
+import Game.Content.Type.Turret.BasicTurretType;
 
 using namespace std;
 using namespace Graphic;
@@ -253,7 +257,7 @@ void setupCtrl(){
 		Game::EntityManage::realEntities.quadTree->intersectPoint(Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
 		[](decltype(Game::EntityManage::realEntities)::ValueType* entity) {
 			entity->controller->selected = !entity->controller->selected;
-			Game::core->overlayManager->registerSelected(std::dynamic_pointer_cast<Game::RealityEntity>(entity->obtainSharedSelf()));
+			Game::core->overlayManager->registerSelected(std::dynamic_pointer_cast<Game::RealityEntity>(std::move(entity->obtainSharedSelf())));
 		});
 	});
 }
@@ -318,6 +322,9 @@ int main(const int argc, char* argv[]) {
 			ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
 			ptr->velocity.set(1, 0).rotate(rand.random(360));
 			ptr->activate();
+
+			ptr->init();
+			ptr->setTurretType(&Game::Content::baseTurret);
 		}
 
 		Geom::RectBox box{};
@@ -339,7 +346,10 @@ int main(const int argc, char* argv[]) {
 		OS::setPause(!OS::isPaused());
 	});
 
-	Core::renderer->getListener().on<Event::Draw_Post>([&](const Event::Draw_Post& e) {
+	Core::renderer->getListener().on<Event::Draw_Post>([&frameBuffer](const Event::Draw_Post& e) {
+		auto f = &frameBuffer;
+
+
 		e.renderer->frameBegin(&frameBuffer);
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
 		Game::EntityManage::render();

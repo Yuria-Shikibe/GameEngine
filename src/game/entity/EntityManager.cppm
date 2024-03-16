@@ -5,7 +5,7 @@ import Game.Entity.EntityMap;
 import Game.Entity;
 import Game.Entity.RealityEntity;
 import Game.Entity.Drawable;
-import Game.Pool;
+export import Game.Pool;
 import Concepts;
 
 import <memory>;
@@ -25,10 +25,11 @@ export namespace Game::EntityManage{
 	/** \brief The only place that update will be called*/
 	EntityMap<::Game::Entity> entities{};
 
-	EntityMap<Game::RealityEntity> realEntities{};
+	EntityMap<Game::RealityEntity, RealityEntity::getHitBoound> realEntities{};
 
 	void init() {
-		realEntities.buildTree({-10000, -10000, 20000, 20000}, RealityEntity::getHitBoound);
+		realEntities.buildTree({-10000, -10000, 20000, 20000});
+		realEntities.quadTree->setRoughInterscet(RealityEntity::roughInterscet);
 		realEntities.quadTree->setExactInterscet(RealityEntity::exactInterscet);
 		realEntities.quadTree->setPointInterscet(RealityEntity::pointInterscet);
 	}
@@ -64,6 +65,15 @@ export namespace Game::EntityManage{
 
 		ptr->setID(allocateID());
 		return std::shared_ptr<T>{ptr, std::move(Pools::getPool<T>()->getDeleter())};
+	}
+
+	template<Concepts::Derived<Entity> T>
+	[[nodiscard]] std::unique_ptr<T, typename Containers::Pool<T>::Deleter> obtainUnique() {
+		auto ptr = Pools::obtainRaw<T>();
+		new (ptr) T{};
+
+		ptr->setID(allocateID());
+		return std::unique_ptr<T, typename Containers::Pool<T>::Deleter>{ptr, std::move(Pools::getPool<T>()->getDeleter())};
 	}
 
 	template<Concepts::Derived<Entity> T>

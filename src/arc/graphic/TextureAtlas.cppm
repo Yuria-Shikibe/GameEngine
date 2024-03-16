@@ -52,7 +52,7 @@ export namespace Graphic {
 			return nullptr;
 		}
 
-		[[nodiscard]] Assets::TexturePackPage& getPage(const std::string_view& pageName) {
+		[[nodiscard]] Assets::TexturePackPage& getPage(const std::string_view pageName) {
 			if(const auto itr = pages.find(pageName); itr != pages.end()) {
 				return itr->second;
 			}
@@ -88,7 +88,7 @@ export namespace Graphic {
 		void flush() {
 			size_t size{0};
 
-			for(auto& element : pages | std::ranges::views::values) {
+			for(auto& element : this->pages | std::ranges::views::values) {
 				size += element.getData().size();
 			}
 

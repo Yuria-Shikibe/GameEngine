@@ -10,6 +10,7 @@ import <memory>;
 import <span>;
 import <vector>;
 
+
 export namespace GL{
 	struct Texture2DArray {
 		GLsizei width{};

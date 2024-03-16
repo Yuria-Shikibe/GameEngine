@@ -3,6 +3,7 @@ module;
 module Assets.Graphic;
 
 import Core;
+
 void Assets::Shaders::loadPrevious() {
 	blit = new Shader(shaderDir, "blit");
 	blit->setUniformer([](const Shader& shader) {

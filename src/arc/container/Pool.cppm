@@ -166,7 +166,7 @@ export namespace Containers{
             if(vault.size() < maxSize){
                 vault.push_back(ptr.release());
             }else {
-                ptr.reset(nullptr);
+                ptr.reset();
             }
         }
 

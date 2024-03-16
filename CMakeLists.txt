@@ -28,11 +28,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
 set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
+#add_compile_definitions(_BUILD_STD_MODULE)
+
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
 #    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
     add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
-    
+
     file(GLOB_RECURSE BIN
             ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
     )
@@ -44,6 +46,7 @@ else()
     message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
 endif ()
+
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
 

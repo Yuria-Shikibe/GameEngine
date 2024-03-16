@@ -16,10 +16,17 @@ export namespace Game {
 	public:
 		~DrawableEntity() override = default;
 
-		[[nodiscard]] virtual const Geom::Shape::OrthoRectFloat& getDrawBound() const = 0;
+		[[nodiscard]] virtual const Geom::Shape::OrthoRectFloat& getDrawBound() const{
+			static constexpr Geom::Shape::OrthoRectFloat EmptyBound = {};
+			return EmptyBound;
+		}
 
 		[[nodiscard]] bool isInScreen() const {
 			return inScreen;
+		}
+
+		void setInScreen(bool val){
+			inScreen = val;
 		}
 
 		virtual void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) {

@@ -7,9 +7,10 @@ export import GL.Texture.Texture2D;
 export import GL;
 
 export import RuntimeException;
+
+import <glad/glad.h>;
 import <ranges>;
 import <unordered_map>;
-import <glad/glad.h>;
 
 using namespace GL;
 

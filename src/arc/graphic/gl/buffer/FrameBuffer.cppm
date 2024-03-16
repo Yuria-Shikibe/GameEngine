@@ -2,9 +2,8 @@ module;
 
 export module GL.Buffer.FrameBuffer;
 
-import <glad/glad.h>;
 import <memory>;
-
+import <glad/glad.h>;
 import GL;
 import GL.Texture.Texture2D;
 import GL.Object;
@@ -49,7 +48,10 @@ export namespace GL{
 		FrameBuffer(const unsigned int w, const unsigned int h, const int colorAttachments = 1) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
 			glCreateFramebuffers(1, &nameID);
 
-			bindColorAttachments<Texture2D>(colorAttachments);
+
+			attachmentsColor.emplace_back(std::make_unique<Texture2D>(width, height));
+			glNamedFramebufferTexture(nameID, GL_COLOR_ATTACHMENT0, attachmentsColor.front()->getID(), 0);
+
 			bindRenderBuffer<RenderBuffer>();
 
 			for(const auto& texture : attachmentsColor){
@@ -170,6 +172,12 @@ export namespace GL{
 		void clearDepth(const float depth) const{
 			if(attachmentsDepth){
 				glClearNamedFramebufferfv(nameID, GL_DEPTH, 0, &depth);
+			}
+		}
+
+		void clearRenderData(const float depth = 1.0f, const int stencil = 0) const{
+			if(renderBuffer){
+				glClearNamedFramebufferfi(nameID, GL_DEPTH_STENCIL, 0, depth, stencil);
 			}
 		}
 

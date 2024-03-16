@@ -3,7 +3,6 @@ module;
 export module GL.Buffer.MultiSampleRenderBuffer;
 
 import <glad/glad.h>;
-
 import GL.Buffer.RenderBuffer;
 
 export namespace GL{

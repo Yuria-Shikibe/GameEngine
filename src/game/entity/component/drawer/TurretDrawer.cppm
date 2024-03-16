@@ -1,0 +1,33 @@
+//
+// Created by Matrix on 2024/3/15.
+//
+
+export module Game.Drawer.TurretDrawer;
+
+export import Game.Entity.Turrets;
+export import Game.Drawer.DrawComponents;
+
+import <vector>;
+import <memory>;
+
+export namespace Game::Drawer{
+	struct TurretDrawer {
+		virtual ~TurretDrawer() = default;
+
+		std::vector<std::unique_ptr<DrawComponent>> components{};
+
+		virtual void paramOperate(DrawParam& param, TurretTrait* trait, TurretEntity* entity){
+
+		}
+
+		virtual void draw(TurretTrait* trait, TurretEntity* entity){
+			DrawParam param{};
+			paramOperate(param, trait, entity);
+			for(auto& component : components){
+				component->draw(param);
+			}
+		}
+	};
+
+
+}

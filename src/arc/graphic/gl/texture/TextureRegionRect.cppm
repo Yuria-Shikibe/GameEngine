@@ -68,36 +68,6 @@ export namespace GL{
 		[[nodiscard]] float v11() const override{return v1;}
 		[[nodiscard]] float v10() const override{return v0;}
 
-		TextureRegionRect(const TextureRegionRect& other) = default;
-
-		TextureRegionRect(TextureRegionRect&& other) noexcept
-			: TextureRegion(std::move(other)),
-			  u0(other.u0),
-			  v0(other.v0),
-			  u1(other.u1),
-			  v1(other.v1) {
-		}
-
-		TextureRegionRect& operator=(const TextureRegionRect& other) {
-			if(this == &other) return *this;
-			TextureRegion::operator =(other);
-			u0 = other.u0;
-			v0 = other.v0;
-			u1 = other.u1;
-			v1 = other.v1;
-			return *this;
-		}
-
-		TextureRegionRect& operator=(TextureRegionRect&& other) noexcept {
-			if(this == &other) return *this;
-			TextureRegion::operator =(std::move(other));
-			u0 = other.u0;
-			v0 = other.v0;
-			u1 = other.u1;
-			v1 = other.v1;
-			return *this;
-		}
-
 		void flipY() {
 			std::swap(v0, v1);
 		}

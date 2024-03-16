@@ -2,7 +2,6 @@ module;
 
 export module Graphic.PostProcessor.ShaderProcessor;
 
-import <glad/glad.h>;
 import <functional>;
 import Graphic.PostProcessor;
 import Graphic.Draw;

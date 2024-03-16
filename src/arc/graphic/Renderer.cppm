@@ -1,5 +1,3 @@
-module ;
-
 export module Core.Renderer;
 
 import <glad/glad.h>;

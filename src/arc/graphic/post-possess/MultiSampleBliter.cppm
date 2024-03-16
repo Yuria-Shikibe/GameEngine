@@ -1,12 +1,7 @@
-//
-// Created by Matrix on 2023/12/3.
-//
-
 module;
 
 export module Graphic.PostProcessor.MultiSampleBliter;
 
-import <glad/glad.h>;
 import Graphic.PostProcessor;
 import Graphic.Draw;
 

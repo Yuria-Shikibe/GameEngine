@@ -1,9 +1,6 @@
-module;
-
-#include <csignal>
-
 export module OS;
 
+import <csignal>;
 import <GLFW/glfw3.h>;
 import <chrono>;
 import <ctime>;
@@ -21,19 +18,19 @@ import Concepts;
 import OS.ApplicationListener;
 
 namespace OS{
-	inline bool loopBegin = false;
+	bool loopBegin = false;
 
-	inline float _deltaTime = 0.0f;    //InTick
-	inline float _deltaTick = 0.0f;    //InTick
+	float deltaTime_internal = 0.0f;    //InTick
+	float deltaTick_internal = 0.0f;    //InTick
 
-	inline float _updateDeltaTime = 0.0f;    //InTick
-	inline float _updateDeltaTick = 0.0f;    //InTick
+	float updateDeltaTime_internal = 0.0f;    //InTick
+	float updateDeltaTick_internal = 0.0f;    //InTick
 
-	inline float _globalTime = 0.0f;     //Sec    | No Pause
-	inline float _globalTick = 0.0f;     //Tick   | NO Pause
+	float globalTime_internal = 0.0f;     //Sec    | No Pause
+	float globalTick_internal = 0.0f;     //Tick   | NO Pause
 
-	inline float _updateTime = 0.0f;     //Sec
-	inline float _updateTick = 0.0f;     //Tick
+	float updateTime_internal = 0.0f;     //Sec
+	float updateTick_internal = 0.0f;     //Tick
 
 	std::vector<::OS::ApplicationListener*> applicationListeners;
 
@@ -46,7 +43,7 @@ namespace OS{
 
 	std::thread::id mainThreadID{};
 
-	inline bool paused = false;
+	bool paused = false;
 
 	float FPS_reload = 0;
 	float totalFrames = 0;
@@ -80,15 +77,15 @@ export namespace OS{
 	constexpr float TicksPerSecond = 60.0f;
 
 	void resetTimer() {
-		_globalTime = _globalTick = _updateTime = _updateTick = 0;
+		globalTime_internal = globalTick_internal = updateTime_internal = updateTick_internal = 0;
 	}
 
 	inline float delta(){
-		return _deltaTime;
+		return deltaTime_internal;
 	}
 
 	unsigned int getFPS() {
-		FPS_reload += _deltaTime;
+		FPS_reload += deltaTime_internal;
 
 		totalFrames += 1.0f;
 		if(FPS_reload > 1.0f) {
@@ -102,32 +99,32 @@ export namespace OS{
 
 	// ReSharper disable once CppDFAConstantFunctionResult
 	inline float deltaTick(){
-		return _deltaTick;
+		return deltaTick_internal;
 	}
 
 	inline float updateDelta(){
-		return _updateTime;
+		return updateTime_internal;
 	}
 
 	// ReSharper disable once CppDFAConstantFunctionResult
 	inline float updateDeltaTick(){
-		return _updateDeltaTick;
+		return updateDeltaTick_internal;
 	}
 
 	inline float globalTime(){
-		return _globalTime;
+		return globalTime_internal;
 	}
 
 	inline float globalTick(){
-		return _globalTick;
+		return globalTick_internal;
 	}
 
 	inline float updateTime(){
-		return _updateTime;
+		return updateTime_internal;
 	}
 
 	inline float updateTick(){
-		return _updateTick;
+		return updateTick_internal;
 	}
 
 	void pause() {
@@ -189,7 +186,7 @@ export namespace OS{
 		std::signal(SIGTERM, exitApplication);
 
 		deltaSetter = [](float& f){
-			f = static_cast<float>(glfwGetTime()) - _globalTime;
+			f = static_cast<float>(glfwGetTime()) - globalTime_internal;
 		};
 
 		globalTimeSetter = [](float& f){
@@ -227,17 +224,17 @@ export namespace OS{
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		deltaSetter(_deltaTime);
-		_deltaTick = _deltaTime * TicksPerSecond;
+		deltaSetter(deltaTime_internal);
+		deltaTick_internal = deltaTime_internal * TicksPerSecond;
 
-		_updateDeltaTime = paused ? 0.0f : _deltaTime;
-		_updateDeltaTick = paused ? 0.0f : _deltaTick;
+		updateDeltaTime_internal = paused ? 0.0f : deltaTime_internal;
+		updateDeltaTick_internal = paused ? 0.0f : deltaTick_internal;
 
-		globalTimeSetter(_globalTime);
-		_globalTick = _globalTime * TicksPerSecond;
+		globalTimeSetter(globalTime_internal);
+		globalTick_internal = globalTime_internal * TicksPerSecond;
 
-		_updateTime += _updateDeltaTime;
-		_updateTick = _updateTime * TicksPerSecond;
+		updateTime_internal += updateDeltaTime_internal;
+		updateTick_internal = updateTime_internal * TicksPerSecond;
 	}
 
 	void update(){
@@ -280,12 +277,12 @@ export namespace OS{
 
 		for(const auto & listener : applicationListeners){
 			if(listener->pauseRestrictable) {
-				if(!paused)listener->update(_updateDeltaTick);
+				if(!paused)listener->update(updateDeltaTick_internal);
 			}else {
-				listener->update(_deltaTick);
+				listener->update(deltaTick_internal);
 			}
 
-			listener->updateGlobal(_deltaTick);
+			listener->updateGlobal(deltaTick_internal);
 		}
 
 		updateSignalManager.fire(Event::CycleSignalState::end);

@@ -17,15 +17,12 @@ import Graphic.Pixmap;
 import Geom.Shape.Rect_Orthogonal;
 import Geom.Vector2D;
 
-import GL;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegionRect;
 
-// import GL.Constants;
 import Async;
 import RuntimeException;
 import OS.File;
-import OS;
 
 using Geom::Shape::OrthoRectUInt;
 using namespace Graphic;

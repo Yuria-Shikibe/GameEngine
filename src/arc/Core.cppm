@@ -1,14 +1,14 @@
 module;
 
+
 /**
  * \brief Keep This Module Imported in .cpp if possible!
  */
 export module Core;
 
+import <GLFW/glfw3.h>;
 import <string>;
 import <functional>;
-import <glad/glad.h>;
-import <GLFW/glfw3.h>;
 
 import Geom.Shape.Rect_Orthogonal;
 

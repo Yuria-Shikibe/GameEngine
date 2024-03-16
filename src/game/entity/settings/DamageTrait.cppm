@@ -25,6 +25,8 @@ export namespace Game{
 		DamageTrait materialDamage{}; //Maybe basic damage
 		DamageTrait fieldDamage{}; //Maybe real damage
 
+		DamageTrait empDamage{}; //emp damage
+
 		constexpr DamageComposition() = default;
 
 		[[nodiscard]] constexpr float sum() const {

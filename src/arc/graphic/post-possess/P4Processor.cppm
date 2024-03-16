@@ -1,11 +1,7 @@
-//
-// Created by Matrix on 2023/11/26.
-//
 module;
 
 export module Graphic.PostProcessor.P4Processor;
 
-import <glad/glad.h>;
 import Graphic.PostProcessor;
 import GL;
 import GL.Shader;
@@ -80,7 +76,7 @@ export namespace Graphic {
 			ping.clear();
 			pong.clear();
 
-			toProcess->getTexture().active();
+			toProcess->getTexture().active(0);
 
 			Draw::blit(&ping);
 		}
@@ -93,7 +89,7 @@ export namespace Graphic {
 		}
 
 		void end(FrameBuffer* target) const override {
-			ping.getTexture().active();
+			ping.getTexture().active(0);
 
 			Draw::blit(target);
 		}

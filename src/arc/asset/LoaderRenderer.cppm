@@ -15,8 +15,6 @@ import Graphic.Color;
 import Geom.Matrix3D;
 
 import Core;
-
-import GL.Constants;
 import GL.Buffer.FrameBuffer;
 import Assets.Loader;
 import Assets.Graphic;
@@ -55,7 +53,7 @@ export namespace Assets {
 			defaultMat = Core::overlayBatch->getProjection();
 			Core::overlayBatch->setProjection(mat);
 
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			GL::setOperation<GL::Test::STENCIL>(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
 
 			lastThreshold = Assets::PostProcessors::bloom->threshold;
 			Assets::PostProcessors::bloom->threshold = 0.0f;
@@ -65,8 +63,8 @@ export namespace Assets {
 			Core::overlayBatch->setProjection(defaultMat);
 			Draw::shader(false);
 
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+			GL::bindFrameBuffer(GL_FRAMEBUFFER);
+			GL::setOperation<GL::Test::STENCIL>(GL::Operation::REPLACE, GL::Operation::REPLACE, GL::Operation::REPLACE);
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
@@ -84,7 +82,6 @@ export namespace Assets {
 			constexpr float preBlockWidth = 32.0f;
 
 			Draw::shader();
-			glStencilMask(0x00);
 
 			Draw::mixColor(Colors::DARK_GRAY);
 
@@ -129,11 +126,10 @@ export namespace Assets {
 			Draw::color(Colors::GRAY);
 
 			Draw::flush();
-
-			// GL::enable(GL_STENCIL_TEST);
-
-			glStencilFunc(GL_ALWAYS, 1, 0xFF);
-			glStencilMask(0xFF);
+			//Begin Mask Draw
+			GL::enable(GL::Test::STENCIL);
+			GL::setFunc<GL::Test::STENCIL>(GL::Func::ALWAYS, 0xFF, 0xFF);
+			GL::setMask<GL::Test::STENCIL>(0xFF);
 
 			Draw::quad(
 				Draw::defaultTexture,
@@ -151,11 +147,10 @@ export namespace Assets {
 				x + slideLineSize, y + stroke + slideLineSize, Colors::DARK_GRAY
 			);
 
-			// Draw::shader();
+			//End Mask Draw
 			Draw::flush();
-
-			glStencilFunc(GL_EQUAL, 1, 0xFF);
-			glStencilMask(0x00);
+			GL::setFunc<GL::Test::STENCIL>(GL::Func::EQUAL, 0xFF, 0xFF);
+			GL::setMask<GL::Test::STENCIL>(0x00);
 
 			Draw::Line::setLineStroke(stroke * 4);
 			Draw::alpha(0.9f);
@@ -181,8 +176,8 @@ export namespace Assets {
 			);
 
 			Draw::flush();
-			GL::disable(GL_STENCIL_TEST);
-
+			GL::disable(GL::Test::STENCIL);
+			//End Clip Layer Draw
 			Draw::shader();
 
 			ss.str("");
@@ -197,13 +192,12 @@ export namespace Assets {
 		}
 
 		void draw() override {
-			defaultFrameBuffer.bind();
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			defaultFrameBuffer.clearColor();
 
+			drawFBO.clearColor();
+			drawFBO.clearRenderData();
 			drawFBO.bind();
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glClear(GL_STENCIL_BUFFER_BIT);
 
 			drawMain();
 
@@ -216,9 +210,7 @@ export namespace Assets {
 			Assets::PostProcessors::bloom->blur.setProcessTimes(times);
 			Assets::PostProcessors::bloom->setIntensity(1.1f);
 
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer.getID());
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-			glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBlitNamedFramebuffer(defaultFrameBuffer.getID(), 0, 0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 
 		void resize(const unsigned w, const unsigned h) override {

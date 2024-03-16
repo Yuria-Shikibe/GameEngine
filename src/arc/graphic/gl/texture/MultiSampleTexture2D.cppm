@@ -3,7 +3,6 @@ module;
 export module GL.Texture.MultiSampleTexture2D;
 
 import <glad/glad.h>;
-
 import GL.Texture.Texture2D;
 
 export namespace GL{

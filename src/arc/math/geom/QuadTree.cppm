@@ -18,21 +18,23 @@ using Geom::Shape::Rect_Orthogonal;
 
 //TODO The design is so bad!
 export namespace Geom {
-	template <typename Cont, Concepts::Number T>
+	template <typename Cont, Concepts::Number T, Concepts::InvokeNullable<const Rect_Orthogonal<T>&(const Cont*)> auto transformer>
 	class QuadTree {
 		using Rect = Rect_Orthogonal<T>;
 
 	public:
 		using ValueType = Cont;
 		using SubTree = std::array<QuadTree *, 4>;
-		using Obtainer = std::function<const Rect&(const Cont*)>;
+		// using Obtainer = std::function<const Rect&(const Cont*)>;
 		using InersectCheck = std::function<bool(const Cont*, const Cont*)>;
 
 		using PointType = Geom::Vector2D<T>;
 		using InersectPointCheck = std::function<bool(const Cont*, Vec2)>;
 
+		static constexpr bool ValidTrans = !std::same_as<nullptr_t, decltype(transformer)>;
+
 	protected:
-		Obtainer transformer{ nullptr };
+		// Obtainer transformer{ nullptr };
 		InersectCheck interscetExactFunc{ nullptr };
 		InersectCheck interscetRoughFunc{ nullptr };
 
@@ -45,20 +47,22 @@ export namespace Geom {
 
 		bool isInersectedBetween(const Cont* subject, const Cont* object) {
 			if(subject == object) return false;
-			bool intersected = obtainBound(subject).overlap(obtainBound(object));
-
-			intersected &= !interscetRoughFunc || interscetRoughFunc(subject, object);
-			intersected &= !interscetExactFunc || interscetExactFunc(subject, object);
+			const bool intersected =
+				this->obtainBound(subject).overlap(this->obtainBound(object))
+					&& (!interscetRoughFunc || interscetRoughFunc(subject, object))
+					&& (!interscetExactFunc || interscetExactFunc(subject, object));
 
 			return intersected;
 		}
 
 		const Rect& obtainBound(const Cont* const cont) {
-			return transformer(cont);
+			if constexpr (ValidTrans)return transformer(cont);
+			else return boundary;
 		}
 
 		const Rect& obtainBound(const Cont& cont) {
-			return transformer(&cont);
+			if constexpr (ValidTrans)return transformer(&cont);
+			else return boundary;
 		}
 
 		// The rectangles in this node
@@ -86,7 +90,7 @@ export namespace Geom {
 		}
 
 		void setRoughInterscet(const InersectCheck& interscetRoughJudger) {
-			this->interscetExactFunc = interscetRoughJudger;
+			this->interscetRoughFunc = interscetRoughJudger;
 		}
 
 		void setPointInterscet(const InersectPointCheck& interscetPointJudger) {
@@ -97,20 +101,20 @@ export namespace Geom {
 			rectangles.reserve(maxCount);
 		}
 
-		QuadTree(const Rect& boundary, const Obtainer& transformer) : transformer(transformer), boundary(boundary) {
+		explicit QuadTree(const Rect& boundary) : boundary(boundary) {
 			rectangles.reserve(maximumItemCount);
 		}
 
-		QuadTree(const Rect& boundary, const Obtainer& transformer, unsigned int maxCount,
+		QuadTree(const Rect& boundary, unsigned int maxCount,
 			const InersectCheck& interectRoughJudger,
 			const InersectCheck& interectExactJudger,
 			const InersectPointCheck& interectPointJudger
-		) : transformer(transformer),
+		) :
 		interscetExactFunc(interectExactJudger),
 		interscetRoughFunc(interectRoughJudger),
 		interscetPointFunc(interectPointJudger),
 			boundary(boundary), maximumItemCount(maxCount) {
-			rectangles.reserve(maxCount);
+			this->rectangles.reserve(maxCount);
 		}
 
 		[[nodiscard]] Rect& getBoundary() {
@@ -419,10 +423,10 @@ export namespace Geom {
 				const Rect tl{ x, y + h, w, h };
 				const Rect tr{ x + w, y + h, w, h };
 
-				topLeft     = std::make_unique<QuadTree>(tl, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
-				topRight    = std::make_unique<QuadTree>(tr, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
-				bottomLeft  = std::make_unique<QuadTree>(bl, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
-				bottomRight = std::make_unique<QuadTree>(br, transformer, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				topLeft     = std::make_unique<QuadTree>(tl, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				topRight    = std::make_unique<QuadTree>(tr, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				bottomLeft  = std::make_unique<QuadTree>(bl, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+				bottomRight = std::make_unique<QuadTree>(br, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
 			}
 		}
 
@@ -480,6 +484,6 @@ export namespace Geom {
 		}
 	};
 
-	template <typename T>
-	using QuadTreeF = QuadTree<T, float>;
+	template <typename T, auto func>
+	using QuadTreeF = QuadTree<T, float, func>;
 }

@@ -19,13 +19,11 @@ void* resize(const void* p, const size_t oldsz, const size_t newsz){
 #include <native/stbi/stbi_image.h>
 
 export module Image;
+
 import OS.File;
-import <string>;
+import <string_view>;
 import <GLFW/glfw3.h>;
 
-namespace Graphic {
-class Pixmap;
-}
 
 export namespace stbi{
 	std::shared_ptr<GLFWimage> obtain_GLFWimage(const OS::File& file, const int requiredBpp = 4) {
