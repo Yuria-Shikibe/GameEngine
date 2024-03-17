@@ -2,9 +2,7 @@ module;
 
 export module SinTable;
 
-import <array>;
-import <cmath>;
-import <numbers>;
+import std;
 
 
 export namespace Math {

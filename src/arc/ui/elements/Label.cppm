@@ -6,8 +6,7 @@ import RuntimeException;
 import Align;
 import UI.Elem;
 import Font.GlyphArrangement;
-import <memory>;
-import <string>;
+import std;
 
 export namespace UI {
 	class Label : public Elem {

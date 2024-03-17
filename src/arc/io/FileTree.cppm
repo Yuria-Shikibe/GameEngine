@@ -5,14 +5,7 @@ export module OS.FileTree;
 import Platform;
 import OS.File;
 import RuntimeException;
-import <iostream>;
-import <unordered_map>;
-import <string>;
-import <span>;
-import <vector>;
-import <ostream>;
-import <ranges>;
-import <sstream>;
+import std;
 
 export namespace OS{
 	//dTODO use a struct to wrap the data structure of just directly use vector?

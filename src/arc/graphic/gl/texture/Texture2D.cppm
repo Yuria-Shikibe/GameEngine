@@ -11,13 +11,11 @@ import OS.File;
 import GL.Object;
 export import GL.Texture;
 
-import <string>;
-import <ostream>;
-import <memory>;
+import std;
 
 export namespace GL{
 
-	class Texture2D : public GL::Texture, public Graphic::ResizeableUInt
+	class Texture2D : public GL::Texture
 	{
 	public:
 		static constexpr GLuint MipMapGeneralLevel = 4;

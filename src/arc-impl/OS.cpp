@@ -1,6 +1,6 @@
 module OS;
 
-import <sstream>;
+import std;
 import OS.File;
 import StackTrace;
 import Core;

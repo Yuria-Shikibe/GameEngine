@@ -3,7 +3,7 @@ module;
 export module OS.MouseBind;
 
 import <GLFW/glfw3.h>;
-import <functional>;
+import std;
 
 export namespace OS{
 	struct MouseBind {

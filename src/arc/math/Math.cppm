@@ -1,14 +1,6 @@
 export module Math;
 
-import <memory>;
-import <vector>;
-import <algorithm>;
-import <cmath>;
-import <numbers>;
-import <array>;
-import <span>;
-import <sstream>;
-import <string>;
+import std;
 
 import SinTable;
 import Concepts;
@@ -106,7 +98,7 @@ export namespace Math {
 	}
 
 	float angleExact(const float x, const float y) {
-		float result = atan2(y, x) * RAD_DEG;
+		float result = std::atan2(y, x) * RAD_DEG;
 		if(result < 0) result += DEG_FULL;
 		return result;
 	}
@@ -116,12 +108,12 @@ export namespace Math {
 	 * @return the given angle wrapped to the range [-PI, PI] */
 	float wrapAngleAroundZero(const float a) {
 		if(a >= 0) {
-			float rotation = fmod(a, PI2);
+			float rotation = std::fmod(a, PI2);
 			if(rotation > PI) rotation -= PI2;
 			return rotation;
 		}
 
-		float rotation = fmod(-a, PI2);
+		float rotation = std::fmod(-a, PI2);
 		if(rotation > PI) rotation -= PI2;
 		return -rotation;
 	}
@@ -133,7 +125,7 @@ export namespace Math {
 	 * */
 	float atn(const double i) {
 		// We use double precision internally, because some constants need double precision.
-		const double n = abs(i);
+		const double n = std::abs(i);
 		// c uses the "equally-good" formulation that permits n to be from 0 to almost infinity.
 		const double c = (n - 1.0) / (n + 1.0);
 		// The approximation needs 6 odd powers of c.
@@ -215,7 +207,7 @@ export namespace Math {
 	}
 
 	int digits(const long n) {
-		return n == 0 ? 1 : static_cast<int>(log10(n) + 1);
+		return n == 0 ? 1 : static_cast<int>(std::log10(n) + 1);
 	}
 
 	constexpr float sqr(const float x) {
@@ -257,11 +249,11 @@ export namespace Math {
 	}
 
 	float pow_float(const float a, const float b) {
-		return pow(a, b);
+		return std::pow(a, b);
 	}
 
-	int pow_int(const int a, const int b) {
-		return static_cast<int>(ceil(pow(a, b)));
+	int pow_int(const int a, const int b) { //TODO wtf
+		return static_cast<int>(std::ceil(std::pow(a, b)));
 	}
 
 	template <unsigned Exponent, typename T>
@@ -436,7 +428,7 @@ export namespace Math {
 
 	/** Returns the closest integer to the specified float. This method will only properly round floats that are positive. */
 	int roundPositive(const float value) {
-		return lround(value + 0.5f);
+		return std::lround(value + 0.5f);
 	}
 
 	/**
@@ -565,7 +557,7 @@ export namespace Math {
 	}
 
 	inline float len(const float x, const float y) {
-		return sqrt(x * x + y * y);
+		return std::sqrt(x * x + y * y);
 	}
 
 	inline float len2(const float x, const float y) {
@@ -577,7 +569,7 @@ export namespace Math {
 	}
 
 	inline float dst(const float x1, const float y1) {
-		return sqrt(x1 * x1 + y1 * y1);
+		return std::sqrt(x1 * x1 + y1 * y1);
 	}
 
 	inline float dst2(const float x1, const float y1) {
@@ -587,7 +579,7 @@ export namespace Math {
 	inline float dst(const float x1, const float y1, const float x2, const float y2) {
 		const float xd = x2 - x1;
 		const float yd = y2 - y1;
-		return sqrt(xd * xd + yd * yd);
+		return std::sqrt(xd * xd + yd * yd);
 	}
 
 	inline float dst2(const float x1, const float y1, const float x2, const float y2) {

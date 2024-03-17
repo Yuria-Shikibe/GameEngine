@@ -2,7 +2,7 @@ module;
 
 export module Graphic.PostProcessor.ShaderProcessor;
 
-import <functional>;
+import std;
 import Graphic.PostProcessor;
 import Graphic.Draw;
 import GL.Shader;

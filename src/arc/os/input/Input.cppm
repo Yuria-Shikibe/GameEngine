@@ -6,10 +6,7 @@ module;
 
 export module Core.Input;
 
-import <array>;
-import <functional>;
-import <set>;
-import <memory>;
+import std;
 
 import <GLFW/glfw3.h>;
 
@@ -20,10 +17,6 @@ import OS.KeyBind;
 import OS.MouseBind;
 import OS.InputListener;
 import OS.ApplicationListener;
-import <algorithm>;
-import <execution>;
-import <span>;
-import <unordered_set>;
 
 using namespace OS;
 

@@ -6,10 +6,7 @@ import Game.Logic.Strategy;
 import Game.Logic.Objective;
 import Game.Logic.ReflectSensor;
 
-import <functional>;
-import <memory>;
-import <vector>;
-import <queue>;
+import std;
 
 import Geom.Vector2D;
 

@@ -6,15 +6,8 @@ module ;
 
 export module Core.Log;
 
-import <utility>;
-
-import <chrono>;
-import <string>;
-import <sstream>;
-import <fstream>;
-import <utility>;
+import std;
 export import OS.File;
-import <iostream>;
 
 export namespace Core{
 	class Log{

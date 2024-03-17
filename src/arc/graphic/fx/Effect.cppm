@@ -9,8 +9,7 @@ export import Graphic.Timed;
 import Geom.Vector2D;
 import Graphic.Color;
 import Concepts;
-import <any>;
-import <memory>;
+import std;
 
 namespace Graphic{
 	inline std::atomic_size_t next = 0;

@@ -8,7 +8,7 @@ import OS.KeyBind;
 import OS;
 import Geom.Vector2D;
 
-import <iostream>;
+import std;
 
 using namespace Core;
 
@@ -116,6 +116,7 @@ void Core::dispose() {
 	delete input;
 	delete camera;
 	delete overlayBatch;
+	delete worldBatch;
 	delete renderer;
 	delete rootFileTree;
 

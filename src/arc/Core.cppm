@@ -7,8 +7,7 @@ module;
 export module Core;
 
 import <GLFW/glfw3.h>;
-import <string>;
-import <functional>;
+import std;
 
 import Geom.Shape.Rect_Orthogonal;
 

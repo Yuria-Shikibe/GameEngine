@@ -3,6 +3,7 @@ module;
 module Assets.Graphic;
 
 import Core;
+import OS;
 
 void Assets::Shaders::loadPrevious() {
 	blit = new Shader(shaderDir, "blit");
@@ -76,6 +77,8 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	filter->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("tex");
 	});
+
+	world = manager->registerShader(shaderDir, "screenspace-world");
 
 
 	manager->registerShader(screenSpace);

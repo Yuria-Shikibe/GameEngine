@@ -6,10 +6,7 @@ export import UI.Elem;
 
 import Concepts;
 
-import <execution>;
-import <memory>;
-import <vector>;
-import <unordered_set>;
+import std;
 
 export namespace UI {
 	class Group : public Elem{

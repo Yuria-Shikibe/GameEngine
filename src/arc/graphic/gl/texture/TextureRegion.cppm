@@ -1,8 +1,8 @@
 export module GL.Texture.TextureRegion;
 
-export import GL.Texture.Texture2D;
+export import GL.Texture;
 
-import <utility>;
+import std;
 
 export namespace GL{
 	class TextureRegion{
@@ -10,13 +10,13 @@ export namespace GL{
 		/**
 		 * \brief Does Not Hold The Ownership Of Source Texture, just borrow it!
 		 * */
-		const Texture2D* data = nullptr;
+		const Texture* data = nullptr;
 	public:
 		virtual ~TextureRegion() = default;
 
 		TextureRegion() = default;
 
-		[[nodiscard]] explicit TextureRegion(const Texture2D* const data)
+		[[nodiscard]] explicit TextureRegion(const Texture* const data)
 			: data(data) {
 		}
 
@@ -33,15 +33,15 @@ export namespace GL{
 			swap(lhs.data, rhs.data);
 		}
 
-		[[nodiscard]] const Texture2D* getData() const {
+		[[nodiscard]] const Texture* getData() const {
 			return data;
 		}
 
-		void setData(const Texture2D* const texture2D){
+		void setData(const Texture* const texture2D){
 			data = texture2D;
 		}
 
-		void setData(const Texture2D& texture2D){
+		void setData(const Texture& texture2D){
 			data = &texture2D;
 		}
 

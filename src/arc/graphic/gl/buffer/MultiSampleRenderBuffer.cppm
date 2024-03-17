@@ -17,14 +17,14 @@ export namespace GL{
 			height = h;
 
 			glCreateRenderbuffers(1, &nameID);
-			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH24_STENCIL8, w, h);
+			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH32F_STENCIL8, w, h);
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;
-			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH24_STENCIL8, w, h);
+			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH32F_STENCIL8, w, h);
 		}
 	};
 }

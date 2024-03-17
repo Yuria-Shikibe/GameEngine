@@ -3,8 +3,7 @@ module ;
 export module OS.KeyBind;
 
 import <GLFW/glfw3.h>;
-import <functional>;
-import <ranges>;
+import std;
 
 export namespace OS{
 	struct KeyBind {

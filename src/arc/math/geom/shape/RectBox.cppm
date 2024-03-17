@@ -6,10 +6,7 @@ import Geom.Vector2D;
 import Geom.Shape.Rect_Orthogonal;
 
 import Math;
-import <algorithm>;
-import <cmath>;
-import <array>;
-import <limits>;
+import std;
 
 export namespace Geom {
 	/**

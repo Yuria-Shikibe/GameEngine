@@ -34,7 +34,7 @@ namespace Graphic {
 		Core::overlayBatch->clearCustomShader(flushContext);
 	}
 
-	void Draw::vert(const Texture2D* texture, const float x1, const float y1, const float texSrc1, const float texDest1,
+	void Draw::vert(const Texture* texture, const float x1, const float y1, const float texSrc1, const float texDest1,
 		const Color c1, const Color cm1, const float x2, const float y2, const float texSrc2, const float texDest2,
 		const Color c2, const Color cm2, const float x3, const float y3, const float texSrc3, const float texDest3,
 		const Color c3, const Color cm3, const float x4, const float y4,
@@ -94,7 +94,7 @@ namespace Graphic {
 		Core::overlayBatch->post(texture, vertices, VERT_LENGTH_STD, 0, VERT_LENGTH_STD);
 	}
 
-	void Draw::vert_monochromeMix(const Texture2D* texture, const Color cm, const float x1, const float y1,
+	void Draw::vert_monochromeMix(const Texture* texture, const Color cm, const float x1, const float y1,
 		const float texSrc1, const float texDest1, const Color c1, const float x2, const float y2, const float texSrc2,
 		const float texDest2, const Color c2, const float x3, const float y3, const float texSrc3, const float texDest3,
 		const Color c3, const float x4, const float y4, const float texSrc4, const float texDest4,
@@ -154,7 +154,7 @@ namespace Graphic {
 		Core::overlayBatch->post(texture, vertices, VERT_LENGTH_STD, 0, VERT_LENGTH_STD);
 	}
 
-	void Draw::vert_monochromeAll(const Texture2D* texture, const Color c, const Color cm, const float x1, const float y1,
+	void Draw::vert_monochromeAll(const Texture* texture, const Color c, const Color cm, const float x1, const float y1,
 		const float texSrc1, const float texDest1, const float x2, const float y2, const float texSrc2,
 		const float texDest2, const float x3, const float y3, const float texSrc3, const float texDest3, const float x4,
 		const float y4, const float texSrc4, const float texDest4) {

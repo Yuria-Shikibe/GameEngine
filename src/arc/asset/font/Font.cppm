@@ -5,16 +5,7 @@ module;
 
 export module Font;
 
-import <vector>;
-import <ranges>;
-import <memory>;
-import <string>;
-import <fstream>;
-import <unordered_map>;
-import <algorithm>;
-import <functional>;
-import <iostream>;
-import <set>;
+import std;
 
 import Async;
 import Assets.Loader;

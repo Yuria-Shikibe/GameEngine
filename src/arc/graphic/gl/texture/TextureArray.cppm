@@ -5,42 +5,55 @@ module;
 export module GL.TextureArray;
 
 export import GL.Texture.Texture2D;
+export import GL.Texture;
 
-import <memory>;
-import <span>;
-import <vector>;
-
+import std;
 
 export namespace GL{
-	struct Texture2DArray {
-		GLsizei width{};
-		GLsizei height{};
+	struct Texture2DArray : public GL::Texture{
+
 		std::vector<const Texture2D*> layers{};
 
-		GLuint arrayID{0};
-		static constexpr GLenum targetFlag = GL_TEXTURE_2D_ARRAY;
+		Texture2DArray() : Texture(GL_TEXTURE_2D_ARRAY){}
 
-		explicit Texture2DArray(const std::vector<const Texture2D*>& texture2Ds, const GLint mipmapLevel = Texture2D::MipMapGeneralLevel) : layers(texture2Ds){
+		explicit Texture2DArray(const std::vector<const Texture2D*>& texture2Ds, const GLint mipmapLevel = Texture2D::MipMapGeneralLevel) : Texture(GL_TEXTURE_2D_ARRAY){
+			init(texture2Ds, mipmapLevel);
+		}
+
+		void init(const std::vector<const Texture2D*>& texture2Ds, const GLint mipmapLevel = Texture2D::MipMapGeneralLevel){
+			this->layers = texture2Ds;
+
 			const Texture2D* standard = layers.front();
 			width = standard->getWidth();
 			height = standard->getHeight();
 
-			glCreateTextures(targetFlag, 1, &arrayID);
-			glTextureStorage3D(arrayID, mipmapLevel, GL_RGBA8, width, height, layers.size());
+			glCreateTextures(targetFlag, 1, &nameID);
+			glTextureStorage3D(nameID, mipmapLevel, GL_RGBA8, width, height, layers.size());
 
 			for(int i = 0; i < layers.size(); ++i){
 				const Texture2D* tex = layers.at(i);
 				glCopyImageSubData(
 					tex->getID(), tex->getTargetFlag(), 0, 0, 0, 0,
-					arrayID, targetFlag, 0, 0, 0, i,
+					nameID, targetFlag, 0, 0, 0, i,
 					tex->getWidth(), tex->getHeight(), 1);
 			}
 
-			glGenerateTextureMipmap(arrayID);
+			glGenerateTextureMipmap(nameID);
 		}
 
-		~Texture2DArray(){
-			if(arrayID)glDeleteTextures(1, &arrayID);
+		void resize(unsigned w, unsigned h) override{
+
+		}
+
+		void active(const unsigned offset) const override{
+			glBindTextureUnit(offset, nameID);
+		}
+		void activeAll(const unsigned offset) const override{
+			glBindTextureUnit(offset, nameID);
+		}
+
+		~Texture2DArray() override{
+			if(nameID)glDeleteTextures(1, &nameID);
 		}
 	};
 }

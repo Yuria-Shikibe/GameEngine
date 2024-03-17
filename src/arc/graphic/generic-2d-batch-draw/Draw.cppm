@@ -19,15 +19,13 @@ import GL.Mesh;
 import GL.Buffer.DataBuffer;
 import GL.Buffer.FrameBuffer;
 import GL.VertexArray;
-import GL.Texture.Texture2D;
+import GL.Texture;
 import GL.Texture.TextureRegion;
 export import GL.Texture.TextureRegionRect;
 import RuntimeException;
 
 import <glad/glad.h>;
-import <functional>;
-import <memory>;
-import <stack>;
+import std;
 
 using namespace Graphic;
 using namespace Geom;
@@ -87,6 +85,7 @@ namespace Graphic::Draw{
 
 	inline void blit(const GL::FrameBuffer* const draw, const Shader* shader = blitter) {
 		GL::viewport(0, 0, draw->getWidth(), draw->getHeight());
+
 		draw->bind(GL::FrameBuffer::DRAW);
 
 		if(shader) {
@@ -179,7 +178,7 @@ namespace Graphic::Draw{
 	void shader(bool flushContext = true);
 
 	void vert(
-		const Texture2D* texture,
+		const Texture* texture,
 		float x1, float y1, float texSrc1, float texDest1, const Color c1, const Color cm1,
 		float x2, float y2, float texSrc2, float texDest2, const Color c2, const Color cm2,
 		float x3, float y3, float texSrc3, float texDest3, const Color c3, const Color cm3,
@@ -187,7 +186,7 @@ namespace Graphic::Draw{
 	);
 
 	void vert_monochromeMix(
-		const Texture2D* texture, const Color cm,
+		const Texture* texture, const Color cm,
 		float x1, float y1, float texSrc1, float texDest1, const Color c1,
 		float x2, float y2, float texSrc2, float texDest2, const Color c2,
 		float x3, float y3, float texSrc3, float texDest3, const Color c3,
@@ -195,7 +194,7 @@ namespace Graphic::Draw{
 	);
 
 	void vert_monochromeAll(
-		const Texture2D* texture, const Color c, const Color cm,
+		const Texture* texture, const Color c, const Color cm,
 		float x1, float y1, float texSrc1, float texDest1,
 		float x2, float y2, float texSrc2, float texDest2,
 		float x3, float y3, float texSrc3, float texDest3,
@@ -203,7 +202,7 @@ namespace Graphic::Draw{
 	);
 
 	inline void vert(
-		const Texture2D* texture,
+		const Texture* texture,
 		const float x1, const float y1, const Color c1, const Color cm1,
 		const float x2, const float y2, const Color c2, const Color cm2,
 		const float x3, const float y3, const Color c3, const Color cm3,
@@ -219,7 +218,7 @@ namespace Graphic::Draw{
 	}
 
 	inline void vert(
-		const Texture2D* texture,
+		const Texture* texture,
 		const float x1, const float y1, const Color c1,
 		const float x2, const float y2, const Color c2,
 		const float x3, const float y3, const Color c3,
@@ -235,7 +234,7 @@ namespace Graphic::Draw{
 	}
 
 	inline void vert(
-		const Texture2D* texture,
+		const Texture* texture,
 		const float x1, const float y1,
 		const float x2, const float y2,
 		const float x3, const float y3,
@@ -251,7 +250,7 @@ namespace Graphic::Draw{
 	}
 
 	inline void vert(
-		const Texture2D* texture,
+		const Texture* texture,
 		const Vec2& v1,
 		const Vec2& v2,
 		const Vec2& v3,

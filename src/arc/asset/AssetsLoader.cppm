@@ -9,14 +9,7 @@ import Concepts;
 import Async;
 import TimeMark;
 import RuntimeException;
-import <iostream>;
-import <sstream>;
-import <numeric>;
-import <chrono>;
-import <queue>;
-import <stack>;
-import <ranges>;
-import <vector>;
+import std;
 
 export namespace Assets{
 	class AssetsLoader;

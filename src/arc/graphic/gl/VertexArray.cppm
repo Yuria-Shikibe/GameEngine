@@ -1,7 +1,7 @@
 export module GL.VertexArray;
 
 import <glad/glad.h>;
-import <vector>;
+import std;
 import GL.Buffer.DataBuffer;
 import GL.Object;
 import GL.Constants;
@@ -34,7 +34,7 @@ export namespace GL{
 		std::vector<VertElem> elems{};
 
 	public:
-		void add(const GLenum type, const GLint size, const GLboolean normalized = true){
+		void add(const GLenum type, const GLint size, const GLboolean normalized = false){
 			elems.emplace_back( type, normalized, size );
 			stride += sizeofType(type) * size;
 		}

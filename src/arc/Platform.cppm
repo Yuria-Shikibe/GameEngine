@@ -9,7 +9,7 @@ module ;
 
 export module Platform;
 
-import <string>;
+import std;
 import OS.File;
 
 export namespace ext{

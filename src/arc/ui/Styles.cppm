@@ -9,8 +9,7 @@ import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureNineRegion;
 import Graphic.TextureAtlas;
 import Graphic.Color;
-import <memory>;
-import <unordered_map>;
+import std;
 
 export namespace UI::Styles {
 	GL::TextureNineRegion

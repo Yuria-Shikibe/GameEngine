@@ -3,14 +3,6 @@ module;
 export module GL.Shader;
 
 import <glad/glad.h>;
-import <filesystem>;
-import <iostream>;
-import <functional>;
-import <type_traits>;
-import <string>;
-import <span>;
-import <set>;
-import <utility>;
 
 import GL;
 import OS.File;
@@ -19,12 +11,11 @@ import RuntimeException;
 
 import Geom.Vector2D;
 import Geom.Matrix3D;
-import GL.GL_Exception;
 import GL.Texture;
 import GL.Uniform;
 
 import Graphic.Color;
-import <ranges>;
+import std;
 
 export namespace GL {
 	enum class ShaderType : GLuint {

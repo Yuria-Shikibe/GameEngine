@@ -2,22 +2,16 @@ module;
 
 export module UI.Elem;
 
-export import UI.Flags;
+import UI.Flags;
 import Event;
 import Geom.Vector2D;
 import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 
-import <algorithm>;
-import <execution>;
-import <functional>;
-import <set>;
-import <vector>;
-import <unordered_set>;
-import <any>;
+import std;
 
-export namespace  UI {
+export namespace UI {
 	struct ElemDrawer;
 	class Group;
 	class Root;
@@ -46,15 +40,13 @@ export namespace UI {
 		std::unordered_set<Elem*> focusTarget{};
 
 		Event::EventManager inputListener{
-			Event::indexOf<MouseActionPress>(),
-			Event::indexOf<MouseActionRelease>(),
-			Event::indexOf<MouseActionDrag>(),
-			Event::indexOf<MouseActionDoubleClick>(),
-
-			Event::indexOf<MouseActionScroll>(),
-
-			Event::indexOf<CurosrInbound>(),
-			Event::indexOf<CurosrExbound>(),
+			Event::indexOf<UI::MouseActionPress>(),
+			Event::indexOf<UI::MouseActionRelease>(),
+			Event::indexOf<UI::MouseActionDrag>(),
+			Event::indexOf<UI::MouseActionDoubleClick>(),
+			Event::indexOf<UI::MouseActionScroll>(),
+			Event::indexOf<UI::CurosrInbound>(),
+			Event::indexOf<UI::CurosrExbound>(),
 		};
 
 		TouchbilityFlags touchbility = TouchbilityFlags::enabled;

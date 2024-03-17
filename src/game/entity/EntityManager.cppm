@@ -8,7 +8,7 @@ import Game.Entity.Drawable;
 export import Game.Pool;
 import Concepts;
 
-import <memory>;
+import std;
 
 namespace Game::EntityManage {
 	std::atomic<IDType> lastID{0};

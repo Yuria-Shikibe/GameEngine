@@ -5,7 +5,8 @@ module;
 export module GL.Texture;
 
 export import GL.Object;
-import <utility>;
+export import Graphic.Resizeable;
+import std;
 
 export namespace GL{
 	enum TexParams{
@@ -22,7 +23,7 @@ export namespace GL{
 		//...
 	};
 
-	struct Texture : GLObject{
+	struct Texture : GLObject, Graphic::ResizeableUInt{
 	protected:
 		unsigned int width = 0, height = 0;
 
@@ -34,6 +35,8 @@ export namespace GL{
 		[[nodiscard]] unsigned getHeight() const {
 			return height;
 		}
+
+		Texture() = default;
 
 		Texture(const Texture& other) = delete;
 
@@ -88,9 +91,10 @@ export namespace GL{
 			glBindTexture(targetFlag, nameID);
 		}
 
-		virtual ~Texture() = default;
+		virtual ~Texture() override = default;
 
 		virtual void active(unsigned offset) const = 0;
 		virtual void activeAll(unsigned offset) const = 0;
+		void resize(unsigned w, unsigned h) override = 0;
 	};
 }

@@ -5,11 +5,7 @@ export module Game.Entity.DrawMap;
 import Game.Entity.EntityMap;
 import Game.Entity.Drawable;
 
-import <algorithm>;
-import <execution>;
-import <memory>;
-import <ranges>;
-import <unordered_map>;
+import std;
 
 export namespace Game{
 	class DrawMap : public EntityMap<DrawableEntity>{

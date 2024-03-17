@@ -3,7 +3,7 @@ module;
 export module Game.Entity.Healthed;
 
 import Game.Entity;
-import <limits>;
+import std;
 
 import Game.Settings.DamageTrait;
 

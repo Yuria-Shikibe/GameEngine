@@ -5,11 +5,8 @@ export module Graphic;
 import <glad/glad.h>;
 import <GLFW/glfw3.h>;
 import Geom.Shape.Rect_Orthogonal;
-import GL.GL_Exception;
 import RuntimeException;
-import <string>;
-import <sstream>;
-import <iostream>;
+import std;
 
 namespace Graphic{
 	void glDebugCallback(GLenum source, GLenum type, const GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
@@ -102,7 +99,7 @@ export namespace Graphic{
 		// renderer = new Renderer();
 		if (windowMain == nullptr){
 			glfwTerminate();
-			throw GL_Exception("Failed to create GLFW windowMain");
+			throw ext::RuntimeException("Failed to create GLFW windowMain");
 		}
 
 		glfwMakeContextCurrent(windowMain);
@@ -114,7 +111,7 @@ export namespace Graphic{
 		// ---------------------------------------
 		if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
 		{
-			throw GL_Exception("Failed to create GLFW windowMain");
+			throw ext::RuntimeException("Failed to create GLFW windowMain");
 		}
 
 		setupGLDebug();

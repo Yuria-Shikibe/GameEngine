@@ -6,7 +6,7 @@ export module Interval;
 
 import Concepts;
 import Math;
-import <array>;
+import std;
 
 export namespace ext{
 	/**

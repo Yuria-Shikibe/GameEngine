@@ -1,10 +1,7 @@
 export module Core.Renderer;
 
 import <glad/glad.h>;
-import <memory>;
-import <vector>;
-import <stack>;
-import <functional>;
+import std;
 import GL.Buffer.FrameBuffer;
 // import GL.Buffer.MultiSampleFrameBuffer;
 import GL;

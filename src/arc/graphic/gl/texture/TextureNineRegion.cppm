@@ -1,15 +1,9 @@
-//
-// Created by Matrix on 2023/12/3.
-//
-
-module;
-
 export module GL.Texture.TextureNineRegion;
 
-import <array>;
+import std;
 import Math;
 import GL.Texture.TextureRegionRect;
-import GL.Texture.Texture2D;
+import GL.Texture;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 import Geom.Vector2D;
@@ -82,7 +76,7 @@ export namespace GL {
 			loadFrom(rect->getData(), totalBound, innerBound);
 		}
 
-		void loadFrom(const Texture2D* const rect, const HardRect& totalBound, const HardRect& innerBound) {
+		void loadFrom(const Texture* const rect, const HardRect& totalBound, const HardRect& innerBound) {
 #ifdef _DEBUG
 			if(
 				totalBound.getSrcX() > innerBound.getSrcX() || totalBound.getSrcY() > innerBound.getSrcY() ||

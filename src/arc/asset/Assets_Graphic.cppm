@@ -28,15 +28,8 @@ import GL.Shader.Manager;
 import GL.Constants;
 
 import OS.File;
-import OS;
 
-
-import <future>;
-import <iostream>;
-import <memory>;
-import <span>;
-import <string>;
-import <unordered_map>;
+import std;
 
 using namespace GL;
 
@@ -71,6 +64,8 @@ export namespace Assets{
 		inline Shader* blit = nullptr;
 		
 		inline Shader* sildeLines = nullptr;
+
+		inline Shader* world = nullptr;
 
 		void loadPrevious();
 

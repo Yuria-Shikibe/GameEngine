@@ -33,8 +33,9 @@ export typedef char GLcharARB;
 export namespace GL {
 	inline constexpr int VERT_GROUP_SIZE_LAYOUT = 2 + 2 + 4 + 4;
 	inline constexpr int VERT_GROUP_SIZE_WORLD = 3 + 2 + 4 + 4; //has a z index
-	inline constexpr int VERT_GROUP_COUNT = 4;
-	inline constexpr int VERT_LENGTH_STD = VERT_GROUP_COUNT * VERT_GROUP_SIZE_LAYOUT;
+	inline constexpr int QUAD_GROUP_COUNT = 4;
+	inline constexpr int VERT_LENGTH_STD = QUAD_GROUP_COUNT * VERT_GROUP_SIZE_LAYOUT;
+	inline constexpr int VERT_LENGTH_WORLD = QUAD_GROUP_COUNT * VERT_GROUP_SIZE_WORLD;
 }
 
 export{

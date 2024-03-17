@@ -2,11 +2,10 @@ module;
 
 export module GL.Shader.Manager;
 
-import <memory>;
 export import GL.Shader;
 import Async;
 import Assets.Loader;
-import <vector>;
+import std;
 
 export namespace GL { //TODO this isn't a good namespace, I thought
 	class ShaderManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{

@@ -15,6 +15,19 @@ message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
+set(MSVC_DIR ${CMAKE_CXX_COMPILER})
+
+get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
+get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
+get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
+get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
+
+set(MSVC_MODULE_DIR ${MSVC_DIR}/modules)
+
+message(STATUS "Msvc Current Dir: ${MSVC_DIR}")
+
+execute_process(COMMAND cl /std:c++latest /EHsc /nologo /W4 /c "${CMAKE_CURRENT_SOURCE_DIR}/modules/std.ixx")
+execute_process(COMMAND cl /std:c++latest /EHsc /nologo /W4 /c "${CMAKE_CURRENT_SOURCE_DIR}/modules/std.compat.ixx")
 
 set(SRC_DIR src)
 set(RES_DIR properties)
@@ -25,14 +38,16 @@ set(BUILD_DIR build)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
 
+file(COPY ${MSVC_MODULE_DIR} DESTINATION
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
-#add_compile_definitions(_BUILD_STD_MODULE)
-
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
-#    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
+    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
     add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
 
     file(GLOB_RECURSE BIN
@@ -43,7 +58,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
             ${EXE_DIR}
     )
 else()
-    message(STATUS "Options: ${CMAKE_CXX_FLAGS_RELEASE}")
+    message(STATUS "CXX Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
 endif ()
 
@@ -68,6 +83,7 @@ file(GLOB_RECURSE CURRENT_HEADERS
 #
 file(GLOB_RECURSE FAST_MODULES
     ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
 )
 
 message(STATUS "Linking...")
@@ -97,10 +113,13 @@ add_executable(
         ${CURRENT_HEADERS}   #[[.h]]
         glad.c               #[[Glad Attachment]]
         main.cppm
+#        test.cpp
 )
 
 target_sources(${PROJECT_NAME}
         PUBLIC
+        modules/std.compat.ixx
+        modules/std.ixx
         ${FAST_MODULES}      #[[Modules]]
 )
 

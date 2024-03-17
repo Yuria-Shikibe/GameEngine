@@ -2,9 +2,7 @@ module;
 
 export module Game.Faction;
 
-import <string>;
-import <unordered_map>;
-import <unordered_set>;
+import std;
 
 import Graphic.Color;
 import GL.Texture.TextureRegionRect;

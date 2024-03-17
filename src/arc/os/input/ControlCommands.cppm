@@ -19,8 +19,7 @@ import OS.KeyBind;
 import OS.MouseBind;
 import Graphic;
 import Core;
-import <array>;
-import <iostream>;
+import std;
 import <GLFW/glfw3.h>;
 
 using namespace Core;
@@ -73,7 +72,7 @@ export namespace Ctrl{
 			}
 		});
 
-		for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {
+		for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {//TODO auto mode resgister
 			Core::input->registerMouseBind(i, Ctrl::Act_Press, [i] {
 				Core::uiRoot->onPress(i);
 			});
@@ -105,6 +104,10 @@ export namespace Ctrl{
 			if(!Core::uiRoot->focusScroll())camera->setTargetScale(camera->getTargetScale() + y * 0.05f);
 		});
 
+
+		Core::input->registerKeyBind(Ctrl::KEY_P, Ctrl::Act_Press, [] {
+			OS::setPause(!OS::isPaused());
+		});
 
 		{//TODO pack this into a class like screen shot manager
 			// Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, []() mutable  {

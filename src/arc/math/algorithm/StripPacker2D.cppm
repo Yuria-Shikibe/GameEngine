@@ -2,16 +2,10 @@ module;
 
 export module Math.StripPacker2D;
 
-import <vector>;
-import <ranges>;
-import <span>;
-import <algorithm>;
+import std;
 import RuntimeException;
 import Concepts;
 import Geom.Shape.Rect_Orthogonal;
-import <functional>;
-import <numeric>;
-import <unordered_set>;
 
 export namespace Math {
     template <typename Cont, Concepts::Number T, Concepts::Invokable<Geom::Shape::Rect_Orthogonal<T>&(Cont&)> auto trans>

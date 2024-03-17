@@ -15,7 +15,7 @@ class RenderBuffer : public GLObject, public Graphic::ResizeableUInt{
 
 		RenderBuffer(const unsigned int w, const unsigned int h) : GLObject{GL_RENDERBUFFER}, width(w), height(h){
 			glCreateRenderbuffers(1, &nameID);
-			glNamedRenderbufferStorage(nameID, GL_DEPTH24_STENCIL8, w, h);
+			glNamedRenderbufferStorage(nameID, GL_DEPTH32F_STENCIL8, w, h);
 		}
 
 		~RenderBuffer() override {
@@ -34,7 +34,7 @@ class RenderBuffer : public GLObject, public Graphic::ResizeableUInt{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;
-			glNamedRenderbufferStorage(nameID, GL_DEPTH24_STENCIL8, w, h);
+			glNamedRenderbufferStorage(nameID, GL_DEPTH32F_STENCIL8, w, h);
 		}
 	};
 }

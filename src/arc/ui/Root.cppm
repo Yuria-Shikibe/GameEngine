@@ -2,11 +2,7 @@ module;
 
 export module UI.Root;
 
-import <memory>;
-import <vector>;
-import <functional>;
-import <array>;
-import <bitset>;
+import std;
 import Concepts;
 import Container.Pool;
 

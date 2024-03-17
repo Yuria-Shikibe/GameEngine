@@ -1,15 +1,6 @@
-module;
-
-#include <typeinfo>
-
 export module Game.Entity;
 
-import <atomic>;
-import <memory>;
-import <string_view>;
-
-import <vector>;
-import <limits>;
+import std;
 import RuntimeException;
 import Geom.Shape.Rect_Orthogonal;
 import Event;

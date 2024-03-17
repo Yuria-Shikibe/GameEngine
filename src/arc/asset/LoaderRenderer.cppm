@@ -22,9 +22,7 @@ import Assets.Graphic;
 import Font.GlyphArrangement;
 
 import <GLFW/glfw3.h>;
-import <memory>;
-import <iomanip>;
-import <sstream>;
+import std;
 import GL;
 
 using namespace Graphic;
@@ -53,7 +51,7 @@ export namespace Assets {
 			defaultMat = Core::overlayBatch->getProjection();
 			Core::overlayBatch->setProjection(mat);
 
-			GL::setOperation<GL::Test::STENCIL>(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
+			GL::setStencilOperation(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
 
 			lastThreshold = Assets::PostProcessors::bloom->threshold;
 			Assets::PostProcessors::bloom->threshold = 0.0f;
@@ -64,7 +62,7 @@ export namespace Assets {
 			Draw::shader(false);
 
 			GL::bindFrameBuffer(GL_FRAMEBUFFER);
-			GL::setOperation<GL::Test::STENCIL>(GL::Operation::REPLACE, GL::Operation::REPLACE, GL::Operation::REPLACE);
+			GL::setStencilOperation(GL::Operation::REPLACE, GL::Operation::REPLACE, GL::Operation::REPLACE);
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
@@ -128,8 +126,8 @@ export namespace Assets {
 			Draw::flush();
 			//Begin Mask Draw
 			GL::enable(GL::Test::STENCIL);
-			GL::setFunc<GL::Test::STENCIL>(GL::Func::ALWAYS, 0xFF, 0xFF);
-			GL::setMask<GL::Test::STENCIL>(0xFF);
+			GL::setStencilFunc(GL::Func::ALWAYS, 0xFF, 0xFF);
+			GL::setStencilMask(0xFF);
 
 			Draw::quad(
 				Draw::defaultTexture,
@@ -149,8 +147,8 @@ export namespace Assets {
 
 			//End Mask Draw
 			Draw::flush();
-			GL::setFunc<GL::Test::STENCIL>(GL::Func::EQUAL, 0xFF, 0xFF);
-			GL::setMask<GL::Test::STENCIL>(0x00);
+			GL::setStencilFunc(GL::Func::EQUAL, 0xFF, 0xFF);
+			GL::setStencilMask(0x00);
 
 			Draw::Line::setLineStroke(stroke * 4);
 			Draw::alpha(0.9f);

@@ -2,7 +2,7 @@ module ;
 
 export module Geom.Position;
 
-import <complex>;
+import std;
 
 export namespace Geom {
 	class Position2D
@@ -32,7 +32,7 @@ export namespace Geom {
 		}
 
 		[[nodiscard]] virtual bool isPosNaN() const{
-			return !(isnan(getX()) || isnan(getY()));
+			return !(std::isnan(getX()) || std::isnan(getY()));
 		}
 	};
 }

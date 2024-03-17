@@ -12,9 +12,7 @@ import GL.Shader.Manager;
 import Font;
 import Event;
 
-import <memory>;
-import <chrono>;
-import <ratio>;
+import std;
 import <GLFW/glfw3.h>;
 
 

@@ -8,9 +8,7 @@ import UI.Group;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import GL;
-import <algorithm>;
-import <execution>;
-import <iostream>;
+import std;
 
 export namespace UI {
 	class ScrollPane;

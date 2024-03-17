@@ -2,12 +2,7 @@ module;
 
 export module Game.Logic.Strategy;
 
-import <string>;
-import <memory>;
-import <functional>;
-import <algorithm>;
-import <vector>;
-import <numbers>;
+import std;
 
 import Geom.Vector2D;
 import Game.Logic.Objective;

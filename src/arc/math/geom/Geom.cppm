@@ -2,10 +2,7 @@ module ;
 
 export module Geom;
 
-import <algorithm>;
-import <cmath>;
-import <vector>;
-import <execution>;
+import std;
 import Concepts;
 import Math;
 import Math.Interpolation;

@@ -1,11 +1,6 @@
-module ;
-
 export module Container.Pool;
 
-import <memory_resource>;
-import <functional>;
-import <memory>;
-import <vector>;
+import std;
 
 import Concepts;
 import RuntimeException;

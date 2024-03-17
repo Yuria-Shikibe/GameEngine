@@ -5,7 +5,7 @@ import Geom.Shape.Rect_Orthogonal;
 export import GL.Texture.Texture2D;
 export import GL.Texture.TextureRegion;
 
-import <utility>;
+import std;
 
 export namespace GL{
 	/**

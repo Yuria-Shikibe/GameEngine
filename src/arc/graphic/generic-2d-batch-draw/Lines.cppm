@@ -9,9 +9,7 @@ import Geom.Shape.Rect_Orthogonal;
 
 import Math;
 
-import <span>;
-import <vector>;
-import <array>;
+import std;
 
 namespace Graphic::Draw::Line {
 	std::vector<Geom::Vec2> pointBuffer{};
@@ -306,7 +304,7 @@ export namespace Graphic::Draw::Line {
 		}
 	}
 
-	template <Concepts::InvokeNullable<void(Geom::Vec2, Graphic::Color)> Func = nullptr_t>
+	template <Concepts::InvokeNullable<void(Geom::Vec2, Graphic::Color)> Func = std::nullptr_t>
 	void endLineVert(Func&& func = nullptr) {
 		buildingLine  = false;
 		if(pointBuffer.empty())return;
@@ -330,12 +328,12 @@ export namespace Graphic::Draw::Line {
 			}
 
 			line(pointBuffer[currentIndex], pointBuffer[currentIndex + 1], lineBeginLerp, lineEndLerp);
-			if constexpr (!std::is_same_v<Func, nullptr_t>){
+			if constexpr (!std::is_same_v<Func, std::nullptr_t>){
 				func(pointBuffer[currentIndex], lineBeginLerp);
 			}
 		}
 
-		if constexpr (!std::is_same_v<Func, nullptr_t>){
+		if constexpr (!std::is_same_v<Func, std::nullptr_t>){
 			func(pointBuffer[currentIndex], lineEndLerp);
 		}
 	}

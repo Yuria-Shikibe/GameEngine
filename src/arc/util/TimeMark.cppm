@@ -2,9 +2,7 @@ module;
 
 export module TimeMark;
 
-export import <chrono>;
-import <ratio>;
-import <unordered_map>;
+import std;
 
 export namespace ext {
 	class Timestamper {

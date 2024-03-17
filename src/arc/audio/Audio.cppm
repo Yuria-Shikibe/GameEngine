@@ -10,7 +10,7 @@ import <irrKlang.h>;
 import RuntimeException;
 import Concepts;
 import OS.File;
-import <memory>;
+import std;
 
 
 using namespace irrklang;

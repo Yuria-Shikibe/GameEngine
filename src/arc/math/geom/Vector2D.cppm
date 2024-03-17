@@ -6,9 +6,7 @@ module ;
 
 export module Geom.Vector2D;
 
-import <complex>;
-import <algorithm>;
-import <type_traits>;
+import std;
 
 import Geom.Vector3D;
 import Math;

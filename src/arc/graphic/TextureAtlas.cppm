@@ -4,6 +4,7 @@ export module Graphic.TextureAtlas;
 
 import GL.Texture.TextureRegionRect;
 import GL.Texture.Texture2D;
+import GL.TextureArray;
 import Assets.TexturePacker;
 import OS.File;
 
@@ -11,11 +12,7 @@ import RuntimeException;
 
 // import Event;
 
-import <numeric>;
-import <ranges>;
-import <sstream>;
-import <unordered_map>;
-import <string>;
+import std;
 
 export namespace Graphic {
 	namespace Page {
@@ -35,11 +32,56 @@ export namespace Graphic {
 		std::unordered_map<std::string_view, Assets::TexturePackPage> pages{};
 		std::unordered_map<std::string, GL::TextureRegionRect*> regions{};
 
+		std::unordered_map<std::string, std::unique_ptr<GL::Texture2DArray>> textureGroups{};
+
 		const GL::TextureRegionRect* fallbackTextureRegion{nullptr};
 
 		Assets::TexturePackPage* contextPage{nullptr};
 
 	public:
+		void bindTextureArray(std::string_view bindPageName, std::initializer_list<std::string_view> pageNames){
+			std::unordered_map<const GL::Texture*, const GL::Texture2DArray*> replaceMap{};
+
+			const std::vector fetchPages = pageNames;
+			const std::string_view MainPageName = fetchPages.front();
+
+			auto& mainPage = getPage(MainPageName);
+			auto& mainPageTex = mainPage.getTextures();
+
+			std::vector<std::vector<const GL::Texture2D*>> texArr{};
+			texArr.resize(fetchPages.size());
+
+			//Build up texArr
+			for(int i = 0; i < fetchPages.size(); ++i){
+				auto& currentPageName = fetchPages.at(i);
+				auto& currentPageTex = getPage(currentPageName).getTextures();
+
+				texArr.at(i).resize(currentPageTex.size());
+
+				std::ranges::transform(currentPageTex, texArr.at(i).begin(), [](const std::unique_ptr<GL::Texture2D>& tex){
+					return tex.get();
+				});
+			}
+
+			for(int i = 0; i < mainPageTex.size(); ++i){
+				auto [itr, rst] = textureGroups.try_emplace(std::format("{}-{}", bindPageName, i), std::make_unique<GL::Texture2DArray>());
+
+				auto& curArray = itr->second;
+				curArray->init(texArr.at(i));
+
+				replaceMap.insert_or_assign(mainPageTex.at(i).get(), curArray.get());
+			}
+			//
+			for(auto& data : mainPage.getData() | std::ranges::views::values){
+				const GL::Texture2DArray* arr = replaceMap.at(data.textureRegion.getData());
+				data.textureRegion.setData(arr);
+			}
+		}
+
+		[[nodiscard]] decltype(textureGroups)& getTextureGroups() {
+			return textureGroups;
+		}
+
 		const GL::TextureRegionRect* load(const OS::File& file, const PixmapModifer& modifer = nullptr) const { // NOLINT(*-use-nodiscard)
 			return contextPage->pushRequest(file, modifer);
 		}

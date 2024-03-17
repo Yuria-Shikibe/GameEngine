@@ -17,13 +17,7 @@ import Geom.Vector2D;
 
 export import Align;
 
-import <vector>;
-import <string>;
-import <algorithm>;
-import <functional>;
-import <memory>;
-import <memory_resource>;
-import <unordered_map>;
+import std;
 
 export namespace Font {
 	constexpr int MAX_CAHCE = 1000;

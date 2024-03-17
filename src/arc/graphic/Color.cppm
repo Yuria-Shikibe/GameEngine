@@ -2,11 +2,7 @@ module ;
 
 export module Graphic.Color;
 
-import <iomanip>;
-import <sstream>;
-import <string>;
-import <array>;
-import <span>;
+import std;
 import Math;
 import Math.Bit;
 import Geom.Vector3D;

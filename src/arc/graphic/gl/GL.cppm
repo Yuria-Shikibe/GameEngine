@@ -1,8 +1,7 @@
 export module GL;
 
 import <glad/glad.h>;
-import <unordered_map>;
-import <unordered_set>;
+import std;
 
 namespace GL {
     GLuint lastProgram{0};
@@ -213,27 +212,23 @@ export namespace GL {
         glBlendFuncSeparatei(buf, src, dst, srcAlpha, dstAlpha);
     }
 
-    template <GLenum Type>
-    void setFunc(Func func, GLint ref, GLuint mask);
+    void setDepthFunc(const Func func){
+        glDepthFunc(static_cast<const GLenum>(func));
+    }
 
-    template <GLenum Type>
-    void setMask(GLuint mask);
+    void setDepthMask(const bool enable){
+        glDepthMask(enable ? GL_TRUE : GL_FALSE);
+    }
 
-    template <GLenum Type>
-    void setOperation(Operation, Operation, Operation);
-
-    template <>
-    void setFunc<Test::STENCIL>(const Func func, const GLint ref, const GLuint mask){
+    void setStencilFunc(const Func func, const GLint ref, const GLuint mask){
         glStencilFunc(static_cast<const GLenum>(func), ref, mask);
     }
 
-    template <>
-    void setMask<Test::STENCIL>(const GLuint mask){
+    void setStencilMask(const GLuint mask){
         glStencilMask(mask);
     }
 
-    template <>
-    void setOperation<Test::STENCIL>(Operation stencilFail, Operation depthFail, Operation pass){
+    void setStencilOperation(Operation stencilFail, Operation depthFail, Operation pass){
         glStencilOp(static_cast<GLenum>(stencilFail), static_cast<GLenum>(depthFail), static_cast<GLenum>(pass));
     }
 }

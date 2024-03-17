@@ -4,9 +4,7 @@
 
 export module Graphic.Trail;
 
-import <array>;
-import <utility>;
-import <deque>;
+import std;
 import Geom.Vector2D;
 import Math;
 import Concepts;

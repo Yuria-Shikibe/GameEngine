@@ -2,18 +2,16 @@ module;
 
 export module GL.Buffer.FrameBuffer;
 
-import <memory>;
 import <glad/glad.h>;
 import GL;
 import GL.Texture.Texture2D;
 import GL.Object;
+import GL.DepthBuffer;
 import GL.Buffer.RenderBuffer;
 import Graphic.Resizeable;
 import Graphic.Color;
 import RuntimeException;
-import <numeric>;
-import <ranges>;
-import <vector>;
+import std;
 
 export namespace GL{
 	class FrameBuffer : public GLObject, public Graphic::ResizeableUInt
@@ -21,7 +19,7 @@ export namespace GL{
 	protected:
 		unsigned int width = 0, height = 0;
 		std::vector<std::unique_ptr<Texture2D>> attachmentsColor{};
-		std::unique_ptr<Texture2D> attachmentsDepth{nullptr};
+		std::unique_ptr<DepthBuffer> attachmentsDepth{nullptr};
 		std::unique_ptr<Texture2D> attachmentsStencil{nullptr};
 
 		std::unique_ptr<RenderBuffer> renderBuffer{nullptr};
@@ -48,14 +46,25 @@ export namespace GL{
 		FrameBuffer(const unsigned int w, const unsigned int h, const int colorAttachments = 1) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
 			glCreateFramebuffers(1, &nameID);
 
-
-			attachmentsColor.emplace_back(std::make_unique<Texture2D>(width, height));
-			glNamedFramebufferTexture(nameID, GL_COLOR_ATTACHMENT0, attachmentsColor.front()->getID(), 0);
-
+			bindColorAttachments<Texture2D>(colorAttachments);
 			bindRenderBuffer<RenderBuffer>();
 
 			for(const auto& texture : attachmentsColor){
 				texture->setParameters(GL::linear, GL::linear);
+			}
+		}
+
+		FrameBuffer(const unsigned int w, const unsigned int h, Concepts::Invokable<void(FrameBuffer&)> auto&& init) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
+			glCreateFramebuffers(1, &nameID);
+
+			init(*this);
+
+			for(const auto& texture : attachmentsColor){
+				texture->setParameters(GL::linear, GL::linear);
+			}
+
+			if(!check()){
+				throw ext::IllegalArguments{"Invalid Frame Buffer!"};
 			}
 		}
 
@@ -72,7 +81,7 @@ export namespace GL{
 			enableMainOnly();
 		}
 
-		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
+		template <Concepts::Derived<DepthBuffer> TexType, typename ...Args>
 		void bindDepthAttachments(Args... args) {
 			attachmentsDepth = std::make_unique<TexType>(width, height, args...);
 			glNamedFramebufferTexture(nameID, GL_DEPTH_ATTACHMENT, attachmentsDepth->getID(), 0);
@@ -105,6 +114,17 @@ export namespace GL{
 			glDrawBuffers(getColorAttachmentsCount(), ALL_COLOR_ATTACHMENTS.data());
 		}
 
+
+		static void enableAll(const std::initializer_list<unsigned> list){
+			std::vector<unsigned> indices(list.size());
+
+			std::ranges::transform(list, std::back_inserter(indices), [](const unsigned i){
+				return i + GL_COLOR_ATTACHMENT0;
+			});
+
+			glDrawBuffers(list.size(), list.begin());
+		}
+
 		[[nodiscard]] size_t getColorAttachmentsCount() const {
 			return attachmentsColor.size();
 		}
@@ -122,8 +142,7 @@ export namespace GL{
 		}
 
 		[[nodiscard]] bool check() const{
-			bind();
-			return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+			return glCheckNamedFramebufferStatus(nameID, targetFlag) == GL_FRAMEBUFFER_COMPLETE;
 		}
 
 		void bind() const{
@@ -170,9 +189,7 @@ export namespace GL{
 		}
 
 		void clearDepth(const float depth) const{
-			if(attachmentsDepth){
-				glClearNamedFramebufferfv(nameID, GL_DEPTH, 0, &depth);
-			}
+			glClearNamedFramebufferfv(nameID, GL_DEPTH, 0, &depth);
 		}
 
 		void clearRenderData(const float depth = 1.0f, const int stencil = 0) const{

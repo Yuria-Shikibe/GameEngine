@@ -8,14 +8,7 @@ import Container.Pool;
 import Event;
 import Concepts;
 import Geom.QuadTree;
-import <algorithm>;
-import <execution>;
-import <functional>;
-import <vector>;
-import <memory>;
-import <ranges>;
-import <unordered_map>;
-import <unordered_set>;
+import std;
 
 export namespace Game {
 	template <Concepts::Derived<Entity> T, auto transformer = nullptr>

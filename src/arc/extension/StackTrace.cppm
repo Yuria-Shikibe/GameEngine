@@ -5,11 +5,7 @@ module ;
 
 export module StackTrace;
 
-import <filesystem>;
-import <sstream>;
-import <string>;
-import <iostream>;
-import <stacktrace>;
+import std;
 
 export namespace ext{
 	void getStackTraceBrief(std::stringstream&ss, const bool jumpUnSource = true, const bool showExec = false, const int skipNative = 3){

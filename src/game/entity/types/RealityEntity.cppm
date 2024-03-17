@@ -23,11 +23,7 @@ import RuntimeException;
 
 import Math;
 
-import <algorithm>;
-import <execution>;
-import <memory>;
-import <ranges>;
-import <unordered_map>;
+import std;
 
 export namespace Game {
 	class BasicRealityEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {

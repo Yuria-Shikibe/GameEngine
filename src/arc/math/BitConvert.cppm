@@ -2,7 +2,7 @@ module ;
 
 export module Math.Bit;
 
-import <sstream>;
+import std;
 // Char
 
 static std::stringstream tmpSS;

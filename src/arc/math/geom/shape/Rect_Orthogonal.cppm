@@ -1,12 +1,10 @@
 export module Geom.Shape.Rect_Orthogonal;
 
-import <algorithm>;
-import <vector>;
+import std;
 
 import Concepts;
 import Math;
 import Geom.Vector2D;
-import <ostream>;
 
 export namespace Geom::Shape{
 	/**
@@ -210,11 +208,11 @@ export namespace Geom::Shape{
 				getEndY() > r.getSrcY();
 		}
 
-		[[nodiscard]] constexpr bool containsPos_edgeExclusive(const Vec2& v) const{
+		[[nodiscard]] constexpr bool containsPos_edgeExclusive(const typename Geom::Vector2D<T>::PassType v) const{
 			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
 		}
 
-		[[nodiscard]] constexpr bool containsPos_edgeInclusive(const Vec2& v) const{
+		[[nodiscard]] constexpr bool containsPos_edgeInclusive(const typename Geom::Vector2D<T>::PassType v) const{
 			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 

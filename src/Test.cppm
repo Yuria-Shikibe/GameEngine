@@ -3,13 +3,13 @@ module;
 export module Test;
 
 import <GLFW/glfw3.h>;
+import std;
 
 import OS;
 import OS.File;
 import OS.ApplicationListenerSetter;
 import Image;
 import Core;
-import Core.Batch;
 import Core.Batch.Batch_Sprite;
 import Assets.Graphic;
 import Assets.Sound;
@@ -20,7 +20,10 @@ import Assets.Cursor;
 import Graphic.Draw;
 
 import GL;
+import GL.Constants;
 import GL.Texture;
+import GL.VertexArray;
+import GL.TextureArray;
 import GL.Shader;
 import UI.Root;
 import UI.Styles;
@@ -29,6 +32,9 @@ import Ctrl.Constants;
 import Ctrl.ControlCommands;
 
 export namespace Test {
+	constexpr std::string_view MainPageName = "test";
+	constexpr std::string_view BindPageName = "bind";
+
 	void init(const int argc, char* argv[]) {
 		//TODO move these into application loader
 		//Register Cmd
@@ -98,8 +104,8 @@ export namespace Test {
 			}
 
 			{
-				Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage("test", Assets::texCacheDir);
-				Assets::textureDir.subFile("test").forAllSubs([testPage](OS::File&& file) {
+				Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage(MainPageName, Assets::texCacheDir);
+				Assets::textureDir.subFile(MainPageName).forAllSubs([testPage](OS::File&& file) {
 					testPage->pushRequest(file);
 				});
 
@@ -108,18 +114,22 @@ export namespace Test {
 				Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerPage("normal", Assets::texCacheDir);
 				normalTexture->linkTarget = testPage;
 
-				Assets::textureDir.subFile("test").forAllSubs([normalTexture](OS::File&& file) {
+				Assets::textureDir.subFile(MainPageName).forAllSubs([normalTexture](OS::File&& file) {
 					normalTexture->pushRequest(file);
 				});
 			}
 		});
 
-		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const auto& event) {
+		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const Assets::AssetsLoadEnd& event) {
 			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("test-white");
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
 
 			for (auto& texture : event.manager->getAtlas().getPage("ui").getTextures()) {
-				texture->setScale(GL::TexParams::nearest, GL::TexParams::linear);
+				texture->setScale(GL::TexParams::linear, GL::TexParams::linear);
+			}
+
+			for (auto& texture : event.manager->getAtlas().getPage(MainPageName).getTextures()) {
+				texture->setScale(GL::TexParams::mipmap_linear_nearest, GL::TexParams::nearest);
 			}
 
 			Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
@@ -139,6 +149,29 @@ export namespace Test {
 				ptr->setImage(event.manager->getAtlas().find("cursor-select"));
 				ptr->drawer = std::make_unique<Assets::CursorThoroughSightDrawer>();
 			}
+
+			event.manager->getAtlas().bindTextureArray(BindPageName, {MainPageName, "normal"});
+
+		});
+
+		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPost>([](const auto& event) {
+			Core::worldBatch = new Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>([](const Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>& self) {
+				auto* const shader = Assets::Shaders::world;
+
+				shader->setUniformer([&self](const GL::Shader& s){
+					s.setTexture2D("texArray", self.getTexture());
+					s.setMat3("view", *self.getProjection());
+				});
+
+				return shader;
+			}, [](GL::AttributeLayout& layout){
+				layout.addFloat(3);
+				layout.addFloat(2);
+				layout.addFloat(4);
+				layout.addFloat(4);
+			});
+
+			Core::worldBatch->setProjection(&Core::camera->getWorldToScreen());
 		});
 
 		//Majority Load
@@ -146,8 +179,6 @@ export namespace Test {
 	}
 
 	void setupAudioTest() {
-		Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Press, [] {
 
-		});
 	}
 }

@@ -2,8 +2,7 @@ module UI.Root;
 
 import UI.ElemDrawer;
 import UI.Table;
-import <memory>;
-import <algorithm>;
+import std;
 
 
 UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-default)

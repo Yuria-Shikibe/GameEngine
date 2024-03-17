@@ -1,10 +1,6 @@
-module ;
-
 export module Concepts;
 
-import <functional>;
-import <concepts>;
-import <type_traits>;
+import std;
 
 namespace Concepts {
 	/**
@@ -77,7 +73,7 @@ export namespace Concepts {
 	concept Invokable = FunctionTraits<functype>::template invocableAs_v<T>();
 
 	template <typename T, typename functype>
-	concept InvokeNullable = std::same_as<nullptr_t, T> || FunctionTraits<functype>::template invocableAs_v<T>();
+	concept InvokeNullable = std::same_as<std::nullptr_t, T> || FunctionTraits<functype>::template invocableAs_v<T>();
 
 	template <typename T, typename functype>
 	concept InvokableFunc = std::is_convertible_v<T, functype>;

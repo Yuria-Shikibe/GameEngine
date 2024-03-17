@@ -12,9 +12,7 @@ import Math.Rand;
 
 import Geom;
 
-import <iostream>;
-import <ranges>;
-import <unordered_map>;
+import std;
 
 export namespace Game {
 	class SpaceCraft;

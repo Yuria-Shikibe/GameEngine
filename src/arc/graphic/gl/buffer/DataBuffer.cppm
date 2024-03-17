@@ -4,7 +4,7 @@ export module GL.Buffer.DataBuffer;
 
 import <glad/glad.h>;
 export import GL.Object;
-import <array>;
+import std;
 
 export namespace GL{
 	/**The Count Of Vert Indexes Needed To Draw A Quad*/

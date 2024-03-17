@@ -1,18 +1,9 @@
 #include "src/application_head.h"
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+import <glad/glad.h>;
+import <GLFW/glfw3.h>;
 
-import <iomanip>;
-import <functional>;
-import <iostream>;
-import <cmath>;
-import <numeric>;
-import <ranges>;
-import <sstream>;
-import <typeinfo>;
-import <unordered_set>;
-
+import std;
 
 import Assets.LoaderRenderer;
 
@@ -26,6 +17,7 @@ import Event;
 import StackTrace;
 
 import Graphic.Draw;
+import Graphic.Draw.World;
 import Graphic.Draw.Lines;
 import Graphic.Pixmap;
 import Core.Renderer;
@@ -262,6 +254,43 @@ void setupCtrl(){
 	});
 }
 
+void genRandomEntities(){
+	Math::Rand rand = Math::globalRand;
+	for(int i = 0; i < 300; ++i) {
+		Geom::RectBox box{};
+		box.setSize(rand.random(40, 1200), rand.random(40, 1200));
+		box.rotation = rand.random(360);
+		box.offset = box.sizeVec2;
+		box.offset.mul(-0.5f);
+
+		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+		ptr->rotation  = rand.random(360.0f);
+		ptr->position.set(rand.range(20000), rand.range(20000));
+		Game::EntityManage::add(ptr);
+		ptr->hitBox = box;
+		ptr->setHealth(500);
+		ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
+		ptr->velocity.set(1, 0).rotate(rand.random(360));
+		ptr->activate();
+
+		ptr->init();
+		ptr->setTurretType(&Game::Content::baseTurret);
+	}
+
+	Geom::RectBox box{};
+	box.setSize(20, 100);
+	box.rotation = 0;
+	box.offset = box.sizeVec2;
+	box.offset.mul(-0.5f);
+
+	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+	ptr->position.set(1000, 100);
+	Game::EntityManage::add(ptr);
+	ptr->hitBox = box;
+	ptr->velocity.set(0, 0);
+	ptr->activate();
+}
+
 int main(const int argc, char* argv[]) {
 	//Init
 	::Test::init(argc, argv);
@@ -274,28 +303,37 @@ int main(const int argc, char* argv[]) {
 	OS::registerListener(Game::core.get());
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
+		Draw::flush();
 		Game::core->overlayManager->drawAboveUI(e.renderer);
+		Draw::flush();
+	});
+
+	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
+		Game::core->effectManager->render();
+		Draw::flush();
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->overlayManager->drawBeneathUI(e.renderer);
-	});
-
-	::Core::renderer->getListener().on<Event::Draw_Post>([]([[maybe_unused]] const auto& e){
-		Game::core->effectManager->render();
+		Draw::flush();
 	});
 
 
 	// UI Test
-	setupUITest();
+	// setupUITest();
 
 	setupCtrl();
+
+	// genRandomEntities();
 
 	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 
+	GL::MultiSampleFrameBuffer worldFrameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight(), 8};
+
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
+	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 
 	std::stringstream ss{};
 
@@ -304,53 +342,33 @@ int main(const int argc, char* argv[]) {
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
 
-	{
-		Math::Rand rand = Math::globalRand;
-		for(int i = 0; i < 300; ++i) {
-			Geom::RectBox box{};
-			box.setSize(rand.random(40, 1200), rand.random(40, 1200));
-			box.rotation = rand.random(360);
-			box.offset = box.sizeVec2;
-			box.offset.mul(-0.5f);
+	Core::renderer->getListener().on<Event::Draw_Post>([&worldFrameBuffer](const auto& event) {
+		Core::Renderer& renderer = *event.renderer;
+		renderer.frameBegin(&worldFrameBuffer);
 
-			const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-			ptr->rotation  = rand.random(360.0f);
-			ptr->position.set(rand.range(20000), rand.range(20000));
-			Game::EntityManage::add(ptr);
-			ptr->hitBox = box;
-			ptr->setHealth(500);
-			ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
-			ptr->velocity.set(1, 0).rotate(rand.random(360));
-			ptr->activate();
+		GL::enable(GL::Test::DEPTH);
 
-			ptr->init();
-			ptr->setTurretType(&Game::Content::baseTurret);
-		}
+		GL::Blendings::Normal.apply();
+		GL::setDepthFunc(GL::Func::LEQUAL);
+		GL::setDepthMask(true);
 
-		Geom::RectBox box{};
-		box.setSize(20, 100);
-		box.rotation = 0;
-		box.offset = box.sizeVec2;
-		box.offset.mul(-0.5f);
+		auto* region = Core::assetsManager->getAtlas().find("test-pester");
+		auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
 
-		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-		ptr->position.set(1000, 100);
-		Game::EntityManage::add(ptr);
-		ptr->hitBox = box;
-		ptr->velocity.set(0, 0);
-		ptr->activate();
+		Draw::World::color();
+		Draw::World::mixColor();
+		Draw::World::rect(region1, 100, 20, 2, 45); //upper
+		Draw::World::rect(region, 0, 0, 3, 45);
 
-	}
+		Draw::World::flush();
 
-	Core::input->registerKeyBind(Ctrl::KEY_P, Ctrl::Act_Press, [] {
-		OS::setPause(!OS::isPaused());
+		renderer.frameEnd(Assets::PostProcessors::blendMulti);
+
+		GL::disable(GL::Test::DEPTH);
 	});
 
-	Core::renderer->getListener().on<Event::Draw_Post>([&frameBuffer](const Event::Draw_Post& e) {
-		auto f = &frameBuffer;
-
-
-		e.renderer->frameBegin(&frameBuffer);
+	Core::renderer->getListener().on<Event::Draw_After>([&frameBuffer](const auto& event) {
+		event.renderer->frameBegin(&frameBuffer);
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
 		Game::EntityManage::render();
 
@@ -359,11 +377,11 @@ int main(const int argc, char* argv[]) {
 		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
 			Draw::Line::rect(t->getBoundary());
 		});
-		e.renderer->frameEnd(Assets::PostProcessors::bloom);
+		event.renderer->frameEnd(Assets::PostProcessors::bloom);
 	});
 
-	{
-		Core::renderer->getListener().on<Event::Draw_Post>([&]([[maybe_unused]] const Event::Draw_Post& e) {
+
+	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e) {
 			Draw::meshBegin(Assets::Meshes::coords);
 			Draw::meshEnd(true);
 
@@ -416,7 +434,7 @@ int main(const int argc, char* argv[]) {
 			e.renderer->frameEnd(Assets::PostProcessors::blendMulti);
 			e.renderer->frameEnd(Assets::PostProcessors::bloom);
 		});
-	}
+
 
 	OS::setupLoop();
 

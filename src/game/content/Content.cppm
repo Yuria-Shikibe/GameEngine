@@ -6,7 +6,7 @@ export module Game.ContentType;
 
 export import Graphic.TextureAtlas;
 
-import <string_view>;
+import std;
 
 export namespace Game{
 	enum class ContentType {

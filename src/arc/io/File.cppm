@@ -6,16 +6,7 @@ import Concepts;
 
 import RuntimeException;
 
-import <utility>;
-import <unordered_map>;
-import <span>;
-import <memory>;
-import <filesystem>;
-import <fstream>;
-import <vector>;
-import <functional>;
-import <string>;
-import <execution>;
+import std;
 
 using namespace std::filesystem;
 
@@ -190,7 +181,7 @@ export namespace OS{
 			return File{ getPath().parent_path() };
 		}
 
-		[[nodiscard]] File subFile(const std::string_view& name) const {
+		[[nodiscard]] File subFile(const std::string_view name) const {
 			if(!isDir())throw ext::RuntimeException{};
 
 			return File{ absolutePath().append(name) };

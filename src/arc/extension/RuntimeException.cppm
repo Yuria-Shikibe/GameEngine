@@ -1,19 +1,13 @@
 //
-// Created by Matrix on 2023/11/21.
-//
-module;
-
 export module RuntimeException;
 
 import StackTrace;
-import <sstream>;
-import <string>;
-import <exception>;
-import <source_location>;
+import std;
 
 export namespace ext{
-	class RuntimeException : virtual public std::exception{
+	class RuntimeException : public std::exception{
 	public:
+		~RuntimeException() override = default;
 		std::string data{};
 
 		explicit RuntimeException(const std::string& str, const std::source_location location = std::source_location::current()){

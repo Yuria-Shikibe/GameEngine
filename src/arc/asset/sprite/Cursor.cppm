@@ -7,8 +7,7 @@ import Graphic.Draw;
 import Graphic.Draw.Lines;
 import GL.Texture.TextureRegionRect;
 
-import <array>;
-import <memory>;
+import std;
 
 export namespace Assets{
 	using namespace Graphic;

@@ -1,16 +1,12 @@
+module;
+
+#include <csignal>
+
 export module OS;
 
-import <csignal>;
 import <GLFW/glfw3.h>;
-import <chrono>;
-import <ctime>;
-import <sstream>;
-import <functional>;
-import <iostream>;
-import <vector>;
-import <future>;
-import <queue>;
-import <utility>;
+import std;
+import std.compat;
 
 import Event;
 import StackTrace;

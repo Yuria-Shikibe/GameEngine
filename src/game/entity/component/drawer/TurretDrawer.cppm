@@ -7,8 +7,7 @@ export module Game.Drawer.TurretDrawer;
 export import Game.Entity.Turrets;
 export import Game.Drawer.DrawComponents;
 
-import <vector>;
-import <memory>;
+import std;
 
 export namespace Game::Drawer{
 	struct TurretDrawer {

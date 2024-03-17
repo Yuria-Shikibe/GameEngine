@@ -9,8 +9,7 @@ export import GL;
 export import RuntimeException;
 
 import <glad/glad.h>;
-import <ranges>;
-import <unordered_map>;
+import std;
 
 using namespace GL;
 

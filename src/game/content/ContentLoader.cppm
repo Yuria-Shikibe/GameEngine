@@ -6,11 +6,7 @@ export module Game.ContentLoader;
 
 export import Game.ContentType;
 
-import <vector>;
-import <unordered_map>;
-import <string_view>;
-import <memory>;
-import <ranges>;
+import std;
 import Concepts;
 import RuntimeException;
 

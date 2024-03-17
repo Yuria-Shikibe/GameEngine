@@ -10,9 +10,7 @@ import Image;
 import Concepts;
 import Graphic.Color;
 import Math;
-import <memory>;
-import <string>;
-import <iostream>;
+import std;
 
 using Graphic::Color;
 using colorBits = Graphic::Color::ColorBits;

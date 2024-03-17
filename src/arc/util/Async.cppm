@@ -2,11 +2,9 @@ module;
 
 export module Async;
 
-export import <future>;
 import Concepts;
 import RuntimeException;
-import <string>;
-import <functional>;
+import std;
 
 export namespace ext {
 	/**

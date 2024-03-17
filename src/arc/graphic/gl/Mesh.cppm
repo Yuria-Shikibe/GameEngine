@@ -1,8 +1,7 @@
 export module GL.Mesh;
 
 import <glad/glad.h>;
-import <functional>;
-import <memory>;
+import std;
 
 export import GL.Buffer.DataBuffer;
 export import GL.VertexArray;

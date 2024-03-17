@@ -4,9 +4,7 @@ export module Geom.Vector3D;
 import Concepts;
 
 import Math;
-import <cmath>;
-import <ostream>;
-import <string>;
+import std;
 
 export namespace Geom {
 	template <Concepts::Number T>

@@ -2,10 +2,7 @@ module;
 
 export module Base64;
 
-import <cstring>;
-import <cassert>;
-import <string_view>;
-import <vector>;
+import std;
 
 export namespace ext{
 	typedef unsigned char  uint8;
@@ -70,7 +67,9 @@ export namespace ext{
 				quad[k] = reverse_map[code[i+k]];
 			}
 
-			assert(quad[0]<64 && quad[1]<64);
+			if(!(quad[0]<64 && quad[1]<64)){
+				//TODO throw
+			}
 
 			plain[j++] = (quad[0]<<2)|(quad[1]>>4);
 

@@ -1,7 +1,5 @@
-module;
-
 export module UI.ElemDrawer;
-import <memory>;
+import std;
 import Graphic.Color;
 import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;

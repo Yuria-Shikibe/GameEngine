@@ -8,7 +8,7 @@ export import Game.Entity.EntityManager;
 export import Game.UI.OverlayManager;
 export import Graphic.Effect.Manager;
 
-import <memory>;
+import std;
 
 export namespace Game {
 	class Core : public OS::ApplicationListener {

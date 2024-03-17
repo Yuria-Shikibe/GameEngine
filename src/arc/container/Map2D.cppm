@@ -1,7 +1,6 @@
 export module Container.Map2D;
 
-import <utility>;
-import <vector>;
+import std;
 import Concepts;
 import RuntimeException;
 

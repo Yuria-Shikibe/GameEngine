@@ -3,7 +3,7 @@ module;
 export module OS.ApplicationListenerSetter;
 
 import <GLFW/glfw3.h>;
-import <iostream>;
+import std;
 
 /**
 *If the mode is `GLFW_CURSOR`, the value must be one of the following cursor

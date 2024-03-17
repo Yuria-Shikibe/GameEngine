@@ -6,8 +6,6 @@ module ;
 
 export module Core.Camera;
 
-
-
 import Concepts;
 import Graphic.Viewport;
 import Graphic.Resizeable;
@@ -16,10 +14,7 @@ import Geom.Shape.Rect_Orthogonal;
 import OS.ApplicationListener;
 import Geom.Vector2D;
 import Geom.Matrix3D;
-import <memory>;
-import <valarray>;
-import <numbers>;
-import <algorithm>;
+import std;
 
 using namespace Geom;
 

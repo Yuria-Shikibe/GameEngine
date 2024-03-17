@@ -20,9 +20,7 @@ import Ctrl.Constants;
 
 import Interval;
 
-import <memory>;
-import <unordered_map>;
-import <ranges>;
+import std;
 
 export namespace Game {
 	using namespace Graphic;

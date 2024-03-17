@@ -2,11 +2,7 @@ module ;
 
 export module Geom.Matrix3D;
 
-import <exception>;
-import <sstream>;
-import <array>;
-import <algorithm>;
-import <ostream>;
+import std;
 
 import Geom.Vector3D;
 export import Geom.Vector2D;
@@ -497,8 +493,8 @@ export namespace Geom{
 		}
 
 		Vec2& getScale(Vec2& scale) const {
-			scale.x = sqrt(val[M00] * val[M00] + val[M01] * val[M01]);
-			scale.y = sqrt(val[M10] * val[M10] + val[M11] * val[M11]);
+			scale.x = std::sqrt(val[M00] * val[M00] + val[M01] * val[M01]);
+			scale.y = std::sqrt(val[M10] * val[M10] + val[M11] * val[M11]);
 			return scale;
 		}
 

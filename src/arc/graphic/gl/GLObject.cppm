@@ -1,7 +1,7 @@
 export module GL.Object;
 
 export import GL;
-import <functional>;
+import std;
 import GL.Constants;
 
 export namespace GL{

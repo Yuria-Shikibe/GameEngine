@@ -55,6 +55,8 @@ void Core::Renderer::frameEnd() {
 
 	Draw::flush();
 
+	contextFrameBuffer->getTextures().front()->active(0);
+	contextFrameBuffer->bind(FrameBuffer::READ);
 	Draw::blit(beneathFrameBuffer);
 
 	contextFrameBuffer = beneathFrameBuffer;

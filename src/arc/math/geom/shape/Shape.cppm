@@ -1,8 +1,6 @@
 export module Geom.Shape;
 
-import <complex>;
-import <vector>;
-import <cmath>;
+import std;
 import Geom.Vector2D;
 import Math;
 

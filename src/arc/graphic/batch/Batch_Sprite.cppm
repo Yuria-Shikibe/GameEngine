@@ -2,12 +2,8 @@ module;
 
 export module Core.Batch.Batch_Sprite;
 
-import <memory>;
-import <functional>;
-import <span>;
-import <glad/glad.h>;
+import std;
 export import Core.Batch;
-import GL.GL_Exception;
 import GL.Shader;
 import GL.Constants;
 import GL.Mesh;
@@ -21,11 +17,12 @@ using namespace GL;
 
 export namespace Core{
 
-	template <GLsizei maxVertSize = 8192 * 2, GLsizei vertGroupSize = GL::VERT_GROUP_SIZE_LAYOUT>
+	template <GLsizei vertGroupSize = GL::VERT_GROUP_SIZE_LAYOUT, GLsizei maxVertSize = 8192 * 2>
 		requires requires{maxVertSize <= std::numeric_limits<GLsizei>::max() / GL::ELEMENTS_QUAD_LENGTH;}
 	class SpriteBatch : public Batch
 	{
 	public:
+		static constexpr auto quadGroupSize = vertGroupSize * QUAD_GROUP_COUNT;
 		static constexpr auto maxDataSize = maxVertSize * vertGroupSize;
 		static constexpr auto maxIndexSize = maxVertSize * GL::ELEMENTS_QUAD_LENGTH;
 
@@ -39,7 +36,7 @@ export namespace Core{
 
 			for(int i = 0; i < maxVertSize; i++){
 				for(int j = 0; j < ELEM_LEN; ++j){
-					arr[j + i * ELEM_LEN] = data[j] + i * VERT_GROUP_COUNT;
+					arr[j + i * ELEM_LEN] = data[j] + i * QUAD_GROUP_COUNT;
 				}
 			}
 
@@ -52,26 +49,15 @@ export namespace Core{
 			index = 0;
 		}
 
-		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, const std::span<VertElem> layoutElems){
-			mesh = std::make_unique<Mesh>([layoutElems, this](Mesh& mesh){
+		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(AttributeLayout&)> auto&& layouter){
+			mesh = std::make_unique<Mesh>([&layouter, this](Mesh& mesh){
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
 				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
 
 				//TODO: Uses flexible mode by using attrib names as position reference? or just keep it hard and quick?
 				AttributeLayout& layout = mesh.getVertexArray().getLayout();
 
-				if(!layoutElems.empty()){
-					for (const auto& [type, normalized, size] : layoutElems) {
-						layout.add(type, normalized, size);
-					}
-				}else{
-					//Default Layout
-
-					layout.addFloat(2); //Position 2D
-					layout.addFloat(2); //UV offset
-					layout.addFloat(4); //mix rgba
-					layout.addFloat(4); //src rgba
-				}
+				layouter(layout);
 
 				mesh.applyLayout();
 			});
@@ -79,9 +65,12 @@ export namespace Core{
 			generalShader = shader(*this);
 		}
 
-		explicit SpriteBatch(auto&& shader) : SpriteBatch(shader, {}){
-
-		}
+		explicit SpriteBatch(auto&& shader) : SpriteBatch(shader, [](AttributeLayout& layout){
+			layout.addFloat(2);
+			layout.addFloat(2);
+			layout.addFloat(4);
+			layout.addFloat(4);
+		}){}
 
 		~SpriteBatch() override = default;
 
@@ -102,7 +91,7 @@ export namespace Core{
 			bindShader();
 			applyShader();
 
-			mesh->render(std::min(index / VERT_LENGTH_STD * GL::ELEMENTS_QUAD_LENGTH, static_cast<size_t>(mesh->getIndexBuffer().getSize())));
+			mesh->render(std::min(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH, static_cast<size_t>(this->indexRef.size())));
 
 			index = 0;
 		}

@@ -2,7 +2,7 @@ module;
 
 export module Math.Rand;
 
-import <chrono>;
+import std;
 import Concepts;
 
 export namespace Math {

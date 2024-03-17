@@ -1,12 +1,6 @@
-module ;
-
 export module Event;
 
-import <functional>;
-import <typeindex>;
-import <unordered_map>;
-import <set>;
-import <array>;
+import std;
 import RuntimeException;
 import Concepts;
 

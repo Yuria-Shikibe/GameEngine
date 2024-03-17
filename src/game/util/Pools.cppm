@@ -5,10 +5,7 @@ export module Game.Pool;
 import Concepts;
 export import Container.Pool;
 import RuntimeException;
-import <unordered_map>;
-import <typeindex>;
-import <any>;
-import <memory>;
+import std;
 
 namespace Game::Pools{
 	struct PoolWrapper {

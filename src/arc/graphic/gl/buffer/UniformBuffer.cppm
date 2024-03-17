@@ -3,7 +3,7 @@ module;
 export module GL.UniformBuffer;
 
 import <glad/glad.h>;
-import <vector>;
+import std;
 export import GL.Buffer.DataBuffer;
 
 export namespace GL{

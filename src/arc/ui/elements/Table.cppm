@@ -2,12 +2,9 @@ module;
 
 export module UI.Table;
 export import UI.Group;
+export import UI.Elem;
 
-import <vector>;
-import <memory_resource>;
-import <array>;
-import <algorithm>;
-import <execution>;
+import std;
 
 import Geom.Shape.Rect_Orthogonal;
 import Align;

@@ -6,13 +6,9 @@ export module Geom.QuadTree;
 export import Geom.Shape.Rect_Orthogonal;
 export import Geom.Vector2D;
 
-import <vector>;
 import Concepts;
 import RuntimeException;
-import <algorithm>;
-import <functional>;
-import <memory>;
-import <mutex>;
+import std;
 
 using Geom::Shape::Rect_Orthogonal;
 
@@ -31,7 +27,7 @@ export namespace Geom {
 		using PointType = Geom::Vector2D<T>;
 		using InersectPointCheck = std::function<bool(const Cont*, Vec2)>;
 
-		static constexpr bool ValidTrans = !std::same_as<nullptr_t, decltype(transformer)>;
+		static constexpr bool ValidTrans = !std::same_as<std::nullptr_t, decltype(transformer)>;
 
 	protected:
 		// Obtainer transformer{ nullptr };

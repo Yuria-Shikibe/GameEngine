@@ -4,9 +4,7 @@
 
 export module Container.ContinuousPool;
 
-import <array>;
-import <bitset>;
-import <memory>;
+import std;
 
 export namespace Container{
 	// template <typename T, size_t MaxSize>

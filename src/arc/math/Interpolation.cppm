@@ -1,7 +1,6 @@
 export module Math.Interpolation;
 
-import <functional>;
-import <numbers>;
+import std;
 import Math;
 import Concepts;
 

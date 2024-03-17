@@ -1,15 +1,6 @@
 export module Assets.TexturePacker;
 
-import <algorithm>;
-import <execution>;
-import <string>;
-import <vector>;
-import <fstream>;
-import <functional>;
-import <ranges>;
-import <unordered_map>;
-import <unordered_set>;
-import <chrono>;
+import std;
 
 import Assets.Loader;
 import Math.StripPacker2D;

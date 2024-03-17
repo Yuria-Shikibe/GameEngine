@@ -8,7 +8,7 @@ export module Ctrl.Constants;
 
 import GL.Constants;
 import Math;
-import <array>;
+import std;
 
 export namespace Ctrl {
 	constexpr int Act_Press = GLFW_PRESS;

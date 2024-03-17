@@ -5,7 +5,7 @@ module Font.GlyphArrangement;
 import Graphic.Draw;
 import RuntimeException;
 
-import <execution>;
+import std;
 
 
 void Font::GlyphLayout::render() const {

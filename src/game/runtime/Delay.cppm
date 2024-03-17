@@ -5,12 +5,7 @@ export module Game.Delay;
 import Container.Pool;
 import Concepts;
 
-import <algorithm>;
-import <vector>;
-import <chrono>;
-import <execution>;
-import <functional>;
-import <mutex>;
+import std;
 
 export namespace Game {
 	using TickRatio = std::ratio<1, 60>;

@@ -6,8 +6,7 @@ module ;
 
 export module Core.Batch;
 
-import <memory>;
-import <functional>;
+import std;
 import GL.Blending;
 import GL.Constants;
 export import GL.Mesh;

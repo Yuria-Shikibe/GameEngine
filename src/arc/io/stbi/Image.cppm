@@ -1,10 +1,14 @@
 module;
 
-#include <memory>
+#pragma once
 
-void* resize(const void* p, const size_t oldsz, const size_t newsz){
+inline void* resize(const void* p, const size_t oldsz, const size_t newsz){
 	void* next = operator new[](newsz);
-	std::memcpy(next, p, oldsz);
+
+	for(int i = 0; i < oldsz; ++i){ //Dumb
+		static_cast<char*>(next)[i] = static_cast<const char*>(p)[i];
+	}
+
 	return next;
 }
 
@@ -18,10 +22,11 @@ void* resize(const void* p, const size_t oldsz, const size_t newsz){
 #include <native/stbi/stbi_image_write.h>
 #include <native/stbi/stbi_image.h>
 
+
 export module Image;
 
 import OS.File;
-import <string_view>;
+import std;
 import <GLFW/glfw3.h>;
 
 

@@ -4,13 +4,7 @@ export import Graphic.Effect;
 
 import Container.Pool;
 
-import <array>;
-import <unordered_map>;
-import <memory_resource>;
-import <ranges>;
-import <future>;
-import <stack>;
-import <unordered_set>;
+import std;
 
 export namespace Graphic{
 	/**

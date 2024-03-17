@@ -1,5 +1,3 @@
-module ;
-
 export module OS.ApplicationListener;
 
 export namespace OS{
