@@ -9,6 +9,8 @@ in vec2 v_texCoord;
 in vec4 v_mixColor;
 
 layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 NormalColor;
+layout (location = 2) out vec4 LightColor;
 
 layout (depth_less) out float gl_FragDepth;
 
@@ -19,20 +21,24 @@ float layer2coord(uint capacity, uint layer)
 
 void main()
 {
-//	if(v_srcColor.a < 0.0033)discard;
-	vec4 c = texture(texArray, vec3(v_texCoord, 0.0f));
+	if(v_srcColor.a < 0.0033)discard;
+	vec4 baseColor = texture(texArray, vec3(v_texCoord, 0.0f));
+	vec4 normalColor = texture(texArray, vec3(v_texCoord, 1.0f));
+	vec4 lightColor = texture(texArray, vec3(v_texCoord, 2.0f));
 
-	c = v_srcColor * mix(c, vec4(v_mixColor.rgb, c.a), v_mixColor.a);
+	baseColor = v_srcColor * mix(baseColor, vec4(v_mixColor.rgb, baseColor.a), v_mixColor.a);
 
-	if(gl_FragDepth == 0.0f){
-		gl_FragDepth = 1.0f;
-	}
+	float invDepth = 1 - gl_FragCoord.z;
+//
+	if(invDepth > gl_FragDepth){
+		if(baseColor.a > 0.995){
+			gl_FragDepth = invDepth;
 
-	if(depth < gl_FragDepth){
-		if(c.a > 0.995){
-			gl_FragDepth = depth;
-			FragColor = c;
+			FragColor = baseColor;
 		}
+
+		NormalColor = normalColor;
+		LightColor = lightColor;
 	}else{
 		discard;
 	}

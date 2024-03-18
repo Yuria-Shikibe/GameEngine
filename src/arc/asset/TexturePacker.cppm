@@ -175,6 +175,10 @@ export namespace Assets {
 			return packData;
 		}
 
+		[[nodiscard]] OS::File getCacheDir() const{
+			return cacheDir;
+		}
+
 		[[nodiscard]] PackState getState() const {
 			return state;
 		}
@@ -477,7 +481,6 @@ export namespace Assets {
 								   [](auto& data)->TextureRegionPackData*{ return &data.second; });
 
 			loadRemains(std::move(all), 0);
-
 			packDone = true;
 		}
 

@@ -15,6 +15,7 @@ export namespace Geom::Shape{
 	class Rect_Orthogonal final/* : public Shape<Rect_Orthogonal<T>, T>*/{
 		static constexpr T HALF = static_cast<T>(2);
 
+	protected:
 		T srcX{0};
 		T srcY{0};
 		T width{0};
@@ -27,7 +28,7 @@ export namespace Geom::Shape{
 			this->setSize(width, height);
 		}
 
-		constexpr Rect_Orthogonal(const Vec2& center, const T width, const T height){
+		constexpr Rect_Orthogonal(const typename Vector2D<T>::PassType center, const T width, const T height){
 			this->setSize(width, height);
 			this->setCenter(center.x, center.y);
 		}

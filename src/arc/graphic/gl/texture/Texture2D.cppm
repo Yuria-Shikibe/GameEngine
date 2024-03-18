@@ -85,7 +85,7 @@ export namespace GL{
 			localData.reset(nullptr);
 		}
 
-		void resize(unsigned int w, unsigned int h) override{
+		void resize(const unsigned int w, const unsigned int h) override{
 			if(w == width && h == height)return;
 
 			free();

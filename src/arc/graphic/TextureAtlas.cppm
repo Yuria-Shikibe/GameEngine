@@ -39,42 +39,57 @@ export namespace Graphic {
 		Assets::TexturePackPage* contextPage{nullptr};
 
 	public:
-		void bindTextureArray(std::string_view bindPageName, std::initializer_list<std::string_view> pageNames){
-			std::unordered_map<const GL::Texture*, const GL::Texture2DArray*> replaceMap{};
+		template <Concepts::InvokeNullable<void(GL::Texture2DArray*)> Func = std::nullptr_t>
+		void bindTextureArray(std::string_view mergedPageName, const std::initializer_list<std::string_view> compPageNames, Func&& func = nullptr){
+			std::unordered_map<const GL::Texture*, const GL::Texture2DArray*> textureReplaceMap{};
 
-			const std::vector fetchPages = pageNames;
-			const std::string_view MainPageName = fetchPages.front();
+			const std::vector toMergePageNames = compPageNames;
+			const std::string_view standardPageName = toMergePageNames.front();
 
-			auto& mainPage = getPage(MainPageName);
-			auto& mainPageTex = mainPage.getTextures();
+			auto& mainPage = getPage(standardPageName);
 
-			std::vector<std::vector<const GL::Texture2D*>> texArr{};
-			texArr.resize(fetchPages.size());
+			/*
+			 * |--------| Arr1, Arr2, ...
+			 * | Page00 | tex0, tex1, ...
+			 * | Page01 | tex0, tex1, ...
+			 * | Page02 | tex0, tex1, ...
+			 */
+			std::vector<std::vector<const GL::Texture2D*>> pages(toMergePageNames.size());
 
-			//Build up texArr
-			for(int i = 0; i < fetchPages.size(); ++i){
-				auto& currentPageName = fetchPages.at(i);
-				auto& currentPageTex = getPage(currentPageName).getTextures();
+			//Build up pages layout
+			for(int curPageID = 0; curPageID < toMergePageNames.size(); ++curPageID){
+				const auto& currentPageName = toMergePageNames.at(curPageID);
 
-				texArr.at(i).resize(currentPageTex.size());
-
-				std::ranges::transform(currentPageTex, texArr.at(i).begin(), [](const std::unique_ptr<GL::Texture2D>& tex){
-					return tex.get();
-				});
+				std::ranges::transform(
+					this->getPage(currentPageName).getTextures(),
+					std::back_inserter(pages.at(curPageID)),
+					[](const std::unique_ptr<GL::Texture2D>& tex){return tex.get();}
+				);
 			}
 
-			for(int i = 0; i < mainPageTex.size(); ++i){
-				auto [itr, rst] = textureGroups.try_emplace(std::format("{}-{}", bindPageName, i), std::make_unique<GL::Texture2DArray>());
+			//Create texture array
+			for(int texID = 0; texID < mainPage.getTextures().size(); ++texID){
+				auto [rstItr, success] = textureGroups.try_emplace(std::format("{}-{}", mergedPageName, texID), std::make_unique<GL::Texture2DArray>());
+				auto& curArray = rstItr->second;
 
-				auto& curArray = itr->second;
-				curArray->init(texArr.at(i));
+				if constexpr(!std::same_as<Func, std::nullptr_t>){
+					func(curArray.get());
+				}
 
-				replaceMap.insert_or_assign(mainPageTex.at(i).get(), curArray.get());
+				std::vector<const GL::Texture2D*> texture2Ds(compPageNames.size());
+
+				for(int page = 0; page < texture2Ds.size(); ++page){
+					texture2Ds.at(page) = pages.at(page).at(texID);
+				}
+
+				curArray->init(texture2Ds);
+
+				textureReplaceMap.insert_or_assign(mainPage.getTextures().at(texID).get(), curArray.get());
 			}
-			//
+
 			for(auto& data : mainPage.getData() | std::ranges::views::values){
-				const GL::Texture2DArray* arr = replaceMap.at(data.textureRegion.getData());
-				data.textureRegion.setData(arr);
+				const GL::Texture2DArray* textureArray = textureReplaceMap.at(data.textureRegion.getData());
+				data.textureRegion.setData(textureArray);
 			}
 		}
 
@@ -100,6 +115,17 @@ export namespace Graphic {
 			}
 
 			throw ext::IllegalArguments{"Cannot Find Texture Page: " + static_cast<std::string>(pageName)};
+		}
+
+		Assets::TexturePackPage* registerAttachmentPage(const std::string_view pageName, const Assets::TexturePackPage* target) {
+			if(!target){
+				throw ext::NullPointerException{std::format("{}: {}", "Register Attachment Page Failed", pageName)};
+			}
+
+			Assets::TexturePackPage* page = registerPage(pageName, target->getCacheDir());
+			page->linkTarget = target;
+
+			return page;
 		}
 
 		Assets::TexturePackPage* registerPage(const std::string_view pageName, const OS::File& cacheDir) {

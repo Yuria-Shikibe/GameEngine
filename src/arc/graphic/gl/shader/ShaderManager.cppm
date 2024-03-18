@@ -17,7 +17,7 @@ export namespace GL { //TODO this isn't a good namespace, I thought
 			return shader;
 		}
 
-		GL::Shader* registerShader(auto&&...args) {
+		GL::Shader* registerShader(auto&&... args) {
 			auto ptr = std::make_unique<GL::Shader>(args...);
 			auto retPtr = ptr.get();
 			shaders.push_back(std::move(ptr));
@@ -48,7 +48,7 @@ export namespace GL { //TODO this isn't a good namespace, I thought
 			setDone();
 		}
 
-		[[nodiscard]] std::future<void> launch(std::launch policy) override {
+		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
 			return std::async(policy, std::bind(&ShaderManager::compileAll, this));
 		}
 

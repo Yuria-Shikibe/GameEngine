@@ -35,55 +35,25 @@ export namespace Graphic {
 			shaderHandler(shaderHandler) {
 		}
 
-		ShaderProcessor(const ShaderProcessor& other)
-			: PostProcessor(other),
-			shader(other.shader),
-			shaderHandler(other.shaderHandler) {
-		}
-
-		ShaderProcessor(ShaderProcessor&& other) noexcept
-			: PostProcessor(std::move(other)),
-			shader(other.shader),
-			shaderHandler(std::move(other.shaderHandler)) {
-		}
-
-		ShaderProcessor& operator=(const ShaderProcessor& other) {
-			if(this == &other) return *this;
-			PostProcessor::operator =(other);
-			shader = other.shader;
-			shaderHandler = other.shaderHandler;
-			return *this;
-		}
-
-		ShaderProcessor& operator=(ShaderProcessor&& other) noexcept {
-			if(this == &other) return *this;
-			PostProcessor::operator =(std::move(other));
-			shader = other.shader;
-			shaderHandler = std::move(other.shaderHandler);
-			return *this;
-		}
-
 		const GL::Shader* shader{nullptr};
 		std::function<void(const GL::Shader&)> shaderHandler{nullptr};
 
-		void begin() const override {
+		FramePort port{};
 
-		}
+		void beginProcess() const override {}
 
-		void end(FrameBuffer* target) const override {
+		void endProcess(FrameBuffer* target) const override {
 			if(shader == nullptr || toProcess == nullptr || target == nullptr)throwException();
 			toProcess->getTexture().active(0);
 
 			if(shaderHandler) {
-				Draw::blit(target, shader, shaderHandler);
+				Draw::blit(target, port.outPort, shader, shaderHandler);
 			}else {
-				Draw::blit(target, shader);
+				Draw::blit(target, port.outPort, shader);
 			}
 
 		}
 
-		void process() const override {
-
-		}
+		void runProcess() const override {}
 	};
 }

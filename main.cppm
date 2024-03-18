@@ -1,3 +1,4 @@
+
 #include "src/application_head.h"
 
 import <glad/glad.h>;
@@ -101,6 +102,8 @@ import Game.Entity.Turrets;
 
 import Game.Content.Type.BasicBulletType;
 import Game.Content.Type.Turret.BasicTurretType;
+
+import Game.Graphic.CombinePostProcessor;
 
 using namespace std;
 using namespace Graphic;
@@ -329,11 +332,22 @@ int main(const int argc, char* argv[]) {
 	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight(), 8};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight(), 8, 3};
+	GL::FrameBuffer acceptBuffer1{ Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
+	GL::FrameBuffer acceptBuffer2{ Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
+
+	Game::CombinePostProcessor merger{
+		new Graphic::BloomProcessor{
+			Assets::PostProcessors::blurX, Assets::PostProcessors::blurY,
+			Assets::Shaders::bloom, Assets::Shaders::threshold_light},
+		Assets::Shaders::merge
+	};
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
+	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
+	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer2);
 
 	std::stringstream ss{};
 
@@ -342,14 +356,16 @@ int main(const int argc, char* argv[]) {
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
 
-	Core::renderer->getListener().on<Event::Draw_Post>([&worldFrameBuffer](const auto& event) {
+	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event) {
+		Draw::blend();
 		Core::Renderer& renderer = *event.renderer;
+
+		renderer.frameBegin(&acceptBuffer1);
+		renderer.frameBegin(&acceptBuffer2);
 		renderer.frameBegin(&worldFrameBuffer);
 
 		GL::enable(GL::Test::DEPTH);
-
-		GL::Blendings::Normal.apply();
-		GL::setDepthFunc(GL::Func::LEQUAL);
+		GL::setDepthFunc(GL::Func::GEQUAL);
 		GL::setDepthMask(true);
 
 		auto* region = Core::assetsManager->getAtlas().find("test-pester");
@@ -357,15 +373,19 @@ int main(const int argc, char* argv[]) {
 
 		Draw::World::color();
 		Draw::World::mixColor();
-		Draw::World::rect(region1, 100, 20, 2, 45); //upper
+		Draw::World::rect(region1, 100, 80, 2, 45); //upper
 		Draw::World::rect(region, 0, 0, 3, 45);
 
 		Draw::World::flush();
 
-		renderer.frameEnd(Assets::PostProcessors::blendMulti);
+		renderer.frameEnd(Assets::PostProcessors::multiToBasic);
+		renderer.frameEnd(Assets::PostProcessors::blend);
+		renderer.frameEnd(merger);
 
 		GL::disable(GL::Test::DEPTH);
 	});
+
+
 
 	Core::renderer->getListener().on<Event::Draw_After>([&frameBuffer](const auto& event) {
 		event.renderer->frameBegin(&frameBuffer);
@@ -436,18 +456,18 @@ int main(const int argc, char* argv[]) {
 		});
 
 
-	OS::setupLoop();
+	OS::setupMainLoop();
 
-	while(OS::continueLoop(Core::mainWindow)) {
+	while(OS::shouldContinueLoop(Core::mainWindow)) {
 		OS::update();
 
 		Core::renderer->draw();
 
-		OS::poll(Core::mainWindow);
+		OS::pollWindowEvent(Core::mainWindow);
 	}
 
 	//Application Exit
-	OS::terminateLoop();
+	OS::terminateMainLoop();
 
 	Game::EntityManage::clear();
 

@@ -138,7 +138,11 @@ export namespace Core {
 
 		virtual void frameEnd(const std::function<void(FrameBuffer*, FrameBuffer*)>& func);
 
-		virtual void frameEnd(PostProcessor* processor);
+		virtual void frameEnd(const PostProcessor* processor);
+
+		void frameEnd(const PostProcessor& processor){
+			frameEnd(&processor);
+		}
 
 		virtual void frameEnd();
 

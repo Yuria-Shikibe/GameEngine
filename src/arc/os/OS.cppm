@@ -76,9 +76,7 @@ export namespace OS{
 		globalTime_internal = globalTick_internal = updateTime_internal = updateTick_internal = 0;
 	}
 
-	inline float delta(){
-		return deltaTime_internal;
-	}
+	inline float delta(){return deltaTime_internal;}
 
 	unsigned int getFPS() {
 		FPS_reload += deltaTime_internal;
@@ -93,53 +91,28 @@ export namespace OS{
 		return FPS_last;
 	}
 
-	// ReSharper disable once CppDFAConstantFunctionResult
-	inline float deltaTick(){
-		return deltaTick_internal;
-	}
+	inline float deltaTick(){return deltaTick_internal;}
 
-	inline float updateDelta(){
-		return updateTime_internal;
-	}
+	inline float updateDelta(){return updateTime_internal;}
 
-	// ReSharper disable once CppDFAConstantFunctionResult
-	inline float updateDeltaTick(){
-		return updateDeltaTick_internal;
-	}
+	inline float updateDeltaTick(){return updateDeltaTick_internal;}
 
-	inline float globalTime(){
-		return globalTime_internal;
-	}
+	inline float globalTime(){return globalTime_internal;}
 
-	inline float globalTick(){
-		return globalTick_internal;
-	}
+	inline float globalTick(){return globalTick_internal;}
 
-	inline float updateTime(){
-		return updateTime_internal;
-	}
+	inline float updateTime(){return updateTime_internal;}
 
-	inline float updateTick(){
-		return updateTick_internal;
-	}
+	inline float updateTick(){return updateTick_internal;}
 
-	void pause() {
-		paused = true;
-	}
+	inline void pause() {paused = true;}
 
-	bool isPaused() {
-		return paused;
-	}
+	inline bool isPaused() {return paused;}
 
-	void resume() {
-		paused = false;
-	}
+	inline void resume() {paused = false;}
 
 	//TODO fire an event?
-	void setPause(const bool v) {
-		if(v)pause();
-		else resume();
-	}
+	inline void setPause(const bool v) {paused = v;}
 
 	void post(Concepts::Invokable<void()> auto&& func) {
 		std::lock_guard guard{lockTask};
@@ -162,19 +135,13 @@ export namespace OS{
 	 * \brief Register an application listener.
 	 * \param listener Should Has Static Lifetime or at least keeps alive before main loop exited.
 	 */
-	void registerListener(ApplicationListener* listener){
-		applicationListeners.push_back(listener);
-	}
+	void registerListener(ApplicationListener* listener){applicationListeners.push_back(listener);}
 
-	void removeListener(ApplicationListener* listener){
-		std::erase(applicationListeners, listener);
-	}
+	void removeListener(ApplicationListener* listener){std::erase(applicationListeners, listener);}
 
-	void clearListeners(){
-		applicationListeners.clear();
-	}
+	void clearListeners(){applicationListeners.clear();}
 
-	void launch(){
+	void launchApplication(){
 		std::signal(SIGABRT, exitApplication);
 		std::signal(SIGILL, exitApplication);
 		std::signal(SIGSEGV, exitApplication);
@@ -192,31 +159,19 @@ export namespace OS{
 		mainThreadID = std::this_thread::get_id();
 	}
 
-	std::thread::id getMainThreadID() {
-		return mainThreadID;
-	}
+	[[nodiscard]] std::thread::id getMainThreadID() {return mainThreadID;}
 
-	void exitWith(const std::string& what) {
-		exitApplication(SIGTERM, what);
-	}
+	void killApplication(const std::string_view what) {exitApplication(SIGTERM, what);}
 
-	bool continueLoop(GLFWwindow* window){
-		return !glfwWindowShouldClose(window);
-	}
+	bool shouldContinueLoop(GLFWwindow* window){return !glfwWindowShouldClose(window);}
 
-	void setupLoop() {
-		loopBegin = true;
-	}
+	void setupMainLoop() {loopBegin = true;}
 
-	bool getLoop() {
-		return loopBegin;
-	}
+	[[nodiscard]] bool mainLoopRunning() {return loopBegin;}
 
-	void terminateLoop() {
-		loopBegin = false;
-	}
+	void terminateMainLoop() {loopBegin = false;}
 
-	void poll(GLFWwindow* window){
+	void pollWindowEvent(GLFWwindow* window){
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 

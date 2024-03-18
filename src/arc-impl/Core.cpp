@@ -71,7 +71,7 @@ void Core::initCore(const std::function<void()>& initializer) {
 
 	initMainWindow();
 
-	OS::launch();
+	OS::launchApplication();
 	GL::init();
 
 	initFileSystem();

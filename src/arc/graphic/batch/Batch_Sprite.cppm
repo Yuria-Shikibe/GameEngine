@@ -54,10 +54,7 @@ export namespace Core{
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
 				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
 
-				//TODO: Uses flexible mode by using attrib names as position reference? or just keep it hard and quick?
-				AttributeLayout& layout = mesh.getVertexArray().getLayout();
-
-				layouter(layout);
+				layouter(mesh.getVertexArray().getLayout());
 
 				mesh.applyLayout();
 			});

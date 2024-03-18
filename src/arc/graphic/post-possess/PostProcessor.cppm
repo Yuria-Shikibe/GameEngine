@@ -6,6 +6,8 @@ export import GL.Buffer.FrameBuffer;
 export import GL.Texture.Texture2D;
 export import GL;
 
+import Concepts;
+
 export import RuntimeException;
 
 import <glad/glad.h>;
@@ -14,23 +16,51 @@ import std;
 using namespace GL;
 
 export namespace Graphic {
+	struct FramePort {
+		unsigned int inPort = 0;
+		unsigned int outPort = 0;
+
+		friend FramePort& operator |(const FramePort& lhs, FramePort& rhs){
+			//begin | p1 | p2 | p3 | p4 | ...
+			rhs.inPort = lhs.outPort;
+			return rhs;
+		}
+
+		// template <typename ...Args>
+		// static void link(const Args& args...) requires (std::same_as<Args, FramePort> && ...){
+		//
+		// }
+	};
+
+	struct FrameBufferAdapter {
+		FrameBuffer* toProcess{nullptr};
+
+		explicit FrameBufferAdapter(FrameBuffer* toProcess)
+			: toProcess(toProcess){
+		}
+
+		FrameBuffer* operator()() const{
+			return toProcess;
+		}
+	};
+
 	class PostProcessor {
 	protected:
 		std::unordered_map<GLenum, bool> targetState{};
 		mutable std::unordered_map<GLenum, bool> originalState{};
 
-		void initCurrentState() const {
-			for(auto [cap, state] : targetState) {
-				if(const bool cur = originalState[cap] = GL::getState(cap); cur != state) {
-					GL::setState(cap, state);
+		virtual void initCurrentState() const {
+			for(auto [capFlag, expectedState] : targetState) {
+				if(const bool cur = originalState[capFlag] = GL::getState(capFlag); cur != expectedState) {
+					GL::setState(capFlag, expectedState);
 				}
 			}
 		}
 
-		void resumeOriginalState() const {
-			for(auto [cap, state] : originalState) {
-				if(const bool cur = GL::getState(cap); cur != state) {
-					GL::setState(cap, state);
+		virtual void resumeOriginalState() const {
+			for(auto [capFlag, expectedState] : originalState) {
+				if(const bool cur = GL::getState(capFlag); cur != expectedState) {
+					GL::setState(capFlag, expectedState);
 				}
 			}
 		}
@@ -55,24 +85,39 @@ export namespace Graphic {
 			throw ext::NullPointerException{"Null Pointer Exception For Invalid Arguments!"};
 		}
 
-		virtual void begin(FrameBuffer* frame) const {
+		virtual void applySrc(FrameBuffer* frame) const {
 			if(frame)toProcess = frame;
 
-			begin();
+			beginProcess();
 		}
 
-		virtual void begin() const = 0;
+		virtual void beginProcess() const = 0;
 
-		virtual void process() const = 0;
+		virtual void runProcess() const = 0;
 
-		virtual void end(FrameBuffer* target) const = 0;
+		virtual void endProcess(FrameBuffer* target) const = 0;
 
-		virtual FrameBuffer* apply(FrameBuffer* source, FrameBuffer* target) const {
+		template <
+			Concepts::Invokable<FrameBuffer*(FrameBuffer*)> AdapterSrc,
+			Concepts::Invokable<FrameBuffer*(FrameBuffer*)> AdapterTgt>
+		FrameBuffer* apply(AdapterSrc&& source, AdapterTgt&& target) const {
 			initCurrentState();
 
-			begin(source);
-			process();
-			end(target);
+			this->applySrc(source());
+			this->runProcess();
+			this->endProcess(target());
+
+			resumeOriginalState();
+
+			return target;
+		}
+
+		FrameBuffer* apply(FrameBuffer* source, FrameBuffer* target) const {
+			initCurrentState();
+
+			applySrc(source);
+			runProcess();
+			endProcess(target);
 
 			resumeOriginalState();
 
@@ -86,9 +131,9 @@ export namespace Graphic {
 
 		//TODO pipe process mode support?
 		friend FrameBuffer* operator|(FrameBuffer* target, const PostProcessor& processor){
-			processor.begin(processor.toProcess);
-			processor.process();
-			processor.end(target);
+			processor.applySrc(processor.toProcess);
+			processor.runProcess();
+			processor.endProcess(target);
 
 			return target;
 		}

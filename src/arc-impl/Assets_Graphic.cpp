@@ -1,14 +1,15 @@
-module;
-
 module Assets.Graphic;
 
 import Core;
 import OS;
+import std;
 
 void Assets::Shaders::loadPrevious() {
 	blit = new Shader(shaderDir, "blit");
 	blit->setUniformer([](const Shader& shader) {
-		shader.setTexture2D("texture", 0);
+		shader.setTexture2D("texture0", 0);
+		shader.setTexture2D("texture1", 1);
+		shader.setTexture2D("texture2", 2);
 	});
 
 	sildeLines = new Shader(shaderDir, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
@@ -80,6 +81,12 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 
 	world = manager->registerShader(shaderDir, "screenspace-world");
 
+	merge = manager->registerShader(shaderDir, "merge");
+	merge->setUniformer([](const Shader& shader) {
+		shader.setTexture2D("texBase", 0);
+		shader.setTexture2D("texNormal", 1);
+		shader.setTexture2D("texLight", 2);
+	});
 
 	manager->registerShader(screenSpace);
 	manager->registerShader(threshold_light);

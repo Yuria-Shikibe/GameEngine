@@ -15,32 +15,27 @@ message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
+#find msvc dir, totally mess
 set(MSVC_DIR ${CMAKE_CXX_COMPILER})
-
 get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
 get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
 get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
 get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
-
-set(MSVC_MODULE_DIR ${MSVC_DIR}/modules)
 
 message(STATUS "Msvc Current Dir: ${MSVC_DIR}")
 
-execute_process(COMMAND cl /std:c++latest /EHsc /nologo /W4 /c "${CMAKE_CURRENT_SOURCE_DIR}/modules/std.ixx")
-execute_process(COMMAND cl /std:c++latest /EHsc /nologo /W4 /c "${CMAKE_CURRENT_SOURCE_DIR}/modules/std.compat.ixx")
+set(MSVC_MODULE_DIR ${MSVC_DIR}/modules)
+file(COPY ${MSVC_MODULE_DIR} DESTINATION
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 set(SRC_DIR src)
 set(RES_DIR properties)
 set(REF_DIR include)
 set(LIB_DIR lib)
-
 set(BUILD_DIR build)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
-
-file(COPY ${MSVC_MODULE_DIR} DESTINATION
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
 
 set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
@@ -132,4 +127,4 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
 endif ()
 
 
-message(STATUS "Compile Complete...")
+message(STATUS "Configuration Complete...")

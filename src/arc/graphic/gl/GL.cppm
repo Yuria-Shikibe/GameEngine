@@ -166,6 +166,13 @@ export namespace GL {
         }
     }
 
+    void blit(const GLint srcX0, const GLint srcY0, const GLint srcX1, const GLint srcY1, const GLint dstX0, const GLint dstY0, const GLint dstX1, const GLint dstY1, const GLbitfield mask, const GLenum filter){
+        glBlitFramebuffer(
+                srcX0, srcY0, srcX1, srcY1,
+                dstX0, dstY0, dstX1, dstY1,
+            mask, filter);
+    }
+
     void viewport(const GLsizei x, const GLsizei y, const GLsizei width, const GLsizei height) {
         if(x == viewport_x && y == viewport_y && viewport_w == width && viewport_h == height)return;
         glViewport(x, y, width, height);

@@ -26,7 +26,13 @@ void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Col
 	contextFrameBuffer->bind();
 	GL::viewport(contextFrameBuffer->getWidth(), contextFrameBuffer->getHeight());
 
+
+	contextFrameBuffer->enableDrawAll();
+
+	contextFrameBuffer->clearColorAll(initColor);
+	contextFrameBuffer->clearDepth();
 	glClearColor(initColor.r, initColor.g, initColor.b, initColor.a);
+	glClearDepth(0.0f); //TODO why?????????
 	glClear(mask);
 }
 
@@ -40,7 +46,7 @@ void Core::Renderer::frameEnd(const ::std::function<void(FrameBuffer*, FrameBuff
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
-void Core::Renderer::frameEnd(PostProcessor* processor) {
+void Core::Renderer::frameEnd(const PostProcessor* processor) {
 	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
 	Draw::flush();

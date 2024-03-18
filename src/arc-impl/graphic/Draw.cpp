@@ -4,6 +4,7 @@ import Core;
 import Core.Batch;
 
 namespace Graphic {
+
 	const Matrix3D& Draw::getPorj() {
 		return *Core::overlayBatch->getProjection();
 	}

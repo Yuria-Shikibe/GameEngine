@@ -14,9 +14,15 @@ export namespace GL{
 
 		std::vector<const Texture2D*> layers{};
 
-		Texture2DArray() : Texture(GL_TEXTURE_2D_ARRAY){}
+		Texture2DArray() : Texture(GL_TEXTURE_2D_ARRAY){
+			glCreateTextures(targetFlag, 1, &nameID);
+			setParameters();
+		}
 
 		explicit Texture2DArray(const std::vector<const Texture2D*>& texture2Ds, const GLint mipmapLevel = Texture2D::MipMapGeneralLevel) : Texture(GL_TEXTURE_2D_ARRAY){
+			glCreateTextures(targetFlag, 1, &nameID);
+			setParameters();
+
 			init(texture2Ds, mipmapLevel);
 		}
 
@@ -27,7 +33,6 @@ export namespace GL{
 			width = standard->getWidth();
 			height = standard->getHeight();
 
-			glCreateTextures(targetFlag, 1, &nameID);
 			glTextureStorage3D(nameID, mipmapLevel, GL_RGBA8, width, height, layers.size());
 
 			for(int i = 0; i < layers.size(); ++i){

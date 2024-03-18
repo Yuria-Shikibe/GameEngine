@@ -1,7 +1,5 @@
 module;
 
-#pragma once
-
 inline void* resize(const void* p, const size_t oldsz, const size_t newsz){
 	void* next = operator new[](newsz);
 

@@ -20,34 +20,24 @@ export namespace OS{
 
 		File() = default;
 
+		explicit File(const decltype(rawPath)::string_type& p) : rawPath{p}{
+
+		}
+
+		explicit File(decltype(rawPath)::string_type&& p) : rawPath{std::move(p)}{
+
+		}
+
 		explicit File(const path& p) : rawPath{p}{
+
+		}
+
+		explicit File(path&& p) : rawPath{std::move(p)}{
 
 		}
 
 		explicit File(const directory_entry& p) : rawPath(p){
 
-		}
-
-		explicit File(directory_entry&& p) : rawPath(std::move(p)){
-
-		}
-
-		File(const File& other) = default;
-
-		File(File&& other) noexcept
-			: rawPath(std::move(other.rawPath)) {
-		}
-
-		File& operator=(const File& other) {
-			if(this == &other) return *this;
-			rawPath = other.rawPath;
-			return *this;
-		}
-
-		File& operator=(File&& other) noexcept {
-			if(this == &other) return *this;
-			rawPath = std::move(other.rawPath);
-			return *this;
 		}
 
 		File& operator=(const path& other) {
@@ -68,12 +58,12 @@ export namespace OS{
 			return rawPath;
 		}
 
-		bool operator==(const File &rhs) const {
-			return rawPath == rhs.rawPath;
+		friend bool operator==(const File& lhs, const File& rhs){
+			return lhs.rawPath == rhs.rawPath;
 		}
 
-		bool operator!=(const File &rhs) const {
-			return !(rhs == *this);
+		friend bool operator!=(const File& lhs, const File& rhs){
+			return !(lhs == rhs);
 		}
 
 		[[nodiscard]] path absolutePath() const{

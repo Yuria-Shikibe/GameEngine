@@ -104,18 +104,21 @@ export namespace Test {
 			}
 
 			{
-				Assets::TexturePackPage* testPage = event.manager->getAtlas().registerPage(MainPageName, Assets::texCacheDir);
-				Assets::textureDir.subFile(MainPageName).forAllSubs([testPage](OS::File&& file) {
-					testPage->pushRequest(file);
+				Assets::TexturePackPage* mainPage = event.manager->getAtlas().registerPage(MainPageName, Assets::texCacheDir);
+				Assets::textureDir.subFile(MainPageName).forAllSubs([mainPage](OS::File&& file) {
+					mainPage->pushRequest(file);
 				});
+				mainPage->pushRequest(Assets::textureDir.find("white.png"));
 
-				testPage->pushRequest(Assets::textureDir.find("white.png"));
-
-				Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerPage("normal", Assets::texCacheDir);
-				normalTexture->linkTarget = testPage;
+				Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerAttachmentPage("normal", mainPage);
+				Assets::TexturePackPage* lightTexture = event.manager->getAtlas().registerAttachmentPage("light", mainPage);
 
 				Assets::textureDir.subFile(MainPageName).forAllSubs([normalTexture](OS::File&& file) {
 					normalTexture->pushRequest(file);
+				});
+
+				Assets::textureDir.subFile(lightTexture->pageName).forAllSubs([lightTexture](OS::File&& file) {
+					lightTexture->pushRequest(file);
 				});
 			}
 		});
@@ -150,7 +153,9 @@ export namespace Test {
 				ptr->drawer = std::make_unique<Assets::CursorThoroughSightDrawer>();
 			}
 
-			event.manager->getAtlas().bindTextureArray(BindPageName, {MainPageName, "normal"});
+			event.manager->getAtlas().bindTextureArray(BindPageName, {MainPageName, "normal", "light"}, [](GL::Texture2DArray* tex){
+				tex->setScale(GL::mipmap_nearest_nearest, GL::nearest);
+			});
 
 		});
 

@@ -1,5 +1,3 @@
-module;
-
 export module Graphic.Draw;
 
 import Math;
@@ -24,7 +22,6 @@ import GL.Texture.TextureRegion;
 export import GL.Texture.TextureRegionRect;
 import RuntimeException;
 
-import <glad/glad.h>;
 import std;
 
 using namespace Graphic;
@@ -69,41 +66,50 @@ namespace Graphic::Draw{
 		return Math::max(Math::ceil(radius * Math::PI / circleVertPrecision), 12);
 	}
 
-	template <Concepts::Invokable<void(const Shader&)> func>
-	void blit(const GL::FrameBuffer* const draw, const Shader* shader, const func& f) {
+	template <Concepts::InvokeNullable<void(const Shader&)> Func = std::nullptr_t>
+	void blit(const GL::FrameBuffer* const draw, const unsigned port = 0, const Shader* shader = blitter, Func&& f = nullptr) {
 		GL::viewport(0, 0, draw->getWidth(), draw->getHeight());
 		draw->bind(GL::FrameBuffer::DRAW);
+		draw->enableDrawAt(port);
 
 		if(shader) {
 			shader->bind();
-			shader->applyDynamic(f);
+			if constexpr (!std::is_same_v<std::nullptr_t, Func>){
+				shader->applyDynamic(f);
+			}
 		}
 
 		rawMesh->bind();
 		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
 	}
 
-	inline void blit(const GL::FrameBuffer* const draw, const Shader* shader = blitter) {
-		GL::viewport(0, 0, draw->getWidth(), draw->getHeight());
+	void blitCopyAll(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw,
+	const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR){
+		const unsigned int max = std::min(read->getTextures().size(), draw->getTextures().size());
 
+		read->bind(GL::FrameBuffer::READ);
 		draw->bind(GL::FrameBuffer::DRAW);
 
-		if(shader) {
-			shader->bind();
-			shader->apply();
-		}
+		for(int i = 0; i < max; ++i){
+			read->enableRead(i);
+			draw->enableDrawAt(i);
 
-		rawMesh->bind();
-		rawMesh->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
+			GL::blit(
+				0, 0, read->getWidth(), read->getHeight(),
+				0, 0, draw->getWidth(), draw->getHeight(),
+			mask, filter);
+		}
 	}
 
-	inline void blitCopy(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw,
-	                     const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR) {
-		glBlitNamedFramebuffer(
-			read->getID(), draw->getID(),
+	void blitCopy(const GL::FrameBuffer* const read, unsigned readAttachmentID, const GL::FrameBuffer* const draw, unsigned drawAttachmentID,
+	const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR){
+		read->enableRead(readAttachmentID);
+		draw->enableDrawAt(drawAttachmentID);
+
+		GL::blit(
 			0, 0, read->getWidth(), read->getHeight(),
 			0, 0, draw->getWidth(), draw->getHeight(),
-			mask, filter);
+		mask, filter);
 	}
 
 

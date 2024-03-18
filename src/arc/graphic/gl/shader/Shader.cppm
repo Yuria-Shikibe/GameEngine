@@ -139,9 +139,9 @@ export namespace GL {
 			return shaderProgram;
 		}
 
-		[[nodiscard]] static GLuint compileCode(const std::string &src, const ShaderType shaderType) {
+		[[nodiscard]] static GLuint compileCode(const std::string_view name, const std::string_view src, const ShaderType shaderType) {
 			const GLuint shader = glCreateShader(typeID(shaderType));
-			const char *vert = src.c_str();
+			const char *vert = src.data();
 
 			glShaderSource(shader, 1, &vert, nullptr);
 			glCompileShader(shader);
@@ -154,16 +154,14 @@ export namespace GL {
 				char infoLog[exceptionLength];
 				glGetShaderInfoLog(shader, exceptionLength, nullptr, infoLog);
 				throw ext::RuntimeException(
-					"ERROR::" + static_cast<std::string>(shaderTypeStr(shaderType)) +
-					"::COMPILATION_FAILED\n" +
-                    std::string(infoLog)
+					std::format("{} : {}\n\n{}", name, shaderTypeStr(shaderType), infoLog)
 				);
 			}
 
 			return shader;
 		}
 
-		void bindLoaction() {
+		void bindLoaction() const{
 			GLint uniform_count = 0;
 			glGetProgramiv(programID, GL_ACTIVE_UNIFORMS, &uniform_count);
 
@@ -215,8 +213,6 @@ export namespace GL {
 		}
 
 		Shader(const OS::File& directory, std::initializer_list<compileTypeList> list) : shaderDir{directory}{
-			std::vector<unsigned int> programs;
-
 			for (const auto& [type, name] : list) {
 				pushSource(type, name);
 			}
@@ -256,22 +252,24 @@ export namespace GL {
 		}
 
 		Shader(Shader&& other) noexcept
-			: uniformInfoMap{ std::move(other.uniformInfoMap) },
-			typeList{ std::move(other.typeList) },
-			valid{ other.valid },
-			programID{ other.programID },
-			shaderDir{ other.shaderDir },
-			drawer{ std::move(other.drawer) }{
+			: uniformCache(std::move(other.uniformCache)),
+			  uniformInfoMap(std::move(other.uniformInfoMap)),
+			  typeList(std::move(other.typeList)),
+			  valid(other.valid),
+			  programID(other.programID),
+			  shaderDir(std::move(other.shaderDir)),
+			  drawer(std::move(other.drawer)){
 		}
 
-		Shader& operator=(Shader&& other) noexcept {
+		Shader& operator=(Shader&& other) noexcept{
 			if(this == &other) return *this;
+			uniformCache = std::move(other.uniformCache);
 			uniformInfoMap = std::move(other.uniformInfoMap);
-			typeList           = std::move(other.typeList);
-			valid              = other.valid;
-			programID          = other.programID;
-			shaderDir          = other.shaderDir;
-			drawer             = std::move(other.drawer);
+			typeList = std::move(other.typeList);
+			valid = other.valid;
+			programID = other.programID;
+			shaderDir = std::move(other.shaderDir);
+			drawer = std::move(other.drawer);
 			return *this;
 		}
 
@@ -293,7 +291,7 @@ export namespace GL {
 			code.reserve(typeList.size());
 
 			for(const auto& [type, data] : typeList) {
-				code.push_back(compileCode(data.second, type));
+				code.push_back(compileCode(data.first, data.second, type));
 			}
 
 			programID = attachShadersAll(code);

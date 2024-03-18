@@ -66,6 +66,7 @@ export namespace Assets{
 		inline Shader* sildeLines = nullptr;
 
 		inline Shader* world = nullptr;
+		inline Shader* merge = nullptr;
 
 		void loadPrevious();
 

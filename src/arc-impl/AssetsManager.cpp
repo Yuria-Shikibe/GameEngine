@@ -41,7 +41,7 @@ void Assets::Manager::load_Visible(const unsigned width, const unsigned height, 
 
 	auto loadRenderer = Assets::LoaderRenderer{width, height, &loader};
 	renderer->registerSynchronizedResizableObject(&loadRenderer);
-	while (OS::continueLoop(window)){
+	while (OS::shouldContinueLoop(window)){
 		if(loader.finished()) {
 			if(loadRenderer.lastProgress > 0.999f) {
 				break;
@@ -52,7 +52,7 @@ void Assets::Manager::load_Visible(const unsigned width, const unsigned height, 
 
 		loadRenderer.draw();
 
-		OS::poll(window);
+		OS::pollWindowEvent(window);
 	}
 
 	Core::overlayBatch->reset();

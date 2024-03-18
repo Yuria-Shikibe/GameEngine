@@ -78,7 +78,7 @@ export namespace GL{
 				glNamedFramebufferTexture(nameID, GL_COLOR_ATTACHMENT0 + i, attachmentsColor.at(i)->getID(), 0);
 			}
 
-			enableMainOnly();
+			enableDrawMainOnly();
 		}
 
 		template <Concepts::Derived<DepthBuffer> TexType, typename ...Args>
@@ -106,16 +106,27 @@ export namespace GL{
 			}
 		}
 
-		void enableMainOnly() const {
+		void enableDrawMainOnly() const {
 			glDrawBuffers(1, ALL_COLOR_ATTACHMENTS.data());
 		}
 
-		void enableAll() const {
+		void enableDrawAll() const {
 			glDrawBuffers(getColorAttachmentsCount(), ALL_COLOR_ATTACHMENTS.data());
 		}
 
+		void enableDraw(const unsigned count = 1) const {
+			glDrawBuffers(count, ALL_COLOR_ATTACHMENTS.data());
+		}
 
-		static void enableAll(const std::initializer_list<unsigned> list){
+		void enableDrawAt(const unsigned id = 1) const {
+			glDrawBuffer(id + GL_COLOR_ATTACHMENT0);
+		}
+
+		void enableRead(const unsigned id = 0) const {
+			glReadBuffer(id + GL_COLOR_ATTACHMENT0);
+		}
+
+		static void enableDrawAll(const std::initializer_list<unsigned> list){
 			std::vector<unsigned> indices(list.size());
 
 			std::ranges::transform(list, std::back_inserter(indices), [](const unsigned i){
@@ -188,24 +199,34 @@ export namespace GL{
 			glClearNamedFramebufferfv(nameID, GL_COLOR, attachmentID, initColor.asRaw());
 		}
 
-		void clearDepth(const float depth) const{
+		void clearColorAll(const Graphic::Color& initColor = Graphic::Colors::CLEAR) const{
+			for(int i = 0; i < attachmentsColor.size(); ++i){
+				glClearNamedFramebufferfv(nameID, GL_COLOR, i, initColor.asRaw());
+			}
+		}
+
+		void clearDepth(const float depth = 1.0f) const{
 			glClearNamedFramebufferfv(nameID, GL_DEPTH, 0, &depth);
 		}
 
 		void clearRenderData(const float depth = 1.0f, const int stencil = 0) const{
-			if(renderBuffer){
-				glClearNamedFramebufferfi(nameID, GL_DEPTH_STENCIL, 0, depth, stencil);
-			}
+			glClearNamedFramebufferfi(nameID, GL_DEPTH_STENCIL, 0, depth, stencil);
 		}
 
-		void clearStencil(const float stencil) const{
+		void clearStencil(const float stencil = 0) const{
 			if(attachmentsStencil){
 				glClearNamedFramebufferfv(nameID, GL_STENCIL, 0, &stencil);
 			}
 		}
 
-		Texture2D& getTexture() const {
+		[[nodiscard]] Texture2D& getTexture() const {
 			return *attachmentsColor.front().get();
+		}
+
+		void bindAllColorAttachments() const{
+			for(int i = 0; i < attachmentsColor.size(); ++i){
+				attachmentsColor.at(i)->active(i);
+			}
 		}
 
 		[[nodiscard]] unsigned int getWidth() const { return width; }

@@ -15,18 +15,20 @@ export namespace Graphic {
 	/**
 	 * \brief P4 for Ping Pong Post Processor, pairs mode
 	 **/
-	class P4Processor : public PostProcessor{
+	class PingPongProcessor : public PostProcessor{
 	protected:
 		mutable FrameBuffer ping{2, 2};
 		mutable FrameBuffer pong{2, 2};
 
 		unsigned int processTimes = 3;
+
 		float scale = 1.0f;
 
 	public:
-		[[nodiscard]] P4Processor() = default;
+		FramePort port{};
+		[[nodiscard]] PingPongProcessor() = default;
 
-		~P4Processor() override = default;
+		~PingPongProcessor() override = default;
 
 		PostProcessor* ping2pong = nullptr;
 		PostProcessor* pong2ping = nullptr;
@@ -39,12 +41,12 @@ export namespace Graphic {
 			return &pong;
 		}
 
-		[[nodiscard]] P4Processor(PostProcessor* const ping2PongShader, PostProcessor* const pong2PingShader)
+		[[nodiscard]] PingPongProcessor(PostProcessor* const ping2PongShader, PostProcessor* const pong2PingShader)
 			: ping2pong(ping2PongShader),
 			  pong2ping(pong2PingShader) {
 		}
 
-		[[nodiscard]] P4Processor(PostProcessor* const ping2Pong, PostProcessor* const pong2Ping, const unsigned processTimes)
+		[[nodiscard]] PingPongProcessor(PostProcessor* const ping2Pong, PostProcessor* const pong2Ping, const unsigned processTimes)
 			: processTimes(processTimes),
 			ping2pong(ping2Pong),
 			pong2ping(pong2Ping) {
@@ -67,7 +69,7 @@ export namespace Graphic {
 			this->scale = scale;
 		}
 
-		void begin() const override {
+		void beginProcess() const override {
 			if(ping2pong == nullptr || ping2pong == nullptr || toProcess == nullptr)throwException();
 
 			ping.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
@@ -76,22 +78,22 @@ export namespace Graphic {
 			ping.clear();
 			pong.clear();
 
-			toProcess->getTexture().active(0);
+			toProcess->getTextures().at(port.inPort)->active(0);
 
 			Draw::blit(&ping);
 		}
 
-		void process() const override {
+		void runProcess() const override {
 			for(unsigned int i = 0; i < processTimes; i ++) {
 				ping2pong->apply(&ping, &pong);
 				pong2ping->apply(&pong, &ping);
 			}
 		}
 
-		void end(FrameBuffer* target) const override {
+		void endProcess(FrameBuffer* target) const override {
 			ping.getTexture().active(0);
 
-			Draw::blit(target);
+			Draw::blit(target, port.outPort);
 		}
 	};
 }

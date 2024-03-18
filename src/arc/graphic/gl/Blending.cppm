@@ -101,7 +101,6 @@ export namespace GL{
 		inline constexpr BlendingDisable Disable{};
 		inline constexpr Blending Normal{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
 		inline constexpr Blending Addictive{ GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
-		// inline const Blending AlphaSustain{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA };
 		inline constexpr Blending Inverse{ GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA};
 	}
 }

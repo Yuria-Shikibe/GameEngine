@@ -1,9 +1,3 @@
-module;
-
-
-/**
- * \brief Keep This Module Imported in .cpp if possible!
- */
 export module Core;
 
 import <GLFW/glfw3.h>;
@@ -24,7 +18,6 @@ export import Core.Camera;
 export import Core.Renderer;
 
 import OS.FileTree;
-import GL;
 
 export namespace Core {
 	const std::string title = APPLICATION_NAME;

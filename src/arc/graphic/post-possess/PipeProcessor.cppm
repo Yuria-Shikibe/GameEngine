@@ -12,7 +12,7 @@ import std;
 
 using namespace GL;
 
-export namespace Graphic {
+export namespace Graphic { //TODO this need lots of fix, currently it only works with Attachment0
 	class PipeProcessor final : public PostProcessor {
 		std::vector<PostProcessor*> processors{};
 
@@ -36,7 +36,7 @@ export namespace Graphic {
 			return *this;
 		}
 
-		void begin() const override {
+		void beginProcess() const override {
 			temp1.clear();
 			temp2.clear();
 
@@ -47,7 +47,7 @@ export namespace Graphic {
 			flag = true;
 		}
 
-		void process() const override {
+		void runProcess() const override {
 			for(size_t i = 1; i < processors.size() - 1; ++i) {
 				FrameBuffer* read = flag ? &temp1 : &temp2;
 				FrameBuffer* draw = flag ? &temp2 : &temp1;
@@ -58,7 +58,7 @@ export namespace Graphic {
 			}
 		}
 
-		void end(FrameBuffer* target) const override {
+		void endProcess(FrameBuffer* target) const override {
 			FrameBuffer* const read = flag ? &temp1 : &temp2;
 
 			processors.back()->apply(read, target);

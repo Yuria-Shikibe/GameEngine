@@ -10,28 +10,29 @@ import GL.Shader;
 using namespace GL;
 
 export namespace Graphic {
+	/**
+	 * @brief Threshold -> Blur -> BloomBlend
+	 */
 	class BloomProcessor : public PostProcessor {
 	protected:
 		mutable FrameBuffer temp1{2, 2};
 
 	public:
-		ShaderProcessor thresHolder{};
-		P4Processor blur{};
-		const Shader* bloomRenderer{nullptr};
-		//Threshold
+		FramePort port{};
+
+		PingPongProcessor blur{};
+
+		const Shader* bloomShader{nullptr};
+		const Shader* thresHoldShader{nullptr};
 
 		[[nodiscard]] BloomProcessor(PostProcessor* const blurProcessor1, PostProcessor* const blurProcessor2, const GL::Shader* const bloomShader, const GL::Shader* const thresHoldShader)
-			: thresHolder(thresHoldShader), blur(blurProcessor1, blurProcessor2, 3), bloomRenderer(bloomShader)
+			: thresHoldShader(thresHoldShader), blur(blurProcessor1, blurProcessor2, 3), bloomShader(bloomShader)
 		{
 			setTargetState(GL_DEPTH_TEST, false);
 			setTargetState(GL_BLEND, false);
 
 			blur.setTargetState(this);
 			blur.setScale(1.0f);
-
-			thresHolder.shaderHandler = [this](const Shader& shader) {
-				shader.setFloat("threshold", threshold);
-			};
 		}
 
 		float threshold = 0.3f;
@@ -52,25 +53,30 @@ export namespace Graphic {
 
 		bool blending = true;
 
-		void begin() const override {
+		void beginProcess() const override {
 			temp1.clear();
 
 			temp1.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
-			thresHolder.apply(toProcess, &temp1);
+
+			toProcess->getTextures().at(port.inPort)->active(0);
+			Draw::blit(&temp1, 0, thresHoldShader, [this](const Shader& shader) {
+				shader.setFloat("threshold", threshold);
+			});
 		}
 
-		void process() const override {
+		void runProcess() const override {
 			blur.apply(&temp1, &temp1);
 		}
 
-		void end(FrameBuffer* target) const override {
-			toProcess->getTexture().active(0);
+		void endProcess(FrameBuffer* target) const override {
+			toProcess->getTextures().at(port.inPort)->active(0);
+
 			temp1.getTexture().active(1);
 
 			GL::enable(GL_BLEND);
 			GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			Draw::blit(target, bloomRenderer, [this](const Shader& shader) {
+			Draw::blit(target, port.outPort, bloomShader, [this](const Shader& shader) {
 				shader.setFloat("intensity_blo", intensity_blo);
 				shader.setFloat("intensity_ori", intensity_ori);
 			});

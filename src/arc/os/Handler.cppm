@@ -21,7 +21,7 @@ export namespace OS {
 		}
 
 		explicit operator bool() const {
-			return ::OS::getLoop();
+			return ::OS::mainLoopRunning();
 		}
 	};
 }
