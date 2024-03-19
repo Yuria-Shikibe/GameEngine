@@ -44,12 +44,14 @@ export namespace Graphic {
 
 		void endProcess(FrameBuffer* target) const override {
 			if(shader == nullptr || toProcess == nullptr || target == nullptr)throwException();
-			toProcess->getTexture().active(0);
+			toProcess->getTextures().at(port.inPort)->active(0);
+			toProcess->bind(GL::FrameBuffer::READ);
+			// toProcess->bindAllColorAttachments();
 
 			if(shaderHandler) {
 				Draw::blit(target, port.outPort, shader, shaderHandler);
 			}else {
-				Draw::blit(target, port.outPort, shader);
+				Draw::blit(target, port.outPort, shader, nullptr);
 			}
 
 		}

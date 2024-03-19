@@ -91,6 +91,11 @@ export namespace Graphic {
 				const GL::Texture2DArray* textureArray = textureReplaceMap.at(data.textureRegion.getData());
 				data.textureRegion.setData(textureArray);
 			}
+
+			//TODO move this other place
+			// for(const auto pageTex : pages | std::ranges::views::join){
+			// 	const_cast<GL::Texture2D*>(pageTex)->freeGpuData();
+			// }
 		}
 
 		[[nodiscard]] decltype(textureGroups)& getTextureGroups() {

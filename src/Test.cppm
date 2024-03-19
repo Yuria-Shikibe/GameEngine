@@ -154,7 +154,7 @@ export namespace Test {
 			}
 
 			event.manager->getAtlas().bindTextureArray(BindPageName, {MainPageName, "normal", "light"}, [](GL::Texture2DArray* tex){
-				tex->setScale(GL::mipmap_nearest_nearest, GL::nearest);
+				tex->setScale(GL::mipmap_linear_linear, GL::nearest);
 			});
 
 		});

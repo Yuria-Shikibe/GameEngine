@@ -82,7 +82,7 @@ void Core::Renderer::renderUI() {
 	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
 
 	// frameEnd(Assets::PostProcessors::blendMulti);
-	frameEnd(Assets::PostProcessors::bloom);
+	frameEnd(Assets::PostProcessors::bloom.get());
 
 	Core::overlayBatch->setProjection(mat);
 	Assets::PostProcessors::bloom->blur.setProcessTimes(times);

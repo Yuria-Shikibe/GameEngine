@@ -68,50 +68,51 @@ export namespace Assets{
 		inline Shader* world = nullptr;
 		inline Shader* merge = nullptr;
 
+		inline Shader* worldBloom = nullptr;
+
 		void loadPrevious();
 
 		void load(GL::ShaderManager* manager);
 	}
 
 	namespace PostProcessors {
-		Graphic::PostProcessor
-			*multiToBasic{nullptr},
-			*blendMulti{nullptr}
-		;
+		std::unique_ptr<Graphic::PostProcessor>
+			multiToBasic{nullptr},
+			blendMulti{nullptr},
+			blurX{nullptr},
+			blurY{nullptr},
+			blurX_Far{nullptr},
+			blurY_Far{nullptr},
+			blend{nullptr};
 
-		Graphic::ShaderProcessor
-			*blurX{nullptr},
-			*blurY{nullptr},
-			*blend{nullptr};
-
-		Graphic::BloomProcessor* bloom{nullptr};
+		std::unique_ptr<Graphic::BloomProcessor> bloom{nullptr};
 
 		void load() {
-			multiToBasic = new Graphic::MultiSampleBliter{};
+			multiToBasic.reset(new Graphic::MultiSampleBliter{});
 
-			blurX = new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{1.12f, 0});
-			}};
+			blurX.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+				shader.setVec2("direction", Geom::Vec2{1.2f, 0});
+			}});
 
-			blurY = new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{0, 1.12f});
-			}};
+			blurY.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+				shader.setVec2("direction", Geom::Vec2{0, 1.2f});
+			}});
 
-			bloom = new Graphic::BloomProcessor{blurX, blurY, Shaders::bloom, Shaders::threshold_light};
+			blurX_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+				shader.setVec2("direction", Geom::Vec2{2.25f, 0});
+			}});
 
-			blend = new Graphic::ShaderProcessor{Shaders::blit};
+			blurY_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+				shader.setVec2("direction", Geom::Vec2{0, 2.25f});
+			}});
+
+			bloom.reset(
+				new Graphic::BloomProcessor{blurX.get(), blurY.get(), Shaders::bloom, Shaders::threshold_light}
+			);
+
+			blend.reset(new Graphic::ShaderProcessor{Shaders::blit});
 			// Graphic::P4Processor processor{&blurX, &blurY};
-			blendMulti = new Graphic::PipeProcessor{Assets::PostProcessors::multiToBasic, blend};
-		}
-
-		void dispose() { //TODO This is so bad!
-			delete multiToBasic;
-
-			delete blurX;
-			delete blurY;
-			delete blend;
-			delete bloom;
-			delete blendMulti;
+			blendMulti.reset(new Graphic::PipeProcessor{multiToBasic.get(), blend.get()});
 		}
 	}
 
@@ -291,7 +292,6 @@ export namespace Assets{
 	inline void dispose() {
 		Textures::dispose();
 		Meshes::dispose();
-		PostProcessors::dispose();
 	}
 }
 

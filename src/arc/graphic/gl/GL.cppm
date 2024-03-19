@@ -196,14 +196,14 @@ export namespace GL {
     }
 
     void blendFunc(const GLenum src, const GLenum dst) {
-        if(src == globalBlend_src && dst == globalBlend_dst && src == globalBlend_srcAlpha && dst == globalBlend_dstAlpha)return;
+        // if(src == globalBlend_src && dst == globalBlend_dst && src == globalBlend_srcAlpha && dst == globalBlend_dstAlpha)return;
         glBlendFunc(src, dst);
         globalBlend_src = globalBlend_srcAlpha = src;
         globalBlend_dst = globalBlend_dstAlpha = dst;
     }
 
     void blendFunc(const GLenum src, const GLenum dst, const GLenum srcAlpha, const GLenum dstAlpha) {
-        if(src == globalBlend_src && dst == globalBlend_dst && src == globalBlend_srcAlpha && dst == globalBlend_dstAlpha)return;
+        // if(src == globalBlend_src && dst == globalBlend_dst && src == globalBlend_srcAlpha && dst == globalBlend_dstAlpha)return;
         glBlendFuncSeparate(src, dst, srcAlpha, dstAlpha);
         globalBlend_src = src;
         globalBlend_srcAlpha = srcAlpha;

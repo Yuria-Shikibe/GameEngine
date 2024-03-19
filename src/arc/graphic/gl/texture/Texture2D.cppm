@@ -85,6 +85,12 @@ export namespace GL{
 			localData.reset(nullptr);
 		}
 
+		void freeGpuData() {
+			if(nameID){
+				glDeleteTextures(1, &nameID);
+			}
+		}
+
 		void resize(const unsigned int w, const unsigned int h) override{
 			if(w == width && h == height)return;
 
@@ -92,7 +98,10 @@ export namespace GL{
 			width  = w;
 			height = h;
 
-			glTextureStorage2D(nameID, 1, GL_RGBA8, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+			throw ext::RuntimeException{"According to new GL req, textures shouldn't change!"};
+
+			// glTexImage2D(targetFlag, 0, GL_RGBA8, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			// glTextureStorage2D(nameID, 1, GL_RGBA8, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 		}
 
 		[[nodiscard]] bool valid() const {
@@ -119,7 +128,7 @@ export namespace GL{
 
 			if(localData)glTextureSubImage2D(nameID, 0, 0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			//TODO : Check if needed here.
-			setParameters();
+			setWrap();
 			glGenerateTextureMipmap(nameID);
 		}
 

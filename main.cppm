@@ -332,14 +332,11 @@ int main(const int argc, char* argv[]) {
 	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight(), 8, 3};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 3};
 	GL::FrameBuffer acceptBuffer1{ Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
-	GL::FrameBuffer acceptBuffer2{ Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
 
 	Game::CombinePostProcessor merger{
-		new Graphic::BloomProcessor{
-			Assets::PostProcessors::blurX, Assets::PostProcessors::blurY,
-			Assets::Shaders::bloom, Assets::Shaders::threshold_light},
+		Assets::PostProcessors::blurX_Far.get(), Assets::PostProcessors::blurY_Far.get(),
 		Assets::Shaders::merge
 	};
 
@@ -347,7 +344,6 @@ int main(const int argc, char* argv[]) {
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
-	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer2);
 
 	std::stringstream ss{};
 
@@ -356,13 +352,22 @@ int main(const int argc, char* argv[]) {
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
 
+	float depth = 2;
+
+	Core::input->registerKeyBind(Ctrl::KEY_PAGE_DOWN, Ctrl::Act_Press, [&depth](){
+		depth++;
+	});
+
+	Core::input->registerKeyBind(Ctrl::KEY_PAGE_UP, Ctrl::Act_Press, [&depth](){
+		depth--;
+	});
+
 	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event) {
 		Draw::blend();
 		Core::Renderer& renderer = *event.renderer;
 
 		renderer.frameBegin(&acceptBuffer1);
-		renderer.frameBegin(&acceptBuffer2);
-		renderer.frameBegin(&worldFrameBuffer);
+		// renderer.frameBegin(&worldFrameBuffer);
 
 		GL::enable(GL::Test::DEPTH);
 		GL::setDepthFunc(GL::Func::GEQUAL);
@@ -372,14 +377,18 @@ int main(const int argc, char* argv[]) {
 		auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
 
 		Draw::World::color();
+
+		// Core::worldBatch->switchBlending(GL::Blendings::Normal);
+
 		Draw::World::mixColor();
 		Draw::World::rect(region1, 100, 80, 2, 45); //upper
 		Draw::World::rect(region, 0, 0, 3, 45);
+		auto pos = Game::core->overlayManager->getMouseInWorld();
+		Draw::World::rect(region, pos.x, pos.y, depth, -45);
 
 		Draw::World::flush();
-
-		renderer.frameEnd(Assets::PostProcessors::multiToBasic);
-		renderer.frameEnd(Assets::PostProcessors::blend);
+		// Core::worldBatch->switchBlending(GL::Blendings::Disable);
+		// renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
 		renderer.frameEnd(merger);
 
 		GL::disable(GL::Test::DEPTH);
@@ -397,7 +406,7 @@ int main(const int argc, char* argv[]) {
 		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
 			Draw::Line::rect(t->getBoundary());
 		});
-		event.renderer->frameEnd(Assets::PostProcessors::bloom);
+		event.renderer->frameEnd(Assets::PostProcessors::bloom.get());
 	});
 
 
@@ -407,12 +416,15 @@ int main(const int argc, char* argv[]) {
 
 			e.renderer->frameBegin(&frameBuffer);
 			e.renderer->frameBegin(&multiSample);
+
+			Draw::blend();
 			//
 			const auto cameraPos = Core::camera->screenCenter();
 			//
 			Draw::meshBegin(Core::overlayBatch->getMesh());
 			Draw::color();
 
+			Draw::Line::setLineStroke(4);
 			Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
 					   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
 			);
@@ -442,7 +454,6 @@ int main(const int argc, char* argv[]) {
 				// coordCenter->setAlign(Align::Mode::bottom_left);
 				// coordCenter->render();
 
-				Draw::Line::setLineStroke(4);
 				Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
 				Draw::endPorj();
@@ -451,8 +462,8 @@ int main(const int argc, char* argv[]) {
 			Draw::flush();
 			Draw::meshEnd(Core::overlayBatch->getMesh());
 
-			e.renderer->frameEnd(Assets::PostProcessors::blendMulti);
-			e.renderer->frameEnd(Assets::PostProcessors::bloom);
+			e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
+			e.renderer->frameEnd(Assets::PostProcessors::bloom.get());
 		});
 
 

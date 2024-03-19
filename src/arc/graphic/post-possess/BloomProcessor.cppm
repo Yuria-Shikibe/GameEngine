@@ -26,7 +26,7 @@ export namespace Graphic {
 		const Shader* thresHoldShader{nullptr};
 
 		[[nodiscard]] BloomProcessor(PostProcessor* const blurProcessor1, PostProcessor* const blurProcessor2, const GL::Shader* const bloomShader, const GL::Shader* const thresHoldShader)
-			: thresHoldShader(thresHoldShader), blur(blurProcessor1, blurProcessor2, 3), bloomShader(bloomShader)
+			: blur(blurProcessor1, blurProcessor2, 3), bloomShader(bloomShader), thresHoldShader(thresHoldShader)
 		{
 			setTargetState(GL_DEPTH_TEST, false);
 			setTargetState(GL_BLEND, false);
@@ -46,6 +46,11 @@ export namespace Graphic {
 			intensity_blo = intensity * 0.732f;
 		}
 
+		void setIntensity(const float ori, const float blo) {
+			intensity_ori = ori;
+			intensity_blo = blo;
+		}
+
 		void setScale(const float scale) {
 			this->scale = scale;
 			blur.setScale(scale);
@@ -54,9 +59,8 @@ export namespace Graphic {
 		bool blending = true;
 
 		void beginProcess() const override {
-			temp1.clear();
-
 			temp1.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
+			temp1.clearColor();
 
 			toProcess->getTextures().at(port.inPort)->active(0);
 			Draw::blit(&temp1, 0, thresHoldShader, [this](const Shader& shader) {

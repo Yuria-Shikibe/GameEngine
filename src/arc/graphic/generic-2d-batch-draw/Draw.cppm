@@ -76,6 +76,8 @@ namespace Graphic::Draw{
 			shader->bind();
 			if constexpr (!std::is_same_v<std::nullptr_t, Func>){
 				shader->applyDynamic(f);
+			}else{
+				shader->apply();
 			}
 		}
 
@@ -103,6 +105,9 @@ namespace Graphic::Draw{
 
 	void blitCopy(const GL::FrameBuffer* const read, unsigned readAttachmentID, const GL::FrameBuffer* const draw, unsigned drawAttachmentID,
 	const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR){
+		read->bind(GL::FrameBuffer::READ);
+		draw->bind(GL::FrameBuffer::DRAW);
+
 		read->enableRead(readAttachmentID);
 		draw->enableDrawAt(drawAttachmentID);
 

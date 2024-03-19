@@ -29,16 +29,22 @@ void main()
 	baseColor = v_srcColor * mix(baseColor, vec4(v_mixColor.rgb, baseColor.a), v_mixColor.a);
 
 	float invDepth = 1 - gl_FragCoord.z;
-//
+
 	if(invDepth > gl_FragDepth){
-		if(baseColor.a > 0.995){
-			gl_FragDepth = invDepth;
+		float weightedA = max(baseColor.a, lightColor.a * 0.85f);
+
+		if(weightedA > 0.895f){
+			gl_FragDepth = invDepth;//mix(gl_FragDepth, invDepth, baseColor.a * 0.75f + 0.25f);
 
 			FragColor = baseColor;
-		}
+			NormalColor.rgb = normalColor.rgb;
+			LightColor = mix(vec4(0.0f, 0.0f, 0.0f, 1.0f), lightColor, lightColor.a);
 
-		NormalColor = normalColor;
-		LightColor = lightColor;
+			//Dont care the normal texture map's color, using the alpha channel as the z data;
+			NormalColor.a = gl_FragCoord.z;
+		}else{
+			discard;
+		}
 	}else{
 		discard;
 	}

@@ -46,8 +46,8 @@ export namespace GL{
 		FrameBuffer(const unsigned int w, const unsigned int h, const int colorAttachments = 1) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
 			glCreateFramebuffers(1, &nameID);
 
-			bindColorAttachments<Texture2D>(colorAttachments);
-			bindRenderBuffer<RenderBuffer>();
+			setColorAttachments<Texture2D>(colorAttachments);
+			setRenderBuffer<RenderBuffer>();
 
 			for(const auto& texture : attachmentsColor){
 				texture->setParameters(GL::linear, GL::linear);
@@ -69,7 +69,8 @@ export namespace GL{
 		}
 
 		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
-		void bindColorAttachments(const int colorAttachments = 1, Args... args) {
+		void setColorAttachments(const int colorAttachments = 1, Args... args) {
+			attachmentsColor.clear();
 			attachmentsColor.resize(colorAttachments);
 
 			for(int i = 0; i < getColorAttachmentsCount(); ++i) {
@@ -77,24 +78,22 @@ export namespace GL{
 				sample = std::make_unique<TexType>(width, height, args...);
 				glNamedFramebufferTexture(nameID, GL_COLOR_ATTACHMENT0 + i, attachmentsColor.at(i)->getID(), 0);
 			}
-
-			enableDrawMainOnly();
 		}
 
 		template <Concepts::Derived<DepthBuffer> TexType, typename ...Args>
-		void bindDepthAttachments(Args... args) {
+		void setDepthAttachments(Args... args) {
 			attachmentsDepth = std::make_unique<TexType>(width, height, args...);
 			glNamedFramebufferTexture(nameID, GL_DEPTH_ATTACHMENT, attachmentsDepth->getID(), 0);
 		}
 
 		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
-		void bindStencilAttachments(Args... args) {
+		void setStencilAttachments(Args... args) {
 			attachmentsStencil = std::make_unique<TexType>(width, height, args...);
 			glNamedFramebufferTexture(nameID, GL_STENCIL_ATTACHMENT, attachmentsStencil->getID(), 0);
 		}
 
 		template <Concepts::Derived<RenderBuffer> RBType, typename ...Args>
-		void bindRenderBuffer(Args... args) {
+		void setRenderBuffer(Args... args) {
 			renderBuffer = std::make_unique<RBType>(width, height, args...);
 			glNamedFramebufferRenderbuffer(nameID, GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer->getTargetFlag(), renderBuffer->getID());
 		}
@@ -136,8 +135,8 @@ export namespace GL{
 			glDrawBuffers(list.size(), list.begin());
 		}
 
-		[[nodiscard]] size_t getColorAttachmentsCount() const {
-			return attachmentsColor.size();
+		[[nodiscard]] int getColorAttachmentsCount() const {
+			return static_cast<int>(attachmentsColor.size());
 		}
 
 		void resize(const unsigned int w, const unsigned int h) override{
@@ -145,8 +144,10 @@ export namespace GL{
 			width = w;
 			height = h;
 
-			for(const auto& sample : attachmentsColor) {
-				sample->resize(w, h);
+			setColorAttachments<Texture2D>(getColorAttachmentsCount());
+
+			for(const auto& texture : attachmentsColor){
+				texture->setParameters(GL::linear, GL::linear);
 			}
 
 			if(renderBuffer)renderBuffer->resize(w, h);
@@ -223,7 +224,7 @@ export namespace GL{
 			return *attachmentsColor.front().get();
 		}
 
-		void bindAllColorAttachments() const{
+		void activeAllColorAttachments() const{
 			for(int i = 0; i < attachmentsColor.size(); ++i){
 				attachmentsColor.at(i)->active(i);
 			}

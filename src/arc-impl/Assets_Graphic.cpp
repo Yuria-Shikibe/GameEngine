@@ -20,7 +20,7 @@ void Assets::Shaders::loadPrevious() {
 
 	threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
 	threshold_light->setUniformer([](const Shader& shader) {
-		shader.setTexture2D("u_texture");
+		shader.setTexture2D("u_texture", 0);
 	});
 
 	gaussian = new Shader(shaderDir, "gaussian-blur");
@@ -81,12 +81,16 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 
 	world = manager->registerShader(shaderDir, "screenspace-world");
 
-	merge = manager->registerShader(shaderDir, "merge");
+	merge = manager->registerShader(shaderDir.subFile("world"), "merge");
 	merge->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texBase", 0);
 		shader.setTexture2D("texNormal", 1);
 		shader.setTexture2D("texLight", 2);
+		shader.setTexture2D("bloom", 3);
+		// shader.setVec2("screenSizeInv", 1.0f / Core::renderer->getDrawWidth(), 1.0f / Core::renderer->getDrawHeight());
 	});
+
+	worldBloom = manager->registerShader(new Shader{shaderDir.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
 
 	manager->registerShader(screenSpace);
 	manager->registerShader(threshold_light);

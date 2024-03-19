@@ -156,7 +156,7 @@ export namespace Game {
 				}
 			}
 
-			renderer->frameEnd(Assets::PostProcessors::bloom);
+			renderer->frameEnd(Assets::PostProcessors::bloom.get());
 		}
 
 		void assignTarget() const{

@@ -18,7 +18,7 @@ import Geom.Vector2D;
 using namespace GL;
 
 constexpr float near = 1;
-constexpr float far = 100;
+constexpr float far = 300;
 
 export namespace Graphic::Draw::World{
 	inline float vertices[VERT_LENGTH_WORLD]{};
