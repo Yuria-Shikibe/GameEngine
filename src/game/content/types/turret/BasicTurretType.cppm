@@ -21,7 +21,7 @@ export namespace Game::Content{
 
 		void draw(const TurretEntity* turret) const override{
 			Draw::color(Colors::RED_DUSK);
-			Draw::poly(turret->getX(), turret->getY(), 3, 32, turret->rotation);
+			Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->rotation);
 		}
 
 		void shoot(TurretEntity* turret, RealityEntity* shooter) const override{

@@ -48,7 +48,7 @@ export namespace Game{
 		void endProcess(FrameBuffer* target) const override{
 			this->toProcess->activeAllColorAttachments();
 			temp.getTexture().active(this->toProcess->getColorAttachmentsCount());
-			Graphic::Draw::blit(target, 0, mergeShader);
+			Graphic::Frame::blit(target, 0, mergeShader);
 		}
 	};
 }

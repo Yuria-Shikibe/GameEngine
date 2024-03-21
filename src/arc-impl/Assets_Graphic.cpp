@@ -26,7 +26,7 @@ void Assets::Shaders::loadPrevious() {
 	gaussian = new Shader(shaderDir, "gaussian-blur");
 	gaussian->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("u_texture");
-		shader.setVec2("size", Core::renderer->getWidth(), Core::renderer->getHeight());
+		shader.setVec2("size", Core::renderer->getSize().div(Core::camera->getScale()));
 	});
 
 	bloom = new Shader(shaderDir, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});

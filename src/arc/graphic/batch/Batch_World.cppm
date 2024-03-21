@@ -20,7 +20,7 @@ export namespace Core {
 
 		}
 
-		void post(const ::GL::Texture* texture, float* vertices, const int length, const int offset, const int count) override {
+		void post(const ::GL::Texture* texture, float* vertices, const int offset, const int count) override {
 
 		}
 	};

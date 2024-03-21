@@ -93,7 +93,7 @@ export namespace Core{
 			index = 0;
 		}
 
-		void post(const Texture* texture, float* vertices, const int length, const int offset, const int count) override{
+		void post(const Texture* texture, float* vertices, const int offset, const int count) override{
 			if(lastTexture != texture){
 				flush();
 				lastTexture = texture;

@@ -2,10 +2,10 @@
 // Created by Matrix on 2024/3/15.
 //
 
-export module Game.Drawer.TurretDrawer;
+export module Game.Content.Drawer.TurretDrawer;
 
 export import Game.Entity.Turrets;
-export import Game.Drawer.DrawComponents;
+export import Game.Content.Drawer.DrawComponents;
 
 import std;
 

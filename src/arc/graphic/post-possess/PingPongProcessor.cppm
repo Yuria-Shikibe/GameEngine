@@ -80,7 +80,7 @@ export namespace Graphic {
 
 			toProcess->getTextures().at(port.inPort)->active(0);
 
-			Draw::blit(&ping);
+			Graphic::Frame::blit(&ping);
 		}
 
 		void runProcess() const override {
@@ -93,7 +93,7 @@ export namespace Graphic {
 		void endProcess(FrameBuffer* target) const override {
 			ping.getTexture().active(0);
 
-			Draw::blit(target, port.outPort);
+			Graphic::Frame::blit(target, port.outPort);
 		}
 	};
 }

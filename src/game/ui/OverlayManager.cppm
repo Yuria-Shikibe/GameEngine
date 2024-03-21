@@ -11,7 +11,6 @@ import OS.ApplicationListener;
 
 import Assets.Cursor;
 import Graphic.Draw;
-import Graphic.Draw.Lines;
 import Graphic.Trail;
 import Font.GlyphArrangement;
 import Assets.Graphic;
@@ -90,8 +89,8 @@ export namespace Game {
 
 			if(Core::input->cursorInbound()){
 				Draw::color(Colors::WHITE);
-				Core::overlayBatch->beginTempProjection(Geom::MAT3_IDT);
-				Draw::blend(GL::Blendings::Inverse);
+				Batch::beginPorj(Geom::MAT3_IDT);
+				Batch::blend(GL::Blendings::Inverse);
 				cursor.draw(mousePosNormalized.x, mousePosNormalized.y, Core::renderer->getSize(), 2);
 
 				cursorTrail.each(0.0025f, [](
@@ -103,8 +102,8 @@ export namespace Game {
 					Draw::quad(Draw::defaultTexture, v1, c1, v2, c1, v3, c2, v4, c2);
 				});
 
-				Core::overlayBatch->endTempProjection();
-				Draw::blend();
+				Batch::endPorj();
+				Batch::blend();
 			}
 		}
 
@@ -129,7 +128,7 @@ export namespace Game {
 				Draw::Line::push(entity->controller->moveCommand.route);
 				Draw::Line::endLineVert([](const Geom::Vec2 p, const Graphic::Color color){
 					Draw::color(color);
-					Draw::fillSquare(p.x, p.y, 14, 45);
+					Draw::Fill::square(p.x, p.y, 14, 45);
 				});
 
 				auto dest = entity->controller->moveCommand.destination;

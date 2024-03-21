@@ -33,7 +33,7 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 }
 
 void UI::ScrollPane::drawContent() const {
-	Graphic::Draw::flush();
+	Graphic::Batch::flush();
 
 	GL::enable(GL::Test::SCISSOR);
 
@@ -41,7 +41,7 @@ void UI::ScrollPane::drawContent() const {
 
 	drawChildren();
 
-	Graphic::Draw::flush();
+	Graphic::Batch::flush();
 	GL::disable(GL::Test::SCISSOR);
 
 	scrollBarDrawer->operator()(this);

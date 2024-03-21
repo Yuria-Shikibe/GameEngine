@@ -9,7 +9,6 @@ import Align;
 import Core.Renderer;
 
 import Graphic.Draw;
-import Graphic.Draw.Lines;
 import Graphic.Color;
 
 import Geom.Matrix3D;
@@ -48,8 +47,8 @@ export namespace Assets {
 
 			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h));
 
-			defaultMat = Core::overlayBatch->getProjection();
-			Core::overlayBatch->setProjection(mat);
+			defaultMat = Graphic::Batch::getPorj();
+			Graphic::Batch::beginPorj(mat);
 
 			GL::setStencilOperation(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
 
@@ -58,8 +57,8 @@ export namespace Assets {
 		}
 
 		~LoaderRenderer() override { // NOLINT(*-use-equals-default)
-			Core::overlayBatch->setProjection(defaultMat);
-			Draw::shader(false);
+			Graphic::Batch::beginPorj(mat);
+			Graphic::Batch::shader(false);
 
 			GL::bindFrameBuffer(GL_FRAMEBUFFER);
 			GL::setStencilOperation(GL::Operation::REPLACE, GL::Operation::REPLACE, GL::Operation::REPLACE);
@@ -79,7 +78,7 @@ export namespace Assets {
 			constexpr float slideLineSize = 12.0f;
 			constexpr float preBlockWidth = 32.0f;
 
-			Draw::shader();
+			Graphic::Batch::shader();
 
 			Draw::mixColor(Colors::DARK_GRAY);
 
@@ -119,11 +118,11 @@ export namespace Assets {
 				x - preBlockWidth + slideLineSize, y + stroke + slideLineSize
 			);
 
-			Draw::shader(Assets::Shaders::sildeLines, true);
+			Graphic::Batch::shader(Assets::Shaders::sildeLines, true);
 			Draw::Line::setLineStroke(stroke);
 			Draw::color(Colors::GRAY);
 
-			Draw::flush();
+			Graphic::Batch::flush();
 			//Begin Mask Draw
 			GL::enable(GL::Test::STENCIL);
 			GL::setStencilFunc(GL::Func::ALWAYS, 0xFF, 0xFF);
@@ -146,7 +145,7 @@ export namespace Assets {
 			);
 
 			//End Mask Draw
-			Draw::flush();
+			Graphic::Batch::flush();
 			GL::setStencilFunc(GL::Func::EQUAL, 0xFF, 0xFF);
 			GL::setStencilMask(0x00);
 
@@ -173,10 +172,10 @@ export namespace Assets {
 				x, y - stroke, begin
 			);
 
-			Draw::flush();
+			Graphic::Batch::flush();
 			GL::disable(GL::Test::STENCIL);
 			//End Clip Layer Draw
-			Draw::shader();
+			Graphic::Batch::shader();
 
 			ss.str("");
 			ss << "${scl#[0.4]}Loading${scl#[0.3]}: (${color#[" << end << "]}"<< std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";

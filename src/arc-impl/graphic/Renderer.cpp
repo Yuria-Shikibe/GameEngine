@@ -13,7 +13,7 @@ import Geom.Matrix3D;
 void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask) {
 	if (frameStack.top() == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
 
-	Draw::flush();
+	Graphic::Batch::flush();
 
 	frameStack.push(contextFrameBuffer);
 
@@ -39,7 +39,7 @@ void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Col
 void Core::Renderer::frameEnd(const ::std::function<void(FrameBuffer*, FrameBuffer*)>& func) {
 	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
-	Draw::flush();
+	Graphic::Batch::flush();
 
 	func(contextFrameBuffer, beneathFrameBuffer);
 
@@ -49,7 +49,7 @@ void Core::Renderer::frameEnd(const ::std::function<void(FrameBuffer*, FrameBuff
 void Core::Renderer::frameEnd(const PostProcessor* processor) {
 	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
-	Draw::flush();
+	Graphic::Batch::flush();
 
 	processor->apply(contextFrameBuffer, beneathFrameBuffer);
 
@@ -59,24 +59,24 @@ void Core::Renderer::frameEnd(const PostProcessor* processor) {
 void Core::Renderer::frameEnd() {
 	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
-	Draw::flush();
+	Graphic::Batch::flush();
 
 	contextFrameBuffer->getTextures().front()->active(0);
 	contextFrameBuffer->bind(FrameBuffer::READ);
-	Draw::blit(beneathFrameBuffer);
+	Graphic::Frame::blit(beneathFrameBuffer);
 
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
 void Core::Renderer::renderUI() {
-	const Geom::Matrix3D* mat = Core::overlayBatch->getProjection();
+	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
 
 	Renderer::frameBegin(&uiPostBuffer);
 	// Renderer::frameBegin(&uiBuffer);
-	Core::overlayBatch->setProjection(Core::uiRoot->getPorj());
+	Core::batchGroup.batchOverlay->setProjection(Core::uiRoot->getPorj());
 
 	Core::uiRoot->render();
-	Core::overlayBatch->flush();
+	Graphic::Batch::flush();
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
@@ -84,7 +84,7 @@ void Core::Renderer::renderUI() {
 	// frameEnd(Assets::PostProcessors::blendMulti);
 	frameEnd(Assets::PostProcessors::bloom.get());
 
-	Core::overlayBatch->setProjection(mat);
+	Core::batchGroup.batchOverlay->setProjection(mat);
 	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
 }
 

@@ -18,8 +18,6 @@ import Event;
 import StackTrace;
 
 import Graphic.Draw;
-import Graphic.Draw.World;
-import Graphic.Draw.Lines;
 import Graphic.Pixmap;
 import Core.Renderer;
 import Graphic.Viewport.Viewport_OrthoRect;
@@ -107,7 +105,6 @@ import Game.Graphic.CombinePostProcessor;
 
 using namespace std;
 using namespace Graphic;
-using namespace Draw;
 using namespace GL;
 using Geom::Vec2;
 
@@ -306,19 +303,19 @@ int main(const int argc, char* argv[]) {
 	OS::registerListener(Game::core.get());
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
-		Draw::flush();
+		Graphic::Batch::flush();
 		Game::core->overlayManager->drawAboveUI(e.renderer);
-		Draw::flush();
+		Graphic::Batch::flush();
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->effectManager->render();
-		Draw::flush();
+		Graphic::Batch::flush();
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->overlayManager->drawBeneathUI(e.renderer);
-		Draw::flush();
+		Graphic::Batch::flush();
 	});
 
 
@@ -363,7 +360,6 @@ int main(const int argc, char* argv[]) {
 	});
 
 	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event) {
-		Draw::blend();
 		Core::Renderer& renderer = *event.renderer;
 
 		renderer.frameBegin(&acceptBuffer1);
@@ -376,17 +372,20 @@ int main(const int argc, char* argv[]) {
 		auto* region = Core::assetsManager->getAtlas().find("test-pester");
 		auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
 
-		Draw::World::color();
+		Draw::color();
 
 		// Core::worldBatch->switchBlending(GL::Blendings::Normal);
 
-		Draw::World::mixColor();
-		Draw::World::rect(region1, 100, 80, 2, 45); //upper
-		Draw::World::rect(region, 0, 0, 3, 45);
+		Draw::mixColor();
+		Draw::setZ(2);
+		Draw::rect<WorldBatch>(region1, 100, 80, 45); //upper
+		Draw::setZ(3);
+		Draw::rect<WorldBatch>(region, 0, 0, 45);
 		auto pos = Game::core->overlayManager->getMouseInWorld();
-		Draw::World::rect(region, pos.x, pos.y, depth, -45);
+		Draw::setZ(depth);
+		Draw::rect<WorldBatch>(region, pos.x, pos.y, -45);
 
-		Draw::World::flush();
+		Graphic::Batch::flush<WorldBatch>();
 		// Core::worldBatch->switchBlending(GL::Blendings::Disable);
 		// renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
 		renderer.frameEnd(merger);
@@ -411,17 +410,17 @@ int main(const int argc, char* argv[]) {
 
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e) {
-			Draw::meshBegin(Assets::Meshes::coords);
-			Draw::meshEnd(true);
+			Graphic::Mesh::meshBegin(Assets::Meshes::coords);
+			Graphic::Mesh::meshEnd(true);
 
 			e.renderer->frameBegin(&frameBuffer);
 			e.renderer->frameBegin(&multiSample);
 
-			Draw::blend();
+			Graphic::Batch::blend();
 			//
 			const auto cameraPos = Core::camera->screenCenter();
 			//
-			Draw::meshBegin(Core::overlayBatch->getMesh());
+			Graphic::Mesh::meshBegin(Core::batchGroup.batchOverlay->getMesh());
 			Draw::color();
 
 			Draw::Line::setLineStroke(4);
@@ -434,7 +433,7 @@ int main(const int argc, char* argv[]) {
 			{
 				static Geom::Matrix3D mat{};
 
-				Draw::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
+				Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 				Draw::color();
 
 				ss.str(""s);
@@ -456,11 +455,11 @@ int main(const int argc, char* argv[]) {
 
 				Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
-				Draw::endPorj();
+				Graphic::Batch::endPorj();
 			}
 
-			Draw::flush();
-			Draw::meshEnd(Core::overlayBatch->getMesh());
+			Graphic::Batch::flush();
+			Graphic::Mesh::meshEnd(Core::batchGroup.batchOverlay->getMesh());
 
 			e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
 			e.renderer->frameEnd(Assets::PostProcessors::bloom.get());

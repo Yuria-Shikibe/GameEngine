@@ -84,7 +84,6 @@ export namespace GL {
 		};
 
 	protected:
-		std::vector<std::string> uniformCache{};
 		mutable std::unordered_map <std::string, UniformInfo> uniformInfoMap{};
 		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
 
@@ -193,7 +192,17 @@ export namespace GL {
 
 	public:
 		[[nodiscard]] GLint getLocation(const std::string& uniform) const {
+#ifdef _DEBUG
+			auto itr = uniformInfoMap.find(uniform);
+			if(itr != uniformInfoMap.end()){
+				return itr->second.location;
+			}else return -1;
+
+			//throw ext::IllegalArguments{std::format("Unable To Find Uniform [{}] in Shader: {}", uniform, this->getID())};
+#else
 			return uniformInfoMap.at(uniform).location;
+#endif
+
 		}
 
 		[[nodiscard]] UniformInfo getUniformInfo(const std::string& uniform) const {
@@ -252,7 +261,7 @@ export namespace GL {
 		}
 
 		Shader(Shader&& other) noexcept
-			: uniformCache(std::move(other.uniformCache)),
+			:
 			  uniformInfoMap(std::move(other.uniformInfoMap)),
 			  typeList(std::move(other.typeList)),
 			  valid(other.valid),
@@ -263,7 +272,6 @@ export namespace GL {
 
 		Shader& operator=(Shader&& other) noexcept{
 			if(this == &other) return *this;
-			uniformCache = std::move(other.uniformCache);
 			uniformInfoMap = std::move(other.uniformInfoMap);
 			typeList = std::move(other.typeList);
 			valid = other.valid;

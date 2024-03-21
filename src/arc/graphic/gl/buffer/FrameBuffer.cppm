@@ -101,7 +101,7 @@ export namespace GL{
 		~FrameBuffer() override{
 			if(nameID){
 				glDeleteFramebuffers(1, &nameID);
-				GL::cleari(nameID);
+				// GL::cleari(nameID);
 			}
 		}
 

@@ -60,6 +60,7 @@ export namespace Core{
 		}
 
 		virtual void reset(){
+			projectionFallback = nullptr;
 			lastTexture = nullptr;
 		}
 
@@ -161,6 +162,7 @@ export namespace Core{
 
 		void applyShader() const{
 			if(applyCustomShader()){
+				//TODO this is really dangerous!
 				customShader->applyDynamic(generalShader->getDrawer());
 			}else{
 				generalShader->apply();
@@ -171,7 +173,7 @@ export namespace Core{
 
 		virtual void flush() = 0;
 
-		virtual void post(const Texture* texture, float* vertices, int length, int offset, int count) = 0;
+		virtual void post(const Texture* texture, float* vertices, int offset, int count) = 0;
 
 		virtual void post(const std::function<void()>& drawPost){
 			drawPost();

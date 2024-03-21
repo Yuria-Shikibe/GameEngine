@@ -2,7 +2,7 @@
 // Created by Matrix on 2024/3/15.
 //
 
-export module Game.Drawer.DrawParam;
+export module Game.Content.Drawer.DrawParam;
 
 export import Geom.Vector2D;
 

@@ -4,7 +4,6 @@ export module Assets.Cursor;
 
 import Geom.Vector2D;
 import Graphic.Draw;
-import Graphic.Draw.Lines;
 import GL.Texture.TextureRegionRect;
 
 import std;

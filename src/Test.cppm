@@ -53,7 +53,7 @@ export namespace Test {
 		OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")).get());
 
 		Core::initCore_Post([] {
-			Core::overlayBatch = new Core::SpriteBatch([](const Core::SpriteBatch<>& self) {
+			Core::batchGroup.batchOverlay = std::make_unique<Core::SpriteBatch<>>([](const Core::SpriteBatch<>& self) {
 				auto* const shader = Assets::Shaders::screenSpace;
 
 				shader->setUniformer([&self](const GL::Shader& s){
@@ -64,7 +64,7 @@ export namespace Test {
 				return shader;
 			});
 
-			Core::overlayBatch->setProjection(&Core::camera->getWorldToScreen());
+			Core::batchGroup.batchOverlay->setProjection(&Core::camera->getWorldToScreen());
 
 			int w, h;
 			glfwGetWindowSize(Core::mainWindow, &w, &h);
@@ -81,10 +81,10 @@ export namespace Test {
 			OS::registerListener(Core::uiRoot);
 		});
 
-		Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
-		Graphic::Draw::texture();
-		Graphic::Draw::rawMesh = Assets::Meshes::raw;
-		Graphic::Draw::blitter = Assets::Shaders::blit;
+		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
+		Graphic::Draw::setTexture();
+		Graphic::Frame::rawMesh = Assets::Meshes::raw;
+		Graphic::Frame::blitter = Assets::Shaders::blit;
 	}
 
 	void assetsLoad(){
@@ -135,8 +135,8 @@ export namespace Test {
 				texture->setScale(GL::TexParams::mipmap_linear_nearest, GL::TexParams::nearest);
 			}
 
-			Graphic::Draw::defTexture(&Assets::Textures::whiteRegion);
-			Graphic::Draw::texture();
+			Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
+			Graphic::Draw::setTexture();
 
 			UI::Styles::load(event.manager->getAtlas());
 
@@ -160,7 +160,7 @@ export namespace Test {
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPost>([](const auto& event) {
-			Core::worldBatch = new Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>([](const Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>& self) {
+			Core::batchGroup.batchWorld = std::make_unique<Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>>([](const Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>& self) {
 				auto* const shader = Assets::Shaders::world;
 
 				shader->setUniformer([&self](const GL::Shader& s){
@@ -176,7 +176,7 @@ export namespace Test {
 				layout.addFloat(4);
 			});
 
-			Core::worldBatch->setProjection(&Core::camera->getWorldToScreen());
+			Core::batchGroup.batchWorld->setProjection(&Core::camera->getWorldToScreen());
 		});
 
 		//Majority Load

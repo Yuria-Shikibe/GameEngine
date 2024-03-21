@@ -25,7 +25,7 @@ export namespace Graphic {
 			: shader(shader) {
 		}
 
-		[[nodiscard]] ShaderProcessor() : ShaderProcessor(Draw::blitter) { // NOLINT(*-use-equals-default)
+		[[nodiscard]] ShaderProcessor() : ShaderProcessor(Graphic::Frame::blitter) { // NOLINT(*-use-equals-default)
 
 		}
 
@@ -49,9 +49,9 @@ export namespace Graphic {
 			// toProcess->bindAllColorAttachments();
 
 			if(shaderHandler) {
-				Draw::blit(target, port.outPort, shader, shaderHandler);
+				Graphic::Frame::blit(target, port.outPort, shader, shaderHandler);
 			}else {
-				Draw::blit(target, port.outPort, shader, nullptr);
+				Graphic::Frame::blit(target, port.outPort, shader, nullptr);
 			}
 
 		}

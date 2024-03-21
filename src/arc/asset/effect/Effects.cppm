@@ -9,7 +9,6 @@ export import Graphic.Effect;
 import Math.Interpolation;
 
 import Graphic.Draw;
-import Graphic.Draw.Lines;
 
 export namespace Assets::Effects{
 	using namespace Graphic;

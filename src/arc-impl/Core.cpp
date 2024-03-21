@@ -94,7 +94,7 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 		initializer();
 	}
 
-	if(!overlayBatch)throw ext::NullPointerException{"Empty Default Batch!"};
+	if(!batchGroup.batchOverlay)throw ext::NullPointerException{"Empty Overlay Batch!"};
 
 	OS::registerListener(input);
 	OS::registerListener(camera);
@@ -115,8 +115,6 @@ void Core::dispose() {
 
 	delete input;
 	delete camera;
-	delete overlayBatch;
-	delete worldBatch;
 	delete renderer;
 	delete rootFileTree;
 

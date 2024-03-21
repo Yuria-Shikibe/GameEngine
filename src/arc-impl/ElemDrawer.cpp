@@ -3,7 +3,6 @@ module UI.ElemDrawer;
 import UI.Elem;
 import Graphic.Color;
 import Graphic.Draw;
-import Graphic.Draw.Lines;
 import RuntimeException;
 
 void UI::TextureRegionRectDrawable::draw(const float srcx, const float srcy, const float width, const float height) const {

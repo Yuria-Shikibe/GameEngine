@@ -31,7 +31,7 @@ void main()
 	float invDepth = 1 - gl_FragCoord.z;
 
 	if(invDepth > gl_FragDepth){
-		float weightedA = max(baseColor.a, lightColor.a * 0.85f);
+		float weightedA = max(baseColor.a, lightColor.a * 0.9f);
 
 		if(weightedA > 0.895f){
 			gl_FragDepth = invDepth;//mix(gl_FragDepth, invDepth, baseColor.a * 0.75f + 0.25f);

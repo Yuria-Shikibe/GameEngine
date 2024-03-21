@@ -99,11 +99,11 @@ export namespace Assets{
 			}});
 
 			blurX_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{2.25f, 0});
+				shader.setVec2("direction", Geom::Vec2{2.0f, 0});
 			}});
 
 			blurY_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{0, 2.25f});
+				shader.setVec2("direction", Geom::Vec2{0, 2.f});
 			}});
 
 			bloom.reset(

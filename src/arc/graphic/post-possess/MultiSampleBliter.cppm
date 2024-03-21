@@ -29,12 +29,11 @@ export namespace Graphic {
 			if(target == nullptr || toProcess == nullptr)throwException();
 
 			if constexpr (size == 0){
-
-				Draw::blitCopyAll(toProcess, target);
+				Graphic::Frame::blitCopyAll(toProcess, target);
 			}else{
 
 				for(const auto [readID, drawID] : idArray){
-					Draw::blitCopy(toProcess, readID, target, drawID);
+					Graphic::Frame::blitCopy(toProcess, readID, target, drawID);
 				}
 			}
 		}

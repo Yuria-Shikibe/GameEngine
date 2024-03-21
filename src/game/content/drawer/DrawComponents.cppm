@@ -2,9 +2,9 @@
 // Created by Matrix on 2024/3/15.
 //
 
-export module Game.Drawer.DrawComponents;
+export module Game.Content.Drawer.DrawComponents;
 
-export import Game.Drawer.DrawParam;
+export import Game.Content.Drawer.DrawParam;
 
 import GL.Texture.TextureRegionRect;
 import Graphic.TextureAtlas;

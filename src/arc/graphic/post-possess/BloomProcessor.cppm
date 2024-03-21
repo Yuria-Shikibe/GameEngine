@@ -63,7 +63,7 @@ export namespace Graphic {
 			temp1.clearColor();
 
 			toProcess->getTextures().at(port.inPort)->active(0);
-			Draw::blit(&temp1, 0, thresHoldShader, [this](const Shader& shader) {
+			Graphic::Frame::blit(&temp1, 0, thresHoldShader, [this](const Shader& shader) {
 				shader.setFloat("threshold", threshold);
 			});
 		}
@@ -80,7 +80,7 @@ export namespace Graphic {
 			GL::enable(GL_BLEND);
 			GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			Draw::blit(target, port.outPort, bloomShader, [this](const Shader& shader) {
+			Graphic::Frame::blit(target, port.outPort, bloomShader, [this](const Shader& shader) {
 				shader.setFloat("intensity_blo", intensity_blo);
 				shader.setFloat("intensity_ori", intensity_ori);
 			});

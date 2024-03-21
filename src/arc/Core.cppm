@@ -12,7 +12,7 @@ export import Core.Settings;
 export import Core.Log;
 
 export import UI.Root;
-export import Core.Batch;
+export import Core.BatchGroup;
 export import Core.Input;
 export import Core.Camera;
 export import Core.Renderer;
@@ -41,9 +41,7 @@ export namespace Core {
 	/* Basically Done */
 	inline Camera2D* camera = nullptr;
 	/* Basically Done */
-	inline Batch* overlayBatch = nullptr;
-
-	inline Batch* worldBatch = nullptr;
+	inline BatchGroup batchGroup{};
 	/* Basically Done */
 	inline Renderer* renderer = nullptr;
 	/* 88.00% */
