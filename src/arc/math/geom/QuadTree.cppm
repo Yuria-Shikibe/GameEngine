@@ -136,16 +136,14 @@ export namespace Geom {
 		bool remove(const Cont* box) {
 			bool result;
 			if(isLeaf()) {
-				containerlock.lock();
+				std::lock_guard guard{containerlock};
 				result = static_cast<bool>(std::erase(rectangles, box));
-				containerlock.unlock();
 			} else {
 				if(QuadTree* child = this->getFittingChild(this->obtainBound(box))) {
 					result = child->remove(box);
 				} else {
-					containerlock.lock();
+					std::lock_guard guard{containerlock};
 					result = static_cast<bool>(std::erase(rectangles, box));
-					containerlock.unlock();
 				}
 
 				if(currentSize <= maximumItemCount) unsplit();

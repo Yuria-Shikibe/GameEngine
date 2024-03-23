@@ -2,12 +2,12 @@ module;
 
 export module Game.UI.OverlayManager;
 
+export import Game.UI.OverlayInterface;
+
 import Game.Entity.RealityEntity;
 import Game.Entity;
-import Core;
 import Geom.Vector2D;
 import Geom.Matrix3D;
-import OS.ApplicationListener;
 
 import Assets.Cursor;
 import Graphic.Draw;
@@ -21,14 +21,12 @@ import Interval;
 
 import std;
 
+import OS.ApplicationListenerSetter;
+
 export namespace Game {
 	using namespace Graphic;
-	class OverlayManager : public OS::ApplicationListener, public Game::RemoveCallalble{
+	class OverlayManager : public Game::OverlayInterface, public Game::RemoveCallalble{
 	public:
-		Geom::Vec2 mousePos{};
-		Geom::Vec2 mousePosNormalized{};
-		Geom::Vec2 mouseWorldPos{};
-
 		std::vector<std::shared_ptr<RealityEntity>> selected{};
 
 		Trail cursorTrail{50};
@@ -40,40 +38,40 @@ export namespace Game {
 				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press,
 				Ctrl::Mode_Shift,
 			[this] {
-				assignTarget();
+				if(activated)assignTarget();
 			});
 
 			Core::input->registerMouseBind(
 				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press,
 				Ctrl::Mode_Shift | Ctrl::Mode_Ctrl,
 			[this] {
-				assignRoute();
+				if(activated)assignRoute();
 			});
 
 			Core::input->registerKeyBind(
 				Ctrl::KEY_ESCAPE, Ctrl::Act_Press,
 			[this] {
-				releaseSelected();
+				if(activated)releaseSelected();
 			});
 
 			Core::input->registerMouseBind(
 				Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
 				Ctrl::Mode_Shift | Ctrl::Mode_Ctrl,
 			[this] {
-				removeRoute();
+				if(activated)removeRoute();
 			});
 
 			Core::input->registerKeyBind(
 				Ctrl::KEY_ENTER, Ctrl::Act_Press,
 			[this] {
-				assignRouteEnd();
+				if(activated)assignRouteEnd();
 			});
 
 			Core::input->registerMouseBind(
 				Ctrl::MOUSE_BUTTON_3, Ctrl::Act_Press,
 				Ctrl::Mode_Shift,
 			[this] {
-				assignTurretTarget();
+				if(activated)assignTurretTarget();
 			});
 		}
 
@@ -84,7 +82,15 @@ export namespace Game {
 
 		ext::Interval<count> timer{};
 
-		void drawAboveUI(Core::Renderer* renderer) const{
+		[[nodiscard]] Assets::Cursor& getCursor() const{
+			if(Core::input->isPressedKey(Ctrl::KEY_LEFT_SHIFT)){
+				return Assets::getCursor(Assets::CursorType::select);
+			}
+
+			return Assets::getCursor(Assets::CursorType::regular);
+		}
+
+		void drawAboveUI(Core::Renderer* renderer) const override{
 			const auto& cursor = getCursor();
 
 			if(Core::input->cursorInbound()){
@@ -107,15 +113,7 @@ export namespace Game {
 			}
 		}
 
-		[[nodiscard]] Assets::Cursor& getCursor() const{
-			if(Core::input->isPressedKey(Ctrl::KEY_LEFT_SHIFT)){
-				return Assets::getCursor(Assets::CursorType::select);
-			}
-
-			return Assets::getCursor(Assets::CursorType::regular);
-		}
-
-		void drawBeneathUI(Core::Renderer* renderer) const{
+		void drawBeneathUI(Core::Renderer* renderer) const override{
 			static auto coordText = Font::obtainLayoutPtr();
 			renderer->frameBegin(&renderer->effectBuffer);
 			for(auto& entity : selected){
@@ -171,7 +169,7 @@ export namespace Game {
 				if(!entity->controller->moveCommand.isAssigningRoute()){
 					entity->controller->moveCommand.route.clear();
 					entity->controller->moveCommand.setRouteAssigningBegin();
-					entity->controller->moveCommand.route.push_back(entity->position);
+					entity->controller->moveCommand.route.push_back(entity->trans.pos);
 				}
 
 				entity->controller->moveCommand.route.push_back(mouseWorldPos);
@@ -215,9 +213,7 @@ export namespace Game {
 		}
 
 		void updateGlobal(float delta) override{
-			mousePos = Core::input->getMousePos();
-			mousePosNormalized = Core::renderer->getNormalized(mousePos);
-			mouseWorldPos = Core::camera->getScreenToWorld(mousePosNormalized);
+			OverlayInterface::updateGlobal(delta);
 
 			cursorTrail.update(mousePosNormalized.x, mousePosNormalized.y);
 
@@ -247,6 +243,15 @@ export namespace Game {
 
 		[[nodiscard]] Geom::Vec2 getMouseInWorld() const{
 			return mouseWorldPos;
+		}
+
+		void activate() override{
+			OverlayInterface::activate();
+			OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::mainWindow);
+		}
+		void deactivate() override{
+			OverlayInterface::deactivate();
+			OS::setInputMode_Cursor(OS::CursorMode::normal, Core::mainWindow);
 		}
 	};
 

@@ -41,6 +41,16 @@ export namespace Geom {
 			}
 		}
 
+		constexpr void move(const Vec2 trans, const QuadBox& other) {
+			v0.set(other.v0).add(trans);
+			v1.set(other.v1).add(trans);
+			v2.set(other.v2).add(trans);
+			v3.set(other.v3).add(trans);
+
+			maxOrthoBound = other.maxOrthoBound;
+			maxOrthoBound.move(trans.x, trans.y);
+		}
+
 		constexpr void move(const Vec2 vec2) {
 			v0.add(vec2);
 			v1.add(vec2);
@@ -59,11 +69,11 @@ export namespace Geom {
 			maxOrthoBound.move(vec2.x * scl, vec2.y * scl);
 		}
 
-		constexpr void updateBound(const float margin = 0){
+		constexpr void updateBound(){
 			auto [xMin, xMax] = std::minmax({v0.x, v1.x, v2.x, v3.x});
 			auto [yMin, yMax] = std::minmax({v0.y, v1.y, v2.y, v3.y});
 
-			maxOrthoBound.setVert(xMin - margin, yMin - margin, xMax + margin * 2.0f, yMax + margin * 2.0f);
+			maxOrthoBound.setVert(xMin, yMin, xMax, yMax);
 		}
 
 		[[nodiscard]] constexpr bool axisOverlap(const QuadBox& other, const Vec2& axis) const {
@@ -135,12 +145,20 @@ export namespace Geom {
 		}
 	};
 
-
-	struct RectBox : QuadBox{
+	struct RectBoxBrief{
 		/**
 		 * \brief x for rect width, y for rect height, static
 		 */
 		Vec2 sizeVec2{};
+
+		/**
+		 * \brief Center To Bottom-Left Offset
+		 */
+		Vec2 offset{};
+	};
+
+	struct RectBox : QuadBox, RectBoxBrief{
+		//Transient Fields
 
 		/**
 		 * \brief Box Origin Point
@@ -148,22 +166,9 @@ export namespace Geom {
 		 */
 		Vec2 originPoint{};
 		/**
-		 * \brief Center To Bottom-Left Offset
-		 */
-		Vec2 offset{};
-
-		/**
 		 * \brief Rect Rotation
 		 */
 		float rotation{0};
-
-		/** \brief OrthoRect Exbound margin*/
-		float margin{0};
-
-		/**
-		 * \brief Physics Layer, mainly for Z index
-		 */
-		int phyLayer{0};
 
 		/**
 		 * \brief
@@ -188,6 +193,15 @@ export namespace Geom {
 		using QuadBox::move;
 		using QuadBox::overlapRough;
 		using QuadBox::overlapExact;
+
+		constexpr RectBox& copyNecessary(const RectBox& other){
+			rotation = other.rotation;
+			originPoint = other.originPoint;
+			sizeVec2 = other.sizeVec2;
+			offset = other.offset;
+
+			return *this;
+		}
 
 		constexpr void setSize(const float w, const float h) {
 			sizeVec2.set(w, h);
@@ -214,7 +228,10 @@ export namespace Geom {
 			return sizeVec2.length2() * (scale + lengthRadiusRatio) * mass;
 		}
 
-		void update() {
+		constexpr void update(const Vec2 pos, const float rot) {
+			originPoint = pos;
+			rotation = rot;
+
 			const float cos = Math::cosDeg(rotation);
 			const float sin = Math::sinDeg(rotation);
 
@@ -231,7 +248,7 @@ export namespace Geom {
 			v2 += v0;
 			v3 += v0;
 
-			updateBound(margin);
+			updateBound();
 		}
 
 		[[nodiscard]] constexpr bool overlapExact(const RectBox& other) const {

@@ -6,7 +6,9 @@ export namespace OS{
 		bool pauseRestrictable = false;
 		virtual ~ApplicationListener() = default;
 
-		virtual void update(float delta) = 0;
+		virtual void update(float delta){
+
+		}
 
 		virtual void updateGlobal(float delta){
 

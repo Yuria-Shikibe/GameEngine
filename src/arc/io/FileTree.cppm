@@ -6,6 +6,7 @@ import Platform;
 import OS.File;
 import RuntimeException;
 import std;
+import Heterogeneous;
 
 export namespace OS{
 	//dTODO use a struct to wrap the data structure of just directly use vector?
@@ -25,13 +26,13 @@ export namespace OS{
 		/**
 		 * \brief Key - directory name | Value - File
 		 * */
-		std::unordered_map<std::string, std::vector<File>> files{};
+		ext::StringMap<std::vector<File>> files{};
 
 
 		/**
 		 * \brief This need to be called to enable it.
 		 */
-		std::unordered_map<std::string, File> mappedFiles{};
+		ext::StringMap<File> mappedFiles{};
 
 		File root{};
 
@@ -115,7 +116,7 @@ export namespace OS{
 			return os;
 		}
 
-		[[nodiscard]] const std::unordered_map<std::string, std::vector<File>>& getFiles() const{
+		[[nodiscard]] const ext::StringMap<std::vector<File>>& getFiles() const{
 			return files;
 		}
 

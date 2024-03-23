@@ -51,7 +51,7 @@ export namespace Core{
 
 		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(AttributeLayout&)> auto&& layouter){
 			mesh = std::make_unique<Mesh>([&layouter, this](Mesh& mesh){
-				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size());
+				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size(), GL_STATIC_DRAW);
 				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
 
 				layouter(mesh.getVertexArray().getLayout());
@@ -83,7 +83,7 @@ export namespace Core{
 			if(index == 0)return;
 
 			mesh->bind();
-			mesh->getVertexBuffer().setDataRaw(cachedVertices.data(), index);
+			mesh->getVertexBuffer().updateDataRaw(cachedVertices.data(), index);
 
 			bindShader();
 			applyShader();

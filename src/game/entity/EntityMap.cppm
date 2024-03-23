@@ -96,11 +96,11 @@ export namespace Game {
 		}
 
 		virtual void postRemove(const IDType id) {
-			postRemove(idMap.at(id).get());
+			this->postRemove(idMap.at(id).get());
 		}
 
 		virtual void cancelRemove(const IDType id) {
-			cancelRemove(idMap.at(id).get());
+			this->cancelRemove(idMap.at(id).get());
 		}
 
 		virtual void postRemove(T* entity) {

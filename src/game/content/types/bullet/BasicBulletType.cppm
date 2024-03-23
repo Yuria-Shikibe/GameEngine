@@ -10,6 +10,8 @@ import Game.Entity.Bullet;
 import Game.Core;
 import Graphic.Draw;
 
+import Game.Graphic.Draw;
+
 export import Game.Delay;
 
 export namespace Game::Content{
@@ -20,7 +22,7 @@ export namespace Game::Content{
 
 		void onShoot(Bullet& bullet) const override{
 			Assets::Effects::CircleDrawer.suspendOn(Game::core->effectManager.get())->
-				set(bullet.position, 0, Graphic::Colors::SKY);
+				set(bullet.trans.pos, 0, Graphic::Colors::SKY);
 		}
 
 		void hit(Bullet& bullet, RealityEntity& entity, Geom::Vec2 actualPosition) const override{
@@ -30,13 +32,15 @@ export namespace Game::Content{
 
 		void draw(const Bullet& bullet) const override{
 			namespace Draw = Graphic::Draw;
+
 			Draw::color(Graphic::Colors::RED_DUSK);
-			Draw::quad(Draw::defaultTexture, bullet.hitBox.v0, bullet.hitBox.v1, bullet.hitBox.v2, bullet.hitBox.v3);
+			Graphic::Draw::Game::hitbox(bullet.hitBox);
+			// Draw::quad(Draw::defaultTexture, bullet.hitBox.v0, bullet.hitBox.v1, bullet.hitBox.v2, bullet.hitBox.v3);
 		}
 
 		void despawn(Bullet& bullet) const override{
 			Assets::Effects::squareOut.suspendOn(Game::core->effectManager.get())->
-				set(bullet.position, 0, Graphic::Colors::SKY, 30);
+				set(bullet.trans.pos, 0, Graphic::Colors::SKY, 30);
 		}
 	} base;
 }

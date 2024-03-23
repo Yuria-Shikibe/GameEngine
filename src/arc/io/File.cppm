@@ -8,6 +8,8 @@ import RuntimeException;
 
 import std;
 
+import Heterogeneous;
+
 using namespace std::filesystem;
 
 export namespace OS{
@@ -267,7 +269,10 @@ export namespace OS{
 
 			while (std::getline(file_stream, line)) {
 				consumer(line);
-				file_contents << line << '\n';
+				file_contents << line;
+				if(!file_stream.eof()){
+					file_contents << '\n';
+				}
 			}
 
 			return file_contents.str();
@@ -288,7 +293,10 @@ export namespace OS{
 			std::string line;
 
 			while (std::getline(file_stream, line)) {
-				file_contents << line << '\n';
+				file_contents << line;
+				if(!file_stream.eof()){
+					file_contents << '\n';
+				}
 			}
 
 			return file_contents.str();
@@ -301,8 +309,8 @@ export namespace OS{
 
 		using sortPred = std::pair<std::string, std::function<bool(const File&)>>;
 
-		[[nodiscard]] std::unordered_map<std::string, std::vector<File>> sortSubs(const bool careDirs = false) const{
-			std::unordered_map<std::string, std::vector<File>> map;
+		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubs(const bool careDirs = false) const{
+			ext::StringMap<std::vector<File>> map;
 			forAllSubs([&map](File&& file){
 				const std::string& extension = file.extension();
 				map[extension.empty() ? static_cast<std::string>(EMPTY_EXTENSION) : extension].push_back(file);
@@ -311,8 +319,8 @@ export namespace OS{
 			return map;
 		}
 
-		[[nodiscard]] std::unordered_map<std::string, std::vector<File>> sortSubsBy(const std::span<sortPred>& standards, const bool careDirs = false) const{
-			std::unordered_map<std::string, std::vector<File>> map;
+		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<sortPred>& standards, const bool careDirs = false) const{
+			ext::StringMap<std::vector<File>> map;
 
 			forAllSubs([&standards, &map](File&& file){
 				if (const auto it = std::ranges::find_if(standards, [&file](const sortPred& pair){

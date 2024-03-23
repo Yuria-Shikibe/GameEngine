@@ -25,7 +25,7 @@ export namespace Game {
 			return inScreen;
 		}
 
-		void setInScreen(bool val){
+		void setInScreen(const bool val){
 			inScreen = val;
 		}
 

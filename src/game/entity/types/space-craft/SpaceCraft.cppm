@@ -47,8 +47,7 @@ export namespace Game {
 
 
 			for(const auto& turret : turretEntities){
-				turret->relativePosition.x = rand.random(hitBox.offset.x, hitBox.offset.x + hitBox.sizeVec2.x);
-				turret->relativePosition.y = rand.random(hitBox.offset.y, hitBox.offset.y + hitBox.sizeVec2.y);
+				turret->relativePosition.add(rand.range(40), rand.range(40));
 			}
 		}
 
@@ -86,17 +85,17 @@ export namespace Game {
 		void updateMovement(const float delta) override{
 			if(controller->moveCommand.moveActivated()){
 				const auto dest = controller->moveCommand.nextDest();
-				float angleDst = Math::Angle::angleDst(rotation, controller->moveCommand.expectedFaceAngle);
+				const float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst)){
-					angularAcceleration = Math::approach(angularAcceleration, Math::Angle::angleDstSign(rotation, controller->moveCommand.expectedFaceAngle) * 0.5f, delta * 0.5f);
+					angularAcceleration = Math::approach(angularAcceleration, Math::Angle::angleDstSign(trans.rot, controller->moveCommand.expectedFaceAngle) * 0.5f, delta * 0.5f);
 				}
 
 				if(controller->moveCommand.requiresMovement(dest)){
 					//TODO perform according to moveCommand.expected velocity
 					constexpr float tolerance = 20.0f;
-					auto dir = (dest - position);
+					auto dir = (dest - trans.pos);
 
-					float dst2 = dir.length2();
+					const float dst2 = dir.length2();
 					if(dst2 < Math::sqr(tolerance)){
 						acceleration = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance)));
 					}else{
@@ -114,7 +113,7 @@ export namespace Game {
 		void update(const float deltaTick) override {
 			RealityEntity::update(deltaTick);
 
-			if(const auto t = position.copy().abs(); t.x > 50000 || t.y > 50000) {
+			if(const auto t = trans.pos.copy().abs(); t.x > 50000 || t.y > 50000) {
 				deactivate();
 			}
 
@@ -141,63 +140,64 @@ export namespace Game {
 
 		void drawDebug() const override {
 			using namespace Graphic;
-			Draw::alpha();
-			if(controller->selected) {
-				Draw::color(Colors::TAN);
-			}else if(intersected)Draw::color(Colors::AQUA);
-			else Draw::color(Colors::LIGHT_GRAY);
-			Draw::Line::setLineStroke(2);
-			Draw::quad(Draw::defaultTexture, hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
 
-			Draw::color(Colors::GRAY);
-			Draw::alpha(0.3f);
-			if(enableCCD()) {
-				for(const auto& [v0, v1, v2, v3, maxOrthoBound] : trace.contiounsTraces) {
-					Draw::quad(Draw::defaultTexture, v0, v1, v2, v3);
-					Draw::Line::rect(maxOrthoBound);
-				}
-			}
+
 			Draw::alpha();
 			Draw::color(Colors::RED);
 
-			if(intersected)for(const auto& vec2 : intersectedPointWith | std::ranges::views::values) {
-				Draw::rect(vec2.x - 2, vec2.y - 2, 4, 4);
+			if(intersected)for(const auto& data : intersectedPointWith | std::ranges::views::values) {
+				Draw::rect(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
 			}
 
 			Draw::Line::setLineStroke(1.0f);
 			Draw::color(Colors::MAGENTA);
-			Draw::Line::lineAngle(position.x, position.y, rotation, hitBox.sizeVec2.length());
+			Draw::Line::lineAngle(trans.pos.x, trans.pos.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
 			Draw::Line::setLineStroke(2.0f);
-			constexpr Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
-			for(int i = 0; i < 4; ++i) {
-				Draw::color(colors[i]);
-				Draw::rect(hitBox[i].x - 2, hitBox[i].y - 2, 4, 4);
 
-				const Vec2 begin = hitBox[i];
-				const Vec2 end = hitBox[(i + 1) % 4];
-				const Vec2 center = (begin + end) / 2;
+			for (auto& boxData : hitBox.hitBoxGroup){
+				constexpr Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
+				auto& cur = boxData.original;
+				for(int i = 0; i < 4; ++i) {
+					Draw::color(colors[i]);
+					Draw::rect(cur[i].x - 2, cur[i].y - 2, 4, 4);
 
-				Draw::Line::line(center, center + hitBox.getNormalVec(i).normalize().scl(25));
+					const Vec2 begin = cur[i];
+					const Vec2 end = cur[(i + 1) % 4];
+					const Vec2 center = (begin + end) / 2;
+
+					Draw::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
+				}
+
+				if(controller->selected) {
+					Draw::color(Colors::TAN);
+				}else if(intersected)Draw::color(Colors::AQUA);
+				else Draw::color(Colors::LIGHT_GRAY);
+				Draw::Line::setLineStroke(2);
+				Draw::quad(Draw::defaultTexture, cur.v0, cur.v1, cur.v2, cur.v3);
+
+				Draw::Line::line(cur.v0, cur.originPoint, colors[0], Colors::RED);
+
+				Draw::color(Colors::RED);
+				Draw::rect(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
 			}
+
+
+			Draw::color(Colors::PURPLE);
+			Draw::rect(hitBox.trans.pos.x - 2, hitBox.trans.pos.y - 2, 4, 4);
+			// for(auto value : intersectedPointWith | std::ranges::views::values) {
+			// 	intersectionCorrection(value);
+			// 	auto nor = Geom::avgEdgeNormal(value, hitBox);
 			//
-			// auto normalNearest = Geom::avgEdgeNormal(Core::camera->getPosition(), hitBox);
-			// Draw::color(Colors::YELLOW);
-			// Draw::line(hitBox.originPoint, hitBox.originPoint + normalNearest.normalize().scl(100));
-
-			for(auto value : intersectedPointWith | std::ranges::views::values) {
-				intersectionCorrection(value);
-				auto nor = Geom::avgEdgeNormal(value, hitBox);
-
-				Draw::color(Colors::ORANGE);
-				Draw::Line::setLineStroke(2.0f);
-				Draw::Line::line(value, value + nor.setLength(150 + hitBox.sizeVec2.length2() / 30));
-				Draw::Line::setLineStroke(0.80f);
-				Draw::Line::line(value, hitBox.originPoint);
-			}
-
-			Draw::color(Colors::BLACK);
-			Draw::rect(hitBox.originPoint.x - 2, hitBox.originPoint.y - 2, 4, 4);
+			// 	Draw::color(Colors::ORANGE);
+			// 	Draw::Line::setLineStroke(2.0f);
+			// 	Draw::Line::line(value, value + nor.setLength(150 + hitBox.sizeVec2.length2() / 30));
+			// 	Draw::Line::setLineStroke(0.80f);
+			// 	Draw::Line::line(value, hitBox.originPoint);
+			// }
+			//
+			//
+			//
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->draw();

@@ -1,4 +1,3 @@
-
 #include "src/application_head.h"
 
 import <glad/glad.h>;
@@ -96,7 +95,9 @@ import Game.Entity.EntityManager;
 import Game.Entity.RealityEntity;
 import Game.Entity.SpaceCraft;
 import Game.Entity.Bullet;
+import Game.Entity.Collision;
 import Game.Entity.Turrets;
+
 
 import Game.Content.Type.BasicBulletType;
 import Game.Content.Type.Turret.BasicTurretType;
@@ -208,12 +209,11 @@ void setupUITest() {
 }
 
 void setupCtrl(){
-
-	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press, [] {
-		const auto pos = Game::core->overlayManager->getMouseInWorld();
-		auto* effect = Game::core->effectManager->suspend();
-		effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
-	});
+	// Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press, [] {
+	// 	const auto pos = Game::core->overlayManager->getMouseInWorld();
+	// 	auto* effect = Game::core->effectManager->suspend();
+	// 	effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
+	// });
 
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, [] {
 		static ext::Interval<> timer{};
@@ -227,15 +227,15 @@ void setupCtrl(){
 
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
 			ptr->trait = &Game::Content::base;
-			ptr->position.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
-			ptr->rotation =
+			ptr->trans.pos.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
+			ptr->trans.rot =
 				Core::input->getMousePos()
 					.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
 					.angle();
 
-			ptr->velocity.set(320, 0).rotate(ptr->rotation);
+			ptr->velocity.set(320, 0).rotate(ptr->trans.rot);
 			Game::EntityManage::add(ptr);
-			ptr->hitBox = box;
+			ptr->hitBox.init(box);
 			ptr->physicsBody.inertialMass = 100;
 			ptr->activate();
 			ptr->damage.materialDamage.fullDamage = 100;
@@ -255,39 +255,34 @@ void setupCtrl(){
 }
 
 void genRandomEntities(){
-	Math::Rand rand = Math::globalRand;
-	for(int i = 0; i < 300; ++i) {
-		Geom::RectBox box{};
-		box.setSize(rand.random(40, 1200), rand.random(40, 1200));
-		box.rotation = rand.random(360);
-		box.offset = box.sizeVec2;
-		box.offset.mul(-0.5f);
-
-		const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-		ptr->rotation  = rand.random(360.0f);
-		ptr->position.set(rand.range(20000), rand.range(20000));
-		Game::EntityManage::add(ptr);
-		ptr->hitBox = box;
-		ptr->setHealth(500);
-		ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
-		ptr->velocity.set(1, 0).rotate(rand.random(360));
-		ptr->activate();
-
-		ptr->init();
-		ptr->setTurretType(&Game::Content::baseTurret);
-	}
-
-	Geom::RectBox box{};
-	box.setSize(20, 100);
-	box.rotation = 0;
-	box.offset = box.sizeVec2;
-	box.offset.mul(-0.5f);
+	// Math::Rand rand = Math::globalRand;
+	// for(int i = 0; i < 300; ++i) {
+	// 	Geom::RectBox box{};
+	// 	box.setSize(rand.random(40, 1200), rand.random(40, 1200));
+	// 	box.rotation = rand.random(360);
+	// 	box.offset = box.sizeVec2;
+	// 	box.offset.mul(-0.5f);
+	//
+	// 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
+	// 	ptr->trans.rot  = rand.random(360.0f);
+	// 	ptr->trans.pos.set(rand.range(20000), rand.range(20000));
+	// 	Game::EntityManage::add(ptr);
+	// 	ptr->hitBox.init(box);
+	// 	ptr->setHealth(500);
+	// 	ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
+	// 	ptr->velocity.set(1, 0).rotate(rand.random(360));
+	// 	ptr->activate();
+	//
+	// 	ptr->init();
+	// 	ptr->setTurretType(&Game::Content::baseTurret);
+	// }
 
 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-	ptr->position.set(1000, 100);
+	ptr->trans.pos.set(1000, 100);
 	Game::EntityManage::add(ptr);
-	ptr->hitBox = box;
+	// Game::read(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox)"}, ptr->hitBox);
 	ptr->velocity.set(0, 0);
+	ptr->setHealth(600);
 	ptr->activate();
 }
 
@@ -300,11 +295,13 @@ int main(const int argc, char* argv[]) {
 	::Test::setupAudioTest();
 
 	Game::core = std::make_unique<Game::Core>();
+	Game::core->overlayManager->deactivate();//activate();
+	Game::core->hitBoxEditor->activate();//deactivate();
 	OS::registerListener(Game::core.get());
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
 		Graphic::Batch::flush();
-		Game::core->overlayManager->drawAboveUI(e.renderer);
+		Game::core->drawAboveUI(e.renderer);
 		Graphic::Batch::flush();
 	});
 
@@ -314,7 +311,7 @@ int main(const int argc, char* argv[]) {
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
-		Game::core->overlayManager->drawBeneathUI(e.renderer);
+		Game::core->drawBeneathUI(e.renderer);
 		Graphic::Batch::flush();
 	});
 
@@ -324,7 +321,7 @@ int main(const int argc, char* argv[]) {
 
 	setupCtrl();
 
-	// genRandomEntities();
+	genRandomEntities();
 
 	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
 	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
@@ -374,16 +371,14 @@ int main(const int argc, char* argv[]) {
 
 		Draw::color();
 
-		// Core::worldBatch->switchBlending(GL::Blendings::Normal);
-
 		Draw::mixColor();
-		Draw::setZ(2);
-		Draw::rect<WorldBatch>(region1, 100, 80, 45); //upper
+		// Draw::setZ(2);
+		// Draw::rect<WorldBatch>(region1, 100, 80, 45); //upper
 		Draw::setZ(3);
-		Draw::rect<WorldBatch>(region, 0, 0, 45);
-		auto pos = Game::core->overlayManager->getMouseInWorld();
-		Draw::setZ(depth);
-		Draw::rect<WorldBatch>(region, pos.x, pos.y, -45);
+		Draw::rect<WorldBatch>(region, 30, 0, 0);
+		// auto pos = Game::core->overlayManager->getMouseInWorld();
+		// Draw::setZ(depth);
+		// Draw::rect<WorldBatch>(region, pos.x, pos.y, -45);
 
 		Graphic::Batch::flush<WorldBatch>();
 		// Core::worldBatch->switchBlending(GL::Blendings::Disable);
@@ -423,10 +418,10 @@ int main(const int argc, char* argv[]) {
 			Graphic::Mesh::meshBegin(Core::batchGroup.batchOverlay->getMesh());
 			Draw::color();
 
-			Draw::Line::setLineStroke(4);
-			Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
-					   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
-			);
+			// Draw::Line::setLineStroke(4);
+			// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+			// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
+			// );
 
 			Draw::color();
 

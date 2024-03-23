@@ -238,7 +238,7 @@ export namespace Assets{
 		;
 
 		void loadPrevious() {
-			raw = new Mesh{[]( Mesh& mesh) {
+			raw = new GL::Mesh{[]( GL::Mesh& mesh) {
 				mesh.bind();
 				mesh.getVertexBuffer().setData({
 					-1.0f, -1.0f, 0.0f, 0.0f,

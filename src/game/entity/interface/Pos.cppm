@@ -4,39 +4,39 @@ export module Game.Entity.PosedEntity;
 
 export import Geom.Position;
 export import Geom.Vector2D;
+export import Geom.Translation;
 
 export namespace Game {
 	class PosedEntity : public Geom::Position2D{
 	public:
-		Geom::Vec2 position{};
-		float rotation{0};
+		Geom::Translation trans{};
 
 		float layer{0};
 
 		~PosedEntity() override = default;
 
 		[[nodiscard]] float getX() const override {
-			return position.x;
+			return trans.pos.x;
 		}
 
 		[[nodiscard]] float getY() const override {
-			return position.y;
+			return trans.pos.y;
 		}
 
 		void setX(const float x) override {
-			this->position.x = x;
+			this->trans.pos.x = x;
 		}
 
 		void setY(const float y) override {
-			this->position.y = y;
+			this->trans.pos.y = y;
 		}
 
 		[[nodiscard]] virtual Geom::Vec2& getPos() {
-			return position;
+			return trans.pos;
 		}
 
 		[[nodiscard]] virtual Geom::Vec2 copyPos() const {
-			return position;
+			return trans.pos;
 		}
 	};
 }

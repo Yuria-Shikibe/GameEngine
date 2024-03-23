@@ -15,6 +15,8 @@ import Async;
 import RuntimeException;
 import OS.File;
 
+import Heterogeneous;
+
 using Geom::Shape::OrthoRectUInt;
 using namespace Graphic;
 
@@ -130,7 +132,7 @@ export namespace Assets {
 		};
 
 		std::vector<std::unique_ptr<GL::Texture2D>> textures{};
-		std::unordered_map<std::string, TextureRegionPackData> packData{};
+		ext::StringMap<TextureRegionPackData> packData{};
 
 		std::vector<MergeTask> toMerge{};
 		std::vector<Graphic::Pixmap> mergedMaps{};
@@ -167,11 +169,11 @@ export namespace Assets {
 			TexturePackPage(pageName, cacheDir, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}){
 		}
 
-		[[nodiscard]] const std::unordered_map<std::string, TextureRegionPackData>& getData() const {
+		[[nodiscard]] const ext::StringMap<TextureRegionPackData>& getData() const {
 			return packData;
 		}
 
-		[[nodiscard]] std::unordered_map<std::string, TextureRegionPackData>& getData() {
+		[[nodiscard]] ext::StringMap<TextureRegionPackData>& getData() {
 			return packData;
 		}
 
@@ -201,17 +203,17 @@ export namespace Assets {
 
 		GL::TextureRegionRect* overwriteRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
 			TextureRegionPackData data{name, std::move(pixmap), modifer};
-			packData.insert_or_assign(name, data);
-			return &data.textureRegion;
+			const auto itr = packData.insert_or_assign(name, data).first;
+			return &itr->second.textureRegion;
 		}
 
-		TextureRegionPackData* findPackData(const std::string& name) {
+		TextureRegionPackData* findPackData(const std::string_view name) {
 			const auto itr = packData.find(name);
 			return itr == packData.end() ? nullptr : &itr->second;
 		}
 
-		[[nodiscard]] const TextureRegionPackData* findPackData(const std::string& name) const {
-			const auto itr =  packData.find(name);
+		[[nodiscard]] const TextureRegionPackData* findPackData(const std::string_view name) const {
+			const auto itr = packData.find(name);
 			return itr == packData.end() ? nullptr : &itr->second;
 		}
 

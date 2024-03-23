@@ -83,7 +83,7 @@ export namespace OS{
 		}
 
 		[[nodiscard]] bool modeMatch(const int mode) const {
-			return ignoreMode || (mode & 0xff) == expectedMode;
+			return ignoreMode || (mode & 0xff) == (expectedMode & 0xff);
 		}
 
 		void act() const {

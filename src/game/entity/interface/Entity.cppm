@@ -64,9 +64,9 @@ export namespace Game {
 			//Sustain this currently
 		}
 
-		virtual std::string_view getClassname() {
-			return typeid(*this).name();
-		}
+		// virtual std::string_view getClassname() {
+		// 	return typeid(*this).name();
+		// }
 
 		virtual void activate() {
 			activated = true;

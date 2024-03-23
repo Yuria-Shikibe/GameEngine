@@ -101,11 +101,6 @@ export namespace Geom {
 		return toTarget.sub(curVel.x / smooth, curVel.y / smooth).limit(targetSpeed);
 	}
 
-	/**
-	 * \brief Used of CCD precision, the larger - the slower and more accurate
-	 */
-	constexpr float continousTestScl = 1.5f;
-
 	constexpr Vec2 intersectionLine(const Vec2 p1, const Vec2 p2, const Vec2 p3, const Vec2 p4) {
 		const float x1 = p1.x, x2 = p2.x, x3 = p3.x, x4 = p4.x;
 		const float y1 = p1.y, y2 = p2.y, y3 = p3.y, y4 = p4.y;
@@ -246,40 +241,6 @@ export namespace Geom {
 
 	}
 
-
-	/**
-	 * \brief This ignores the rotation of the subject entity!
-	 */
-	void genContinousRectBox(std::vector<QuadBox>& traces, Vec2 move, const RectBox& subject,
-	                         const float scl = continousTestScl) {
-		const float dst2  = move.length2();
-		const float size2 = subject.projLen2(move);
-
-		if(size2 < 0.025f)return;
-
-		const size_t seg = Math::ceil(std::sqrtf(dst2 / size2) * scl + 0.00001f);
-
-		move.div(static_cast<float>(seg));
-		traces.assign(seg + 1, static_cast<QuadBox>(subject)); // NOLINT(*-slicing)
-
-		for(size_t i = 1; i <= seg; ++i) {
-			traces[i].move(move, static_cast<float>(i));
-		}
-	}
-
-	void genContinousRectBox(std::vector<QuadBox>& traces, const Vec2 begin, Vec2 end, const RectBox& subject,
-	                         const float scl = continousTestScl) {
-		end -= begin;
-
-		genContinousRectBox(traces, end, subject, scl);
-	}
-
-	void genContinousRectBox(std::vector<QuadBox>& traces, Vec2 velo, const float delta, const RectBox& subject,
-	                         const float scl = continousTestScl) {
-		velo *= delta;
-
-		genContinousRectBox(traces, velo, subject, scl);
-	}
 
 	OrthoRectFloat maxContinousBoundOf(const std::vector<QuadBox>& traces) {
 		const auto& front = traces.front().maxOrthoBound;

@@ -151,6 +151,18 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
+		constexpr Rect_Orthogonal& addWidth(const T x) requires Concepts::Signed<T> {
+			this->template setWidth<T>(width + x);
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& addHeight(const T y) requires Concepts::Signed<T> {
+			this->template setHeight<T>(height + y);
+
+			return *this;
+		}
+
 		constexpr Rect_Orthogonal& addSize(const T x, const T y) requires Concepts::NonNegative<T> {
 			using S = std::make_signed_t<T>;
 			this->template setWidth<S>(static_cast<S>(width) + static_cast<S>(x));
@@ -209,11 +221,19 @@ export namespace Geom::Shape{
 				getEndY() > r.getSrcY();
 		}
 
-		[[nodiscard]] constexpr bool containsPos_edgeExclusive(const typename Geom::Vector2D<T>::PassType v) const{
+		[[nodiscard]] constexpr bool overlap(const Rect_Orthogonal& r, const typename Vector2D<T>::PassType selfTrans, const typename Vector2D<T>::PassType otherTrans) const{
+			return
+				getSrcX() + selfTrans.x < r.getEndX() + otherTrans.x &&
+				getEndX() + selfTrans.x > r.getSrcX() + otherTrans.x &&
+				getSrcY() + selfTrans.y < r.getEndY() + otherTrans.y &&
+				getEndY() + selfTrans.y > r.getSrcY() + otherTrans.y;
+		}
+
+		[[nodiscard]] constexpr bool containsPos_edgeExclusive(const typename Vector2D<T>::PassType v) const{
 			return v.x > srcX && v.y > srcY && v.x < srcX + width && v.y < srcY + height;
 		}
 
-		[[nodiscard]] constexpr bool containsPos_edgeInclusive(const typename Geom::Vector2D<T>::PassType v) const{
+		[[nodiscard]] constexpr bool containsPos_edgeInclusive(const typename Vector2D<T>::PassType v) const{
 			return v.x >= srcX && v.y >= srcY && v.x <= srcX + width && v.y <= srcY + height;
 		}
 
@@ -233,7 +253,7 @@ export namespace Geom::Shape{
 			return srcY + height / HALF;
 		}
 
-		[[nodiscard]] constexpr Geom::Vector2D<T> getCenter() const{
+		[[nodiscard]] constexpr Vector2D<T> getCenter() const{
 			return {getCenterX(), getCenterY()};
 		}
 
@@ -299,8 +319,8 @@ export namespace Geom::Shape{
 			this->template setHeight<T>(height);
 		}
 
-		constexpr Rect_Orthogonal& setSize(const Vec2& v) {
-			return this->setSize(static_cast<T>(v.x), static_cast<T>(v.y));
+		constexpr Rect_Orthogonal& setSize(const typename Vector2D<T>::PassType v) {
+			return this->setSize(v.x, v.y);
 		}
 
 		constexpr Rect_Orthogonal& setCenter(const T x, const T y){
@@ -309,8 +329,8 @@ export namespace Geom::Shape{
 			return *this;
 		}
 
-		constexpr Rect_Orthogonal& setCenter(const Vec2& v) {
-			this->setSrc(static_cast<T>(v.x) - width / HALF, static_cast<T>(v.y) - height / HALF);
+		constexpr Rect_Orthogonal& setCenter(const typename Vector2D<T>::PassType v) {
+			this->setSrc(v.x - width / HALF, v.y - height / HALF);
 
 			return *this;
 		}
@@ -327,20 +347,20 @@ export namespace Geom::Shape{
 			return { xOffsetRatio(v.x), yOffsetRatio(v.y) };
 		}
 
-		[[nodiscard]] constexpr Vec2 vert_00()const {
-			return { static_cast<float>(srcX), static_cast<float>(srcY) };
+		[[nodiscard]] constexpr Vector2D<T> vert_00()const {
+			return { srcX, srcY };
 		}
 
-		[[nodiscard]] constexpr Vec2 vert_10() const {
-			return { static_cast<float>(srcX + width), static_cast<float>(srcY) };
+		[[nodiscard]] constexpr Vector2D<T> vert_10() const {
+			return { srcX + width, srcY };
 		}
 
-		[[nodiscard]] constexpr Vec2 vert_01() const {
-			return { static_cast<float>(srcX), static_cast<float>(srcY + height) };
+		[[nodiscard]] constexpr Vector2D<T> vert_01() const {
+			return { srcX, srcY + height };
 		}
 
-		[[nodiscard]] constexpr Vec2 vert_11() const {
-			return {static_cast<float>(srcX + width), static_cast<float>(srcY + height) };
+		[[nodiscard]] constexpr Vector2D<T> vert_11() const {
+			return { srcX + width, srcY + height };
 		}
 
 		[[nodiscard]] constexpr T area() const{
@@ -361,7 +381,13 @@ export namespace Geom::Shape{
 		}
 
 		constexpr void setVert(const T srcX, const T srcY, const T endX, const T endY) {
-			this->set(srcX, srcY, endX - srcX, endY - srcY);
+			auto [minX, maxX] = Math::minmax(srcX, endX);
+			auto [minY, maxY] = Math::minmax(srcY, endY);
+			this->set(minX, minY, maxX - minX, maxY - minY);
+		}
+
+		constexpr void setVert(const typename Vector2D<T>::PassType src, const typename Vector2D<T>::PassType end) {
+			this->setVert(src.x, src.y, end.x, end.y);
 		}
 
 		constexpr void expand(const T x, const T y){

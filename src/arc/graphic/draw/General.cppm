@@ -503,6 +503,18 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+		void rect(const TextureRegion* region, Geom::Shape::OrthoRectFloat rect
+		){
+			vert_monochromeAll<batchPtr>(
+				region->getData(), contextColor, contextMixColor,
+				rect.getSrcX(), rect.getSrcY(), region->u00(), region->v00(),
+				rect.getEndX(), rect.getSrcY(), region->u10(), region->v10(),
+				rect.getEndX(), rect.getEndY(), region->u11(), region->v11(),
+				rect.getSrcX(), rect.getEndY(), region->u01(), region->v01()
+			);
+		}
+
+		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rect(const TextureRegionRect* region,
 		          const float x, const float y,
 		          const float ang

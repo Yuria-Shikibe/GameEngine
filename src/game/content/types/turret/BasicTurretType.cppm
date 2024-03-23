@@ -7,9 +7,12 @@ import Graphic.Color;
 import Core;
 import Assets.Sound;
 import Geom.Shape.RectBox;
+import Geom.Translation;
 import Game.Entity.Bullet;
 import Game.Entity.EntityManager;
 import Game.Content.Type.BasicBulletType;
+
+import std;
 
 export namespace Game::Content{
 	using namespace Graphic;
@@ -21,7 +24,7 @@ export namespace Game::Content{
 
 		void draw(const TurretEntity* turret) const override{
 			Draw::color(Colors::RED_DUSK);
-			Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->rotation);
+			Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->trans.rot);
 		}
 
 		void shoot(TurretEntity* turret, RealityEntity* shooter) const override{
@@ -33,11 +36,11 @@ export namespace Game::Content{
 
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
 			ptr->trait = &Game::Content::base;
-			ptr->position = turret->position;
-			ptr->rotation = turret->rotation;
+			ptr->trans.rot = turret->trans.rot;
+			ptr->trans.pos = turret->trans.pos;
 
-			ptr->velocity.setPolar(ptr->rotation, 320);
-			ptr->hitBox = box;
+			ptr->velocity.setPolar(ptr->trans.rot, 320);
+			ptr->hitBox.init(box);
 			ptr->physicsBody.inertialMass = 100;
 			ptr->damage.materialDamage.fullDamage = 100;
 			ptr->shooter = shooter;

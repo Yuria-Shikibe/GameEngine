@@ -17,6 +17,8 @@ import GL.Uniform;
 import Graphic.Color;
 import std;
 
+import Heterogeneous;
+
 export namespace GL {
 	enum class ShaderType : GLuint {
 		glsl = GL_SHADER,
@@ -84,7 +86,7 @@ export namespace GL {
 		};
 
 	protected:
-		mutable std::unordered_map <std::string, UniformInfo> uniformInfoMap{};
+		mutable ext::StringMap<UniformInfo> uniformInfoMap{};
 		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
 
 		bool valid{false};
@@ -191,7 +193,7 @@ export namespace GL {
 		}
 
 	public:
-		[[nodiscard]] GLint getLocation(const std::string& uniform) const {
+		[[nodiscard]] GLint getLocation(const std::string_view uniform) const {
 #ifdef _DEBUG
 			auto itr = uniformInfoMap.find(uniform);
 			if(itr != uniformInfoMap.end()){
@@ -205,7 +207,7 @@ export namespace GL {
 
 		}
 
-		[[nodiscard]] UniformInfo getUniformInfo(const std::string& uniform) const {
+		[[nodiscard]] UniformInfo getUniformInfo(const std::string_view uniform) const {
 			return uniformInfoMap.at(uniform);
 		}
 
@@ -321,11 +323,6 @@ export namespace GL {
 		// ReSharper disable once CppMemberFunctionMayBeStatic
 		void unbind() const {
 			GL::useProgram(0);
-		}
-
-		template<typename ...T>
-		void registerUniformMulti(const T&... args) const{
-			(registerUniform(args), ...);
 		}
 
 		void setUniformer(const std::function<void(const Shader&)>& run) {

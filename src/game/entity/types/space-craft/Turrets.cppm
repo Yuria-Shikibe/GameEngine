@@ -85,20 +85,20 @@ export namespace Game{
 			if(quitBattle){
 				expectedRotaton = parent->transformToGlobalAngle(trait->initialDirection);
 			}else{
-				expectedRotaton = (targetPosition - position).angle();
+				expectedRotaton = (targetPosition - trans.pos).angle();
 			}
 		}
 
 		void updateRotate(const float deltaTick){
-			if(!Math::Angle::within(expectedRotaton, rotation, .0005f)){
+			if(!Math::Angle::within(expectedRotaton, trans.rot, .0005f)){
 				rotateSpeed = Math::approach(rotateSpeed, trait->maxRotateSpeed, trait->rotateAccel * deltaTick);
-				rotation = Math::Angle::moveToward(rotation, expectedRotaton, rotateSpeed * deltaTick);
+				trans.rot = Math::Angle::moveToward(trans.rot, expectedRotaton, rotateSpeed * deltaTick);
 
 				if(trait->hasRotateLimitation()){
-					rotation = Math::Angle::clampRange(rotation, trait->initialDirection, trait->rotateLimitation);
+					trans.rot = Math::Angle::clampRange(trans.rot, trait->initialDirection, trait->rotateLimitation);
 				}
 			}else{
-				rotation = expectedRotaton;
+				trans.rot = expectedRotaton;
 			}
 		}
 
@@ -118,8 +118,8 @@ export namespace Game{
 		}
 
 		void updatePosition(){
-			position = relativePosition;
-			position = parent->transformToSuper(position);
+			trans.pos = relativePosition;
+			trans.pos = parent->transformToSuper(trans.pos);
 		}
 
 		void shoot(){
@@ -127,7 +127,7 @@ export namespace Game{
 		}
 
 		[[nodiscard]] bool shouldShoot() const{
-			return firing && Math::Angle::within(expectedRotaton, rotation, trait->shootAngleTolerance);
+			return firing && Math::Angle::within(expectedRotaton, trans.rot, trait->shootAngleTolerance);
 		}
 
 		[[nodiscard]] float getReloadSpeedMultipler() const{
@@ -172,6 +172,6 @@ export namespace Game{
 
 
 	void TurretTrait::init(TurretEntity* turret) const{
-		turret->rotation = initialDirection;
+		turret->trans.rot = initialDirection;
 	}
 }

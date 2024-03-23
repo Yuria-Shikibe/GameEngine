@@ -295,7 +295,7 @@ export namespace Geom{
 			return rotate(Math::cos(rad), Math::sin(rad));
 		}
 
-		Vector2D& rotate(const float cos, const float sin) {
+		constexpr Vector2D& rotate(const float cos, const float sin) {
 			if constexpr(std::is_floating_point_v<T>) {
 				return this->set(cos * x - sin * y, sin * x + cos * y);
 			}else {

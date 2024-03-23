@@ -48,7 +48,7 @@ export namespace Assets {
 			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h));
 
 			defaultMat = Graphic::Batch::getPorj();
-			Graphic::Batch::beginPorj(mat);
+			Core::batchGroup.batchOverlay->setProjection(mat);
 
 			GL::setStencilOperation(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
 
@@ -57,7 +57,7 @@ export namespace Assets {
 		}
 
 		~LoaderRenderer() override { // NOLINT(*-use-equals-default)
-			Graphic::Batch::beginPorj(mat);
+			Core::batchGroup.batchOverlay->setProjection(defaultMat);
 			Graphic::Batch::shader(false);
 
 			GL::bindFrameBuffer(GL_FRAMEBUFFER);

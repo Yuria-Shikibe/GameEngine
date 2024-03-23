@@ -14,5 +14,5 @@ void Game::Controller::assignTurretTarget(std::vector<Geom::Vec2>&& targets){
 void Game::Controller::update() {
 	updateTarget();
 
-	moveCommand.updateCurrent(this->owner->position);
+	moveCommand.updateCurrent(this->owner->trans.pos);
 }

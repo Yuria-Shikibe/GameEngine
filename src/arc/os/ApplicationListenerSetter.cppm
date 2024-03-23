@@ -139,7 +139,7 @@ export namespace OS{
 		glfwSetWindowPosCallback(window, winPosCallBack);
 		// glfwSetWindowSizeCallback(window, framebufferSizeCallback);
 		// glfwMini
-		setInputMode_Cursor(OS::CursorMode::hidden, window);
+		// setInputMode_Cursor(OS::CursorMode::hidden, window);
 		// OS::setInputMode_StickyKeys(true);
 		// OS::setInputMode_LockKeyMods(true);
 	}

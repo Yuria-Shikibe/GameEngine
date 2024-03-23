@@ -28,15 +28,31 @@ static bool screenShotRequest = false;
 static float baseMoveSpeed = 60;
 //TODO finish this shit
 export namespace Ctrl{
+	inline float disableMoveScl = 1.0f;
+
 	void registerCommands(Input* const input) { // NOLINT(*-non-const-parameter)
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS, []{baseMoveSpeed = 200;}));
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_RELEASE, []{baseMoveSpeed = 60;}));
 
-		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_A, Act_Continuous, []{camera->trans(-baseMoveSpeed * OS::delta(), 0);}));
-		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_D, Act_Continuous, []{camera->trans( baseMoveSpeed * OS::delta(), 0);}));
-		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_W, Act_Continuous, []{camera->trans(0,  baseMoveSpeed * OS::delta());}));
-		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_S, Act_Continuous, [] {
-			camera->trans(0, -baseMoveSpeed * OS::delta());
+		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_A, Act_Continuous, []{
+			camera->trans(-baseMoveSpeed * disableMoveScl * OS::delta(), 0);
+		}));
+		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_D, Act_Continuous, []{
+			camera->trans( baseMoveSpeed * disableMoveScl * OS::delta(), 0);
+		}));
+		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_W, Act_Continuous, []{
+			camera->trans(0,  baseMoveSpeed * disableMoveScl * OS::delta());
+		}));
+		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_S, Act_Continuous, [] {
+			camera->trans(0, -baseMoveSpeed * disableMoveScl * OS::delta());
+		}));
+
+		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_M, Act_Press, [] {
+			if(disableMoveScl < 1.0f){
+				disableMoveScl = 1.0f;
+			}else{
+				disableMoveScl = 0.0f;
+			}
 		}));
 
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_F11, GLFW_PRESS, [] {

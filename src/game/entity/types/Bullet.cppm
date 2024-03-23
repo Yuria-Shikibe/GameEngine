@@ -9,6 +9,7 @@ export import Game.Entity.RealityEntity;
 export import Game.Settings.DamageTrait;
 
 import Game.Entity.EntityManager;
+import Game.Entity.Collision;
 // import GL.Texture.TextureRegionRect;
 import Graphic.TextureAtlas;
 import OS.File;
@@ -74,26 +75,29 @@ export namespace Game{
 		}
 
 		bool ignoreCollisionTo(const Game::RealityEntity* object) const override{
-			return object == shooter || object->getFaction()->isAllyTo(faction);
+			return removeable || object == shooter || object->getFaction()->isAllyTo(faction);
 		}
 
 		void overrideCollisionTo(Game::RealityEntity* object, const Geom::Vec2 intersection) override{
 			if(removeable)return;
+
 			trait->hit(*this, *object, intersection);
 			object->dealDamage(damage);
 			removeable = true;
 		}
 
 		void update(const float dt) override{
-			if(removeable)deactivate();
+			if(removeable){
+				deactivate();
+				return;
+			}
 
 			RealityEntity::update(dt);
-
 
 			if(trait->despawnable(*this))despawn();
 		}
 
-		void calCollideTo(const Game::RealityEntity* object, Geom::Vec2 intersection, const float delatTick) override{
+		void calCollideTo(const Game::RealityEntity* object, CollisionData intersection, const float delatTick) override{
 
 		}
 

@@ -10,6 +10,8 @@ import OS.File;
 
 import RuntimeException;
 
+import Heterogeneous;
+
 // import Event;
 
 import std;
@@ -30,9 +32,9 @@ export namespace Graphic {
 	class TextureAtlas {
 	protected:
 		std::unordered_map<std::string_view, Assets::TexturePackPage> pages{};
-		std::unordered_map<std::string, GL::TextureRegionRect*> regions{};
+		ext::StringMap<GL::TextureRegionRect*> regions{};
 
-		std::unordered_map<std::string, std::unique_ptr<GL::Texture2DArray>> textureGroups{};
+		ext::StringMap<std::unique_ptr<GL::Texture2DArray>> textureGroups{};
 
 		const GL::TextureRegionRect* fallbackTextureRegion{nullptr};
 
@@ -179,7 +181,7 @@ export namespace Graphic {
 		}
 
 		[[nodiscard]]
-		const GL::TextureRegionRect* find(const std::string& regionName) {
+		const GL::TextureRegionRect* find(const std::string_view regionName) {
 			if(const auto itr = regions.find(regionName); itr != regions.end()) {
 				return itr->second;
 			}
@@ -191,7 +193,7 @@ export namespace Graphic {
 			return pages;
 		}
 
-		[[nodiscard]] std::unordered_map<std::string, GL::TextureRegionRect*>& getRegions(){
+		[[nodiscard]] ext::StringMap<GL::TextureRegionRect*>& getRegions(){
 			return regions;
 		}
 

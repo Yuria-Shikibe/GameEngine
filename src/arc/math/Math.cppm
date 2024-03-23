@@ -307,6 +307,15 @@ export namespace Math {
 	}
 
 	template <Concepts::Number T>
+	constexpr std::pair<const T, const T> minmax(const T left, const T right) noexcept(noexcept(right < left)){
+		if (right < left) {
+			return {right, left};
+		}
+
+		return {left, right};
+	}
+
+	template <Concepts::Number T>
 	constexpr T max(const T v1, const T v2) {
 		return v1 > v2 ? v1 : v2;
 	}
@@ -436,7 +445,7 @@ export namespace Math {
 	 * @param value N/A
 	 * @param tolerance represent an upper bound below which the value is considered zero.
 	 */
-	inline bool zero(const float value, const float tolerance = FLOAT_ROUNDING_ERROR) {
+	constexpr bool zero(const float value, const float tolerance = FLOAT_ROUNDING_ERROR) {
 		return abs(value) <= tolerance;
 	}
 
@@ -445,7 +454,7 @@ export namespace Math {
 	 * @param a the first value.
 	 * @param b the second value.
 	 */
-	inline bool equal(const float a, const float b) {
+	constexpr bool equal(const float a, const float b) {
 		return abs(a - b) <= FLOAT_ROUNDING_ERROR;
 	}
 
@@ -617,28 +626,40 @@ export namespace Math {
 	}
 
 	namespace Angle{
-		float getAngleInPi2(float a){
-			a = Math::mod(a, DEG_FULL);
+		[[nodiscard]] float getAngleInPi2(float a){
+			a = Math::mod<float>(a, DEG_FULL);
 			if(a < 0)a += DEG_FULL;
 			return a;
 		}
 
-		float forwardDistance(const float angle1, const float angle2){
+		[[nodiscard]] float forwardDistance(const float angle1, const float angle2){
 			return Math::abs(angle1 - angle2);
 		}
 
-		float backwardDistance(const float angle1, const float angle2){
+		[[nodiscard]] float backwardDistance(const float angle1, const float angle2){
 			return DEG_FULL - Math::abs(angle1 - angle2);
 		}
 
+		[[nodiscard]] float angleDstWithSign(float a, float b){
+			a = getAngleInPi2(a);
+			b = getAngleInPi2(b);
 
-		float angleDst(float a, float b){
+			float dst = -(a - b);
+
+			if(abs(dst) > 180){
+				dst *= -1;
+			}
+
+			return std::copysign(Math::min((a - b) < 0 ? a - b + DEG_FULL : a - b, (b - a) < 0 ? b - a + DEG_FULL : b - a), dst);
+		}
+
+		[[nodiscard]] float angleDst(float a, float b){
 			a = getAngleInPi2(a);
 			b = getAngleInPi2(b);
 			return Math::min((a - b) < 0 ? a - b + DEG_FULL : a - b, (b - a) < 0 ? b - a + DEG_FULL : b - a);
 		}
 
-		float angleDstSign(float a, float b){
+		[[nodiscard]] float angleDstSign(float a, float b){
 			a = getAngleInPi2(a);
 			b = getAngleInPi2(b);
 
@@ -651,7 +672,7 @@ export namespace Math {
 			return sign(dst);
 		}
 
-		float moveToward(float angle, float to, const float speed){
+		[[nodiscard]] float moveToward(float angle, float to, const float speed){
 			if(Math::abs(angleDst(angle, to)) < speed) return to;
 			angle = getAngleInPi2(angle);
 			to = getAngleInPi2(to);
@@ -665,11 +686,11 @@ export namespace Math {
 			return angle;
 		}
 
-		inline bool within(const float a, const float b, const float margin){
+		[[nodiscard]] inline bool within(const float a, const float b, const float margin){
 			return angleDst(a, b) <= margin;
 		}
 
-		inline float clampRange(const float angle, const float dest, const float range){
+		[[nodiscard]] inline float clampRange(const float angle, const float dest, const float range){
 			const float dst = angleDst(angle, dest);
 			return dst <= range ? angle : moveToward(angle, dest, dst - range);
 		}

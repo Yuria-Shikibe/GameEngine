@@ -55,6 +55,10 @@ export namespace GL{
 			bufferSize = count;
 		}
 
+		void updateDataRaw(const T* data, const GLsizei count, const GLintptr offset = 0) {
+			glNamedBufferSubData(nameID, offset, count * sizeof T, data);
+		}
+
 		void setupStorage(const GLsizei count, const float* data = nullptr, const GLbitfield flag = BasicStorageFlags){
 			glNamedBufferStorage(nameID, count * sizeof(T), data, flag);
 			bufferSize = count;

@@ -17,7 +17,7 @@ void main() {
     vec4 normalColor = texture(texNormal, texCoord);
     vec4 lightColor = texture(texLight, texCoord);
 
-    vec4 fog = vec4(0.2f, 0.2f, 0.23f, 0.95f);
+    vec4 fog = vec4(0.2f, 0.2f, 0.23f, 0.00f);
 
     vec4 original = lightColor * intensity_ori;
     vec4 bloom = texture2D(bloom, texCoord) * intensity_blo;
