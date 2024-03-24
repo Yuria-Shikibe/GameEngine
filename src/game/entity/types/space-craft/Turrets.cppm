@@ -50,7 +50,7 @@ export namespace Game{
 
 	};
 
-	class TurretEntity : public BasicRealityEntity {
+	class TurretEntity : public BaseEntity {
 	protected:
 		const TurretTrait* trait{nullptr};
 		Geom::Vec2 targetPosition{};
@@ -151,10 +151,16 @@ export namespace Game{
 			draw();
 		}
 
+		void init() override{
+
+		}
+
 		void init(const TurretTrait* const trait, RealityEntity* parent){
 			setTrait(trait);
 			trait->init(this);
 			this->parent = parent;
+
+			init();
 		}
 
 		void setTargetPosition(const Geom::Vec2 targetPosition){

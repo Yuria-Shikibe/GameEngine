@@ -8,7 +8,7 @@ import Concepts;
 
 export namespace Graphic {
 	class Viewport_OrthoRect : public Viewport<>{
-		Geom::Shape::OrthoRectFloat bound{};
+		Geom::OrthoRectFloat bound{};
 
 	public:
 		[[nodiscard]] Viewport_OrthoRect() = default;
@@ -32,7 +32,7 @@ export namespace Graphic {
 			);
 		}
 
-		Geom::Shape::OrthoRectFloat& getPorjectedBound() override {
+		Geom::OrthoRectFloat& getPorjectedBound() override {
 			return bound;
 		}
 	};

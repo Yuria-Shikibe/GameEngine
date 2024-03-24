@@ -8,14 +8,15 @@ export import Game.Entity.EntityManager;
 export import Game.UI.OverlayManager;
 export import Game.UI.HitBoxEditor;
 export import Graphic.Effect.Manager;
+export import Game.ContentLoader;
 
 import std;
 
 import Core.Renderer;
 
 export namespace Game {
-	class Core : public OS::ApplicationListener {
-	public:
+	struct  Core : OS::ApplicationListener {
+		std::unique_ptr<ContentLoader> contentLoader{std::make_unique<ContentLoader>()};
 		//TODO
 		std::unique_ptr<OverlayManager> overlayManager{std::make_unique<OverlayManager>()};
 		std::unique_ptr<HitBoxEditor> hitBoxEditor{std::make_unique<HitBoxEditor>()};

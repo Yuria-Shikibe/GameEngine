@@ -1,8 +1,8 @@
 module;
 
-export module Test;
+#include <GLFW/glfw3.h>
 
-import <GLFW/glfw3.h>;
+export module Test;
 import std;
 
 import OS;
@@ -31,15 +31,18 @@ import Core.Renderer;
 import Ctrl.Constants;
 import Ctrl.ControlCommands;
 
-export namespace Test {
-	constexpr std::string_view MainPageName = "test";
+import Game.Core;
+import Game.Content.Builtin.SpaceCrafts;
+
+export namespace Test{
+	constexpr std::string_view MainPageName = "base";
 	constexpr std::string_view BindPageName = "bind";
 
-	void init(const int argc, char* argv[]) {
+	void init(const int argc, char* argv[]){
 		//TODO move these into application loader
 		//Register Cmd
 		OS::args.reserve(argc);
-		for(int i = 0; i < argc; ++i)OS::args.emplace_back(argv[0]);
+		for(int i = 0; i < argc; ++i) OS::args.emplace_back(argv[0]);
 
 		stbi::setFlipVertically_load(true);
 		stbi::setFlipVertically_write(true);
@@ -52,8 +55,8 @@ export namespace Test {
 		//
 		OS::setApplicationIcon(Core::mainWindow, stbi::obtain_GLFWimage(Assets::assetsDir.subFile("icon.png")).get());
 
-		Core::initCore_Post([] {
-			Core::batchGroup.batchOverlay = std::make_unique<Core::SpriteBatch<>>([](const Core::SpriteBatch<>& self) {
+		Core::initCore_Post([]{
+			Core::batchGroup.batchOverlay = std::make_unique<Core::SpriteBatch<>>([](const Core::SpriteBatch<>& self){
 				auto* const shader = Assets::Shaders::screenSpace;
 
 				shader->setUniformer([&self](const GL::Shader& s){
@@ -85,10 +88,15 @@ export namespace Test {
 		Graphic::Draw::setTexture();
 		Graphic::Frame::rawMesh = Assets::Meshes::raw;
 		Graphic::Frame::blitter = Assets::Shaders::blit;
+
+		Game::core = std::make_unique<Game::Core>();
+		OS::registerListener(Game::core.get());
 	}
 
 	void assetsLoad(){
-		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
+		Game::Content::Builtin::load_SpaceCraft(Game::core->contentLoader.get());
+
+		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadInit>([](const auto& event) {
 			{
 				Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::texCacheDir);
 				uiPage->forcePack = true;
@@ -105,27 +113,26 @@ export namespace Test {
 
 			{
 				Assets::TexturePackPage* mainPage = event.manager->getAtlas().registerPage(MainPageName, Assets::texCacheDir);
-				Assets::textureDir.subFile(MainPageName).forAllSubs([mainPage](OS::File&& file) {
-					mainPage->pushRequest(file);
-				});
-				mainPage->pushRequest(Assets::textureDir.find("white.png"));
-
-				Assets::TexturePackPage* normalTexture = event.manager->getAtlas().registerAttachmentPage("normal", mainPage);
-				Assets::TexturePackPage* lightTexture = event.manager->getAtlas().registerAttachmentPage("light", mainPage);
-
-				Assets::textureDir.subFile(MainPageName).forAllSubs([normalTexture](OS::File&& file) {
-					normalTexture->pushRequest(file);
-				});
-
-				Assets::textureDir.subFile(lightTexture->pageName).forAllSubs([lightTexture](OS::File&& file) {
-					lightTexture->pushRequest(file);
-				});
+				mainPage->pushRequest("white-solid", Assets::textureDir.find("white.png"));
+				Assets::TexturePackPage* normalPage = event.manager->getAtlas().registerAttachmentPage("normal", mainPage);
+				Assets::TexturePackPage* lightPage = event.manager->getAtlas().registerAttachmentPage("light", mainPage);
+				lightPage->pushRequest("white-light", Assets::textureDir.find("white.light.png"));
+				mainPage ->pushRequest("white-light", Assets::textureDir.find("transparent.png"));
 			}
 		});
 
+		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const auto& event) {
+			Game::core->contentLoader->loadTexture(Assets::textureTree, event.manager->getAtlas());
+		});
+
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const Assets::AssetsLoadEnd& event) {
-			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("test-white");
+			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("base-white-solid");
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
+			Graphic::Draw::defaultSolidTexture = Graphic::Draw::defaultTexture;
+
+			auto lightRegion = event.manager->getAtlas().find("base-white-light");
+			Graphic::Draw::defaultLightTexture = lightRegion;
+			const_cast<GL::TextureRegionRect*>(lightRegion)->shrinkEdge(15.0f);
 
 			for (auto& texture : event.manager->getAtlas().getPage("ui").getTextures()) {
 				texture->setScale(GL::TexParams::linear, GL::TexParams::linear);
@@ -183,7 +190,5 @@ export namespace Test {
 		Core::loadAssets();
 	}
 
-	void setupAudioTest() {
-
-	}
+	void setupAudioTest(){}
 }

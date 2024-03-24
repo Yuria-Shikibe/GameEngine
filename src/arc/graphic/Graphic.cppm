@@ -1,9 +1,12 @@
 module ;
 
+#include <glad/glad.h>;
+#include <GLFW/glfw3.h>;
+
 export module Graphic;
 
-import <glad/glad.h>;
-import <GLFW/glfw3.h>;
+
+
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 import std;
@@ -126,7 +129,7 @@ export namespace Graphic{
 		//RESIZE RENDERER!!
 	}
 
-	void windowize(GLFWwindow* window, GLFWmonitor*& monitor, const Geom::Shape::OrthoRectInt& lastBound, const std::string& windowTitle) {
+	void windowize(GLFWwindow* window, GLFWmonitor*& monitor, const Geom::OrthoRectInt& lastBound, const std::string& windowTitle) {
 		const auto mode = getVideoMode(monitor);
 		monitor = nullptr;
 		glfwSetWindowMonitor(window, monitor, lastBound.getSrcX(), lastBound.getSrcY(), lastBound.getWidth(), lastBound.getHeight(), mode->refreshRate);

@@ -1,8 +1,9 @@
 module;
 
+#include <glad/glad.h>;
+
 export module GL.Buffer.RenderBuffer;
 
-import <glad/glad.h>;
 export import GL.Object;
 export import Graphic.Resizeable;
 

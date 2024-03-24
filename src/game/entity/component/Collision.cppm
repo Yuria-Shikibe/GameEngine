@@ -5,7 +5,7 @@
 export module Game.Entity.Collision;
 
 export import Geom.Shape.RectBox;
-import Geom.Translation;
+import Geom.Transform;
 import Geom.Shape.Rect_Orthogonal;
 import Geom.Matrix3D;
 import Math;
@@ -44,23 +44,23 @@ export namespace Game{
 	};
 
 	struct HitBoxFragmentData {
-		Translation relaTrans{};
+		Transform relaTrans{};
 		RectBox original{};
 
 		HitBoxFragmentData() = default;
 
-		HitBoxFragmentData(const Translation relaTrans, const RectBox& original)
+		HitBoxFragmentData(const Transform relaTrans, const RectBox& original)
 			: relaTrans(relaTrans),
 			  original(original){
 		}
 
 		void read(std::istream& reader){
-			reader.read(reinterpret_cast<char*>(&this->relaTrans), sizeof Translation);
+			reader.read(reinterpret_cast<char*>(&this->relaTrans), sizeof Transform);
 			reader.read(reinterpret_cast<char*>(static_cast<RectBoxBrief*>(&this->original)), sizeof RectBoxBrief);
 		}
 
 		void write(std::ostream& writer) const{ //TODO rectbox opt
-			writer.write(reinterpret_cast<const char*>(&this->relaTrans), sizeof Translation);
+			writer.write(reinterpret_cast<const char*>(&this->relaTrans), sizeof Transform);
 			writer.write(reinterpret_cast<const char*>(static_cast<const RectBoxBrief*>(&this->original)), sizeof RectBoxBrief);
 		}
 	};
@@ -79,14 +79,14 @@ export namespace Game{
 
 			BoxStateData() = default;
 
-			BoxStateData(const Translation& relaTrans, const RectBox& original, const RectBox& temp)
+			BoxStateData(const Transform& relaTrans, const RectBox& original, const RectBox& temp)
 				: HitBoxFragmentData(relaTrans, original),
 				  temp(temp){
 			}
 		};
 
 		std::vector<BoxStateData> hitBoxGroup{};
-		mutable Translation trans{};
+		mutable Transform trans{};
 
 		//Bolow are transient fields
 
@@ -97,8 +97,8 @@ export namespace Game{
 		/** @brief CCD-traces clamp size.*/
 		mutable std::atomic<int> sizeTraceClamped{};
 
-		Shape::OrthoRectFloat maxTransientBound{};
-		Shape::OrthoRectFloat maxBound{};
+		OrthoRectFloat maxTransientBound{};
+		OrthoRectFloat maxBound{};
 
 		HitBox() = default;
 
@@ -126,7 +126,7 @@ export namespace Game{
 			return *this;
 		}
 
-		void updateHitbox(const Translation translation){
+		void updateHitbox(const Transform translation){
 			this->trans = translation;
 
 			const float cos = Math::cosDeg(this->trans.rot);
@@ -219,7 +219,7 @@ export namespace Game{
 			}
 		}
 
-		void init(const RectBox& sample, const Translation trans = {}){
+		void init(const RectBox& sample, const Transform trans = {}){
 			hitBoxGroup.emplace_back(trans, sample, sample);
 		}
 

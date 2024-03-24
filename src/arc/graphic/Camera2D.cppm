@@ -24,7 +24,7 @@ export namespace Core{
 		Matrix3D worldToScreen{};
 		Matrix3D screenToWorld{};
 
-		Shape::OrthoRectUInt screenSize{};
+		OrthoRectUInt screenSize{};
 
 		//TODO this viewport design is so bad!
 		std::unique_ptr<Graphic::Viewport<>> viewport{std::make_unique<Graphic::Viewport_OrthoRect>()};
@@ -56,7 +56,7 @@ export namespace Core{
 			return *viewport;
 		}
 
-		[[nodiscard]] Shape::OrthoRectFloat& viewportRect() const {
+		[[nodiscard]] OrthoRectFloat& viewportRect() const {
 			return viewport->getPorjectedBound();
 		}
 

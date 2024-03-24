@@ -4,11 +4,7 @@ export module Game.Entity.RealityEntity;
 
 import Concepts;
 
-export import Game.Entity;
-export import Game.Entity.Drawable;
-export import Game.Entity.Healthed;
-export import Game.Entity.Factional;
-export import Game.Entity.PosedEntity;
+export import Game.Entity.BaseEntity;
 export import Game.Entity.PhysicsAttribute;
 export import Game.Entity.Controller;
 export import Game.Faction;
@@ -28,11 +24,6 @@ import Math;
 import std;
 
 export namespace Game {
-	class BasicRealityEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {
-		virtual void init(){
-
-		}
-	};
 	/**
 	 * \brief
 	 * RealityEntity should exist in Reality,
@@ -43,7 +34,7 @@ export namespace Game {
 	 *
 	 * TODO z layer necessity?
 	 */
-	class RealityEntity : public BasicRealityEntity {
+	class RealityEntity : public BaseEntity {
 	public:
 		static constexpr float angularVelocityLimit = 180;
 		static constexpr float angularAccelerationLimit = 90;
@@ -88,14 +79,14 @@ export namespace Game {
 		/**
 		 * @brief CCD usage;
 		 */
-		Geom::Shape::OrthoRectFloat maxBound{};
+		Geom::OrthoRectFloat maxBound{};
 
-		float CCD_activeThresholdSpeed2 = 250; //TODO also relative to size and frames!
+		float CCD_activeThresholdSpeedSqr = 250; //TODO also relative to size and frames!
 
 		[[nodiscard]] virtual bool enableCCD() const {
 			const float len2 = velocity.length2();
 
-			return len2 >  CCD_activeThresholdSpeed2/* || len2 > hitBox.sizeVec2.length2() * 0.5f*/;
+			return len2 >  CCD_activeThresholdSpeedSqr/* || len2 > hitBox.sizeVec2.length2() * 0.5f*/;
 		}
 
 		[[nodiscard]] virtual bool requiresCollisionIntersection() const {
@@ -175,7 +166,7 @@ export namespace Game {
 			return ang;
 		}
 
-		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {
+		[[nodiscard]] const Geom::OrthoRectFloat& getDrawBound() const override {
 			return maxBound;
 		}
 
@@ -413,12 +404,12 @@ export namespace Game {
 			return false;
 		}
 
-		static const Geom::Shape::OrthoRectFloat& getHitBoound(const RealityEntity* reality_entity) {
+		static const Geom::OrthoRectFloat& getHitBoound(const RealityEntity* reality_entity) {
 			return reality_entity->hitBox.maxBound;
 		}
 
 		static bool roughInterscet(const RealityEntity* subject, const RealityEntity* object) {
-			if(Math::abs(subject->layer - object->layer) > subject->collisionThickness + subject->collisionThickness)return false;
+			if(Math::abs(subject->zLayer - object->zLayer) > subject->collisionThickness + subject->collisionThickness)return false;
 			if(subject->deletable() || object->deletable() || subject == object)return false;
 			if(subject->ignoreCollisionTo(object) || object->ignoreCollisionTo(subject))return false;
 			// if(subject->intersectedPointWith.contains(object))return false;

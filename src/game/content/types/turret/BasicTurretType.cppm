@@ -7,7 +7,7 @@ import Graphic.Color;
 import Core;
 import Assets.Sound;
 import Geom.Shape.RectBox;
-import Geom.Translation;
+import Geom.Transform;
 import Game.Entity.Bullet;
 import Game.Entity.EntityManager;
 import Game.Content.Type.BasicBulletType;
@@ -35,7 +35,7 @@ export namespace Game::Content{
 			box.offset.mul(-0.5f);
 
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
-			ptr->trait = &Game::Content::base;
+			ptr->trait = &Game::Content::basicBulletType;
 			ptr->trans.rot = turret->trans.rot;
 			ptr->trans.pos = turret->trans.pos;
 

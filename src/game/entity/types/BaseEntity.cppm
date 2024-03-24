@@ -2,14 +2,18 @@ module;
 
 export module Game.Entity.BaseEntity;
 
-import Game.Entity;
-import Game.Entity.Drawable;
-import Game.Entity.Factional;
+export import Game.Entity;
+export import Game.Entity.Drawable;
+export import Game.Entity.Healthed;
+export import Game.Entity.Factional;
+export import Game.Entity.PosedEntity;
 
 import Geom.Position;
 
 export namespace Game {
-	class BaseEntity : virtual public DrawableEntity{
+	class BaseEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {
+		virtual void init(){
 
+		}
 	};
 }

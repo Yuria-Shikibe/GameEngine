@@ -114,9 +114,9 @@ export namespace Font {
 	struct CharData {
 		GL::TextureRegionRect region{};
 		FT_Glyph_Metrics matrices{};
-		Shape::OrthoRectUInt charBox{};
+		OrthoRectUInt charBox{};
 
-		[[nodiscard]] CharData(const FT_Glyph_Metrics& matrices, const Shape::OrthoRectUInt& charBox)
+		[[nodiscard]] CharData(const FT_Glyph_Metrics& matrices, const OrthoRectUInt charBox)
 			: matrices(matrices),
 			  charBox(charBox) {
 		}
@@ -125,7 +125,7 @@ export namespace Font {
 	};
 
 	struct FontData {
-		Shape::OrthoRectUInt box{};
+		OrthoRectUInt box{};
 		std::unordered_map<FT_ULong, CharData> charDatas{};
 		float spaceSpacing{-1};
 		float lineSpacingMin{-1};
@@ -134,7 +134,7 @@ export namespace Font {
 
 		[[nodiscard]] FontData() = default;
 
-		[[nodiscard]] explicit FontData(Shape::OrthoRectUInt&& box, const size_t size, Pixmap&& pixmap) : box(std::move(box)){
+		[[nodiscard]] explicit FontData(OrthoRectUInt&& box, const size_t size, Pixmap&& pixmap) : box(std::move(box)){
 			fontPixmap = std::make_unique<Pixmap>(std::forward<Pixmap>(pixmap));
 			charDatas.reserve(size);
 		}
@@ -359,7 +359,7 @@ export namespace Font {
 
 			fontTexture->setScale(GL::TexParams::mipmap_linear_linear);
 
-			const Shape::OrthoRectUInt bound{fontTexture->getWidth(), fontTexture->getHeight()};
+			const OrthoRectUInt bound{fontTexture->getWidth(), fontTexture->getHeight()};
 
 			fonts.reserve(fontsRaw.size());
 			for(auto& value: fontsRaw) {
@@ -425,7 +425,7 @@ export namespace Font {
 	struct FontData_Preload{
 		FT_ULong charCode{0};
 		FT_Glyph_Metrics matrices{};
-		Shape::OrthoRectUInt box{};
+		OrthoRectUInt box{};
 		Graphic::Pixmap pixmap{};
 
 		[[nodiscard]] FontData_Preload() = default;
@@ -575,7 +575,7 @@ export namespace Font {
 				maxMap.loadFrom(texFile);
 			}
 
-			params.data.reset(new FontData{Geom::Shape::OrthoRectUInt{maxMap.getWidth(), maxMap.getHeight()}, size, std::move(maxMap)});
+			params.data.reset(new FontData{Geom::OrthoRectUInt{maxMap.getWidth(), maxMap.getHeight()}, size, std::move(maxMap)});
 
 			for(auto& data: fontDatas) {
 				params.data->charDatas.emplace(data.charCode, CharData{data.matrices, data.box});

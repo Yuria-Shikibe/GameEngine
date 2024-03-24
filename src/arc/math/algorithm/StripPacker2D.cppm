@@ -8,10 +8,10 @@ import Concepts;
 import Geom.Shape.Rect_Orthogonal;
 
 export namespace Math {
-    template <typename Cont, Concepts::Number T, Concepts::Invokable<Geom::Shape::Rect_Orthogonal<T>&(Cont&)> auto trans>
+    template <typename Cont, Concepts::Number T, Concepts::Invokable<Geom::Rect_Orthogonal<T>&(Cont&)> auto trans>
 	struct StripPacker2D {
     protected:
-		using Rect = Geom::Shape::Rect_Orthogonal<T>;
+		using Rect = Geom::Rect_Orthogonal<T>;
     	using subRectArr = std::array<Rect, 3>;
 
 		static Rect& obtain(Cont& cont) {
@@ -69,7 +69,7 @@ export namespace Math {
     	std::unordered_set<Cont*>& remains() {return all;}
 
     protected:
-    	bool shouldStop() const {return all.empty();}
+    	[[nodiscard]] bool shouldStop() const {return all.empty();}
 
     	Rect* tryPlace(const Rect& bound, std::vector<Cont*>& which) {
     		for(auto itr = which.begin(); itr != which.end(); ++itr){

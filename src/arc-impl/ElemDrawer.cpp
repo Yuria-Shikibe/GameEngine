@@ -9,7 +9,7 @@ void UI::TextureRegionRectDrawable::draw(const float srcx, const float srcy, con
 #ifdef _DEBUG
 	if(!rect)throw ext::NullPointerException{"Null Tex On Draw Call!"};
 #endif
-	Graphic::Draw::rect(rect, srcx, srcy, width, height);
+	Graphic::Draw::rectOrtho(rect, srcx, srcy, width, height);
 }
 
 void UI::TextureNineRegionDrawable::draw(float srcx, float srcy, float width, float height) const {
@@ -59,7 +59,7 @@ void UI::EdgeDrawer::drawBackground(const UI::Elem* elem) const {
 		color.mul(1.1f).lerp(Graphic::Colors::WHITE, 0.3f);
 		Graphic::Draw::color(color);
 		Graphic::Draw::alpha(elem->isPressed() ? 0.5f : 0.2f);
-		Graphic::Draw::rect(Graphic::Draw::defaultTexture, elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+		Graphic::Draw::rectOrtho(Graphic::Draw::defaultTexture, elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	}
 
 

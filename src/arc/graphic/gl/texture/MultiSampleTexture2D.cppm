@@ -1,8 +1,9 @@
 module;
 
+#include <glad/glad.h>;
+
 export module GL.Texture.MultiSampleTexture2D;
 
-import <glad/glad.h>;
 import GL.Texture.Texture2D;
 
 export namespace GL{
@@ -18,7 +19,6 @@ export namespace GL{
 			glCreateTextures(targetFlag, 1, &nameID);
 
 			glTextureStorage2DMultisample(nameID, samples, GL_RGBA8, width, height, GL_TRUE);
-			setWrap();
 		}
 
 		MultiSampleTexture2D(const unsigned int w, const unsigned int h) : MultiSampleTexture2D(w, h, 4) {

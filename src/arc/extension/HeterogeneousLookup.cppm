@@ -53,4 +53,7 @@ export namespace ext{
 			return this->find(key)->second;
 		}
 	};
+
+	template <typename V>
+	using StringMultiMap = std::unordered_multimap<std::string, V, StringHasher, StringEqualComparator>;
 }

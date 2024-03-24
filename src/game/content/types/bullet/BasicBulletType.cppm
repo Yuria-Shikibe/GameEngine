@@ -42,5 +42,5 @@ export namespace Game::Content{
 			Assets::Effects::squareOut.suspendOn(Game::core->effectManager.get())->
 				set(bullet.trans.pos, 0, Graphic::Colors::SKY, 30);
 		}
-	} base;
+	} basicBulletType;
 }

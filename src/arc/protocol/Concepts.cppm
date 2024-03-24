@@ -57,6 +57,9 @@ export namespace Concepts {
     template <typename T>
     concept Number = std::is_arithmetic_v<T>;
 
+	template <typename T, typename R>
+	concept Pass = std::same_as<std::remove_cvref_t<T>, R>;
+
     template <typename T>
     concept NumberSingle = std::is_arithmetic_v<T> && sizeof(T) <= 4;
 

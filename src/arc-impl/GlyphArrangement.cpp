@@ -147,7 +147,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout> layout, const s
 			}
 			data.fontColor = context.currentColor;
 
-			Geom::Shape::OrthoRectFloat box = charData->charBox.as<float>();
+			Geom::OrthoRectFloat box = charData->charBox.as<float>();
 
 
 			box.setSrc(

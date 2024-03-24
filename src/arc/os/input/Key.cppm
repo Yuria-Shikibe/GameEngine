@@ -1,8 +1,9 @@
 module ;
 
+#include <GLFW/glfw3.h>
+
 export module OS.KeyBind;
 
-import <GLFW/glfw3.h>;
 import std;
 
 export namespace OS{

@@ -1,6 +1,9 @@
+module;
+
+#include <glad/glad.h>;
+
 export module GL.VertexArray;
 
-import <glad/glad.h>;
 import std;
 import GL.Buffer.DataBuffer;
 import GL.Object;

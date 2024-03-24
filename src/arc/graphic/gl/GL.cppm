@@ -1,6 +1,9 @@
+module;
+
+#include <glad/glad.h>;
+
 export module GL;
 
-import <glad/glad.h>;
 import std;
 
 namespace GL {

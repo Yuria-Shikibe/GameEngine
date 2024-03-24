@@ -1,6 +1,9 @@
+module;
+
+#include <glad/glad.h>;
+
 export module GL.Mesh;
 
-import <glad/glad.h>;
 import std;
 
 export import GL.Buffer.DataBuffer;

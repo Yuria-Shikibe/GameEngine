@@ -1,5 +1,7 @@
 module;
 
+#include <GLFW/glfw3.h>
+
 export module Assets.Manager;
 
 import Core.Renderer;
@@ -13,9 +15,6 @@ import Font;
 import Event;
 
 import std;
-import <GLFW/glfw3.h>;
-
-
 
 export
 /**
@@ -24,14 +23,14 @@ export
 namespace Assets{
 	class Manager;
 
+	struct AssetsLoadInit final : Event::EventType {
+		Manager* const manager;
+		[[nodiscard]] explicit AssetsLoadInit(Manager* const manager) : manager(manager) {}
+	};
+
 	struct AssetsLoadPull final : Event::EventType {
 		Manager* const manager;
 		[[nodiscard]] explicit AssetsLoadPull(Manager* const manager) : manager(manager) {}
-	};
-
-	struct AssetsLoadBegin final : Event::EventType {
-		Manager* const manager;
-		[[nodiscard]] explicit AssetsLoadBegin(Manager* const manager) : manager(manager) {}
 	};
 
 	struct AssetsLoadPost final : Event::EventType {
@@ -54,8 +53,8 @@ namespace Assets{
 		Assets::AssetsLoader loader{};
 
 		Event::EventManager loadEvents{
+			Event::indexOf<AssetsLoadInit>(),
 			Event::indexOf<AssetsLoadPull>(),
-			Event::indexOf<AssetsLoadBegin>(),
 			Event::indexOf<AssetsLoadPost>(),
 			Event::indexOf<AssetsLoadEnd>()
 		};

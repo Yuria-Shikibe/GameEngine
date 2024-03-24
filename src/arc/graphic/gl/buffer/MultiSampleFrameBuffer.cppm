@@ -1,8 +1,9 @@
 module;
 
+#include <glad/glad.h>;
+
 export module GL.Buffer.MultiSampleFrameBuffer;
 
-import <glad/glad.h>;
 import GL.Buffer.FrameBuffer;
 import GL.Buffer.MultiSampleRenderBuffer;
 import GL.Texture.MultiSampleTexture2D;

@@ -8,8 +8,8 @@ import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
 import Geom.Vector2D;
 
-using Rect = Geom::Shape::OrthoRectFloat;
-using HardRect = Geom::Shape::OrthoRectUInt;
+using Rect = Geom::OrthoRectFloat;
+using HardRect = Geom::OrthoRectUInt;
 
 export namespace GL {
 	/**

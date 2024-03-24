@@ -10,7 +10,7 @@ import std;
 export namespace Game{
 	class DrawMap : public EntityMap<DrawableEntity>{
 	protected:
-		Geom::Shape::OrthoRectFloat viewPort{};
+		Geom::OrthoRectFloat viewPort{};
 
 	public:
 		using EntityMap::idMap;
@@ -27,7 +27,7 @@ export namespace Game{
 			}
 		}
 
-		void setViewport(const Geom::Shape::OrthoRectFloat& view) {
+		void setViewport(const Geom::OrthoRectFloat& view) {
 			viewPort = view;
 		}
 	};

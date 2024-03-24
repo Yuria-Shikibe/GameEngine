@@ -85,19 +85,19 @@ export namespace GL{
 		}
 
 		void shrinkEdgeX(const float marginX) {
-			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
+			Geom::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
 			newBound.move(marginX, 0).addSize(-marginX * 2.0f, 0);
 			fetchIntoCurrent(newBound);
 		}
 
 		void shrinkEdgeY(const float marginY) {
-			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
+			Geom::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
 			newBound.move(0, marginY).addSize(0, -marginY * 2.0f);
 			fetchIntoCurrent(newBound);
 		}
 
 		void shrinkEdge(const float marginX, const float marginY) {
-			Geom::Shape::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
+			Geom::OrthoRectFloat newBound{u0 * data->getWidth(), v0 * data->getHeight(), getWidth(), getHeight()};
 			newBound.move(marginX, marginY).addSize(-marginX * 2.0f, -marginY * 2.0f);
 			fetchIntoCurrent(newBound);
 		}
@@ -107,7 +107,7 @@ export namespace GL{
 		}
 
 		template<Concepts::Number N0, Concepts::Number N1>
-		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const Geom::Shape::Rect_Orthogonal<N1>& external) {
+		void fetchInto(const Geom::Rect_Orthogonal<N0>& internal, const Geom::Rect_Orthogonal<N1>& external) {
 			float srcx = 0.0f;
 			float srcy = 0.0f;
 			if(data != nullptr) {
@@ -123,7 +123,7 @@ export namespace GL{
 		}
 
 		template<Concepts::Number N0>
-		void fetchIntoCurrent(const Geom::Shape::Rect_Orthogonal<N0>& internal) {
+		void fetchIntoCurrent(const Geom::Rect_Orthogonal<N0>& internal) {
 			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(getData()->getWidth());
 			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(getData()->getHeight());
 
@@ -132,7 +132,7 @@ export namespace GL{
 		}
 
 		template<Concepts::Number N0, Concepts::Number N1>
-		void fetchInto(const Geom::Shape::Rect_Orthogonal<N0>& internal, const N1 width, const N1 height) {
+		void fetchInto(const Geom::Rect_Orthogonal<N0>& internal, const N1 width, const N1 height) {
 			u0 = static_cast<float>(internal.getSrcX()) / static_cast<float>(width);
 			v0 = static_cast<float>(internal.getSrcY()) / static_cast<float>(height);
 
@@ -141,7 +141,7 @@ export namespace GL{
 		}
 
 		template<Concepts::Number N0, Concepts::Number N1>
-		void fetchInto(const N0 srcX, const N0 srcY, const N0 width, const N0 height, const Geom::Shape::Rect_Orthogonal<N1>& external) {
+		void fetchInto(const N0 srcX, const N0 srcY, const N0 width, const N0 height, const Geom::Rect_Orthogonal<N1>& external) {
 			float srcx = 0.0f;
 			float srcy = 0.0f;
 			if(data != nullptr) {

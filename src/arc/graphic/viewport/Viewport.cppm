@@ -10,7 +10,7 @@ export import Geom.Vector3D;
 export import Geom.Vector2D;
 export import Geom.Shape.Rect_Orthogonal;
 
-using Geom::Shape::OrthoRectFloat;
+using Geom::OrthoRectFloat;
 
 export namespace Graphic {
 	template <typename DimensionVec = Geom::Vec2, typename DimensionMat = Geom::Matrix3D>

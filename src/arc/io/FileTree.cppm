@@ -19,7 +19,7 @@ export namespace OS{
 		/**
 		 * \brief empty for add all subs
 		 * */
-		std::vector<File::sortPred> concentration{};
+		std::vector<File::Filter> concentration{};
 
 		std::vector<File> subDirectories{};
 
@@ -28,67 +28,9 @@ export namespace OS{
 		 * */
 		ext::StringMap<std::vector<File>> files{};
 
-
-		/**
-		 * \brief This need to be called to enable it.
-		 */
-		ext::StringMap<File> mappedFiles{};
+		ext::StringMap<File> flatView{};
 
 		File root{};
-
-	public:
-		[[nodiscard]] bool concentrateAll() const{
-			return concentration.empty();
-		}
-
-		FileTree() : root{ext::getSelf_runTime()} {
-			buildFileTree();
-		}
-
-		explicit FileTree(const std::string_view& root) : root{root} {
-			buildFileTree();
-		}
-
-		explicit FileTree(const File& root) : root{root} {
-			buildFileTree();
-		}
-
-		explicit FileTree(File&& root) : root{std::move(root)} {
-			buildFileTree();
-		}
-
-		FileTree(const FileTree& o){
-			reDirect(o.root);
-			concentration = o.concentration;
-			buildFileTree();
-		}
-
-		FileTree(FileTree&& o) noexcept {
-			reDirect(o.root);
-			concentration = std::move(o.concentration);
-			subDirectories = std::move(o.subDirectories);
-			files = std::move(o.files);
-		}
-
-		FileTree& operator=(const FileTree& o){
-			if(this == &o)return *this;
-			reDirect(o.root);
-			concentration = o.concentration;
-			subDirectories = o.subDirectories;
-			buildFileTree();
-
-			return *this;
-		}
-
-		FileTree& operator=(FileTree&& o) noexcept {
-			if(this == &o)return *this;
-			reDirect(o.root);
-			concentration = std::move(o.concentration);
-			subDirectories = std::move(o.subDirectories);
-			files = std::move(o.files);
-
-			return *this;
-		}
 
 		static void output(std::ostream &os, const File& file, const unsigned char depth){
 			if(depth == 0){
@@ -108,6 +50,20 @@ export namespace OS{
 			}
 		}
 
+
+	public:
+		[[nodiscard]] bool concentrateAll() const{
+			return concentration.empty();
+		}
+
+		FileTree() = default;
+
+		explicit FileTree(const std::string_view& root) : root{root} {buildFileTree();}
+
+		explicit FileTree(const File& root) : root{root} {buildFileTree();}
+
+		explicit FileTree(File&& root) : root{std::move(root)} {buildFileTree();}
+
 		friend std::ostream &operator<<(std::ostream &os, const FileTree& tree) {
 			output(os, tree.root, 0);
 
@@ -125,23 +81,34 @@ export namespace OS{
 		}
 
 		template<typename ...T>
-			requires (std::is_same_v<T, File::sortPred> && ...)
-		void registerConcentration(T... args){
-			(concentration.push_back(args), ...);
+			requires (std::is_same_v<T, File::Filter> && ...)
+		void registerConcentration(T&&... args){
+			(concentration.push_back(std::forward<T>(args)), ...);
 		}
 
-		/**
-		 * \brief Avoid using this if posssible!
-		 * \param prefix
-		 */
-		void mapSubFiles(const std::string& prefix = std::string{}) {
+		void mapSubFiles(Concepts::Invokable<std::string(const OS::File&)> auto&& func) {
 			for(auto& element : files | std::ranges::views::values) {
 				for(auto& file : element) {
-					if(const auto [itr, success] = mappedFiles.emplace(prefix + file.stem(), file); !success) {
-						throw ext::RuntimeException{"It's illegal to map file tree that has files with the same stem name!"};
+					if(const auto [itr, success] = flatView.try_emplace(func(file), file); !success) {
+						throw ext::IllegalArguments{"It's illegal to map file tree that has files with the same stem name! :" + itr->first};
 					}
 				}
 			}
+		}
+
+		[[nodiscard]] ext::StringMap<File>& getFlatView(){ return flatView; }
+
+		template <bool quiet = false>
+		OS::File flatFind(const std::string_view fileName) const {
+			if(const auto itr = flatView.find(fileName); itr != flatView.end()){
+				return itr->second;
+			}
+
+			if constexpr(quiet){
+				return {};
+			}
+
+			throw ext::IllegalArguments{std::format("Failed To Find File: {}", fileName)};
 		}
 
 		void reDirect(const File& rootFile){
@@ -168,7 +135,7 @@ export namespace OS{
 			}
 		}
 
-		File findDir(const std::string& name){
+		File findDir(const std::string_view name){
 			const auto it = std::ranges::find_if(subDirectories, [&name](const File& o){
 				return o.filename() == name;
 			});
@@ -182,20 +149,25 @@ export namespace OS{
 			return *it;
 		}
 
-		[[nodiscard]] const std::vector<File>& function(const std::string& sortName) const{
-			return files.at(sortName);
+		[[nodiscard]] const std::vector<File>& find(const std::string_view category) const{
+			return files.at(category);
+		}
+
+		File findAbsolute(const std::string_view fileName) const{
+			return root.subFile(fileName);
 		}
 
 		/**
+		 * TODO this function is a totally disaster
 		 * \brief Return root if find nothing!
 		 * */
-		[[nodiscard]] File find(const std::string& fileName, const std::string& sortName = ""){
-			if(sortName.empty()){
+		[[nodiscard]] File find(const std::string_view fileName, const std::string_view category = "") const {
+			if(category.empty()){
 				auto values = files | std::ranges::views::values;
 
-				std::vector<File>::iterator index2;
+				std::vector<File>::const_iterator index2;
 
-				if(const auto index1 = std::ranges::find_if(values, [&fileName, &index2](std::vector<File>& fileVector) mutable {
+				if(const auto index1 = std::ranges::find_if(values, [&fileName, &index2](const std::vector<File>& fileVector){
 					index2 = std::ranges::find_if(fileVector, [&fileName](const File& file){
 						return fileName == file.filename();
 					});
@@ -208,8 +180,8 @@ export namespace OS{
 				return root;
 			}
 
-			if(!files.contains(sortName))return root;
-			auto sameTypes = files.at(sortName);
+			if(!files.contains(category))return root;
+			auto sameTypes = files.at(category);
 
 			if(const auto result = std::ranges::find_if(sameTypes, [&fileName](const File& file){
 				return fileName == file.filename();

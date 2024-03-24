@@ -10,7 +10,7 @@ import Geom.Shape.Rect_Orthogonal;
 import Align;
 import Concepts;
 
-using Rect = Geom::Shape::OrthoRectFloat;
+using Rect = Geom::OrthoRectFloat;
 
 //TODO Using Pool to avoid heap allocation
 export namespace UI {

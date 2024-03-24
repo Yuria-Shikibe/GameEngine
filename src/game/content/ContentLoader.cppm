@@ -4,41 +4,49 @@
 
 export module Game.ContentLoader;
 
-export import Game.ContentType;
+export import Game.Content.ContentType;
 
 import std;
 import Concepts;
 import RuntimeException;
 
+import Heterogeneous;
+
 export namespace Game{
 	class ContentLoader {
 	protected:
-		std::unordered_map<std::string_view, std::unique_ptr<Content>> contents{};
+		std::unordered_map<std::string_view, std::unique_ptr<ContentTrait>> contents{};
 
 	public:
-		Content* find(const std::string_view name){
+		ContentTrait* find(const std::string_view name){
 			const auto itr = this->contents.find(name);
 
 			if(itr == this->contents.end())return nullptr;
 			return itr->second.get();
 		}
 
-		template <Concepts::Derived<Content> T>
-		T* registerContent(const std::string_view name, Concepts::Invokable<void(T*)> auto&& initilazer){
-			auto rst = contents.try_emplace(name, std::make_unique<T>());
+		template <Concepts::Derived<ContentTrait> T>
+			requires requires{
+				new T{std::declval<std::string_view>()};
+			}
+		T* registerContent(const std::string_view name, Concepts::InvokeNullable<void(T*)> auto&& initilazer = nullptr){
+			auto rst = contents.try_emplace(name, std::make_unique<T>(name));
 
 			if(rst.second){
-				T* t = rst.first->second;
-				initilazer(t);
+				T* t = static_cast<T*>(rst.first->second.get());
+				if constexpr (!std::same_as<decltype(initilazer), std::nullptr_t>){
+					initilazer(t);
+				}
+
 				return t;
 			}
 
 			throw ext::IllegalArguments{std::format("Content Name Duplicated: {}", name)};
 		}
 
-		void load(Graphic::TextureAtlas* atlas){
+		void loadTexture(const OS::FileTree& fileTree, Graphic::TextureAtlas& atlas){
 			for (const auto& content : contents | std::ranges::views::values){
-				content->pullRequest(atlas);
+				content->pullLoadRequest(atlas, fileTree, "");
 			}
 		}
 	};

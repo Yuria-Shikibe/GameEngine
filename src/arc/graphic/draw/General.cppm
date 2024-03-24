@@ -16,7 +16,8 @@ import GL.Shader;
 import GL.Buffer.FrameBuffer;
 
 
-export import Geom.Vector2D;
+export import Geom.Transform;
+export import Geom.Shape.RectBox;
 export import Geom.Shape.Rect_Orthogonal;
 export import Geom.Matrix3D;
 
@@ -326,11 +327,16 @@ export namespace Graphic{
 		constexpr float DepthNear = 1;
 		constexpr float DepthFar = 300;
 
+		//TODO necessity to move these context value to batch
+		//TODO concurrency support to remove these context value
 		inline Color contextColor = Colors::WHITE;
 		inline Color contextMixColor = Colors::CLEAR;
 
 		inline const TextureRegion* contextTexture = nullptr;
 		inline const TextureRegion* defaultTexture = nullptr;
+
+		inline const TextureRegion* defaultLightTexture = nullptr;
+		inline const TextureRegion* defaultSolidTexture = nullptr;
 
 		inline float contextNorZ = 1.0f;
 
@@ -344,9 +350,23 @@ export namespace Graphic{
 
 		[[nodiscard]] float getNorZ(){ return contextNorZ; }
 
-		void color(const Color color = Colors::WHITE){ contextColor = color; }
+		template <bool applyAlpha = true>
+		void color(const Color color = Colors::WHITE){
+			if constexpr(applyAlpha){
+				contextColor = color;
+			}else{
+				contextColor.set(color.r, color.g, color.b);
+			}
+		}
 
-		void mixColor(const Color color = Colors::CLEAR){ contextMixColor = color; }
+		template <bool applyAlpha = true>
+		void mixColor(const Color color = Colors::CLEAR){
+			if constexpr(applyAlpha){
+				contextMixColor = color;
+			}else{
+				contextMixColor.set(color.r, color.g, color.b);
+			}
+		}
 
 		void alpha(const float a = 1.0f){ contextColor.setA(a); }
 
@@ -461,14 +481,31 @@ export namespace Graphic{
 			);
 		}
 
-		template <Concepts::Pos<float> T, BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void quad(const TextureRegion* region, const T& v0, const T& v1, const T& v2, const T& v3){
+		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+		void quad(const TextureRegion* region,
+			const Concepts::Pos<float> auto& v0, const Concepts::Pos<float> auto& v1,
+			const Concepts::Pos<float> auto& v2, const Concepts::Pos<float> auto& v3
+		){
 			::Graphic::Draw::vert_monochromeAll<batchPtr>(
 				region->getData(), contextColor, contextMixColor,
 				v0.getX(), v0.getY(), region->u00(), region->v00(),
 				v1.getX(), v1.getY(), region->u10(), region->v10(),
 				v2.getX(), v2.getY(), region->u11(), region->v11(),
 				v3.getX(), v3.getY(), region->u01(), region->v01()
+			);
+		}
+
+		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+		void quad(
+			const Concepts::Pos<float> auto& v0, const Concepts::Pos<float> auto& v1,
+			const Concepts::Pos<float> auto& v2, const Concepts::Pos<float> auto& v3
+		){
+			::Graphic::Draw::vert_monochromeAll<batchPtr>(
+				contextTexture->getData(), contextColor, contextMixColor,
+				v0.getX(), v0.getY(), contextTexture->u00(), contextTexture->v00(),
+				v1.getX(), v1.getY(), contextTexture->u10(), contextTexture->v10(),
+				v2.getX(), v2.getY(), contextTexture->u11(), contextTexture->v11(),
+				v3.getX(), v3.getY(), contextTexture->u01(), contextTexture->v01()
 			);
 		}
 
@@ -489,7 +526,7 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void rect(const TextureRegion* region,
+		void rectOrtho(const TextureRegion* region,
 		          const float x, const float y,
 		          const float w, const float h
 		){
@@ -503,15 +540,8 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void rect(const TextureRegion* region, Geom::Shape::OrthoRectFloat rect
-		){
-			vert_monochromeAll<batchPtr>(
-				region->getData(), contextColor, contextMixColor,
-				rect.getSrcX(), rect.getSrcY(), region->u00(), region->v00(),
-				rect.getEndX(), rect.getSrcY(), region->u10(), region->v10(),
-				rect.getEndX(), rect.getEndY(), region->u11(), region->v11(),
-				rect.getSrcX(), rect.getEndY(), region->u01(), region->v01()
-			);
+		void rectOrtho(const TextureRegion* region, const Geom::OrthoRectFloat rect){
+			rectOrtho<batchPtr>(region, rect.getSrcX(), rect.getSrcY(), rect.getWidth(), rect.getHeight());
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
@@ -536,15 +566,17 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void rect(
-			const float x, const float y,
-			const float w, const float h
-		){
-			rect<batchPtr>(defaultTexture, x, y, w, h);
+		void rect(const TextureRegionRect* region, auto trans) requires Concepts::Derived<decltype(trans), Geom::Transform> {
+			::Graphic::Draw::rect<batchPtr>(region, trans.pos.x, trans.pos.y, trans.rot);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void quad(const TextureRegion* region, const Geom::Shape::OrthoRectFloat rect, const float x = 0,
+		void rectOrtho(const float x, const float y, const float w, const float h){
+			rectOrtho<batchPtr>(contextTexture, x, y, w, h);
+		}
+
+		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+		void quad(const TextureRegion* region, const Geom::OrthoRectFloat rect, const float x = 0,
 		          const float y = 0){
 			vert_monochromeAll<batchPtr>(
 				region->getData(), contextColor, contextMixColor,
@@ -563,11 +595,11 @@ export namespace Graphic{
 			const float x4, const float y4
 		){
 			vert_monochromeAll<batchPtr>(
-				defaultTexture->getData(), contextColor, contextMixColor,
-				x1, y1, defaultTexture->u00(), defaultTexture->v00(),
-				x2, y2, defaultTexture->u10(), defaultTexture->v10(),
-				x3, y3, defaultTexture->u11(), defaultTexture->v11(),
-				x4, y4, defaultTexture->u01(), defaultTexture->v01()
+				contextTexture->getData(), contextColor, contextMixColor,
+				x1, y1, contextTexture->u00(), contextTexture->v00(),
+				x2, y2, contextTexture->u10(), contextTexture->v10(),
+				x3, y3, contextTexture->u11(), contextTexture->v11(),
+				x4, y4, contextTexture->u01(), contextTexture->v01()
 			);
 		}
 
@@ -582,7 +614,7 @@ export namespace Graphic{
 				vec2_3.set(x, y).add(vec2_0.rotateRT());
 				vec2_4.set(x, y).add(vec2_0.rotateRT());
 
-				quad<Vec2, batchPtr>(defaultTexture, vec2_1, vec2_2, vec2_3, vec2_4);
+				quad<batchPtr>(contextTexture, vec2_1, vec2_2, vec2_3, vec2_4);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
@@ -597,7 +629,7 @@ export namespace Graphic{
 					const float cos2 = Math::cosDeg(a + space);
 					const float sin2 = Math::sinDeg(a + space);
 					quad<batchPtr>(
-						defaultTexture,
+						contextTexture,
 						x, y, inner,
 						x, y, inner,
 						x + radius * cos2, y + radius * sin2, exter,
@@ -637,14 +669,14 @@ export namespace Graphic{
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void line(const float x, const float y, const float x2, const float y2, const bool cap = true){
-				line<batchPtr>(defaultTexture, x, y, x2, y2, contextColor, contextColor, cap);
+				line<batchPtr>(contextTexture, x, y, x2, y2, contextColor, contextColor, cap);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void line(const Vec2 v1, const Vec2 v2, const Color& c1 = contextColor,
 			                    const Color& c2 = contextColor,
 			                    const bool cap = true){
-				line<batchPtr>(defaultTexture, v1.x, v1.y, v2.x, v2.y, c1, c2, cap);
+				line<batchPtr>(contextTexture, v1.x, v1.y, v2.x, v2.y, c1, c2, cap);
 			}
 
 
@@ -681,21 +713,28 @@ export namespace Graphic{
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-			void rect(const float srcx, const float srcy, const float width, const float height, const bool cap = true){
-				line<batchPtr>(defaultTexture, srcx, srcy, srcx, srcy + height - contextStroke, contextColor,
-				               contextColor, cap);
-				line<batchPtr>(defaultTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height,
-				               contextColor,
-				               contextColor, cap);
-				line<batchPtr>(defaultTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke,
-				               contextColor,
-				               contextColor, cap);
-				line<batchPtr>(defaultTexture, srcx + width, srcy, srcx + contextStroke, srcy, contextColor,
-				               contextColor, cap);
+			void quad(const Geom::QuadBox& box, const bool cap = true){
+				for(int i = 0; i < 4; ++i) {
+					line<batchPtr>(box[i], box[(i + 1) % 4], contextColor, contextColor, cap);
+				}
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-			void rect(const Geom::Shape::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO){
+			void rect(const float srcx, const float srcy, const float width, const float height, const bool cap = true){
+				line<batchPtr>(contextTexture, srcx, srcy, srcx, srcy + height - contextStroke, contextColor,
+							   contextColor, cap);
+				line<batchPtr>(contextTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height,
+							   contextColor,
+							   contextColor, cap);
+				line<batchPtr>(contextTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke,
+							   contextColor,
+							   contextColor, cap);
+				line<batchPtr>(contextTexture, srcx + width, srcy, srcx + contextStroke, srcy, contextColor,
+							   contextColor, cap);
+			}
+
+			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+			void rect(const Geom::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO){
 				Line::rect<batchPtr>(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(),
 				                     rect.getHeight(),
 				                     cap);
@@ -720,7 +759,7 @@ export namespace Graphic{
 					vec2_3.set(vec2_0).scl(radius - dst);
 					vec2_4.set(vec2_0).scl(radius + dst);
 
-					quad<batchPtr>(vec2_1.x + x, vec2_1.y + y, vec2_2.x + x, vec2_2.y + y, vec2_4.x + x, vec2_4.y + y,
+					::Graphic::Draw::quad<batchPtr>(vec2_1.x + x, vec2_1.y + y, vec2_2.x + x, vec2_2.y + y, vec2_4.x + x, vec2_4.y + y,
 					               vec2_3.x + x,
 					               vec2_3.y + y);
 
@@ -742,7 +781,7 @@ export namespace Graphic{
 					const float sin1 = Math::sinDeg(a);
 					const float cos2 = Math::cosDeg(a + space);
 					const float sin2 = Math::sinDeg(a + space);
-					quad<batchPtr>(
+					::Graphic::Draw::quad<batchPtr>(
 						x + r1 * cos1, y + r1 * sin1,
 						x + r1 * cos2, y + r1 * sin2,
 						x + r2 * cos2, y + r2 * sin2,
@@ -787,7 +826,7 @@ export namespace Graphic{
 
 					lerpColor2.lerp(currentRatio, args...);
 
-					quad<batchPtr>(defaultTexture,
+					::Graphic::Draw::quad<batchPtr>(contextTexture,
 					               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 					               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 					               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -810,7 +849,7 @@ export namespace Graphic{
 
 				lerpColor2.lerp(progress / fSides, args...).lerp(lerpColor1, 1.0f - remainRatio);
 
-				quad<batchPtr>(defaultTexture,
+				::Graphic::Draw::quad<batchPtr>(contextTexture,
 				               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 				               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 				               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -853,7 +892,7 @@ export namespace Graphic{
 
 					lerpColor2.lerp(currentRatio, colorGroup);
 
-					quad<batchPtr>(defaultTexture,
+					::Graphic::Draw::quad<batchPtr>(contextTexture,
 					               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 					               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 					               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -876,7 +915,7 @@ export namespace Graphic{
 
 				lerpColor2.lerp(progress / fSides, colorGroup).lerp(lerpColor1, 1.0f - remainRatio);
 
-				quad<batchPtr>(defaultTexture,
+				::Graphic::Draw::quad<batchPtr>(contextTexture,
 				               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 				               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 				               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,

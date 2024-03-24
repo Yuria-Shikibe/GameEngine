@@ -1,8 +1,9 @@
 module;
 
+#include <glad/glad.h>;
+
 export module GL.UniformBuffer;
 
-import <glad/glad.h>;
 import std;
 export import GL.Buffer.DataBuffer;
 

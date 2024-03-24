@@ -1,5 +1,7 @@
 module;
 
+#include <glad/glad.h>;
+
 export module Graphic.PostProcessor;
 
 export import GL.Buffer.FrameBuffer;
@@ -10,7 +12,6 @@ import Concepts;
 
 export import RuntimeException;
 
-import <glad/glad.h>;
 import std;
 
 using namespace GL;

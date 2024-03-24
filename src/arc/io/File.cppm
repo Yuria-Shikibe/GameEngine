@@ -85,7 +85,7 @@ export namespace OS{
 		}
 
 		[[nodiscard]] std::string filename_full() const {
-			return (isDir() ? "<Dir>" : "<Fi>") + rawPath.filename().string();
+			return (isDir() ? "<Dir> " : "<Fi> ") + rawPath.filename().string();
 		}
 
 		[[nodiscard]] path& getPath() {
@@ -179,19 +179,13 @@ export namespace OS{
 			return File{ absolutePath().append(name) };
 		}
 
-		[[nodiscard]] File subFile(const std::string& name) const {
-			if(!isDir())throw ext::RuntimeException{};
-
-			return File{ absolutePath().append(name) };
-		}
-
 		[[nodiscard]] File subFile(const char* name) const {
 			if(!isDir())throw ext::RuntimeException{};
 
 			return File{ absolutePath().append(name) };
 		}
 
-		[[nodiscard]] File find(const std::string& name) const{
+		[[nodiscard]] File find(const std::string_view name) const{
 			for (const auto & item : directory_iterator(getPath()))
 			{
 				if (item.path().filename() == name)
@@ -307,7 +301,7 @@ export namespace OS{
 			return os;
 		}
 
-		using sortPred = std::pair<std::string, std::function<bool(const File&)>>;
+		using Filter = std::pair<std::string, std::function<bool(const File&)>>;
 
 		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubs(const bool careDirs = false) const{
 			ext::StringMap<std::vector<File>> map;
@@ -319,11 +313,11 @@ export namespace OS{
 			return map;
 		}
 
-		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<sortPred>& standards, const bool careDirs = false) const{
+		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards, const bool careDirs = false) const{
 			ext::StringMap<std::vector<File>> map;
 
 			forAllSubs([&standards, &map](File&& file){
-				if (const auto it = std::ranges::find_if(standards, [&file](const sortPred& pair){
+				if (const auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
 					return pair.second(file);
 				}); it != standards.end()) {
 					map[it->first].push_back(file);
@@ -333,12 +327,12 @@ export namespace OS{
 			return map;
 		}
 
-		static std::unordered_map<std::string, std::vector<File>> sortBy(const std::span<File>& files, const std::span<sortPred>& standards){
+		static std::unordered_map<std::string, std::vector<File>> sortBy(const std::span<File>& files, const std::span<Filter>& standards){
 			std::unordered_map<std::string, std::vector<File>> map;
 
 			for (const File& file : files) {
 				if (
-					auto it = std::ranges::find_if(standards, [&file](const sortPred& pair){
+					auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
 						return pair.second(file);
 					});
 					it != standards.end()

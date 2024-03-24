@@ -10,7 +10,7 @@ import Concepts;
 import RuntimeException;
 import std;
 
-using Geom::Shape::Rect_Orthogonal;
+using Geom::Rect_Orthogonal;
 
 //TODO The design is so bad!
 export namespace Geom {

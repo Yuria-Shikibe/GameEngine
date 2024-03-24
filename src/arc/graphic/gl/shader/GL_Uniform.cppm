@@ -1,8 +1,9 @@
 module;
 
+#include <glad/glad.h>
+
 export module GL.Uniform;
 
-import <glad/glad.h>;
 import Graphic.Color;
 import Geom.Matrix3D;
 

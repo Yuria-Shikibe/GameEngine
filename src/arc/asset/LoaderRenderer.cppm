@@ -20,7 +20,6 @@ import Assets.Graphic;
 
 import Font.GlyphArrangement;
 
-import <GLFW/glfw3.h>;
 import std;
 import GL;
 

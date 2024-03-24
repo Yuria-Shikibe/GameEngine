@@ -14,10 +14,11 @@ import GL.Texture.TextureRegionRect;
 import Async;
 import RuntimeException;
 import OS.File;
+import OS.FileTree;
 
 import Heterogeneous;
 
-using Geom::Shape::OrthoRectUInt;
+using Geom::OrthoRectUInt;
 using namespace Graphic;
 
 export namespace Assets {
@@ -74,10 +75,15 @@ export namespace Assets {
 			return pixmap.valid();
 		}
 
-		[[nodiscard]] bool loadPixmap(const int margin){ // NOLINT(*-make-member-function-const)
-			if(hasFile()) {
-				pixmap.loadFrom(sourceFile);
+		[[nodiscard]] bool loadPixmap(const int margin){
+			if(!hasPixelData()){
+				if(hasFile()) {
+					pixmap.loadFrom(sourceFile);
+				}
+
+				//TODO global search
 			}
+
 
 			if(hasPixelData()) {
 				if(modifer)modifer(pixmap);
@@ -139,6 +145,7 @@ export namespace Assets {
 		int margin = 0;
 
 		OS::File cacheDir{};
+		OS::FileTree* globalSearchTree{nullptr};
 
 		PackState state{PackState::polling};
 
@@ -236,46 +243,6 @@ export namespace Assets {
 					throw ext::RuntimeException{"Cannot Read Pixmap Data: " + name};
 				}
 			}
-		}
-
-		TexturePackPage(const TexturePackPage& other) = delete;
-
-		TexturePackPage(TexturePackPage&& other) noexcept
-			: ext::ProgressTask<void, Assets::AssetsTaskHandler>{ std::move(other) },
-			textures{ std::move(other.textures) },
-			packData{ std::move(other.packData) },
-			toMerge{ std::move(other.toMerge) },
-			mergedMaps{ std::move(other.mergedMaps) },
-			margin{ other.margin },
-			cacheDir{ std::move(other.cacheDir) },
-			state{ other.state },
-			texMaxBound{ std::move(other.texMaxBound) },
-			pageName{ std::move(other.pageName) },
-			forcePack{ other.forcePack },
-			dynamic{ other.dynamic },
-			packDone{ other.packDone },
-			linkTarget{ other.linkTarget } {
-		}
-
-		TexturePackPage& operator=(const TexturePackPage& other) = delete;
-
-		TexturePackPage& operator=(TexturePackPage&& other) noexcept {
-			if(this == &other) return *this;
-			ext::ProgressTask<void, Assets::AssetsTaskHandler>::operator =(std::move(other));
-			toMerge     = std::move(other.toMerge);
-			mergedMaps  = std::move(other.mergedMaps);
-			cacheDir    = std::move(other.cacheDir);
-			packData    = std::move(other.packData);
-			state       = other.state;
-			margin      = other.margin;
-			texMaxBound = std::move(other.texMaxBound);
-			pageName    = std::move(other.pageName);
-			textures    = std::move(other.textures);
-			forcePack   = other.forcePack;
-			dynamic     = other.dynamic;
-			packDone    = other.packDone;
-			linkTarget  = other.linkTarget;
-			return *this;
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
@@ -393,7 +360,6 @@ export namespace Assets {
 		void apply() {
 			for(auto& map : mergedMaps) {
 				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), std::move(map).release()));
-				// textures.back()->setScale(GL_NEAREST, GL_NEAREST);
 			}
 
 			for(auto& data : packData | std::views::values) {
@@ -516,17 +482,6 @@ export namespace Assets {
 					mergedMap.set(data->pixmap, data->bound.getSrcX(), data->bound.getSrcY());
 					data->pixmap.free();
 				}
-			}
-		}
-	};
-
-	template <size_t size>
-	struct TexturePackPageGroup {
-		std::array<TexturePackPage*, size> group{};
-
-		void pushRequest(const std::string_view& name, std::array<OS::File, size> data) {
-			for(int i = 0; i < size; ++i) {
-				group[i]->pushRequest(std::string(name), data[i]);
 			}
 		}
 	};

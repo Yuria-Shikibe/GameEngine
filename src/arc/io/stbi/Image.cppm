@@ -1,32 +1,20 @@
 module;
 
-inline void* resize(const void* p, const size_t oldsz, const size_t newsz){
-	void* next = operator new[](newsz);
-
-	for(int i = 0; i < oldsz; ++i){ //Dumb
-		static_cast<char*>(next)[i] = static_cast<const char*>(p)[i];
-	}
-
-	return next;
-}
-
-#define STBI_MALLOC(sz)           operator new [](sz)
-#define STBI_REALLOC_SIZED(p,oldsz,newsz)     resize(p,oldsz,newsz)
-#define STBI_FREE(p)              operator delete [](p)
+// ReSharper disable once CppUnusedIncludeDirective
+#include "stbi_io.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
 #include <native/stbi/stbi_image_write.h>
 #include <native/stbi/stbi_image.h>
+#include <GLFW/glfw3.h>
 
 
 export module Image;
 
 import OS.File;
 import std;
-import <GLFW/glfw3.h>;
-
 
 export namespace stbi{
 	std::shared_ptr<GLFWimage> obtain_GLFWimage(const OS::File& file, const int requiredBpp = 4) {

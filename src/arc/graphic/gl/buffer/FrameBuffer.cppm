@@ -1,8 +1,9 @@
 module;
 
+#include <glad/glad.h>;
+
 export module GL.Buffer.FrameBuffer;
 
-import <glad/glad.h>;
 import GL;
 import GL.Texture.Texture2D;
 import GL.Object;

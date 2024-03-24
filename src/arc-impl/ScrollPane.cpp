@@ -14,7 +14,7 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 	Graphic::Draw::color(Graphic::Colors::GRAY);
 
 	if(pane->enableHorizonScroll()) {
-		Graphic::Draw::rect(
+		Graphic::Draw::rectOrtho(
 			pane->drawSrcX() + pane->margin_bottomLeft.x + pane->horiScrollRatio() * (pane->getWidth() - pane->marginWidth() - pane->horiBarLength()),
 			pane->drawSrcY() + pane->margin_bottomLeft.y,
 			pane->horiBarLength(),
@@ -23,7 +23,7 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 	}
 
 	if(pane->enableVerticalScroll()) {
-		Graphic::Draw::rect(
+		Graphic::Draw::rectOrtho(
 			pane->drawSrcX() + pane->getWidth() - pane->margin_topRight.x,
 			pane->drawSrcY() + pane->margin_bottomLeft.y + pane->vertScrollRatio() * (pane->getHeight() - pane->marginHeight() - pane->vertBarSLength()),
 			-pane->vertBarStroke(),

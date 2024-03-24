@@ -6,13 +6,13 @@ import Concepts;
 import Math;
 import Geom.Vector2D;
 
-export namespace Geom::Shape{
+export namespace Geom{
 	/**
-	 * \brief All params should be positive. At least when it is going to make geom calculation.
-	 * \tparam T 
+	 * \brief width, height should be always non-negative.
+	 * \tparam T Arithmetic Type
 	 */
 	template <Concepts::Number T>
-	class Rect_Orthogonal final/* : public Shape<Rect_Orthogonal<T>, T>*/{
+	class Rect_Orthogonal/* : public Shape<Rect_Orthogonal<T>, T>*/{
 		static constexpr T HALF = static_cast<T>(2);
 
 	protected:

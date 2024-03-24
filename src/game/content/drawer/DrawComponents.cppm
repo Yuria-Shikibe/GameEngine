@@ -1,56 +1,96 @@
 //
 // Created by Matrix on 2024/3/15.
 //
-
+//TODO 模块分区
+// Merge these in module *Drawer*
 export module Game.Content.Drawer.DrawComponents;
 
 export import Game.Content.Drawer.DrawParam;
+export import Game.Content.Loadable;
 
+import Geom.Transform;
 import GL.Texture.TextureRegionRect;
 import Graphic.TextureAtlas;
 import Graphic.Draw;
 
 import Concepts;
 
-import <vector>;
-import <memory>;
+import std;
 
 export namespace Game::Drawer{
-	struct CompPos {
-		Geom::Vec2 offset{};
-		float angle{};
-		float zOffset{};
+	struct Movement{
+		Geom::Transform trans{};
+		std::function<float(const DrawParam&)> interper{nullptr};
+
+		[[nodiscard]] Geom::Transform transBy(const DrawParam& param) const noexcept{
+			return trans * interper(param);
+		}
+
+		[[nodiscard]] explicit operator bool() const noexcept{
+			return interper != nullptr;
+		}
 	};
 
-	struct DrawComponent  {
-		CompPos relaPosition{};
+	struct DrawComponent : Game::Loadable{
+		std::string name{};
 
-		virtual ~DrawComponent() = default;
+		CompPos trans{};
+		/** @brief Uses this if possible */
+		Movement generalMovement{};
+		/** @brief Avoid using this if possible */
+		std::vector<Movement> movements{};
 
-		virtual void draw(const DrawParam& param) = 0;
+		DrawComponent() = default;
 
-		virtual void load(Graphic::TextureAtlas* atlas){
-			// atlas->getPage("").pushRequest()
-		}
+		explicit DrawComponent(const std::string_view partName)
+			: name(partName){}
+
+		explicit DrawComponent(std::string&& partName)
+			: name(std::move(partName)){}
+
+		~DrawComponent() override = default;
+
+		virtual void draw(const DrawParam& param, const BaseEntity* entity) const = 0;
 	};
 
 	struct TextureDrawer : DrawComponent {
 		GL::TextureRegionRect* mainRegion{};
 
+		Graphic::Color lightColor{Graphic::Colors::WHITE};
+
 		TextureDrawer() = default;
 
-		explicit TextureDrawer(Concepts::Invokable<void(TextureDrawer*)> auto&& func){
+		explicit TextureDrawer(const std::string_view partName, Concepts::Invokable<void(TextureDrawer*)> auto&& func) :
+			DrawComponent(partName)
+		{
 			func(this);
 		}
 
-		void draw(const DrawParam& param) override{
-			Geom::Vec2 pos = this->relaPosition.offset;
-			float angle = param.rotation + this->relaPosition.angle;
-			float z = param.zLayer + this->relaPosition.zOffset;
+		void pullLoadRequest(Graphic::TextureAtlas& atlas, const OS::FileTree& searchTree, std::string prefix) override{
+			prefix.append(name);
 
-			pos.rotate(param.rotation).add(param.position);
+			mainRegion = atlas.getPage("base").pushRequest(prefix, searchTree.flatFind<true>(prefix));
+			// atlas->getPage("base").pushRequest(prefix, searchTree.flatFind(prefix));
+			atlas.getPage("light").pushRequest(prefix, searchTree.flatFind<true>(prefix + ".light"));
+		}
 
-			//Graphic::Draw::rect(mainRegion)
+		void draw(const DrawParam& param, const BaseEntity* entity) const override{
+			using namespace Graphic;
+			auto cur = trans | param.trans;
+
+			if(generalMovement){
+				cur.Geom::Transform::operator+=(generalMovement.transBy(param));
+			}
+
+			[[unlikely]] if(!movements.empty()){
+				for(auto& move : movements){
+					cur.Geom::Transform::operator+=(move.transBy(param));
+				}
+			}
+
+			Draw::color(lightColor);
+			Draw::setZ(cur.zOffset);
+			Draw::rect<WorldBatch>(mainRegion, cur);
 		}
 	};
 }

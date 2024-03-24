@@ -16,8 +16,8 @@ export namespace Game {
 	public:
 		~DrawableEntity() override = default;
 
-		[[nodiscard]] virtual const Geom::Shape::OrthoRectFloat& getDrawBound() const{
-			static constexpr Geom::Shape::OrthoRectFloat EmptyBound = {};
+		[[nodiscard]] virtual const Geom::OrthoRectFloat& getDrawBound() const{
+			static constexpr Geom::OrthoRectFloat EmptyBound = {};
 			return EmptyBound;
 		}
 
@@ -29,7 +29,7 @@ export namespace Game {
 			inScreen = val;
 		}
 
-		virtual void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) {
+		virtual void calculateInScreen(Geom::OrthoRectFloat& viewport) {
 			inScreen = getDrawBound().overlap(viewport);
 		}
 
@@ -40,13 +40,13 @@ export namespace Game {
 
 	class DrawableBounded : public DrawableEntity {
 	public:
-		Geom::Shape::OrthoRectFloat expectedDrawRegion{};
+		Geom::OrthoRectFloat expectedDrawRegion{};
 
-		[[nodiscard]] const Geom::Shape::OrthoRectFloat& getDrawBound() const override {
+		[[nodiscard]] const Geom::OrthoRectFloat& getDrawBound() const override {
 			return expectedDrawRegion;
 		}
 
-		void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) override {
+		void calculateInScreen(Geom::OrthoRectFloat& viewport) override {
 			inScreen = viewport.overlap(expectedDrawRegion);
 		}
 	};

@@ -1,3 +1,7 @@
+module;
+
+#include <GLFW/glfw3.h>
+
 module Core;
 
 import Graphic;

@@ -1,8 +1,6 @@
-//
-// Created by Matrix on 2023/12/2.
-//
-
 module;
+
+#include <GLFW/glfw3.h>
 
 export module Ctrl.ControlCommands;
 
@@ -20,7 +18,6 @@ import OS.MouseBind;
 import Graphic;
 import Core;
 import std;
-import <GLFW/glfw3.h>;
 
 using namespace Core;
 

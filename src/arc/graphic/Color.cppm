@@ -33,7 +33,10 @@ export namespace Graphic{
 		static constexpr unsigned int g_Mask   = 0x00'ff'00'00;
 		static constexpr unsigned int r_Mask   = 0xff'00'00'00;
 
-		float r = 0, g = 0, b = 0, a = 0;
+		float r{1.0f};
+		float g{1.0f};
+		float b{1.0f};
+		float a{1.0f};
 
 		using ColorBits = unsigned int;
 
@@ -619,7 +622,7 @@ export namespace Graphic{
 				hsv[0] = 0;
 			}
 			else if (maxV == r) {
-				hsv[0] = fmod(60 * (g - b) / range + 360, 360.0f);
+				hsv[0] = std::fmod(60 * (g - b) / range + 360, 360.0f);
 			}
 			else if (maxV == g) {
 				hsv[0] = 60 * (b - r) / range + 120;

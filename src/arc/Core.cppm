@@ -1,6 +1,9 @@
+module;
+
+#include <GLFW/glfw3.h>
+
 export module Core;
 
-import <GLFW/glfw3.h>;
 import std;
 
 import Geom.Shape.Rect_Orthogonal;
@@ -26,7 +29,7 @@ export namespace Core {
 	inline GLFWmonitor* mainMonitor    = nullptr;
 	inline GLFWmonitor* currentMonitor = nullptr;
 
-	inline Geom::Shape::OrthoRectInt lastScreenBound{};
+	inline Geom::OrthoRectInt lastScreenBound{};
 	inline bool maximizeWinOnInit = true;
 	inline bool maximized = true;
 	inline bool windowized = false;

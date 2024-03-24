@@ -114,6 +114,18 @@ void Assets::loadBasic() {
 
 	screenshotDir = mainTree.findDir("screenshots"); //TODO move this to other places, it doesn't belong to assets!
 
+	textureTree.reDirect(textureDir);
+	textureTree.buildFileTree(true);
+	textureTree.mapSubFiles([](const OS::File& file){
+		return file.stem();
+	});
+
+	// auto vec = textureTree.getFlatView() | std::ranges::views::keys | std::ranges::to<std::vector<std::string>>();
+	// std::ranges::sort(vec);
+	//
+	// for (auto& string : vec){
+	// 	std::cout << textureTree.flatFind(string) << std::endl;
+	// }
 
 	Font::loadLib();
 	//

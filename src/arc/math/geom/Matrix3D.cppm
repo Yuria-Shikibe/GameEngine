@@ -6,7 +6,7 @@ import std;
 
 import Geom.Vector3D;
 export import Geom.Vector2D;
-import Geom.Translation;
+import Geom.Transform;
 import Math;
 
 
@@ -106,7 +106,7 @@ export namespace Geom{
 				<< "[" << obj.val[M20] << "|" << obj.val[M21] << "|" << obj.val[M22] << "]";
 		}
 
-		constexpr Matrix3D& translateTo(const Translation translation){
+		constexpr Matrix3D& translateTo(const Transform translation){
 			return setToRotation(translation.rot).translateTo(translation.pos);
 		}
 

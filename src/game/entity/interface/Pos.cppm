@@ -4,14 +4,14 @@ export module Game.Entity.PosedEntity;
 
 export import Geom.Position;
 export import Geom.Vector2D;
-export import Geom.Translation;
+export import Geom.Transform;
 
 export namespace Game {
 	class PosedEntity : public Geom::Position2D{
 	public:
-		Geom::Translation trans{};
+		Geom::Transform trans{};
 
-		float layer{0};
+		float zLayer{3};
 
 		~PosedEntity() override = default;
 

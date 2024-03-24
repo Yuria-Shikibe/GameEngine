@@ -1,10 +1,10 @@
 module;
 
+#include <GLFW/glfw3.h>
 #include <csignal>
 
 export module OS;
 
-import <GLFW/glfw3.h>;
 import std;
 import std.compat;
 

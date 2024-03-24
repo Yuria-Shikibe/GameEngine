@@ -29,7 +29,7 @@ export namespace Geom {
 		/**
 		 * \brief Exported Vert [bottom-left, bottom-right, top-right, top-left], dynamic calculated
 		 */
-		Shape::OrthoRectFloat maxOrthoBound{};
+		OrthoRectFloat maxOrthoBound{};
 
 		[[nodiscard]] constexpr Vec2 operator[](const int i) const {
 			switch(i) {

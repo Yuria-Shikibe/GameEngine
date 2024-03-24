@@ -1,8 +1,8 @@
 module;
 
-export module GL.Buffer.MultiSampleRenderBuffer;
+#include <glad/glad.h>;
 
-import <glad/glad.h>;
+export module GL.Buffer.MultiSampleRenderBuffer;
 import GL.Buffer.RenderBuffer;
 
 export namespace GL{

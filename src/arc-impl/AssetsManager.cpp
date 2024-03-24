@@ -17,7 +17,7 @@ import OS;
 import Event;
 
 void Assets::Manager::pullRequest() {
-	loadEvents.fire(AssetsLoadPull{this});
+	loadEvents.fire(AssetsLoadInit{this});
 
 	Assets::Shaders::load(&shaders);
 
@@ -33,12 +33,12 @@ void Assets::Manager::pullRequest() {
 	loader.push(&shaders);
 	loader.push(&fonts);
 	loader.push(&soundLoader);
+
+	loadEvents.fire(AssetsLoadPull{this});
+	loader.begin();
 }
 
 void Assets::Manager::load_Visible(const unsigned width, const unsigned height, GLFWwindow* window, Core::Renderer* renderer) {
-	loadEvents.fire(AssetsLoadBegin{this});
-	loader.begin();
-
 	auto loadRenderer = Assets::LoaderRenderer{width, height, &loader};
 	renderer->registerSynchronizedResizableObject(&loadRenderer);
 	while (OS::shouldContinueLoop(window)){
@@ -64,7 +64,7 @@ void Assets::Manager::load_Visible(const unsigned width, const unsigned height, 
 }
 
 void Assets::Manager::load_Quiet(const bool forceGet) {
-	loadEvents.fire(AssetsLoadBegin{this});
+	loadEvents.fire(AssetsLoadPull{this});
 	loader.begin();
 	if(forceGet)loader.forceGet();
 }

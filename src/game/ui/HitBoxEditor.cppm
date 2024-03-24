@@ -22,7 +22,7 @@ export namespace Game{
 	class HitboxEntity : public RealityEntity {
 	public:
 		HitBox tempHitbox{};
-		void calculateInScreen(Geom::Shape::OrthoRectFloat& viewport) override{
+		void calculateInScreen(Geom::OrthoRectFloat& viewport) override{
 			inScreen = true;
 		}
 
@@ -282,7 +282,7 @@ export namespace Game{
 		}
 
 		void boxSelectEnd(){
-			Geom::Shape::OrthoRectFloat orthoRectBox{};
+			Geom::OrthoRectFloat orthoRectBox{};
 			orthoRectBox.setVert(selectionBegin.x, selectionBegin.y, mouseWorldPos.x, mouseWorldPos.y);
 
 			RectBox rectBox{};
@@ -329,12 +329,12 @@ export namespace Game{
 			}
 
 			if(this->isBoxSelecting()){
-				Geom::Shape::OrthoRectFloat orthoRectBox{};
+				Geom::OrthoRectFloat orthoRectBox{};
 				orthoRectBox.setVert(selectionBegin.x, selectionBegin.y, mouseWorldPos.x, mouseWorldPos.y);
 
 				Draw::color(Graphic::Colors::AQUA);
 				Draw::alpha(0.15f);
-				Draw::rect(Draw::defaultTexture, orthoRectBox);
+				Draw::rectOrtho(Draw::defaultTexture, orthoRectBox);
 
 				Draw::alpha();
 				Draw::Line::rect(orthoRectBox);

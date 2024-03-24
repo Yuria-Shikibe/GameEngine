@@ -1,3 +1,7 @@
+module;
+
+#include <GLFW/glfw3.h>
+
 module OS.ApplicationListenerSetter;
 
 import Core;

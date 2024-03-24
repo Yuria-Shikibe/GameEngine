@@ -1,8 +1,8 @@
 module;
 
-export module GL.Shader;
+#include <glad/glad.h>
 
-import <glad/glad.h>;
+export module GL.Shader;
 
 import GL;
 import OS.File;

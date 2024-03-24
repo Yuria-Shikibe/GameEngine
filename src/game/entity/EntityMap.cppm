@@ -71,11 +71,11 @@ export namespace Game {
 			}
 		}
 
-		virtual void buildTree(const Geom::Shape::OrthoRectFloat& worldBound) {
+		virtual void buildTree(const Geom::OrthoRectFloat worldBound) {
 			quadTree = std::make_unique<Geom::QuadTreeF<T, transformer>>(worldBound);
 		}
 
-		virtual void resizeTree(const Geom::Shape::OrthoRectFloat& worldBound) {
+		virtual void resizeTree(const Geom::OrthoRectFloat worldBound) {
 			if(!quadTree)return;
 			quadTree->clear();
 

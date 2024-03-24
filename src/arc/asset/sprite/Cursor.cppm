@@ -69,7 +69,7 @@ export namespace Assets{
 			if(drawer){
 				drawer->operator()(drawX, drawY, norX, norY);
 			}
-			Draw::rect(
+			Draw::rectOrtho(
 				image, drawX - width / 2, drawY - height / 2,
 				width, height
 			);

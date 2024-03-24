@@ -11,30 +11,48 @@ import Math.Rand;
 
 import Geom;
 
+import RuntimeException;
+
 import std;
 
 export namespace Game {
 	class SpaceCraft;
 
 	struct SpaceCraftTrait {
-		virtual void init(SpaceCraft* spaceCraft) = 0;
-
-		virtual void draw(const SpaceCraft* spaceCraft) = 0;
-
-
+		virtual ~SpaceCraftTrait() = default;
+		virtual void init(SpaceCraft* entity) const = 0;
+		virtual void update(SpaceCraft* entity) const = 0;
+		virtual void draw(const SpaceCraft* entity) const = 0;
 	};
 
+	/**
+	 *	TODO chambers
+	 *	TODO crews
+	 *	TODO turrets
+	 *	TODO armor system
+	 *	TODO energy system
+	 *	TODO better move impl
+	 *	TODO better command impl
+	 * @brief
+	 */
 	class SpaceCraft : public RealityEntity{
 	public:
 		const SpaceCraftTrait* trait{nullptr};
-
-		bool intersected = false;
 
 		std::vector<Containers::Pool<TurretEntity>::UniquePtr> turretEntities{};
 
 		[[nodiscard]] SpaceCraft() = default;
 
+		void init(const SpaceCraftTrait* const trait){
+			this->trait = trait;
+
+			// init();
+		}
+
 		void init() override{
+			if(!trait){
+				throw ext::NullPointerException{"Unable To Find SpaceCraft Trait"};
+			}
 			auto rand = Math::globalRand;
 
 			const int turrets = rand.random(2, 5);
@@ -44,7 +62,6 @@ export namespace Game {
 			for(int i = 0; i < turrets; ++i){
 				turretEntities.push_back(EntityManage::obtainUnique<TurretEntity>());
 			}
-
 
 			for(const auto& turret : turretEntities){
 				turret->relativePosition.add(rand.range(40), rand.range(40));
@@ -70,14 +87,8 @@ export namespace Game {
 		}
 
 		void updateCollision(const float deltaTick) override {
-			intersected = false;
-
 			intersectedPointWith.clear();
-
-			//TODO is this really good?
-			EntityManage::realEntities.quadTree->intersect(this, [this](auto t){
-				intersected = true;
-			});
+			EntityManage::realEntities.quadTree->intersectAll(this);
 
 			RealityEntity::updateCollision(deltaTick);
 		}
@@ -101,11 +112,8 @@ export namespace Game {
 					}else{
 						acceleration.approach(dir.setLength2(2.25f), delta);
 					}
-
-
 				}
 			}
-
 
 			RealityEntity::updateMovement(delta);
 		}
@@ -121,7 +129,7 @@ export namespace Game {
 				deactivate();
 			}
 
-			for(auto& turretEntity : turretEntities){
+			for(const auto& turretEntity : turretEntities){
 				turretEntity->update(deltaTick);
 			}
 		}
@@ -135,23 +143,25 @@ export namespace Game {
 		}
 
 		void draw() const override {
+			trait->draw(this);
+			Graphic::Draw::setTexture(Graphic::Draw::defaultLightTexture);
 			drawDebug();
+			Graphic::Draw::setTexture();
 		}
 
 		void drawDebug() const override {
 			using namespace Graphic;
 
-
 			Draw::alpha();
 			Draw::color(Colors::RED);
 
-			if(intersected)for(const auto& data : intersectedPointWith | std::ranges::views::values) {
-				Draw::rect(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
+			for(const auto& data : intersectedPointWith | std::ranges::views::values) {
+				Draw::rectOrtho<WorldBatch>(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
 			}
 
 			Draw::Line::setLineStroke(1.0f);
 			Draw::color(Colors::MAGENTA);
-			Draw::Line::lineAngle(trans.pos.x, trans.pos.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
+			Draw::Line::lineAngle<WorldBatch>(trans.pos.x, trans.pos.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
 			Draw::Line::setLineStroke(2.0f);
 
@@ -160,47 +170,34 @@ export namespace Game {
 				auto& cur = boxData.original;
 				for(int i = 0; i < 4; ++i) {
 					Draw::color(colors[i]);
-					Draw::rect(cur[i].x - 2, cur[i].y - 2, 4, 4);
+					Draw::rectOrtho<WorldBatch>(cur[i].x - 2, cur[i].y - 2, 4, 4);
 
 					const Vec2 begin = cur[i];
 					const Vec2 end = cur[(i + 1) % 4];
 					const Vec2 center = (begin + end) / 2;
 
-					Draw::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
+					Draw::Line::line<WorldBatch>(center, center + cur.getNormalVec(i).normalize().scl(25));
 				}
 
 				if(controller->selected) {
 					Draw::color(Colors::TAN);
-				}else if(intersected)Draw::color(Colors::AQUA);
-				else Draw::color(Colors::LIGHT_GRAY);
-				Draw::Line::setLineStroke(2);
-				Draw::quad(Draw::defaultTexture, cur.v0, cur.v1, cur.v2, cur.v3);
+				}else Draw::color(Colors::LIGHT_GRAY);
 
-				Draw::Line::line(cur.v0, cur.originPoint, colors[0], Colors::RED);
+				Draw::Line::setLineStroke(2);
+				Draw::Line::quad<WorldBatch>(cur);
+
+				Draw::Line::line<WorldBatch>(cur.v0, cur.originPoint, colors[0], Colors::RED);
 
 				Draw::color(Colors::RED);
-				Draw::rect(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
+				Draw::rectOrtho<WorldBatch>(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
 			}
 
 
 			Draw::color(Colors::PURPLE);
-			Draw::rect(hitBox.trans.pos.x - 2, hitBox.trans.pos.y - 2, 4, 4);
-			// for(auto value : intersectedPointWith | std::ranges::views::values) {
-			// 	intersectionCorrection(value);
-			// 	auto nor = Geom::avgEdgeNormal(value, hitBox);
-			//
-			// 	Draw::color(Colors::ORANGE);
-			// 	Draw::Line::setLineStroke(2.0f);
-			// 	Draw::Line::line(value, value + nor.setLength(150 + hitBox.sizeVec2.length2() / 30));
-			// 	Draw::Line::setLineStroke(0.80f);
-			// 	Draw::Line::line(value, hitBox.originPoint);
-			// }
-			//
-			//
-			//
+			Draw::rectOrtho<WorldBatch>(hitBox.trans.pos.x - 2, hitBox.trans.pos.y - 2, 4, 4);
 
 			for(auto& turretEntity : turretEntities){
-				turretEntity->draw();
+				turretEntity->drawDebug();
 			}
 		}
 	};

@@ -1,7 +1,7 @@
 #include "src/application_head.h"
 
-import <glad/glad.h>;
-import <GLFW/glfw3.h>;
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 import std;
 
@@ -101,6 +101,7 @@ import Game.Entity.Turrets;
 
 import Game.Content.Type.BasicBulletType;
 import Game.Content.Type.Turret.BasicTurretType;
+import Game.Content.Builtin.SpaceCrafts;
 
 import Game.Graphic.CombinePostProcessor;
 
@@ -226,7 +227,7 @@ void setupCtrl(){
 			box.offset.mul(-0.5f);
 
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
-			ptr->trait = &Game::Content::base;
+			ptr->trait = &Game::Content::basicBulletType;
 			ptr->trans.pos.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
 			ptr->trans.rot =
 				Core::input->getMousePos()
@@ -278,11 +279,12 @@ void genRandomEntities(){
 	// }
 
 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-	ptr->trans.pos.set(1000, 100);
+	ptr->trans.pos.set(0, 0);
 	Game::EntityManage::add(ptr);
-	// Game::read(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox)"}, ptr->hitBox);
+	Game::read(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox)"}, ptr->hitBox);
 	ptr->velocity.set(0, 0);
-	ptr->setHealth(600);
+	ptr->setHealth(10000);
+	ptr->init(Game::Content::Builtin::test);
 	ptr->activate();
 }
 
@@ -294,10 +296,15 @@ int main(const int argc, char* argv[]) {
 
 	::Test::setupAudioTest();
 
-	Game::core = std::make_unique<Game::Core>();
-	Game::core->overlayManager->deactivate();//activate();
-	Game::core->hitBoxEditor->activate();//deactivate();
-	OS::registerListener(Game::core.get());
+	if(true){
+		Game::core->overlayManager->activate();
+		Game::core->hitBoxEditor->deactivate();
+	}else{
+		Game::core->hitBoxEditor->activate();
+		Game::core->overlayManager->deactivate();
+	}
+
+
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
 		Graphic::Batch::flush();
@@ -358,49 +365,41 @@ int main(const int argc, char* argv[]) {
 
 	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event) {
 		Core::Renderer& renderer = *event.renderer;
-
 		renderer.frameBegin(&acceptBuffer1);
-		// renderer.frameBegin(&worldFrameBuffer);
 
 		GL::enable(GL::Test::DEPTH);
 		GL::setDepthFunc(GL::Func::GEQUAL);
 		GL::setDepthMask(true);
 
-		auto* region = Core::assetsManager->getAtlas().find("test-pester");
-		auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
+		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
+		Game::EntityManage::render();
 
-		Draw::color();
+		auto* region = Core::assetsManager->getAtlas().find("base-pester");
+		// //auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
 
-		Draw::mixColor();
-		// Draw::setZ(2);
-		// Draw::rect<WorldBatch>(region1, 100, 80, 45); //upper
-		Draw::setZ(3);
-		Draw::rect<WorldBatch>(region, 30, 0, 0);
-		// auto pos = Game::core->overlayManager->getMouseInWorld();
-		// Draw::setZ(depth);
-		// Draw::rect<WorldBatch>(region, pos.x, pos.y, -45);
 
 		Graphic::Batch::flush<WorldBatch>();
 		// Core::worldBatch->switchBlending(GL::Blendings::Disable);
 		// renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
+		// GL::setDepthMask(false);
 		renderer.frameEnd(merger);
-
 		GL::disable(GL::Test::DEPTH);
+
 	});
 
 
 
-	Core::renderer->getListener().on<Event::Draw_After>([&frameBuffer](const auto& event) {
-		event.renderer->frameBegin(&frameBuffer);
-		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
-		Game::EntityManage::render();
+	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& event) {
+		event.renderer->frameBegin(&acceptBuffer1);
 
-		Draw::Line::setLineStroke(5);
-		Draw::color(Colors::GRAY);
-		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
-			Draw::Line::rect(t->getBoundary());
-		});
-		event.renderer->frameEnd(Assets::PostProcessors::bloom.get());
+
+
+		// Draw::Line::setLineStroke(5);
+		// Draw::color(Colors::GRAY);
+		// Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
+		// 	Draw::Line::rect(t->getBoundary());
+		// });
+		event.renderer->frameEnd(merger);
 	});
 
 
@@ -418,7 +417,7 @@ int main(const int argc, char* argv[]) {
 			Graphic::Mesh::meshBegin(Core::batchGroup.batchOverlay->getMesh());
 			Draw::color();
 
-			// Draw::Line::setLineStroke(4);
+			Draw::Line::setLineStroke(4);
 			// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
 			// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
 			// );

@@ -23,7 +23,7 @@ export namespace Game::Drawer{
 			DrawParam param{};
 			paramOperate(param, trait, entity);
 			for(auto& component : components){
-				component->draw(param);
+				component->draw(param, entity);
 			}
 		}
 	};

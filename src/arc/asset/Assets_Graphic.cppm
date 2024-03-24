@@ -51,6 +51,8 @@ export namespace Assets{
 	inline OS::File soundDir;
 	inline OS::File screenshotDir;
 
+	inline OS::FileTree textureTree;
+
 	namespace Shaders {
 		inline Shader* stdPost = nullptr;
 		inline Shader* texPost = nullptr;

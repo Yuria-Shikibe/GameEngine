@@ -18,7 +18,7 @@ export namespace UI {
 }
 
 export namespace UI {
-	using Rect = Geom::Shape::OrthoRectFloat;
+	using Rect = Geom::OrthoRectFloat;
 
 	//TODO fuck this bug!
 

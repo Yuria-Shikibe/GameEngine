@@ -76,7 +76,7 @@ export namespace Font {
 
 		float maxWidth{std::numeric_limits<float>::max()};
 
-		Geom::Shape::OrthoRectFloat bound{};
+		Geom::OrthoRectFloat bound{};
 
 		std::string last{};
 
@@ -159,7 +159,7 @@ export namespace Font {
 
 		std::vector<GlyphVertData*> currentLineData{};
 		std::vector<std::function<void(const ModifierableData&)>> endlineOperation{};
-		Geom::Shape::OrthoRectFloat currentLineBound{};
+		Geom::OrthoRectFloat currentLineBound{};
 
 		//TODO uses stack for multi fallback?
 		Graphic::Color currentColor = Graphic::Colors::WHITE;

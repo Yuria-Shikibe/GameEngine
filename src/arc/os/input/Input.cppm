@@ -1,14 +1,10 @@
-//
-// Created by Matrix on 2023/11/19.
-//
-
 module;
+
+#include <GLFW/glfw3.h>
 
 export module Core.Input;
 
 import std;
-
-import <GLFW/glfw3.h>;
 
 import Geom.Vector2D;
 import Concepts;
