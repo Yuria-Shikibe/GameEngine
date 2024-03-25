@@ -139,7 +139,7 @@ export namespace Game {
 
 				Draw::Line::setLineStroke(5);
 				Draw::color(Colors::BRICK);
-				Draw::Line::line(entity->controller->moveCommand.currentPosition, entity->controller->moveCommand.destination);
+				Draw::Line::line(entity->controller->moveCommand.curTrans.vec, entity->controller->moveCommand.destination);
 
 				coordText->offset.set(dest).add(45, 45);
 				coordText->setAlign(Align::Mode::bottom_left);
@@ -169,7 +169,7 @@ export namespace Game {
 				if(!entity->controller->moveCommand.isAssigningRoute()){
 					entity->controller->moveCommand.route.clear();
 					entity->controller->moveCommand.setRouteAssigningBegin();
-					entity->controller->moveCommand.route.push_back(entity->trans.pos);
+					entity->controller->moveCommand.route.push_back(entity->trans.vec);
 				}
 
 				entity->controller->moveCommand.route.push_back(mouseWorldPos);

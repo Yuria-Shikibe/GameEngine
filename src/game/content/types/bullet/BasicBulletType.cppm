@@ -22,7 +22,7 @@ export namespace Game::Content{
 
 		void onShoot(Bullet& bullet) const override{
 			Assets::Effects::CircleDrawer.suspendOn(Game::core->effectManager.get())->
-				set(bullet.trans.pos, 0, Graphic::Colors::SKY);
+				set(bullet.trans.vec, 0, Graphic::Colors::SKY);
 		}
 
 		void hit(Bullet& bullet, RealityEntity& entity, Geom::Vec2 actualPosition) const override{
@@ -40,7 +40,7 @@ export namespace Game::Content{
 
 		void despawn(Bullet& bullet) const override{
 			Assets::Effects::squareOut.suspendOn(Game::core->effectManager.get())->
-				set(bullet.trans.pos, 0, Graphic::Colors::SKY, 30);
+				set(bullet.trans.vec, 0, Graphic::Colors::SKY, 30);
 		}
 	} basicBulletType;
 }

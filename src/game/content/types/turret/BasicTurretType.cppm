@@ -37,9 +37,9 @@ export namespace Game::Content{
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
 			ptr->trait = &Game::Content::basicBulletType;
 			ptr->trans.rot = turret->trans.rot;
-			ptr->trans.pos = turret->trans.pos;
+			ptr->trans.vec = turret->trans.vec;
 
-			ptr->velocity.setPolar(ptr->trans.rot, 320);
+			ptr->velo.vec.setPolar(ptr->trans.rot, 320);
 			ptr->hitBox.init(box);
 			ptr->physicsBody.inertialMass = 100;
 			ptr->damage.materialDamage.fullDamage = 100;

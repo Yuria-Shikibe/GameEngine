@@ -318,12 +318,12 @@ export namespace Game{
 					Draw::Line::setLineStroke(2.0f);
 					if(!Math::zero(clamp.x)){
 						Draw::color(Graphic::Colors::RED_DUSK);
-						Draw::Line::lineAngleCenter(trans.pos.x, trans.pos.y, 0, 50000);
+						Draw::Line::lineAngleCenter(trans.vec.x, trans.vec.y, 0, 50000);
 					}
 
 					if(!Math::zero(clamp.y)){
 						Draw::color(Graphic::Colors::FOREST);
-						Draw::Line::lineAngleCenter(trans.pos.x, trans.pos.y, 90, 50000);
+						Draw::Line::lineAngleCenter(trans.vec.x, trans.vec.y, 90, 50000);
 					}
 				}
 			}
@@ -376,7 +376,7 @@ export namespace Game{
 				entity->tempHitbox = entity->hitBox;
 
 				entity->tempHitbox.hitBoxGroup.front().relaTrans = entity->hitBox.hitBoxGroup.front().relaTrans;
-				entity->tempHitbox.hitBoxGroup.front().relaTrans.pos += dst;
+				entity->tempHitbox.hitBoxGroup.front().relaTrans.vec += dst;
 
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
@@ -398,8 +398,8 @@ export namespace Game{
 			for (const auto& entity : selected){
 				auto& data = entity->tempHitbox.hitBoxGroup.front();
 
-				const float ang1 = (opBeginMousePos - data.relaTrans.pos).angle();
-				const float ang2 = (mouseWorldPos - data.relaTrans.pos).angle();
+				const float ang1 = (opBeginMousePos - data.relaTrans.vec).angle();
+				const float ang2 = (mouseWorldPos - data.relaTrans.vec).angle();
 				const float dst = Math::Angle::angleDstWithSign(ang1, ang2);
 
 				entity->tempHitbox = entity->hitBox;
@@ -418,7 +418,7 @@ export namespace Game{
 
 		void resetTransMove() const{
 			for (const auto& entity : selected){
-				entity->hitBox.hitBoxGroup.front().relaTrans.pos.setZero();
+				entity->hitBox.hitBoxGroup.front().relaTrans.vec.setZero();
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
 		}
@@ -485,7 +485,7 @@ export namespace Game{
 
 		void flipX() const{
 			for (const auto& entity : selected){
-				if(Math::zero(entity->hitBox.hitBoxGroup.front().relaTrans.pos.y))continue;
+				if(Math::zero(entity->hitBox.hitBoxGroup.front().relaTrans.vec.y))continue;
 				Game::flipX(entity->hitBox);
 				entity->tempHitbox = entity->hitBox;
 			}

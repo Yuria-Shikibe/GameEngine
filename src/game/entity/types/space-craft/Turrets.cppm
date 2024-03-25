@@ -85,14 +85,14 @@ export namespace Game{
 			if(quitBattle){
 				expectedRotaton = parent->transformToGlobalAngle(trait->initialDirection);
 			}else{
-				expectedRotaton = (targetPosition - trans.pos).angle();
+				expectedRotaton = (targetPosition - trans.vec).angle();
 			}
 		}
 
 		void updateRotate(const float deltaTick){
 			if(!Math::Angle::within(expectedRotaton, trans.rot, .0005f)){
 				rotateSpeed = Math::approach(rotateSpeed, trait->maxRotateSpeed, trait->rotateAccel * deltaTick);
-				trans.rot = Math::Angle::moveToward(trans.rot, expectedRotaton, rotateSpeed * deltaTick);
+				trans.rot = Math::Angle::moveToward_unsigned(trans.rot, expectedRotaton, rotateSpeed * deltaTick);
 
 				if(trait->hasRotateLimitation()){
 					trans.rot = Math::Angle::clampRange(trans.rot, trait->initialDirection, trait->rotateLimitation);
@@ -118,8 +118,8 @@ export namespace Game{
 		}
 
 		void updatePosition(){
-			trans.pos = relativePosition;
-			trans.pos = parent->transformToSuper(trans.pos);
+			trans.vec = relativePosition;
+			trans.vec = parent->transformToSuper(trans.vec);
 		}
 
 		void shoot(){

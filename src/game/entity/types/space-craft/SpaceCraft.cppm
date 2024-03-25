@@ -95,25 +95,47 @@ export namespace Game {
 
 		void updateMovement(const float delta) override{
 			if(controller->moveCommand.moveActivated()){
-				const auto dest = controller->moveCommand.nextDest();
-				const float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
-				if(!Math::zero(angleDst)){
-					angularAcceleration = Math::approach(angularAcceleration, Math::Angle::angleDstSign(trans.rot, controller->moveCommand.expectedFaceAngle) * 0.5f, delta * 0.5f);
-				}
+				float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
+				if(!Math::zero(angleDst, 0.5f)){
+					constexpr float maxAngularSpeed = angularVelocityLimit;
+					constexpr float maxAngularAccel = angularAccelerationLimit;
+					const float curAngularInertial = 0.5f * Math::sqr(this->velo.rot) / maxAngularAccel;
+					const float maxAngularInertial = 0.5f * Math::sqr(maxAngularSpeed) / maxAngularAccel;
 
+					const float dstSign = Math::Angle::angleDstSign(trans.rot, controller->moveCommand.expectedFaceAngle);
+
+					if(curAngularInertial < angleDst || Math::diffSign(velo.rot, dstSign)){
+						if(Math::diffSign(accel.rot, dstSign)){
+							accel.rot = Math::min(maxAngularAccel, 0.5f * Math::sqr(velo.rot) / angleDst) * dstSign * -1;
+						}else{
+							accel.rot = Math::min(maxAngularAccel, (maxAngularSpeed - Math::abs(velo.rot)) / delta) * dstSign;
+						}
+					}else{
+						if(curAngularInertial > angleDst){
+							accel.rot = Math::min(maxAngularAccel, 0.5f * Math::sqr(velo.rot) / angleDst) * dstSign * -1;
+						}
+					}
+				}else{
+					accel.rot = 0;
+				}
+			}
+
+			if(controller->moveCommand.moveActivated()){
+				const Vec2 dest = controller->moveCommand.nextDest();
 				if(controller->moveCommand.requiresMovement(dest)){
 					//TODO perform according to moveCommand.expected velocity
 					constexpr float tolerance = 20.0f;
-					auto dir = (dest - trans.pos);
+					auto dir = (dest - trans.vec);
 
 					const float dst2 = dir.length2();
 					if(dst2 < Math::sqr(tolerance)){
-						acceleration = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance)));
+						accel.vec = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance)));
 					}else{
-						acceleration.approach(dir.setLength2(2.25f), delta);
+						accel.vec.approach(dir.setLength2(2.25f), delta);
 					}
 				}
 			}
+
 
 			RealityEntity::updateMovement(delta);
 		}
@@ -121,7 +143,7 @@ export namespace Game {
 		void update(const float deltaTick) override {
 			RealityEntity::update(deltaTick);
 
-			if(const auto t = trans.pos.copy().abs(); t.x > 50000 || t.y > 50000) {
+			if(const auto t = trans.vec.copy().abs(); t.x > 50000 || t.y > 50000) {
 				deactivate();
 			}
 
@@ -161,7 +183,7 @@ export namespace Game {
 
 			Draw::Line::setLineStroke(1.0f);
 			Draw::color(Colors::MAGENTA);
-			Draw::Line::lineAngle<WorldBatch>(trans.pos.x, trans.pos.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
+			Draw::Line::lineAngle<WorldBatch>(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
 			Draw::Line::setLineStroke(2.0f);
 
@@ -194,7 +216,7 @@ export namespace Game {
 
 
 			Draw::color(Colors::PURPLE);
-			Draw::rectOrtho<WorldBatch>(hitBox.trans.pos.x - 2, hitBox.trans.pos.y - 2, 4, 4);
+			Draw::rectOrtho<WorldBatch>(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->drawDebug();

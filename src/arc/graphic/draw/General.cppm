@@ -567,7 +567,7 @@ export namespace Graphic{
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rect(const TextureRegionRect* region, auto trans) requires Concepts::Derived<decltype(trans), Geom::Transform> {
-			::Graphic::Draw::rect<batchPtr>(region, trans.pos.x, trans.pos.y, trans.rot);
+			::Graphic::Draw::rect<batchPtr>(region, trans.vec.x, trans.vec.y, trans.rot);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>

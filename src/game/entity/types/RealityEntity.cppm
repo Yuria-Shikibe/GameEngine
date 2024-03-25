@@ -36,8 +36,8 @@ export namespace Game {
 	 */
 	class RealityEntity : public BaseEntity {
 	public:
-		static constexpr float angularVelocityLimit = 180;
-		static constexpr float angularAccelerationLimit = 90;
+		static constexpr float angularVelocityLimit = 2;
+		static constexpr float angularAccelerationLimit = 0.35;
 		static constexpr float accelerationLimit = 8000;
 		static constexpr float speedLimit = 10000;
 
@@ -47,13 +47,7 @@ export namespace Game {
 
 		std::unique_ptr<Controller> controller{std::make_unique<Controller>(this)};
 
-		Geom::Vec2 acceleration{};
-		Geom::Vec2 velocity{};
 		Geom::Vec2 velocityCollision{};
-
-		float angularVelocity{};
-		float angularAcceleration{};
-
 		/** \brief Transform this entity from local to its parent or global.*/
 		Geom::Matrix3D localToSuper{};
 
@@ -84,7 +78,7 @@ export namespace Game {
 		float CCD_activeThresholdSpeedSqr = 250; //TODO also relative to size and frames!
 
 		[[nodiscard]] virtual bool enableCCD() const {
-			const float len2 = velocity.length2();
+			const float len2 = velo.vec.length2();
 
 			return len2 >  CCD_activeThresholdSpeedSqr/* || len2 > hitBox.sizeVec2.length2() * 0.5f*/;
 		}
@@ -184,7 +178,7 @@ export namespace Game {
 		}
 
 		void fetchToHitbox(){
-			trans.pos = hitBox.trans.pos;
+			trans.vec = hitBox.trans.vec;
 		}
 
 		virtual void updateCollision(const float delatTick) {
@@ -192,7 +186,7 @@ export namespace Game {
 
 			fetchToHitbox();
 
-			velocityCollision = velocity;
+			velocityCollision = velo.vec;
 			for(auto& [entity, point] : intersectedPointWith) {
 				calCollideTo(entity, point, delatTick);
 			}
@@ -221,7 +215,7 @@ export namespace Game {
 		}
 
 		[[nodiscard]] constexpr Geom::Vec2 collideVelAt(Geom::Vec2 dst) const {
-			return velocityCollision + dst.cross(angularVelocity * Math::DEGREES_TO_RADIANS);
+			return velocityCollision + dst.cross(velo.rot * Math::DEGREES_TO_RADIANS);
 		}
 
 		/**
@@ -232,7 +226,7 @@ export namespace Game {
 		}
 
 		/*virtual*/ void intersectionCorrection(Geom::Vec2& intersection) const {
-			intersection.lerp(hitBox.trans.pos, 0.0001f);
+			intersection.lerp(hitBox.trans.vec, 0.0001f);
 		}
 
 		virtual void calCollideTo(const Game::RealityEntity* object, CollisionData data, const float delatTick) {
@@ -260,8 +254,8 @@ export namespace Game {
 			}
 
 			//Origin Point To Hit Point
-			const Vec2 dstToSubject = data.intersection - hitBox.trans.pos;
-			const Vec2 dstToObject  = data.intersection - object->hitBox.trans.pos;
+			const Vec2 dstToSubject = data.intersection - hitBox.trans.vec;
+			const Vec2 dstToObject  = data.intersection - object->hitBox.trans.vec;
 
 			const Vec2 subjectVel = collideVelAt(dstToSubject);
 			const Vec2 objectVel = object->collideVelAt(dstToObject);
@@ -309,53 +303,64 @@ export namespace Game {
 			if(relVel.dot(additional) < 0){
 				additional.inv();
 				if(velocityCollision.length() * physicsBody.inertialMass < object->velocityCollision.length() * object->physicsBody.inertialMass) {
-					auto correction = (hitBox.trans.pos - object->hitBox.trans.pos).setLength2(hitBox.getAvgSizeSqr());
-					hitBox.trans.pos.add(correction.scl(0.05f));
-					velocity.add(correction.scl(0.185f));
+					auto correction = (hitBox.trans.vec - object->hitBox.trans.vec).setLength2(hitBox.getAvgSizeSqr());
+					hitBox.trans.vec.add(correction.scl(0.05f));
+					velo.vec.add(correction.scl(0.185f));
 				}
 			}
 
 			// additional.limit2(40 * inertialMass * inertialMass);
 
-			acceleration += additional / physicsBody.inertialMass;
+			accel.vec += additional / physicsBody.inertialMass;
 
 
-			velocity.add(additional * (delatTick * veloAddScale / physicsBody.inertialMass));
+			velo.vec.add(additional * (delatTick * veloAddScale / physicsBody.inertialMass));
 			//
-			angularAcceleration += dstToSubject.cross(additional) / subjectRotationalInertia * Math::RADIANS_TO_DEGREES;
+			accel.rot += dstToSubject.cross(additional) / subjectRotationalInertia * Math::RADIANS_TO_DEGREES;
 		}
 
 		virtual void updateHitbox(const float delta) {
-			hitBox.genContinousRectBox(velocity, delta);
+			hitBox.genContinousRectBox(velo.vec, delta);
 			hitBox.updateHitbox(trans);
 
 			maxBound = hitBox.maxBound;
 		}
 
 		virtual void updateMovement(const float delta) {
-			acceleration.clampMax(accelerationLimit);
-			angularAcceleration = Math::clamp(angularAcceleration, -angularAccelerationLimit, angularAccelerationLimit);
+			accel.vec.clampMax(accelerationLimit);
+			accel.rot = Math::clamp(accel.rot, -angularAccelerationLimit, angularAccelerationLimit);
 
 			{
 				//TODO pre global force field process.
 				//TODO drag should be applied by things like a global force field.
-				angularVelocity = Math::lerp(angularVelocity, 0, 0.075f * delta);
-				velocity.lerp(Geom::ZERO, 0.075f * delta);
+				velo.rot = Math::lerp(velo.rot, 0, 0.0075f * delta);
+				velo.vec.lerp(Geom::ZERO, 0.075f * delta);
 			}
 
 			//Loacl process
-			velocity.add(acceleration, delta);
-			angularVelocity += angularAcceleration * delta;
+			velo.vec.add(accel.vec, delta);
+			velo.rot += accel.rot * delta;
 
-			angularVelocity = Math::clamp(angularVelocity, -angularVelocityLimit, angularVelocityLimit);
-			velocity.clampMax(speedLimit);
+			velo.rot = Math::clampRange(velo.rot, angularVelocityLimit);
+			velo.vec.clampMax(speedLimit);
 
-			trans.pos.add(velocity, delta);
-			trans.rot += angularVelocity * delta;
+			trans.vec.add(velo.vec, delta);
+
+			if(controller->moveCommand.rotateActivated()){
+				trans.rot = Math::Angle::moveToward_signed(
+					trans.rot, controller->moveCommand.expectedFaceAngle,
+					velo.rot * delta, 2.0f * delta, [this]{
+						velo.rot = 0;
+					});
+			}else{
+				trans.rot += velo.rot * delta;
+			}
+
+
 			trans.rot = std::fmod(trans.rot, Math::DEG_FULL);
 
-			angularAcceleration = 0;
-			acceleration.setZero();
+			accel.rot = 0;
+			accel.vec.setZero();
 
 			updateHitbox(delta);
 		}
@@ -421,7 +426,7 @@ export namespace Game {
 		}
 
 		static bool within(const float dst, const RealityEntity* subject, const RealityEntity* object) {
-			return subject->trans.pos.within(object->trans.pos, dst);
+			return subject->trans.vec.within(object->trans.vec, dst);
 		}
 
 		static void checkStateValid(const RealityEntity* subject) {
@@ -430,16 +435,16 @@ export namespace Game {
 			return;
 #endif
 
-			if(subject->acceleration.isNaN() || subject->acceleration.isInf())
+			if(subject->accel.vec.isNaN() || subject->accel.vec.isInf())
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 
-			if(subject->velocity.isNaN() || subject->velocity.isInf())
+			if(subject->velo.vec.isNaN() || subject->velo.vec.isInf())
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 
-			if(std::isnan(subject->angularVelocity) || std::isinf(subject->angularVelocity))
+			if(std::isnan(subject->velo.rot) || std::isinf(subject->velo.rot))
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 
-			if(std::isnan(subject->angularAcceleration) || std::isinf(subject->angularAcceleration))
+			if(std::isnan(subject->accel.rot) || std::isinf(subject->accel.rot))
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 		}
 	};

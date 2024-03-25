@@ -228,13 +228,13 @@ void setupCtrl(){
 
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
 			ptr->trait = &Game::Content::basicBulletType;
-			ptr->trans.pos.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
+			ptr->trans.vec.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
 			ptr->trans.rot =
 				Core::input->getMousePos()
 					.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
 					.angle();
 
-			ptr->velocity.set(320, 0).rotate(ptr->trans.rot);
+			ptr->velo.vec.set(320, 0).rotate(ptr->trans.rot);
 			Game::EntityManage::add(ptr);
 			ptr->hitBox.init(box);
 			ptr->physicsBody.inertialMass = 100;
@@ -279,10 +279,10 @@ void genRandomEntities(){
 	// }
 
 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-	ptr->trans.pos.set(0, 0);
+	ptr->trans.vec.set(0, 0);
 	Game::EntityManage::add(ptr);
 	Game::read(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox)"}, ptr->hitBox);
-	ptr->velocity.set(0, 0);
+	ptr->velo.vec.set(0, 0);
 	ptr->setHealth(10000);
 	ptr->init(Game::Content::Builtin::test);
 	ptr->activate();

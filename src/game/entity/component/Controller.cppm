@@ -7,8 +7,9 @@ import Game.Logic.Objective;
 import Game.Logic.ReflectSensor;
 
 import std;
+import Math;
 
-import Geom.Vector2D;
+import Geom.Transform;
 
 export namespace Game {
 	using HittableTarget = std::weak_ptr<RealityEntity>;
@@ -43,7 +44,7 @@ export namespace Game {
 		int currentRouteIndex{0};
 		std::vector<PosedTarget> route{};
 
-		Geom::Vec2 currentPosition{};
+		Geom::Transform curTrans{};
 
 		/** \brief What velocity should this entity hold. */
 		Geom::Vec2 expectedVelocity{};
@@ -103,20 +104,26 @@ export namespace Game {
 		}
 
 		[[nodiscard]] bool requiresMovement(const Geom::Vec2 next) const{
-			return (currentPosition - next).length2() > positionTolerance * positionTolerance;
+			return (curTrans.vec - next).length2() > positionTolerance * positionTolerance;
 		}
 
-		void updateCurrent(const Geom::Vec2 curPos) {
-			currentPosition = curPos;
+		void updateCurrent(const Geom::Transform current) {
+			curTrans = current;
 
 			const auto dest = nextDest();
 
-			expectedVelocity.set(dest - currentPosition).normalize().scl(15);
+			expectedVelocity.set(dest - curTrans.vec).normalize().scl(15);
 
 			if(translatory){
 
 			}else{
 				expectedFaceAngle = expectedMoveAngle();
+			}
+
+			if(Math::Angle::angleDst(curTrans.rot, expectedFaceAngle) > 0.005f){
+				activateRotate();
+			}else{
+				deactivateRotate();
 			}
 
 			if(moveActivated()){
@@ -129,6 +136,14 @@ export namespace Game {
 			}
 		}
 
+		void activateRotate() {
+			enableRotateCommand = true;
+		}
+
+		void deactivateRotate() {
+			enableRotateCommand = false;
+		}
+
 		void activateMove() {
 			enableMoveCommand = true;
 		}
@@ -138,7 +153,7 @@ export namespace Game {
 		}
 
 		void completeMove(){
-			destination = currentPosition;
+			destination = curTrans.vec;
 			clearRoute();
 			deactivateMove();
 		}
@@ -159,6 +174,10 @@ export namespace Game {
 
 		[[nodiscard]] bool moveActivated() const {
 			return enableMoveCommand;
+		}
+
+		[[nodiscard]] bool rotateActivated() const {
+			return enableRotateCommand;
 		}
 
 		[[nodiscard]] bool shouldDrawUI() const{

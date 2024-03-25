@@ -280,8 +280,12 @@ export namespace Geom{
 			return angle;
 		}
 
-		[[nodiscard]] float angle(const PassType reference) const {
-			return Math::atan2(cross(reference), dot(reference)) * Math::RADIANS_TO_DEGREES;
+		[[nodiscard]] float angleTo(const PassType reference) const {
+			return (reference - *this).angle();
+		}
+
+		[[nodiscard]] float angleBetween(const PassType reference) const {
+			return Math::atan2(this->cross(reference), this->dot(reference)) * Math::RADIANS_TO_DEGREES;
 		}
 
 		Vector2D& normalize() {

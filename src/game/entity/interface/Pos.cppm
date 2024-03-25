@@ -10,33 +10,35 @@ export namespace Game {
 	class PosedEntity : public Geom::Position2D{
 	public:
 		Geom::Transform trans{};
+		Geom::Transform velo{};
+		Geom::Transform accel{};
 
 		float zLayer{3};
 
 		~PosedEntity() override = default;
 
 		[[nodiscard]] float getX() const override {
-			return trans.pos.x;
+			return trans.vec.x;
 		}
 
 		[[nodiscard]] float getY() const override {
-			return trans.pos.y;
+			return trans.vec.y;
 		}
 
 		void setX(const float x) override {
-			this->trans.pos.x = x;
+			this->trans.vec.x = x;
 		}
 
 		void setY(const float y) override {
-			this->trans.pos.y = y;
+			this->trans.vec.y = y;
 		}
 
 		[[nodiscard]] virtual Geom::Vec2& getPos() {
-			return trans.pos;
+			return trans.vec;
 		}
 
 		[[nodiscard]] virtual Geom::Vec2 copyPos() const {
-			return trans.pos;
+			return trans.vec;
 		}
 	};
 }

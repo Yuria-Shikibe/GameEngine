@@ -130,6 +130,6 @@ export namespace Game{
 	}
 
 	bool BulletTrait::despawnable(const Bullet& bullet) const{
-		return bullet.velocity.isZero(0.005f);
+		return bullet.velo.vec.isZero(0.005f);
 	}
 }

@@ -17,7 +17,7 @@ export namespace Game::Content::Builtin{
 	void load_SpaceCraft(Game::ContentLoader* loader){
 		test = loader->registerContent<BasicSpaceCraftType>("pester", [](BasicSpaceCraftType* self){
 			self->drawer = std::make_unique<Game::Drawer::TextureDrawer>("", [](Game::Drawer::TextureDrawer* drawer){
-				drawer->trans.pos.x = 100;
+				drawer->trans.vec.x = 100;
 			});
 		});
 

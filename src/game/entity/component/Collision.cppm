@@ -133,16 +133,16 @@ export namespace Game{
 			const float sin = Math::sinDeg(this->trans.rot);
 
 			for(auto& group : hitBoxGroup){
-				Vec2 trans = group.relaTrans.pos;
+				Vec2 trans = group.relaTrans.vec;
 
-				group.original.update(this->trans.pos + trans.rotate(cos, sin), this->trans.rot + group.relaTrans.rot);
+				group.original.update(this->trans.vec + trans.rotate(cos, sin), this->trans.rot + group.relaTrans.rot);
 				group.reset();
 			}
 
 			updateMaxBound();
 		}
 
-		float getAvgSizeSqr() const{
+		[[nodiscard]] float getAvgSizeSqr() const{
 			return maxTransientBound.maxDiagonalSqLen() * 0.35f;
 		}
 
@@ -264,7 +264,7 @@ export namespace Game{
 		 * @param transIndex [0, @link sizeCCD() @endlink)
 		 * @return Translation
 		 */
-		constexpr Vec2 transTo(const int transIndex) const{
+		[[nodiscard]] constexpr Vec2 transTo(const int transIndex) const{
 			Vec2 trans = transitionCCD;
 			trans.scl(sizeTrace - transIndex - 1);
 			for(auto& rectBox : hitBoxGroup){
@@ -274,15 +274,15 @@ export namespace Game{
 			return trans;
 		}
 
-		Vec2 getAvgEdgeNormal(const CollisionData data) const{
+		[[nodiscard]] Vec2 getAvgEdgeNormal(const CollisionData data) const{
 			return Geom::avgEdgeNormal(data.intersection, hitBoxGroup.at(data.objectSubBoxIndex).original);
 		}
 
-		bool collideWithRough(const HitBox& other) const{
+		[[nodiscard]] bool collideWithRough(const HitBox& other) const{
 			return maxBound.overlap(other.maxBound);
 		}
 
-		CollisionData collideWithExact(const HitBox& other, const bool requiresIntersection = true) const{
+		[[nodiscard]] CollisionData collideWithExact(const HitBox& other, const bool requiresIntersection = true) const{
 			CollisionData collisionData{};
 
 			int objectLastIndex = 0;
@@ -319,10 +319,10 @@ export namespace Game{
 									}
 
 									this->clampCCDTo(subjectIndex);
-									this->trans.pos.add(transitionCCD, subjectIndex);
+									this->trans.vec.add(transitionCCD, subjectIndex);
 
 									other.clampCCDTo(objectIndex);
-									other.trans.pos.add(other.transitionCCD, objectIndex);
+									other.trans.vec.add(other.transitionCCD, objectIndex);
 
 									return collisionData;
 								}
@@ -345,7 +345,7 @@ export namespace Game{
 			});
 		}
 
-		bool contains(Vec2 vec2) const{
+		[[nodiscard]] bool contains(Vec2 vec2) const{
 			return std::ranges::any_of(hitBoxGroup, [vec2](const BoxStateData& data){
 				return data.original.contains(vec2);
 			});
@@ -360,7 +360,7 @@ export namespace Game{
 
 		for(int i = 0; i < size; ++i){
 			auto& dst = datas.at(i + size);
-			dst.relaTrans.pos.y *= -1;
+			dst.relaTrans.vec.y *= -1;
 			dst.relaTrans.rot *= -1;
 			dst.relaTrans.rot = Math::Angle::getAngleInPi2(dst.relaTrans.rot);
 			dst.original.offset.y *= -1;
@@ -372,7 +372,7 @@ export namespace Game{
 		for (auto& data : datas){
 			data.original.offset *= scl;
 			data.original.sizeVec2 *= scl;
-			data.relaTrans.pos *= scl;
+			data.relaTrans.vec *= scl;
 		}
 	}
 

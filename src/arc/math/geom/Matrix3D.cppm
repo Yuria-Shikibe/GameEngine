@@ -107,7 +107,7 @@ export namespace Geom{
 		}
 
 		constexpr Matrix3D& translateTo(const Transform translation){
-			return setToRotation(translation.rot).translateTo(translation.pos);
+			return setToRotation(translation.rot).translateTo(translation.vec);
 		}
 
 		constexpr Matrix3D& setOrthogonal(const float x, const float y, const float width, const float height) {
