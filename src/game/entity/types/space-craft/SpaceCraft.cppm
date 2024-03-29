@@ -11,6 +11,8 @@ import Math.Rand;
 
 import Geom;
 
+import Font.GlyphArrangement;
+
 import RuntimeException;
 
 import std;
@@ -38,6 +40,8 @@ export namespace Game {
 	class SpaceCraft : public RealityEntity{
 	public:
 		const SpaceCraftTrait* trait{nullptr};
+
+		std::shared_ptr<Font::GlyphLayout> coordText = Font::obtainLayoutPtr();
 
 		std::vector<Containers::Pool<TurretEntity>::UniquePtr> turretEntities{};
 
@@ -94,11 +98,12 @@ export namespace Game {
 		}
 
 		void updateMovement(const float delta) override{
+			constexpr float maxAngularSpeed = angularVelocityLimit;
+			constexpr float maxAngularAccel = angularAccelerationLimit;
+
 			if(controller->moveCommand.moveActivated()){
 				float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst, 0.5f)){
-					constexpr float maxAngularSpeed = angularVelocityLimit;
-					constexpr float maxAngularAccel = angularAccelerationLimit;
 					const float curAngularInertial = 0.5f * Math::sqr(this->velo.rot) / maxAngularAccel;
 					const float maxAngularInertial = 0.5f * Math::sqr(maxAngularSpeed) / maxAngularAccel;
 
@@ -117,6 +122,10 @@ export namespace Game {
 					}
 				}else{
 					accel.rot = 0;
+				}
+			}else{
+				if(!Math::zero(velo.rot, 0.005f)){
+					accel.rot = std::copysign(Math::min(maxAngularAccel, Math::abs(velo.rot) / delta), -velo.rot);
 				}
 			}
 
@@ -166,24 +175,31 @@ export namespace Game {
 
 		void draw() const override {
 			trait->draw(this);
-			Graphic::Draw::setTexture(Graphic::Draw::defaultLightTexture);
-			drawDebug();
-			Graphic::Draw::setTexture();
 		}
 
 		void drawDebug() const override {
 			using namespace Graphic;
 
+			Graphic::Draw::setTexture(Graphic::Draw::defaultLightTexture);
+
+			GL::setDepthMask(false);
+			Font::glyphParser->parseWith(coordText, std::format("${{scl#[0.85]}}${{color#[eeeeeeff]}}Health: {:.1f}", this->health));
+			coordText->offset.set(this->trans.vec).add(this->maxBound.getWidth() * 0.55f, this->maxBound.getHeight() * 0.55f);
+			coordText->setAlign(Align::Mode::bottom_left);
+			coordText->render();
+			// Graphic::Batch::flush();
+			GL::setDepthMask(true);
+
 			Draw::alpha();
 			Draw::color(Colors::RED);
 
 			for(const auto& data : intersectedPointWith | std::ranges::views::values) {
-				Draw::rectOrtho<WorldBatch>(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
+				Draw::rectOrtho<BatchWorld>(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
 			}
 
 			Draw::Line::setLineStroke(1.0f);
 			Draw::color(Colors::MAGENTA);
-			Draw::Line::lineAngle<WorldBatch>(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
+			Draw::Line::lineAngle<BatchWorld>(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
 			Draw::Line::setLineStroke(2.0f);
 
@@ -192,13 +208,13 @@ export namespace Game {
 				auto& cur = boxData.original;
 				for(int i = 0; i < 4; ++i) {
 					Draw::color(colors[i]);
-					Draw::rectOrtho<WorldBatch>(cur[i].x - 2, cur[i].y - 2, 4, 4);
+					Draw::rectOrtho<BatchWorld>(cur[i].x - 2, cur[i].y - 2, 4, 4);
 
 					const Vec2 begin = cur[i];
 					const Vec2 end = cur[(i + 1) % 4];
 					const Vec2 center = (begin + end) / 2;
 
-					Draw::Line::line<WorldBatch>(center, center + cur.getNormalVec(i).normalize().scl(25));
+					Draw::Line::line<BatchWorld>(center, center + cur.getNormalVec(i).normalize().scl(25));
 				}
 
 				if(controller->selected) {
@@ -206,21 +222,23 @@ export namespace Game {
 				}else Draw::color(Colors::LIGHT_GRAY);
 
 				Draw::Line::setLineStroke(2);
-				Draw::Line::quad<WorldBatch>(cur);
+				Draw::Line::quad<BatchWorld>(cur);
 
-				Draw::Line::line<WorldBatch>(cur.v0, cur.originPoint, colors[0], Colors::RED);
+				Draw::Line::line<BatchWorld>(cur.v0, cur.originPoint, colors[0], Colors::RED);
 
 				Draw::color(Colors::RED);
-				Draw::rectOrtho<WorldBatch>(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
+				Draw::rectOrtho<BatchWorld>(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
 			}
 
 
 			Draw::color(Colors::PURPLE);
-			Draw::rectOrtho<WorldBatch>(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
+			Draw::rectOrtho<BatchWorld>(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->drawDebug();
 			}
+
+			Graphic::Draw::setTexture();
 		}
 	};
 }

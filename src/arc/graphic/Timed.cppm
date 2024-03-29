@@ -8,7 +8,7 @@ export import Math;
 export import Math.Interpolation;
 import Concepts;
 
-//TODO is this namespace appropriate
+//TODO is this namespace appropriate?
 export namespace Graphic{
 	struct Timed {
 		float lifetime{};
@@ -35,6 +35,15 @@ export namespace Graphic{
 			return time / lifetime;
 		}
 
+		template <bool autoClamp = true>
+		[[nodiscard]] constexpr float getWith(const float otherLifetime) const{
+			if constexpr (autoClamp){
+				return Math::clamp(time / otherLifetime);
+			}
+
+			return time / lifetime;
+		}
+
 		[[nodiscard]] float get(Concepts::Invokable<float(float)> auto&& interp) const{
 			return interp(get());
 		}
@@ -50,7 +59,7 @@ export namespace Graphic{
 			return 1 - get();
 		}
 
-		[[nodiscard]] constexpr float getSlope() const{
+		[[nodiscard]] float getSlope() const{
 			return Math::slope(get());
 		}
 	};

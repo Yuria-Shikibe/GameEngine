@@ -47,6 +47,7 @@ export namespace UI{
 		[[nodiscard]] Root();
 
 		Geom::Vec2 cursorPos{};
+		Geom::Vec2 cursorPressedBeginPos{};
 		Geom::Vec2 cursorVel{};
 		Geom::Vec2 mouseScroll{};
 
@@ -77,7 +78,17 @@ export namespace UI{
 			return currentCursorFocus != nullptr;
 		}
 
-		void iterateAll_DFS(Elem* current, bool& shouldStop, const std::function<bool(Elem*)>& func);
+		void iterateAll_DFS(Elem* current, bool& shouldStop, Concepts::Invokable<bool(Elem*)> auto&& func){
+			if (shouldStop)return;
+
+			if (!func(current) || shouldStop)return;
+
+			if(!current->hasChildren())return;
+
+			for (auto& child : *current->getChildren()) {
+				this->iterateAll_DFS(child.get(), shouldStop, std::forward<decltype(func)>(func));
+			}
+		}
 
 		void update(float delta) override;
 
@@ -90,23 +101,19 @@ export namespace UI{
 
 		void resize(unsigned w, unsigned h) override;
 
-		[[nodiscard]] float getMarginX() const {
-			return marginX;
-		}
+		[[nodiscard]] float getMarginX() const {return marginX;}
 
-		[[nodiscard]] float getMarginY() const {
-			return marginY;
-		}
+		[[nodiscard]] float getMarginY() const {return marginY;}
 
-		[[nodiscard]] float getWidth() const {
-			return width;
-		}
+		[[nodiscard]] float getWidth() const {return width;}
 
-		[[nodiscard]] float getHeight() const {
-			return height;
-		}
+		[[nodiscard]] float getHeight() const {return height;}
 
 		virtual void render() const;
+
+		[[nodiscard]] Geom::Vec2 getCursorDst() const{
+			return cursorPos - cursorPressedBeginPos;
+		}
 
 		//TODO mode support
 		void onDoubleClick(int id, int mode = 0) const;

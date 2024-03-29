@@ -80,7 +80,7 @@ export namespace Game {
 			count
 		};
 
-		ext::Interval<count> timer{};
+		ext::Timer<count> timer{};
 
 		[[nodiscard]] Assets::Cursor& getCursor() const{
 			if(Core::input->isPressedKey(Ctrl::KEY_LEFT_SHIFT)){
@@ -130,9 +130,12 @@ export namespace Game {
 				});
 
 				auto dest = entity->controller->moveCommand.destination;
-				Font::glyphParser->parse(coordText, std::format(
+				Font::glyphParser->parseWith(coordText, std::format(
 					"${{scl#[0.85]}}${{color#[eeeeeeff]}}[{:.1f}, {:.1f}]",
 				dest.x, dest.y));
+				coordText->offset.set(dest).add(45, 45);
+				coordText->setAlign(Align::Mode::bottom_left);
+				coordText->render();
 
 				const auto next = entity->controller->moveCommand.nextDest();
 				Draw::Line::square(next.x, next.y, 25, 45);
@@ -140,10 +143,6 @@ export namespace Game {
 				Draw::Line::setLineStroke(5);
 				Draw::color(Colors::BRICK);
 				Draw::Line::line(entity->controller->moveCommand.curTrans.vec, entity->controller->moveCommand.destination);
-
-				coordText->offset.set(dest).add(45, 45);
-				coordText->setAlign(Align::Mode::bottom_left);
-				coordText->render();
 			}
 
 			Draw::color(Colors::RED_DUSK);
@@ -219,7 +218,7 @@ export namespace Game {
 
 
 			//TODO optimize this
-			timer.run<20, IntervalIndex::entityCheck>(delta, [this]{
+			timer.run<IntervalIndex::entityCheck>(20, delta, [this]{
 				std::erase_if(selected, [](const decltype(selected)::value_type& ptr){
 					return ptr->deletable();
 				});

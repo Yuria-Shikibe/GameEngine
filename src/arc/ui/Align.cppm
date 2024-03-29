@@ -1,10 +1,70 @@
 module;
 
-export module Align;
+export module UI.Align;
 
 import Geom.Vector2D;
 
 export namespace Align {
+	struct Spacing{
+		/**@brief Left Spacing*/
+		float left{};
+		/**@brief Right Spacing*/
+		float right{};
+		/**@brief Bottom Spacing*/
+		float bottom{};
+		/**@brief Top Spacing*/
+		float top{};
+
+		[[nodiscard]] Geom::Vec2 bot_lft() const {
+			return {left, bottom};
+		}
+
+		[[nodiscard]] Geom::Vec2 top_rit() const {
+			return {right, top};
+		}
+
+		friend bool operator==(const Spacing& lhs, const Spacing& rhs){
+			return lhs.left == rhs.left
+				&& lhs.right == rhs.right
+				&& lhs.top == rhs.top
+				&& lhs.bottom == rhs.bottom;
+		}
+
+		friend bool operator!=(const Spacing& lhs, const Spacing& rhs){ return !(lhs == rhs); }
+
+		friend bool operator==(const Spacing& lhs, const float val){
+			return lhs.left == val
+				&& lhs.right == val
+				&& lhs.top == val
+				&& lhs.bottom == val;
+		}
+
+		friend bool operator!=(const Spacing& lhs, const float rhs){ return !(lhs == rhs); }
+
+		[[nodiscard]] constexpr float getMarginWidth() const{
+			return left + right;
+		}
+
+		[[nodiscard]] constexpr float getMarginHeight() const{
+			return bottom + top;
+		}
+
+		[[nodiscard]] constexpr float getRemainWidth(const float total = 1.0f) const{
+			return total - getMarginWidth();
+		}
+
+		[[nodiscard]] constexpr float getRemainHeight(float total = 1.0f) const{
+			return total - getMarginHeight();
+		}
+
+		constexpr void set(const float val){
+			bottom = top = left = right = val;
+		}
+
+		constexpr void setZero(){
+			set(0);
+		}
+	};
 	enum class Mode : char{
 		left = 0b0000'0001,
 		right = 0b0000'0010,
@@ -35,7 +95,7 @@ export namespace Align {
 		return codeOf(l) & codeOf(r);
 	}
 
-	Geom::Vec2 motionOf(Mode align, const Geom::Vec2& bottomLeft, const Geom::Vec2& topRight) {
+	Geom::Vec2 getOffsetOf(const Mode align, const Geom::Vec2 bottomLeft, const Geom::Vec2 topRight) {
 		float xSign = 0;
 		float ySign = 0;
 
@@ -53,6 +113,28 @@ export namespace Align {
 
 		const float xMove = xSign * (xSign == 1 ? bottomLeft.x : topRight.x);
 		const float yMove = ySign * (ySign == 1 ? (bottomLeft.y) : topRight.y);
+
+		return {xMove, yMove};
+	}
+
+	Geom::Vec2 getOffsetOf(const Mode align, const Spacing margin) {
+		float xSign = 0;
+		float ySign = 0;
+
+		if(align & Align::Mode::top) {
+			ySign = -1;
+		}else if(align & Align::Mode::bottom){
+			ySign = 1;
+		}
+
+		if(align & Align::Mode::right) {
+			xSign = -1;
+		}else if(align & Align::Mode::left){
+			xSign = 1;
+		}
+
+		const float xMove = xSign * (xSign == 1 ? margin.left : margin.right);
+		const float yMove = ySign * (ySign == 1 ? margin.bottom : margin.top);
 
 		return {xMove, yMove};
 	}

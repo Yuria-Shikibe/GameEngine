@@ -2,7 +2,7 @@ module;
 
 export module UI.Cell;
 
-import Align;
+import UI.Align;
 import Concepts;
 import UI.Elem;
 import std;
@@ -18,7 +18,6 @@ export namespace UI {
 	 */
 	struct LayoutCell {
 	protected:
-		Align::Mode align = Align::Mode::bottom_left;
 		void changed() const {
 			if(item) {
 				item->changed();
@@ -30,38 +29,15 @@ export namespace UI {
 
 		Rect allocatedBound{};
 
-		float marginLeft{0};
-		float marginRight{0};
-		float marginBottom{0};
-		float marginTop{0};
+		Align::Spacing margin{};
 
-		float padLeft{0};
-		float padRight{0};
-		float padBottom{0};
-		float padTop{0};
+		Align::Spacing pad{};
 
 		//scales are done after margin, so it calculates the size shrunk after margin
-		float srcxScale{0.0f};
-		float srcyScale{0.0f};
+		Align::Spacing scale{0, 1.0, 0, 1.0};
 
-		float endxScale{1.0f};
-		float endyScale{1.0f};
 
-		LayoutCell(const LayoutCell& other){std::memcpy(this, &other, sizeof(LayoutCell));}
-
-		LayoutCell(LayoutCell&& other) noexcept{std::memcpy(this, &other, sizeof(LayoutCell));}
-
-		LayoutCell& operator=(const LayoutCell& other) {
-			if(this == &other) return *this;
-			std::memcpy(this, &other, sizeof(LayoutCell));
-			return *this;
-		}
-
-		LayoutCell& operator=(LayoutCell&& other) noexcept {
-			if(this == &other) return *this;
-			std::memcpy(this, &other, sizeof(LayoutCell));
-			return *this;
-		}
+		Align::Mode align = Align::Mode::bottom_left;
 
 		/**
 		 * \brief When true, the cell will expand parent group when the room isn't enough.
@@ -73,32 +49,31 @@ export namespace UI {
 		bool scaleRelativeToParentY{true};
 
 		[[nodiscard]] bool endRow() const {
-			return item->endingRow();
+			return item->isEndingRow();
 		}
 
-		friend bool operator==(const LayoutCell& lhs, const LayoutCell& rhs) {
-			return lhs.align == rhs.align
-			       && lhs.allocatedBound == rhs.allocatedBound
-			       && lhs.marginLeft == rhs.marginLeft
-			       && lhs.marginRight == rhs.marginRight
-			       && lhs.marginBottom == rhs.marginBottom
-			       && lhs.marginTop == rhs.marginTop
-			       && lhs.padLeft == rhs.padLeft
-			       && lhs.padRight == rhs.padRight
-			       && lhs.padBottom == rhs.padBottom
-			       && lhs.padTop == rhs.padTop
-			       && lhs.srcxScale == rhs.srcxScale
-			       && lhs.srcyScale == rhs.srcyScale
-			       && lhs.endxScale == rhs.endxScale
-			       && lhs.endyScale == rhs.endyScale
-			       && lhs.modifyParentX == rhs.modifyParentX
-			       && lhs.modifyParentY == rhs.modifyParentY
-			       && lhs.scaleRelativeToParentX == rhs.scaleRelativeToParentX
-			       && lhs.scaleRelativeToParentY == rhs.scaleRelativeToParentY;
+		LayoutCell& setSize(const float w, const float h){
+			item->setSize(w, h);
+
+			return *this;
 		}
 
-		friend bool operator!=(const LayoutCell& lhs, const LayoutCell& rhs) {
-			return !(lhs == rhs);
+		LayoutCell& setSize(const float s){
+			item->setSize(s);
+
+			return *this;
+		}
+
+		LayoutCell& setHeight(float h){
+			item->setHeight(h);
+
+			return *this;
+		}
+
+		LayoutCell& setWidth(const float w){
+			item->setWidth(w);
+
+			return *this;
 		}
 
 		LayoutCell& wrapX() {
@@ -139,11 +114,25 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setMargin(const float left, const float right, const float bottom, const float top) {
-			marginLeft = left;
-			marginRight = right;
-			marginBottom = bottom;
-			marginTop = top;
+		LayoutCell& setMargin(const float left, const float right, const float top, const float bottom) {
+			margin = {left, right, bottom, top};
+			changed();
+
+			return *this;
+		}
+
+		LayoutCell& setMargin(const float val) {
+			margin.set(val);
+			changed();
+
+			return *this;
+		}
+
+		LayoutCell& setMargin(const Align::Spacing margin) {
+			if(this->margin != margin){
+				this->margin = margin;
+				changed();
+			}
 
 			return *this;
 		}
@@ -183,94 +172,108 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setSrcScale(const float xScl, const float yScl) {
+		LayoutCell& setSrcScale(const float xScl, const float yScl, const bool move = true) {
 			changed();
-			srcxScale = xScl;
-			srcyScale = yScl;
+
+			if(move) {
+				const float dstX = getHoriScale();
+				const float dstY = getVertScale();
+
+				scale.left = xScl;
+				scale.bottom = yScl;
+
+				scale.right = xScl + dstX;
+				scale.top = yScl + dstY;
+			}else {
+				scale.left = xScl;
+				scale.bottom = yScl;
+			}
 
 			return *this;
 		}
 
 		LayoutCell& setEndScale(const float xScl, const float yScl) {
 			changed();
-			endxScale = xScl;
-			endyScale = yScl;
+			scale.right = xScl;
+			scale.top = yScl;
 
 			return *this;
 		}
 
-		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center) {
+		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center, const bool needClearRelaMove = true) {
 			changed();
 			if(align & Align::Mode::top) {
-				srcyScale = endyScale - yScl;
+				scale.bottom = scale.top - yScl;
 			}else if(align & Align::Mode::bottom){
-				endyScale = srcyScale + yScl;
+				scale.top = scale.bottom + yScl;
 			}else { //centerY
-				endyScale = 0.5f + yScl * 0.5f;
-				srcyScale = 0.5f - yScl * 0.5f;
+				scale.top = 0.5f + yScl * 0.5f;
+				scale.bottom = 0.5f - yScl * 0.5f;
 			}
 
 			if(align & Align::Mode::right) {
-				srcxScale = endxScale - xScl;
+				scale.left = scale.right - xScl;
 			}else if(align & Align::Mode::left){
-				endxScale = srcxScale + xScl;
+				scale.right = scale.left + xScl;
 			}else { //centerX
-				endxScale = 0.5f + xScl * 0.5f;
-				srcxScale = 0.5f - xScl * 0.5f;
+				scale.right = 0.5f + xScl * 0.5f;
+				scale.left = 0.5f - xScl * 0.5f;
 			}
+
+			changed();
+			if(needClearRelaMove)this->clearRelativeMove();
 
 			return *this;
 		}
 
 		LayoutCell& clearRelativeMove() {
 			changed();
-			endxScale -= srcxScale;
-			endyScale -= srcyScale;
+			scale.right -= scale.left;
+			scale.top -= scale.bottom;
 
-			srcxScale = srcyScale = 0;
+			scale.left = scale.bottom = 0;
 
 			return *this;
 		}
 
-		[[nodiscard]] explicit LayoutCell(Elem* const item)
-			: item(item) {
-		}
-
 		[[nodiscard]] float getCellWidth() const {return allocatedBound.getWidth();}
 		[[nodiscard]] float getCellHeight() const {return allocatedBound.getHeight();}
+		[[nodiscard]] float getScaledCellHeight() const {return getVertScale() * getCellHeight();}
+		[[nodiscard]] float getScaledCellWidth() const {return getHoriScale() * getCellWidth();}
 
-		[[nodiscard]] float widthScale() const {return endxScale - srcxScale;}
-		[[nodiscard]] float heightScale() const {return endyScale - srcyScale;}
 
-		[[nodiscard]] float marginHori() const {return marginLeft + marginRight;}
-		[[nodiscard]] float marginVert() const {return marginBottom + marginTop;}
+		[[nodiscard]] float getHoriScale() const {return scale.right - scale.left;}
+		[[nodiscard]] float getVertScale() const {return scale.top - scale.bottom;}
 
-		[[nodiscard]] float padHori() const {return padLeft + padRight;}
-		[[nodiscard]] float padVert() const {return padBottom + padTop;}
+		[[nodiscard]] float getMarginHori() const {return margin.getMarginWidth();}
+		[[nodiscard]] float getMarginVert() const {return margin.getMarginHeight();}
 
-		void applySize(){ // NOLINT(*-make-member-function-const)
-			const float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getBound().getWidth());
-			const float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getBound().getHeight());
+		[[nodiscard]] float getPadHori() const {return pad.getMarginWidth();}
+		[[nodiscard]] float getPadVert() const {return pad.getMarginHeight();}
+
+		void applySizeToItem(){ // NOLINT(*-make-member-function-const)
+			const float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getWidth());
+			const float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getHeight());
 
 			//Modify item size
-			item->setSize(width * widthScale(), height * heightScale());
+			item->setSize(width * getHoriScale(), height * getVertScale());
 
 			//Apply Expansion
 			if(modifyParentX) {
-				allocatedBound.setWidth(item->getBound().getWidth());
+				allocatedBound.setWidth(item->getWidth());
 			}
 
 			if(modifyParentY) {
-				allocatedBound.setHeight(item->getBound().getHeight());
+				allocatedBound.setHeight(item->getHeight());
 			}
 
-			item->getBound().addSize(-marginHori(), -marginVert());
+			item->getBoundRef().addSize(-getMarginHori(), -getMarginVert());
 
-			allocatedBound.addSize(padHori(), padVert());
+			allocatedBound.addSize(getPadHori(), getPadVert());
 		}
 
-		void applyAlign(const Rect& bound) const {
-			Rect& itemBound = item->getBound();
+		void applyAlignToItem(const Rect bound) const {
+			Rect& itemBound = item->getBoundRef();
 			if(align & Align::Mode::top) {
 				itemBound.setSrcY(bound.getEndY() - itemBound.getHeight());
 			}else if(align & Align::Mode::bottom){
@@ -289,8 +292,8 @@ export namespace UI {
 		}
 
 		//Invoke this after all cell bound has been arranged.
-		void applyPos(Elem* parent) const {
-			applyAlign(allocatedBound);
+		void applyPosToItem(Elem* parent) const {
+			applyAlignToItem(allocatedBound);
 
 			float xSign = 0;
 			float ySign = 0;
@@ -307,14 +310,17 @@ export namespace UI {
 				xSign = 1;
 			}
 
-			const float xMove = xSign * ((xSign == 1 ? (padLeft + marginLeft) : (padRight + marginRight)) + getCellWidth() * srcxScale);
-			const float yMove = ySign * ((ySign == 1 ? (padBottom + marginBottom) : (padTop + marginTop)) + getCellHeight() * srcyScale);
+			const bool left   = xSign == 1;
+			const bool bottom = ySign == 1;
 
-			item->getBound().move(xMove, yMove);
+			const float xMove = xSign * ((left   ? (pad.left + margin.left + parent->getMargin().left) : (pad.right + margin.right + parent->getMargin().right)) + getCellWidth() * scale.left);
+			const float yMove = ySign * ((bottom ? (pad.bottom + margin.bottom + parent->getMargin().bottom) : (pad.top + margin.top + parent->getMargin().top)) + getCellHeight() * scale.bottom);
+
+			item->getBoundRef().move(xMove, yMove);
 
 			//TODO align...
 
-			item->calAbsolute(parent);
+			item->calAbsoluteSrc(parent);
 		}
 
 		[[nodiscard]] bool ignore() const {

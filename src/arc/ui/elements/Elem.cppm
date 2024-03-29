@@ -2,12 +2,16 @@ module;
 
 export module UI.Elem;
 
-import UI.Flags;
+export import UI.Flags;
+export import UI.Align;
 import Event;
+import Math;
 import Geom.Vector2D;
 import Graphic.Color;
 import Geom.Shape.Rect_Orthogonal;
 import RuntimeException;
+
+
 
 import std;
 
@@ -68,46 +72,46 @@ export namespace UI {
 
 		ElemDrawer* drawer{nullptr};
 
+		Align::Spacing border{};
+
 	public:
 		std::string name{"undefind"};
 
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
+
 		mutable Graphic::Color tempColor{0.0f, 0.0f, 0.0f, 0.0f};
 		mutable float maskOpacity = 1.0f;
-		std::any animationData{nullptr};
 
-		Geom::Vec2 margin_bottomLeft{};
-		Geom::Vec2 margin_topRight{};
+		std::any animationData{};
 
-		[[nodiscard]] virtual bool isVisiable() const {
-			return visiable;
-		}
+		[[nodiscard]] virtual bool isVisiable() const {return visiable;}
 
-		[[nodiscard]] bool quitMouseFocusAtOutbound() const {
-			return quitInboundFocus;
-		}
+		//TODO rename this shit
+		[[nodiscard]] constexpr bool needSetMouseUnfocusedAtCursorOutOfBound() const {return quitInboundFocus;}
 
-		[[nodiscard]] bool isPressed() const {
-			return pressed;
-		}
+		[[nodiscard]] constexpr bool isPressed() const {return pressed;}
 
+		/**
+		 * @param elem Element To Fill This(it's parent)
+		 * @return Expected Bound Of This Child Element
+		 */
 		virtual Rect getFilledChildrenBound(Elem* elem) const {
 			Rect bound = elem->bound;
 
 			if(elem->fillParentX){
-				bound.setSrcX(margin_bottomLeft.x);
-				bound.setWidth(getWidth() - marginWidth());
+				bound.setSrcX(border.left);
+				bound.setWidth(getWidth() - getBorderWidth());
 			}
 
 			if(elem->fillParentY){
-				bound.setSrcY(margin_bottomLeft.y);
-				bound.setHeight(getHeight() - marginHeight());
+				bound.setSrcY(border.bottom);
+				bound.setHeight(getHeight() - getBorderHeight());
 			}
 
 			return bound;
 		}
 
-		virtual bool layout_fillParent();
+		virtual bool layout_tryFillParent();
 
 		[[nodiscard]] bool isFillParentX() const {
 			return fillParentX;
@@ -118,13 +122,12 @@ export namespace UI {
 		}
 
 		virtual void layout() {
-			layout_fillParent();
+			layout_tryFillParent();
 
 			layoutChanged = false;
 		}
 
-		virtual void applySettings() {
-		}
+		virtual void applySettings() {}
 
 		virtual bool ignoreLayout() const {
 			return !visiable;
@@ -132,9 +135,7 @@ export namespace UI {
 
 		virtual void draw() const;
 
-		virtual void drawContent() const {
-
-		}
+		virtual void drawContent() const {}
 
 		virtual void setVisible(const bool val) {
 			visiable = val;
@@ -145,16 +146,14 @@ export namespace UI {
 		}
 
 		void setFillparentX(const bool val = true) {
-			if(val != fillParentX) {
-				changed();
-			}
+			if(val != fillParentX)changed();
+
 			fillParentX = val;
 		}
 
 		void setFillparentY(const bool val = true) {
-			if(val != fillParentY) {
-				changed();
-			}
+			if(val != fillParentY)changed();
+
 			fillParentY = val;
 		}
 
@@ -163,25 +162,25 @@ export namespace UI {
 			setFillparentY(valY);
 		}
 
-		[[nodiscard]] bool touchDisabled() const {
+		[[nodiscard]] constexpr bool touchDisabled() const {
 			return touchbility == TouchbilityFlags::disabled;
 		}
 
-		[[nodiscard]] TouchbilityFlags getTouchbility() const {
+		[[nodiscard]] constexpr TouchbilityFlags getTouchbility() const {
 			return touchbility;
 		}
 
-		void setTouchbility(const TouchbilityFlags flag) {
+		constexpr void setTouchbility(const TouchbilityFlags flag) {
 			this->touchbility = flag;
 		}
 
-		float marginHeight() const {
-			return margin_bottomLeft.y + margin_topRight.y;
-		}
+		[[nodiscard]] constexpr float getBorderWidth() const {return border.getMarginWidth();}
 
-		float marginWidth() const {
-			return margin_bottomLeft.x + margin_topRight.x;
-		}
+		[[nodiscard]] constexpr float getBorderHeight() const {return border.getMarginHeight();}
+
+		[[nodiscard]] constexpr float getValidWidth() const{return Math::clampPositive(getWidth() - getBorderWidth());}
+
+		[[nodiscard]] constexpr float getValidHeight() const{return Math::clampPositive(getHeight() - getBorderHeight());}
 
 		virtual void drawBackground() const;
 
@@ -189,25 +188,20 @@ export namespace UI {
 
 		void setDrawer(ElemDrawer* drawer);
 
+		/**
+		 * @return The former parent group
+		 */
 		Group* setParent(Group* parent);
 
 		virtual Elem& prepareRemove();
 
-		[[nodiscard]] bool endingRow() const {
-			return endRow;
-		}
+		[[nodiscard]] constexpr bool isEndingRow() const {return endRow;}
 
-		void setEndRow(const bool end) {
-			endRow = end;
-		}
+		constexpr void setEndRow(const bool end) {endRow = end;}
 
-		[[nodiscard]] const std::unordered_set<Elem*>& getFocus() const {
-			return focusTarget;
-		}
+		[[nodiscard]] const std::unordered_set<Elem*>& getFocus() const {return focusTarget;}
 
-		[[nodiscard]] std::unordered_set<Elem*>& getFocus() {
-			return focusTarget;
-		}
+		[[nodiscard]] std::unordered_set<Elem*>& getFocus() {return focusTarget;}
 
 		virtual void addFocusTarget(Elem* const target) {
 			focusTarget.insert(target);
@@ -247,48 +241,47 @@ export namespace UI {
 			changed();
 		}
 
-		virtual float getIdealWidth() {
-			return bound.getWidth();
-		}
+		virtual float getIdealWidth() const {return bound.getWidth();}
 
-		virtual float getIdealHeight() {
-			return bound.getHeight();
-		}
+		virtual float getIdealHeight() const {return bound.getHeight();}
 
-		[[nodiscard]] const Rect& getBound() const {
-			return bound;
-		}
+		[[nodiscard]] constexpr Rect getBound() const {return bound;}
 
-		[[nodiscard]] Rect& getBound() {
-			return bound;
-		}
+		[[nodiscard]] constexpr Rect& getBoundRef() {return bound;}
 
-		virtual void calAbsolute(Elem* parent) {
+		virtual void calAbsoluteSrc(Elem* parent) {
 			Geom::Vec2 vec{parent->absoluteSrc};
 			vec.add(bound.getSrcX(), bound.getSrcY());
 			if(vec == absoluteSrc)return;
 			absoluteSrc.set(vec);
 		}
 
-		Geom::Vec2& getAbsSrc() {
+		[[nodiscard]] Geom::Vec2 getAbsSrc() const{
 			return absoluteSrc;
+		}
+
+		void setAbsSrc(Geom::Vec2 src){
+			if(absoluteSrc != src){
+				absoluteSrc = src;
+				changed();
+			}
 		}
 
 		virtual int elemSerializationID() {
 			return 0;
 		}
-		[[nodiscard]] Event::EventManager& getInputListener() {
-			return inputListener;
-		}
 
-		[[nodiscard]] const Event::EventManager& getInputListener() const {
-			return inputListener;
-		}
+		[[nodiscard]] Event::EventManager& getInputListener() {return inputListener;}
 
-		[[nodiscard]] bool hasChanged() const {
-			return layoutChanged;
-		}
+		[[nodiscard]] const Event::EventManager& getInputListener() const {return inputListener;}
 
+		[[nodiscard]] constexpr bool hasChanged() const {return layoutChanged;}
+
+		/**
+		 * @brief
+		 * This is a post signal function.
+		 * After change is called, layout should be called in the next update to handle the change.
+		 */
 		virtual void changed() const;
 
 		void toString(std::ostream& os, const int depth) const {
@@ -299,29 +292,23 @@ export namespace UI {
 
 		}
 
-		virtual std::vector<std::unique_ptr<Elem>>* getChildren() {
-			return nullptr;
-		}
+		virtual std::vector<std::unique_ptr<Elem>>* getChildren() {return nullptr;}
 
-		virtual bool hasChildren() const {
-			return false;
-		}
+		virtual bool hasChildren() const {return false;}
 
-		bool interactive() const {
-			return touchbility == TouchbilityFlags::enabled && visiable;
-		}
+		[[nodiscard]] constexpr bool isInteractable() const {return touchbility == TouchbilityFlags::enabled && visiable;}
 
-		virtual bool inbound_validToParent(const Geom::Vec2& screenPos) const {
+		virtual bool inbound_validToParent(Geom::Vec2 screenPos) const {
 			return inbound(screenPos);
 		}
 
-		virtual bool inbound(const Geom::Vec2& screenPos) const;
+		virtual bool inbound(Geom::Vec2 screenPos) const;
 
-		bool isFocusedKey() const;
+		bool isFocusedKeyInput() const;
 
 		bool isFocusedScroll() const;
 
-		bool cursorInbound() const;
+		bool isCursorInbound() const;
 
 		void setFocusedKey(bool focus) const;
 
@@ -329,37 +316,33 @@ export namespace UI {
 
 		void setUnfocused() const;
 
-		[[nodiscard]] float drawSrcX() const {
-			return absoluteSrc.x;
+		[[nodiscard]] constexpr  float drawSrcX() const {return absoluteSrc.x;}
+
+		[[nodiscard]] constexpr  float drawSrcY() const {return absoluteSrc.y;}
+
+		[[nodiscard]] constexpr  float getWidth() const {return bound.getWidth();}
+
+		[[nodiscard]] constexpr  float getHeight() const {return bound.getHeight();}
+
+		[[nodiscard]] Align::Spacing getMargin() const{ return border; }
+
+		void setBorderZero() {setBorder(0.0f);}
+
+		void setBorder(const Align::Spacing margin) {
+			if(margin != this->border){
+				this->border = margin;
+				changed();
+			}
 		}
 
-		[[nodiscard]] float drawSrcY() const {
-			return absoluteSrc.y;
+		void setBorder(const float val) {
+			if(border != val){
+				this->border.set(val);
+				changed();
+			}
 		}
 
-		[[nodiscard]] float getWidth() const {
-			return bound.getWidth();
-		}
-
-		[[nodiscard]] float getHeight() const {
-			return bound.getHeight();
-		}
-
-		void setMarginZero() {
-			margin_bottomLeft.setZero();
-			margin_topRight.setZero();
-		}
-
-		void setMargin(const float left, const float right, const float top, const float bottom) {
-			margin_bottomLeft.set(left, bottom);
-			margin_topRight.set(right, top);
-		}
-
-		void setMargin(const float val) {
-			margin_bottomLeft.set(val, val);
-			margin_topRight.set(val, val);
-		}
-
+	protected:
 		virtual void childrenCheck(const Elem* ptr) {
 #ifdef  _DEBUG
 			if(!ptr)throw ext::NullPointerException{"Empty Elem"};

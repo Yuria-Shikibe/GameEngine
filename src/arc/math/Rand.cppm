@@ -7,16 +7,19 @@ import Concepts;
 
 export namespace Math {
 	/**
+	 * Impl XorShift Random
 	 * @author Inferno
 	 * @author davebaol
 	 */
 	class Rand {
+	public:
+		using SeedType = size_t;
+
+	private:
 		/** Normalization constant for double. */
 		static constexpr double NORM_DOUBLE = 1.0 / static_cast<double>(1ll << 53);
 		/** Normalization constant for float. */
 		static constexpr float NORM_FLOAT = 1.0f / static_cast<float>(1ll << 24);
-
-		using SeedType = size_t;
 
 		static constexpr SeedType murmurHash3(SeedType x) {
 			x ^= x >> 33;
@@ -33,8 +36,6 @@ export namespace Math {
 		/** The second half of the internal state of this pseudo-random number generator. */
 		SeedType seed1{};
 
-
-		/** This protected method is const because, contrary to the superclass, it's not used anymore by the other methods. */
 		constexpr int next(const int bits) {
 			return static_cast<int>(nextLong() & (1ull << bits) - 1ull);
 		}
@@ -55,7 +56,7 @@ export namespace Math {
 		 * @param seed0 the first part of the initial seed
 		 * @param seed1 the second part of the initial seed
 		 */
-		constexpr Rand(const SeedType seed0, SeedType seed1) {
+		constexpr Rand(const SeedType seed0, const SeedType seed1) {
 			setState(seed0, seed1);
 		}
 		
@@ -143,7 +144,7 @@ export namespace Math {
 			return nextFloat() * amount * 2 - amount;
 		}
 
-		constexpr float random(float max) {
+		constexpr float random(const float max) {
 			return nextFloat() * max;
 		}
 

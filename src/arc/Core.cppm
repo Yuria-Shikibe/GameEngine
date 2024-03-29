@@ -22,6 +22,10 @@ export import Core.Renderer;
 
 import OS.FileTree;
 
+namespace Core{
+	void setScreenBound(GLFWwindow* win);
+}
+
 export namespace Core {
 	const std::string title = APPLICATION_NAME;
 
@@ -33,8 +37,6 @@ export namespace Core {
 	inline bool maximizeWinOnInit = true;
 	inline bool maximized = true;
 	inline bool windowized = false;
-
-	void setScreenBound(GLFWwindow* win = mainWindow);
 
 	inline const GLFWvidmode* mainScreenMode = nullptr;
 	//TODO using unique ptr?

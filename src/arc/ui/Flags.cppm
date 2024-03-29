@@ -46,10 +46,11 @@ export namespace UI {
 	};
 
 	struct MouseActionDrag final : MouseAction  {
+		Geom::Vec2 relativeMove{};
 		[[nodiscard]] MouseActionDrag() = default;
 
-		[[nodiscard]] MouseActionDrag(const float x, const float y)
-			: MouseAction(x, y) {
+		[[nodiscard]] MouseActionDrag(const float x, const float y, const Geom::Vec2 relativeMove)
+			: MouseAction(x, y), relativeMove{relativeMove} {
 		}
 	};
 

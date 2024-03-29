@@ -186,12 +186,8 @@ export namespace OS{
 		}
 
 		[[nodiscard]] File find(const std::string_view name) const{
-			for (const auto & item : directory_iterator(getPath()))
-			{
-				if (item.path().filename() == name)
-				{
-					return File{item};
-				}
+			if(File ret = subFile(name); ret.exist()){
+				return ret;
 			}
 
 			throw ext::RuntimeException{"Unable To Find File: " + subFile(name).absolutePath().string()};

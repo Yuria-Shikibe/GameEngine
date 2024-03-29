@@ -1,9 +1,10 @@
+export module Game.Content.Drawer.DrawComponents;
+
 //
 // Created by Matrix on 2024/3/15.
 //
 //TODO 模块分区
 // Merge these in module *Drawer*
-export module Game.Content.Drawer.DrawComponents;
 
 export import Game.Content.Drawer.DrawParam;
 export import Game.Content.Loadable;
@@ -18,11 +19,11 @@ import Concepts;
 import std;
 
 export namespace Game::Drawer{
-	struct Movement{
+	struct PartMovement{
 		Geom::Transform trans{};
 		std::function<float(const DrawParam&)> interper{nullptr};
 
-		[[nodiscard]] Geom::Transform transBy(const DrawParam& param) const noexcept{
+		[[nodiscard]] Geom::Transform apply(const DrawParam& param) const noexcept{
 			return trans * interper(param);
 		}
 
@@ -31,14 +32,15 @@ export namespace Game::Drawer{
 		}
 	};
 
+	template <Concepts::Derived<BaseEntity> T>
 	struct DrawComponent : Game::Loadable{
 		std::string name{};
 
-		CompPos trans{};
+		PartTrans trans{};
 		/** @brief Uses this if possible */
-		Movement generalMovement{};
+		PartMovement generalMovement{};
 		/** @brief Avoid using this if possible */
-		std::vector<Movement> movements{};
+		std::vector<PartMovement> movements{};
 
 		DrawComponent() = default;
 
@@ -50,18 +52,36 @@ export namespace Game::Drawer{
 
 		~DrawComponent() override = default;
 
-		virtual void draw(const DrawParam& param, const BaseEntity* entity) const = 0;
+		virtual void draw(const DrawParam& param, const T* entity) const = 0;
+
+		void passTrans(const DrawParam& param, PartTrans& trans) const{
+			if(generalMovement){
+				trans.Geom::Transform::operator+=(generalMovement.apply(param));
+			}
+
+			if(!movements.empty()) [[unlikely]]  {
+				for(auto& move : movements){
+					trans.Geom::Transform::operator+=(move.apply(param));
+				}
+			}
+		}
 	};
 
-	struct TextureDrawer : DrawComponent {
+	template <Concepts::Derived<BaseEntity> T>
+	struct TextureDrawer : DrawComponent<T>{
 		GL::TextureRegionRect* mainRegion{};
 
 		Graphic::Color lightColor{Graphic::Colors::WHITE};
 
+		using DrawComponent<T>::generalMovement;
+		using DrawComponent<T>::movements;
+		using DrawComponent<T>::name;
+		using DrawComponent<T>::trans;
+
 		TextureDrawer() = default;
 
 		explicit TextureDrawer(const std::string_view partName, Concepts::Invokable<void(TextureDrawer*)> auto&& func) :
-			DrawComponent(partName)
+			DrawComponent<T>(partName)
 		{
 			func(this);
 		}
@@ -74,23 +94,54 @@ export namespace Game::Drawer{
 			atlas.getPage("light").pushRequest(prefix, searchTree.flatFind<true>(prefix + ".light"));
 		}
 
-		void draw(const DrawParam& param, const BaseEntity* entity) const override{
+		void draw(const DrawParam& param, const T* entity) const override{
 			using namespace Graphic;
-			auto cur = trans | param.trans;
+			PartTrans cur = trans | param.trans;
 
-			if(generalMovement){
-				cur.Geom::Transform::operator+=(generalMovement.transBy(param));
-			}
-
-			[[unlikely]] if(!movements.empty()){
-				for(auto& move : movements){
-					cur.Geom::Transform::operator+=(move.transBy(param));
-				}
-			}
+			this->passTrans(param, cur);
 
 			Draw::color(lightColor);
 			Draw::setZ(cur.zOffset);
-			Draw::rect<WorldBatch>(mainRegion, cur);
+			Draw::rect<BatchWorld>(mainRegion, cur);
+		}
+	};
+
+	template <Concepts::Derived<BaseEntity> T>
+	struct MultiDrawer : DrawComponent<T>{
+		using DrawComponent<T>::generalMovement;
+		using DrawComponent<T>::movements;
+		using DrawComponent<T>::name;
+		using DrawComponent<T>::trans;
+
+		std::vector<std::unique_ptr<DrawComponent<T>>> drawers{};
+
+		MultiDrawer() = default;
+
+		explicit MultiDrawer(const std::string_view groupName, std::initializer_list<std::unique_ptr<DrawComponent<T>>> drawers, Concepts::InvokeNullable<void(MultiDrawer*)> auto&& func = nullptr) :
+			DrawComponent<T>(groupName), drawers(std::move(drawers))
+		{
+			if constexpr (!std::same_as<decltype(func), std::nullptr_t>){
+				func(this);
+			}
+		}
+
+		void draw(const DrawParam& param, const T* entity) const override{
+			auto curParam = param;
+			curParam.trans |= param.trans;
+
+			this->passTrans(param, curParam.trans);
+
+			for (const auto& drawer : drawers){
+				drawer->draw(curParam, entity);
+			}
+		}
+
+		void pullLoadRequest(Graphic::TextureAtlas& atlas, const OS::FileTree& searchTree, std::string prefix) override{
+			prefix.append(name).append(".");
+
+			for (const auto& drawer : drawers){
+				drawer->pullLoadRequest(atlas, searchTree, prefix);
+			}
 		}
 	};
 }

@@ -1,6 +1,6 @@
 module;
 
-#include <glad/glad.h>;
+#include <glad/glad.h>
 
 export module GL.Texture.MultiSampleTexture2D;
 

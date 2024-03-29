@@ -60,7 +60,6 @@ export namespace UI {
 			});
 
 			inputListener.on<UI::MouseActionRelease>([this](const auto& event) {
-
 				pressed = false;
 			});
 
@@ -79,8 +78,8 @@ export namespace UI {
 
 			// scrollTargetVelocity.scl(scrollMarginCoefficient).abs();
 
-			scrollOffset.clampX(-std::fmaxf(0, itemSize.getWidth() - getWidth() + marginWidth() + vertBarStroke()), 0);
-			scrollOffset.clampY(0, std::fmaxf(0, itemSize.getHeight() - getHeight() + marginHeight() + horiBarStroke()));
+			scrollOffset.clampX(-std::fmaxf(0, itemSize.getWidth() - getWidth() + getBorderWidth() + vertBarStroke()), 0);
+			scrollOffset.clampY(0, std::fmaxf(0, itemSize.getHeight() - getHeight() + getBorderHeight() + horiBarStroke()));
 
 			scrollTargetVelocity.setZero();
 
@@ -96,8 +95,8 @@ export namespace UI {
 
 				const Geom::Vec2 absOri = absoluteSrc;
 				absoluteSrc += scrollOffset;
-				absoluteSrc.x += margin_bottomLeft.x;
-				absoluteSrc.y -= margin_bottomLeft.y;
+				absoluteSrc.x += border.left;
+				absoluteSrc.y -= border.bottom;
 
 				if(vertOutbound()) {
 					absoluteSrc.y += getHeight() - itemSize.getHeight();
@@ -113,14 +112,14 @@ export namespace UI {
 			Group::layout();
 
 			if(item) {
-				itemSize = item->getBound();
+				itemSize = item->getBoundRef();
 			}
 		}
 
 		void setItem(Group* item) {
 			this->item = item;
 			if(item != nullptr) {
-				itemSize = item->getBound();
+				itemSize = item->getBoundRef();
 			}
 
 			getChildren()->clear();
@@ -134,8 +133,8 @@ export namespace UI {
 
 			if(hoverScroller)return rect;
 
-			const bool enableX = !elem->isFillParentX() && bound.getWidth() > getWidth() - marginWidth() && bound.getHeight() > getHeight() - marginHeight() - hoirScrollerHeight;
-			const bool enableY = !elem->isFillParentY() && bound.getHeight() > getHeight() - marginHeight() && bound.getWidth() > getWidth() - marginWidth() - vertScrollerWidth;
+			const bool enableX = !elem->isFillParentX() && bound.getWidth() > getWidth() - getBorderWidth() && bound.getHeight() > getHeight() - getBorderHeight() - hoirScrollerHeight;
+			const bool enableY = !elem->isFillParentY() && bound.getHeight() > getHeight() - getBorderHeight() && bound.getWidth() > getWidth() - getBorderWidth() - vertScrollerWidth;
 
 			rect.addSize(
 				enableY ? -vertScrollerWidth : 0.0f,
@@ -143,24 +142,24 @@ export namespace UI {
 			);
 
 			rect.move(
-				elem->isFillParentX() && enableY ? -margin_bottomLeft.x : 0.0f,
-				elem->isFillParentY() && enableX ? -margin_bottomLeft.y : 0.0f
+				elem->isFillParentX() && enableY ? -border.left : 0.0f,
+				elem->isFillParentY() && enableX ? -border.bottom : 0.0f
 			);
 
 			return rect;
 		}
 
-		[[nodiscard]] bool inbound_validToParent(const Geom::Vec2& screenPos) const override {
+		[[nodiscard]] bool inbound_validToParent(const Geom::Vec2 screenPos) const override {
 			return Elem::inbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
 		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2& screenPos) const {
 			return
-			(enableHorizonScroll() && screenPos.y - absoluteSrc.y + margin_bottomLeft.y < hoirScrollerHeight) ||
-			(enableVerticalScroll() && screenPos.x - absoluteSrc.x + margin_bottomLeft.x > getWidth() - vertScrollerWidth);
+			(enableHorizonScroll() && screenPos.y - absoluteSrc.y + border.bottom < hoirScrollerHeight) ||
+			(enableVerticalScroll() && screenPos.x - absoluteSrc.x + border.left > getWidth() - vertScrollerWidth);
 		}
 
-		[[nodiscard]] bool inbound(const Geom::Vec2& screenPos) const override {
+		[[nodiscard]] bool inbound(const Geom::Vec2 screenPos) const override {
 			if(Elem::inbound(screenPos)) {
 				Elem::setFocusedScroll(true);
 				return inbound_scrollBars(screenPos);
@@ -171,11 +170,11 @@ export namespace UI {
 		}
 
 		[[nodiscard]] bool horiOutbound() const {
-			return itemSize.getWidth() > getWidth() - marginWidth();
+			return itemSize.getWidth() > getWidth() - getBorderWidth();
 		}
 
 		[[nodiscard]] bool vertOutbound() const {
-			return itemSize.getHeight() > getHeight() - marginHeight();
+			return itemSize.getHeight() > getHeight() - getBorderHeight();
 		}
 
 		[[nodiscard]] bool enableVerticalScroll() const {
@@ -203,11 +202,11 @@ export namespace UI {
 		}
 
 		[[nodiscard]] float horiScrollRatio() const {
-			return std::clamp(-scrollOffset.x / (itemSize.getWidth() - getWidth() + marginWidth() + vertBarStroke()), 0.0f, 1.0f);
+			return std::clamp(-scrollOffset.x / (itemSize.getWidth() - getWidth() + getBorderWidth() + vertBarStroke()), 0.0f, 1.0f);
 		}
 
 		[[nodiscard]] float vertScrollRatio() const {
-			return std::clamp(1.0f - scrollOffset.y / (itemSize.getHeight() - getHeight() + marginHeight() + horiBarStroke()), 0.0f, 1.0f);
+			return std::clamp(1.0f - scrollOffset.y / (itemSize.getHeight() - getHeight() + getBorderHeight() + horiBarStroke()), 0.0f, 1.0f);
 		}
 
 		void drawContent() const override;

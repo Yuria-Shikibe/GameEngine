@@ -26,12 +26,12 @@ export namespace Game{
 		const GL::Shader* bloomShader{nullptr};
 
 		CombinePostProcessor(Graphic::PostProcessor* const blurProcessor1, Graphic::PostProcessor* const blurProcessor2, const GL::Shader* mergeShader)
-			: blur(blurProcessor1, blurProcessor2, 5),
+			: blur(blurProcessor1, blurProcessor2, 3),
 			  mergeShader(mergeShader){
 
 			blur.port.inPort = 2;
 			blur.port.outPort = 0;
-			blur.setScale(0.5f);
+			blur.setScale(0.75f);
 		}
 
 		void beginProcess() const override{

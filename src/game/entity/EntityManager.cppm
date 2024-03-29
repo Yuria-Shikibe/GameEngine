@@ -49,13 +49,25 @@ export namespace Game::EntityManage{
 
 		updateTree();
 
+
+
 		realEntities.each([delta](const decltype(realEntities)::StoreType& t) {
 			t->updateCollision(delta);
 		});
 	}
 
 	void render() {
+		realEntities.quadTree->intersectRect(drawables.getViewPort(), [](const RealityEntity* entity, const auto& rect){
+			return entity->getDrawBound().overlap(rect);
+		}, [](RealityEntity* entity){
+			entity->setInScreen(true);
+		});
+
 		drawables.render();
+	}
+
+	void renderDebug() {
+		drawables.renderDebug();
 	}
 
 	template<Concepts::Derived<Entity> T>

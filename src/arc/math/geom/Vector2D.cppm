@@ -20,11 +20,6 @@ export namespace Geom{
 		T x{0};
 		T y{0};
 
-		[[nodiscard]] constexpr Vector2D(const T x, const T y) : x(x), y(y) {
-		}
-
-		[[nodiscard]] constexpr Vector2D() = default;
-
 		using PassType = Concepts::ParamPassType<Vector2D, sizeof(T) * 2>;
 
 		[[nodiscard]] constexpr Vector2D operator+(const PassType tgt) const {
@@ -158,7 +153,7 @@ export namespace Geom{
 			return this->add(other.x, other.y);
 		}
 
-		constexpr Vector2D& add(const PassType other, const T scale) {
+		constexpr Vector2D& mulAdd(const PassType other, const T scale) {
 			return this->add(other.x * scale, other.y * scale);
 		}
 
@@ -276,7 +271,6 @@ export namespace Geom{
 
 		[[nodiscard]] float angle() const {
 			float angle = Math::atan2(static_cast<float>(x), static_cast<float>(y)) * Math::RADIANS_TO_DEGREES;
-			if (angle < 0) angle += 360;
 			return angle;
 		}
 
@@ -422,6 +416,31 @@ export namespace Geom{
 			return *this;
 		}
 
+		constexpr Vector2D& minX(const T min) {
+			x = Math::min(x, min);
+			return *this;
+		}
+
+		constexpr Vector2D& minY(const T min) {
+			y = Math::min(y, min);
+			return *this;
+		}
+
+		constexpr Vector2D& maxX(const T max) {
+			x = Math::max(x, max);
+			return *this;
+		}
+
+		constexpr Vector2D& maxY(const T max) {
+			y = Math::max(y, max);
+			return *this;
+		}
+
+		constexpr Vector2D& clampNormalized() requires std::floating_point<T>{
+			return clampX(0, 1).clampY(0, 1);
+		}
+
+
 		Vector2D& abs() {
 			if constexpr(!std::is_unsigned_v<T>) {
 				x = std::abs(x);
@@ -473,7 +492,7 @@ export namespace Geom{
 
 		Vector2D& clamp(const T min, const T max) {
 			const T len2 = length2();
-			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
+			if (len2 == 0) [[unlikely]] return *this;  // NOLINT(clang-diagnostic-float-equal)
 			if (const T max2 = max * max; len2 > max2) return this->scl(std::sqrt(max2 / len2));
 			if (const T min2 = min * min; len2 < min2) return this->scl(std::sqrt(min2 / len2));
 			return *this;
@@ -481,15 +500,15 @@ export namespace Geom{
 
 		Vector2D& clampMin(const T min) {
 			const T len2 = length2();
-			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
-			if (const T min2 = min * min; len2 < min2) return this->scl(std::sqrt(min2 / len2));
+			if (len2 == 0) [[unlikely]] return *this;  // NOLINT(clang-diagnostic-float-equal)
+			if (const T min2 = min * min; len2 < min2) [[likely]] return this->scl(std::sqrt(min2 / len2));
 			return *this;
 		}
 
 		Vector2D& clampMax(const T max) {
 			const T len2 = length2();
-			if (len2 == 0) return *this;  // NOLINT(clang-diagnostic-float-equal)
-			if (const T max2 = max * max; len2 > max2) return this->scl(std::sqrt(max2 / len2));
+			if (len2 == 0) [[unlikely]] return *this;  // NOLINT(clang-diagnostic-float-equal)
+			if (const T max2 = max * max; len2 > max2) [[likely]] return this->scl(std::sqrt(max2 / len2));
 			return *this;
 		}
 
@@ -503,7 +522,7 @@ export namespace Geom{
 		}
 
 		[[nodiscard]] float angleRad() const {
-			return Math::atan2(y, x);
+			return Math::atan2(x, y);
 		}
 
 		[[nodiscard]] float angleExact() const {
@@ -531,8 +550,22 @@ export namespace Geom{
 			return this->set(y, -x);
 		}
 
+		Vector2D& round(const Vector2D::PassType other) requires std::is_floating_point_v<T>{
+			x = Math::round<T>(x, other.x);
+			y = Math::round<T>(y, other.y);
+
+			return *this;
+		}
+
+		Vector2D& round(const T val) requires std::is_floating_point_v<T>{
+			x = Math::round<T>(x, val);
+			y = Math::round<T>(y, val);
+
+			return *this;
+		}
+
 		[[nodiscard]] constexpr bool isZero() const {
-			return length2() == 0.0f;
+			return length2() == static_cast<T>(0);
 		}
 
 		[[nodiscard]] constexpr bool isZero(const float margin) const {
@@ -548,14 +581,19 @@ export namespace Geom{
 			T lenO = v.length2();
 
 			if(len > lenO) {
-				return std::strong_ordering::greater;
+				return std::weak_ordering::greater;
 			}
 
 			if(len < lenO) {
-				return std::strong_ordering::less;
+				return std::weak_ordering::less;
 			}
 
-			return std::strong_ordering::equivalent;
+			return std::weak_ordering::equivalent;
+		}
+
+		template <Concepts::Number TN>
+		[[nodiscard]] constexpr Vector2D<TN> as(){
+			return Vector2D<TN>{static_cast<TN>(x), static_cast<TN>(y)};
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const PassType obj){

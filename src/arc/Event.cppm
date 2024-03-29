@@ -74,9 +74,9 @@ export namespace Event {
 	};
 
 	/**
-	 * \brief THE VALUE OF THE ENUM MEMBERS MUST BE CONTINUOUS
-	 * \tparam T Used Enum Type
-	 * \tparam maxsize How Many Items This Enum Contains
+	 * @brief THE VALUE OF THE ENUM MEMBERS MUST BE CONTINUOUS
+	 * @tparam T Used Enum Type
+	 * @tparam maxsize How Many Items This Enum Contains
 	 */
 	template <Concepts::Enum T, size_t maxsize>
 	class SignalManager {

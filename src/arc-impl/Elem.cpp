@@ -14,7 +14,7 @@ UI::Elem::Elem() {
 	if(!drawer)setDrawer(UI::defDrawer);
 }
 
-bool UI::Elem::layout_fillParent() {
+bool UI::Elem::layout_tryFillParent() {
 	if(parent) {
 		if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
 			bound = rect;
@@ -72,7 +72,7 @@ UI::Elem& UI::Elem::prepareRemove() {
 }
 
 void UI::Elem::setFocusedKey(const bool focus) const {
-	if(!isFocusedKey() && !focus)return;
+	if(!isFocusedKeyInput() && !focus)return;
 	this->root->currentInputFocused = focus ? const_cast<Elem*>(this)  : nullptr;
 }
 
@@ -86,13 +86,13 @@ void UI::Elem::changed() const {
 	if(parent)parent->changed();
 }
 
-bool UI::Elem::inbound(const Geom::Vec2& screenPos) const {
+bool UI::Elem::inbound(const Geom::Vec2 screenPos) const {
 	if(touchbility == TouchbilityFlags::disabled)return false;
 	if(parent != nullptr && !parent->inbound_validToParent(screenPos))return false;
 	return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
 }
 
-bool UI::Elem::isFocusedKey() const {
+bool UI::Elem::isFocusedKeyInput() const {
 	return this->root->currentInputFocused == this;
 }
 
@@ -100,11 +100,11 @@ bool UI::Elem::isFocusedScroll() const {
 	return this->root->currentScrollFocused == this;
 }
 
-bool UI::Elem::cursorInbound() const {
+bool UI::Elem::isCursorInbound() const {
 	return this->root->currentCursorFocus == this;
 }
 
 void UI::Elem::setUnfocused() const {
-	if(isFocusedKey())root->currentInputFocused = nullptr;
+	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
 }

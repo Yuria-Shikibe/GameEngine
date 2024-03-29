@@ -46,7 +46,7 @@ export namespace Graphic{
 
 			{
 				PoolType::UniquePtr ptr;
-				std::lock_guard gurad{suspendLock};
+				std::scoped_lock gurad{suspendLock};
 				if(waiting.empty()){
 					ptr = effectPool.obtainUnique();
 				}else{

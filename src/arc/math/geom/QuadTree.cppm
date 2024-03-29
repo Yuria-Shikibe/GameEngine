@@ -264,6 +264,27 @@ export namespace Geom {
 			});
 		}
 
+		template <typename Rect>
+		void intersectRect(const Rect& rect,
+				Concepts::Invokable<bool(const Cont*, const Rect&)> auto && check,
+				Concepts::Invokable<void(Cont*)> auto && pred) {
+			if(!this->inbound(rect)) return;
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				topLeft->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
+				topRight->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
+				bottomLeft->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
+				bottomRight->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
+			}
+
+			std::ranges::for_each(rectangles, [this, rect, pred = std::forward<decltype(pred)>(pred), check = std::forward<decltype(check)>(check)](const Cont* cont) {
+				if(check(cont, rect)) {
+					pred(const_cast<Cont*>(cont));
+				}
+			});
+		}
+
 		template <Concepts::Invokable<void(Cont*)> Pred>
 		void intersectPoint(const Vec2 point, Pred&& pred) {
 			if(!this->inbound(point)) return;
@@ -329,6 +350,11 @@ export namespace Geom {
 
 		bool intersectWith(const Cont* object, const Vec2 point) {
 			return this->obtainBound(object).containsPos_edgeExclusive(point) && (!static_cast<bool>(interscetPointFunc) || interscetPointFunc(object, point));
+		}
+
+		bool inbound(const Rect& rect) {
+			if(strict) return boundary.contains(rect);
+			return boundary.overlap(rect);
 		}
 
 		bool inbound(const Cont* object) {

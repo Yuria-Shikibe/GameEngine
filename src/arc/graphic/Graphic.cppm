@@ -12,8 +12,11 @@ import RuntimeException;
 import std;
 
 namespace Graphic{
-	void glDebugCallback(GLenum source, GLenum type, const GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
-	{
+	void glDebugCallback(GLenum source, GLenum type, const GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param){
+#ifndef _DEBUG
+		return;
+#endif
+
 		const std::string_view src_str = [source]{
 			switch (source)
 			{
@@ -52,6 +55,7 @@ namespace Graphic{
 		}();
 
 		std::println(std::cout, "[GL {}-{}-{} | {}]: {}", src_str, type_str, severity_str, id, message);
+		std::cout.flush();
 	}
 
 	inline void throw_GL_Exception(const int error_code, const char* description) {

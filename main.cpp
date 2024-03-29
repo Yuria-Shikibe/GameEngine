@@ -7,7 +7,7 @@ import std;
 
 import Assets.LoaderRenderer;
 
-import Align;
+import UI.Align;
 
 import Platform;
 import OS.File;
@@ -84,6 +84,7 @@ import UI.Label;
 import UI.ScrollPane;
 import UI.ElemDrawer;
 import UI.Styles;
+import UI.SliderBar;
 
 
 import Geom.Shape.RectBox;
@@ -110,64 +111,73 @@ using namespace Graphic;
 using namespace GL;
 using Geom::Vec2;
 
-std::string currentCoordText{ " " };
-//This is totally a debug shit
-std::string_view* currentCoord = new std::string_view;
+std::stringstream sstream{};
 
 void setupUITest() {
 	const auto HUD = new UI::Table{};
 
-	Core::uiRoot->root->add(HUD).fillParent().setAlign(Align::center);
+	Core::uiRoot->root->transferElem(HUD).fillParent().setAlign(Align::center);
 
 	HUD->relativeLayoutFormat = false;
-	HUD->setMarginZero();
+	HUD->setBorderZero();
 	HUD->setDrawer(UI::emptyDrawer.get()); {
-		HUD->add<UI::Label>([](UI::Label& label) {
-			   currentCoord = &label.getView();
-			   label.color  = Colors::RED;
-			   label.color.mul(0.6f);
-			   label.setDynamic(true);
-			   label.getInputListener().on<UI::MouseActionPress>([&label](const auto& e) {
-				   switch(e.buttonID) {
-					   case Ctrl::RMB : {
-						   label.color = Colors::RED;
-						   label.color.mul(0.6f);
-						   break;
-					   }
-					   default : label.color.lerp(Colors::BLUE, 0.1f);
-				   }
-			   });
-		   })
-		   .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
-		   .setMargin(0, 10, 0, 10);
+		HUD->add<UI::Label>([](UI::Label& label){
+			label.setText([]{
+				auto str = sstream.str();
+				sstream.str("");
+				return str;
+			});
+			label.color = Colors::RED;
+			label.color.mul(0.6f);
+			label.setDynamic(true);
+			label.getInputListener().on<UI::MouseActionPress>([&label](const auto& e){
+				switch(e.buttonID){
+					case Ctrl::RMB :{
+					   label.color = Colors::RED;
+					   label.color.mul(0.6f);
+					   break;
+					}
+					default : label.color.lerp(Colors::BLUE, 0.1f);
+				}
+			});
+		})
+        .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
+        .setMargin(0, 10, 0, 10);
 
 
-		HUD->add(new UI::Table{})
+		HUD->add<UI::Table>([](UI::Table& t){
+			t.add<UI::SliderBar>().fillParentY().wrapX().setWidth(300);
+		})
 		   .setAlign(Align::Mode::top_left)
 		   .setSizeScale(0.4f, 0.08f)
 		   .setSrcScale(0.25f, 0.0f)
 		   .setMargin(10, 0, 0, 0);
-		HUD->add(new UI::Table{})
+
+
+		HUD->transferElem(new UI::Table{})
 		   .setAlign(Align::Mode::top_left)
 		   .setSizeScale(0.1f, 0.6f)
 		   .setSrcScale(0.0f, 0.2f)
-		   .setMargin(0, 0, 10, 10); {
-			auto& cell2       = HUD->add(new UI::Table{});
-			cell2.item->color = Colors::GREEN;
-			cell2.setAlign(Align::Mode::bottom_left).setSizeScale(0.25f, 0.2f).setMargin(0, 10, 10, 10);
-			cell2.clearRelativeMove();
+		   .setMargin(0, 0, 10, 10);
 
-			UI::Table& table = cell2.as<UI::Table>();
+		{
+			auto& cell2 = HUD->add<UI::Table>([](UI::Table& table){
+				table.color = Colors::GREEN;
+				table.add<UI::Elem>();
+				table.lineFeed();
+				table.add<UI::Elem>();
+				table.add<UI::Elem>();
+			})
+			.setAlign(Align::Mode::bottom_left)
+			.setSizeScale(0.25f, 0.2f)
+			.setMargin(0, 10, 10, 10);
 
-			table.add(new UI::Elem{});
-
-			table.lineFeed();
-
-			table.add(new UI::Elem{});
-			table.add(new UI::Elem{});
+			Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Continuous, [&]{
+				cell2.setSizeScale(cell2.getHoriScale() + 0.05f, 0.2f);
+			});
 		}
 
-		HUD->add(new UI::Table{})
+		HUD->transferElem(new UI::Table{})
 		   .setAlign(Align::Mode::bottom_left)
 		   .setSizeScale(0.075f, 0.2f)
 		   .setSrcScale(0.25f, 0.0f)
@@ -180,29 +190,29 @@ void setupUITest() {
 		rt->setFillparentX();
 		pane->setItem(rt);
 
-		HUD->add(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
+		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
 
 		auto t   = new UI::Table{};
 		t->color = Colors::RED;
 		t->name  = "testT";
-		rt->add(t);
+		rt->transferElem(t);
 		// rt->add(new UI::Elem);
 
 		rt->lineFeed();
-		rt->add(new UI::Elem{});
-		rt->add(new UI::Elem{});
+		rt->transferElem(new UI::Elem{});
+		rt->transferElem(new UI::Elem{});
 	} {
-		HUD->add(new UI::Table{})
+		HUD->transferElem(new UI::Table{})
 		   .setAlign(Align::top_right)
 		   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
 		   .setMargin(10, 0, 10, 0);
 		//
-		HUD->add(new UI::Table{})
+		HUD->transferElem(new UI::Table{})
 		   .setAlign(Align::top_right)
 		   .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
 		   .setMargin(10, 10, 10, 0);
 		//
-		HUD->add(new UI::Table{})
+		HUD->transferElem(new UI::Table{})
 		   .setAlign(Align::Mode::bottom_right)
 		   .setSizeScale(0.3f, 0.15f)
 		   .setMargin(10, 0, 10, 0);
@@ -217,29 +227,30 @@ void setupCtrl(){
 	// });
 
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, [] {
-		static ext::Interval<> timer{};
+		static ext::Timer<> timer{};
 
-		timer.run<20>(OS::updateDeltaTick(), []{
+		timer.run(12, OS::updateDeltaTick(), []{
 			Core::audio->play(Assets::Sounds::laser5);
 			Geom::RectBox box{};
-		box.setSize(180, 12);
+			box.setSize(180, 12);
 			box.offset = box.sizeVec2;
 			box.offset.mul(-0.5f);
 
-			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
-			ptr->trait = &Game::Content::basicBulletType;
-			ptr->trans.vec.set(Core::camera->getPosition().x,  + Core::camera->getPosition().y);
-			ptr->trans.rot =
-				Core::input->getMousePos()
-					.sub(Core::renderer->getDrawWidth() * 0.5f, Core::renderer->getDrawHeight() * 0.5f)
-					.angle();
+			for(int i = -3; i <= 3; ++i){
+				const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
+				ptr->trait = &Game::Content::basicBulletType;
+				ptr->trans.vec.set(Core::camera->getPosition());
+				ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input->getMousePos());
 
-			ptr->velo.vec.set(320, 0).rotate(ptr->trans.rot);
-			Game::EntityManage::add(ptr);
-			ptr->hitBox.init(box);
-			ptr->physicsBody.inertialMass = 100;
-			ptr->activate();
-			ptr->damage.materialDamage.fullDamage = 100;
+				ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80 * i));
+
+				ptr->velo.vec.set(320, 0).rotate(ptr->trans.rot);
+				Game::EntityManage::add(ptr);
+				ptr->hitBox.init(box);
+				ptr->physicsBody.inertialMass = 100;
+				ptr->damage.materialDamage.fullDamage = 100;
+				ptr->activate();
+			}
 		});
 	});
 
@@ -304,6 +315,10 @@ int main(const int argc, char* argv[]) {
 		Game::core->overlayManager->deactivate();
 	}
 
+	// Math::Rand rand{};
+	// for(int i = 0; i < 20; ++i){
+	// 	std::cout << rand.random(10.0f, 30.0f) << std::endl;
+	// }
 
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
@@ -313,7 +328,7 @@ int main(const int argc, char* argv[]) {
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
-		Game::core->effectManager->render();
+		/*Game::core->effectManager->render();*/
 		Graphic::Batch::flush();
 	});
 
@@ -324,7 +339,7 @@ int main(const int argc, char* argv[]) {
 
 
 	// UI Test
-	// setupUITest();
+	setupUITest();
 
 	setupCtrl();
 
@@ -346,8 +361,6 @@ int main(const int argc, char* argv[]) {
 	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
 
-	std::stringstream ss{};
-
 	const auto coordCenter = Font::obtainLayoutPtr();
 
 	Game::EntityManage::init();
@@ -367,6 +380,8 @@ int main(const int argc, char* argv[]) {
 		Core::Renderer& renderer = *event.renderer;
 		renderer.frameBegin(&acceptBuffer1);
 
+		acceptBuffer1.clearColor(Graphic::Colors::BLACK);
+
 		GL::enable(GL::Test::DEPTH);
 		GL::setDepthFunc(GL::Func::GEQUAL);
 		GL::setDepthMask(true);
@@ -374,32 +389,35 @@ int main(const int argc, char* argv[]) {
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
 		Game::EntityManage::render();
 
-		auto* region = Core::assetsManager->getAtlas().find("base-pester");
+		Game::core->effectManager->render();
+
+		// auto* region = Core::assetsManager->getAtlas().find("base-pester");
 		// //auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
 
+		Graphic::Batch::flush<BatchWorld>();
 
-		Graphic::Batch::flush<WorldBatch>();
-		// Core::worldBatch->switchBlending(GL::Blendings::Disable);
-		// renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
-		// GL::setDepthMask(false);
-		renderer.frameEnd(merger);
+		GL::setDepthMask(false);
 		GL::disable(GL::Test::DEPTH);
+		// GL::setDepthMask(false);
 
+		GL::Blendings::Normal.apply();
+		renderer.frameEnd(merger);
 	});
 
 
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& event) {
-		event.renderer->frameBegin(&acceptBuffer1);
+		event.renderer->frameBegin(&frameBuffer);
 
+		Draw::Line::setLineStroke(5);
+		Draw::color(Colors::GRAY);
+		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
+			Draw::Line::rect(t->getBoundary());
+		});
 
+		Game::EntityManage::renderDebug();
 
-		// Draw::Line::setLineStroke(5);
-		// Draw::color(Colors::GRAY);
-		// Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
-		// 	Draw::Line::rect(t->getBoundary());
-		// });
-		event.renderer->frameEnd(merger);
+		event.renderer->frameEnd(Assets::PostProcessors::bloom.get());
 	});
 
 
@@ -430,16 +448,12 @@ int main(const int argc, char* argv[]) {
 				Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 				Draw::color();
 
-				ss.str(""s);
-				ss << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " <<
+				sstream << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " <<
 						cameraPos.getY() << ") | " << std::to_string(OS::getFPS());
-				ss << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
-				ss << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, [](const decltype(Game::EntityManage::drawables.idMap)::value_type::second_type& i) {
+				sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
+				sstream << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, [](const decltype(Game::EntityManage::drawables.idMap)::value_type::second_type& i) {
 					return i->isInScreen();
 				});
-
-				currentCoordText = ss.str();
-				*currentCoord    = currentCoordText;
 
 				// Font::glyphParser->parse(coordCenter, R"()");
 				//
@@ -458,7 +472,6 @@ int main(const int argc, char* argv[]) {
 			e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
 			e.renderer->frameEnd(Assets::PostProcessors::bloom.get());
 		});
-
 
 	OS::setupMainLoop();
 

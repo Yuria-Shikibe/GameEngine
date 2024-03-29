@@ -7,28 +7,14 @@ import std;
 
 UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-default)
 	root->setSrc(0.0f, 0.0f);
-	root->getAbsSrc().setZero();
+	root->setAbsSrc(Geom::ZERO);
 	root->relativeLayoutFormat = false;
 	root->setTouchbility(UI::TouchbilityFlags::childrenOnly);
 	root->setRoot(this);
 	root->setDrawer(UI::emptyDrawer.get());
-	root->margin_bottomLeft.set(marginX, marginY);
-	root->margin_topRight.set(marginX, marginY);
+	root->setBorder({marginX, marginX, marginY, marginY});
 	root->name = "UI Root";
 	root->defaultCellLayout.setMargin(marginX, marginX, marginY, marginY);
-}
-
-
-void UI::Root::iterateAll_DFS(Elem* current, bool& shouldStop, const std::function<bool(Elem*)>& func) {
-	if (shouldStop)return;
-
-	if (!func(current) || shouldStop)return;
-
-	if(!current->hasChildren())return;
-
-	for (auto& child : *current->getChildren()) {
-		iterateAll_DFS(child.get(), shouldStop, func);
-	}
 }
 
 void UI::Root::update(const float delta) {
@@ -37,7 +23,7 @@ void UI::Root::update(const float delta) {
 	const Elem* last = nullptr;
 
 	iterateAll_DFS(root.get(), stop, [this, &last](const Elem* elem) mutable {
-		if(elem->interactive() && elem->inbound(cursorPos)) {
+		if(elem->isInteractable() && elem->inbound(cursorPos)) {
 			last = elem;
 		}
 
@@ -54,7 +40,7 @@ void UI::Root::update(const float delta) {
 void UI::Root::determinShiftFocus(const Elem* newFocus) {
 	if(newFocus == nullptr) {
 		if(currentCursorFocus != nullptr) {
-			if(currentCursorFocus->quitMouseFocusAtOutbound()) {
+			if(currentCursorFocus->needSetMouseUnfocusedAtCursorOutOfBound()) {
 				setEnter(nullptr);
 			}else if(pressedMouseButtons.none()){
 				setEnter(nullptr);
@@ -94,6 +80,7 @@ void UI::Root::onDoubleClick(const int id, int mode) const{
 void UI::Root::onPress(const int id, int mode) {
 	if(currentCursorFocus == nullptr)return;
 	pressAction.set(cursorPos, id);
+	cursorPressedBeginPos = cursorPos;
 	currentCursorFocus->getInputListener().fire(pressAction);
 	pressedMouseButtons[id] = true;
 }
@@ -130,6 +117,8 @@ bool UI::Root::onDrag(const int id, int mode) const {
 void UI::Root::onDragUpdate() const {
 	if(currentCursorFocus == nullptr)return;
 	for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {
+		dragAction.relativeMove = getCursorDst();
+
 		if(onDrag(i)) {
 			dragAction.set(cursorVel, i);
 			currentCursorFocus->getInputListener().fire(dragAction);

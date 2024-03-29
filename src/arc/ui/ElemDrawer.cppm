@@ -4,6 +4,8 @@ import Graphic.Color;
 import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
 
+export import UI.Align;
+
 export namespace UI {
 	class Elem;
 
@@ -60,10 +62,7 @@ export namespace UI {
 		DrawPair pressed{};
 		DrawPair disabled{};
 
-		float margin_bottom{};
-		float margin_top{};
-		float margin_left{};
-		float margin_right{};
+		Align::Spacing margin{};
 
 		void drawElem(const Elem* elem) const;
 	};

@@ -42,7 +42,7 @@ set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
-    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:\"MSVCRT.lib\")
+    set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:library)
     add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
 
     file(GLOB_RECURSE BIN
@@ -107,7 +107,7 @@ add_executable(
         ${SOURCE_FILES}      #[[.cpp]]
         ${CURRENT_HEADERS}   #[[.h]]
         glad.c               #[[Glad Attachment]]
-        main.cppm
+        main.cpp
 #        test.cpp
 )
 
@@ -118,7 +118,13 @@ target_sources(${PROJECT_NAME}
         ${FAST_MODULES}      #[[Modules]]
 )
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Release")
+#set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
+target_link_options(${PROJECT_NAME} PRIVATE "/NODEFAULTLIB:LIBUCRT")
+
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+
+elseif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     message(STATUS "Copy Properties Setup")
 
     add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD

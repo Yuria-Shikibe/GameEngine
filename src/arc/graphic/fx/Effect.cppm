@@ -6,7 +6,7 @@ export module Graphic.Effect;
 
 export import Graphic.Timed;
 
-import Geom.Vector2D;
+import Geom.Transform;
 import Graphic.Color;
 import Concepts;
 import std;
@@ -24,69 +24,81 @@ export namespace Graphic{
 	class EffectManager;
 
 	struct EffectDrawer{
+		float defLifetime = 60.0f;
 		virtual ~EffectDrawer() = default;
-		virtual void operator()(Effect& effect) = 0;
+		virtual void operator()(Effect& effect) const = 0;
 
-		Effect* suspendOn(EffectManager* manager);
+		EffectDrawer() = default;
+
+		explicit EffectDrawer(const float defaultLifetime)
+			: defLifetime(defaultLifetime){}
+
+		Effect* suspendOn(EffectManager* manager) const;
 	};
 
-	template<Concepts::Invokable<void(Effect&)> auto func>
+	template<Concepts::Invokable<void(Graphic::Effect&)> Func>
 	struct EffectDrawer_Func final : EffectDrawer{
-		void operator()(Effect& effect) override{
+		Func func{};
+
+		explicit EffectDrawer_Func(const float time, Func&& func)
+			: EffectDrawer(time), func(std::forward<Func>(func)){}
+
+		void operator()(Effect& effect) const override{
 			func(effect);
+		}
+	};
+
+	template <Concepts::Invokable<void(Graphic::Effect&)> Func>
+	EffectDrawer_Func(float, Func) -> EffectDrawer_Func<Func>;
+
+	template <Concepts::Invokable<void(Graphic::Effect&)> Func>
+	std::unique_ptr<EffectDrawer_Func<Func>> makeEffect(const float time, Func&& func){
+		return std::make_unique<EffectDrawer_Func<Func>>(time, std::forward<Func>(func));
+	}
+
+	struct EffectDrawer_Multi final : EffectDrawer{
+		std::vector<const EffectDrawer*> subEffects{};
+
+		explicit EffectDrawer_Multi(const std::initializer_list<const EffectDrawer*> effects)
+			: subEffects(effects){}
+
+		void operator()(Effect& effect) const override{
+			for (const auto subEffect : this->subEffects){
+				subEffect->operator()(effect);
+			}
 		}
 	};
 
 	struct Effect {
 		using HandleType = size_t;
+		static constexpr float DefLifetime = -1.0f;
 
 		Timed progress{};
 
-		Geom::Vec2 position{};
-		float rotation{};
+		float zOffset{3};
+		Geom::Transform trans{};
 		HandleType handle{};
 
 		Color color{};
 		std::any additionalData{};
 
-		EffectDrawer* drawer{nullptr};
+		const EffectDrawer* drawer{nullptr};
 
-		Effect& operator=(const Effect& other){
-			if(this == &other) return *this;
-			progress = other.progress;
-			position = other.position;
-			rotation = other.rotation;
-			handle = other.handle;
-			color = other.color;
-			additionalData = other.additionalData;
-			drawer = other.drawer;
-			return *this;
-		}
+		Effect* set(const Geom::Transform trans, const Color color = Colors::WHITE, const float lifetime = DefLifetime, std::any&& additonalData = {}){
+			if(lifetime > 0.0f){
+				progress.set(0.0f, lifetime);
+			}
 
-		Effect& operator=(Effect&& other) noexcept{
-			if(this == &other) return *this;
-			progress = other.progress;
-			position = other.position;
-			rotation = other.rotation;
-			handle = other.handle;
-			color = other.color;
-			additionalData = std::move(other.additionalData);
-			drawer = other.drawer;
-			return *this;
-		}
-
-		Effect* set(const Geom::Vec2 position, const float rotation = 0.0f, const Color color = Colors::WHITE, const float lifetime = 60.0f, std::any&& additonalData = {}){
-			progress.set(0.0f, lifetime);
-			this->position = position;
-			this->rotation = rotation;
+			this->trans = trans;
 			this->color = color;
 			this->additionalData = std::move(additonalData);
 
 			return this;
 		}
 
-		Effect* setDrawer(EffectDrawer* drawer){
+		Effect* setDrawer(const EffectDrawer* drawer){
 			this->drawer = drawer;
+			this->progress.set(0.0f, drawer->defLifetime);
 			return this;
 		}
 
@@ -96,7 +108,7 @@ export namespace Graphic{
 
 		bool overrideRotation(HandleType& handle, const float rotation){
 			if(handle == this->handle){
-				this->rotation = rotation;
+				this->trans.rot = rotation;
 				return true;
 			}else{
 				handle = 0;
@@ -106,7 +118,7 @@ export namespace Graphic{
 
 		bool overridePosition(HandleType& handle, const Geom::Vec2 position){
 			if(handle == this->handle){
-				this->position = position;
+				this->trans.vec = position;
 				return true;
 			}else{
 				handle = 0;
@@ -118,6 +130,13 @@ export namespace Graphic{
 			return progress.time >= progress.lifetime;
 		}
 
+		[[nodiscard]] float getX() const{
+			return trans.vec.x;
+		}
+
+		[[nodiscard]] float getY() const{
+			return trans.vec.y;
+		}
 
 		/**
 		 * @return Whether this effect is removeable

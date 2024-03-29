@@ -30,12 +30,12 @@ export namespace ext{
 		using is_transparent = void;
 
 		size_t operator()(const std::string_view val) const noexcept {
-			constexpr std::hash<std::string_view> hasher{};
+			static constexpr std::hash<std::string_view> hasher{};
 			return hasher(val);
 		}
 
 		size_t operator()(const std::string& val) const noexcept {
-			constexpr std::hash<std::string> hasher{};
+			static constexpr std::hash<std::string> hasher{};
 			return hasher(val);
 		}
 	};

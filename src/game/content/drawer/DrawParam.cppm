@@ -9,19 +9,19 @@ export import Geom.Transform;
 export import Game.Entity.BaseEntity;
 
 export namespace Game::Drawer{
-	struct CompPos : Geom::Transform{
+	struct PartTrans : Geom::Transform{
 		float zOffset{};
 
-		constexpr CompPos() = default;
+		constexpr PartTrans() = default;
 
-		explicit CompPos(const Geom::Transform trans, const float zOffset)
+		explicit PartTrans(const Geom::Transform trans, const float zOffset)
 			: Geom::Transform{trans}, zOffset(zOffset){}
 
-		constexpr CompPos(const Geom::Vec2 pos, const float rot, const float zOffset)
+		constexpr PartTrans(const Geom::Vec2 pos, const float rot, const float zOffset)
 			: Geom::Transform(pos, rot),
 			  zOffset(zOffset){}
 
-		constexpr CompPos& operator|=(const CompPos parentRef){
+		constexpr PartTrans& operator|=(const PartTrans parentRef){
 			Geom::Transform::operator|=(static_cast<Geom::Transform>(parentRef)); // NOLINT(*-slicing)
 			zOffset += parentRef.zOffset;
 
@@ -34,19 +34,19 @@ export namespace Game::Drawer{
 		 * @param parentRef Parent Frame Reference Trans
 		 * @return Transformed Translation
 		 */
-		[[nodiscard]] constexpr friend CompPos operator|(CompPos self, const CompPos parentRef){
+		[[nodiscard]] constexpr friend PartTrans operator|(PartTrans self, const PartTrans parentRef){
 			return self |= parentRef;
 		}
 
-		constexpr CompPos& operator+=(const CompPos parentRef){
+		constexpr PartTrans& operator+=(const PartTrans parentRef){
 			Geom::Transform::operator+=(static_cast<Geom::Transform>(parentRef)); // NOLINT(*-slicing)
 			zOffset += parentRef.zOffset;
 
 			return *this;
 		}
 
-		[[nodiscard]] constexpr CompPos operator*(const float scl) const{
-			CompPos state{*this};
+		[[nodiscard]] constexpr PartTrans operator*(const float scl) const{
+			PartTrans state{*this};
 			state.Geom::Transform::operator*=(scl);
 			state.zOffset *= scl;
 
@@ -54,8 +54,8 @@ export namespace Game::Drawer{
 		}
 	};
 
-	[[nodiscard]] CompPos getCompPos(const BaseEntity* entity){
-		return CompPos{entity->trans, entity->zLayer};
+	[[nodiscard]] PartTrans getCompPos(const BaseEntity* entity){
+		return PartTrans{entity->trans, entity->zLayer};
 	}
 
 	struct DrawProgress{
@@ -74,7 +74,7 @@ export namespace Game::Drawer{
 		 * Parent Rotation
 		 * Parent Z
 		 */
-		CompPos trans{};
+		PartTrans trans{};
 		DrawProgress progress{};
 	};
 

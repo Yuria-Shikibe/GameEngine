@@ -15,51 +15,51 @@ export namespace ext{
 	 */
 	template <size_t size = 1>
 		requires requires{ size > 0; }
-	class Interval {
+	class Timer {
 		std::array<float, size> reloads{};
 
 	public:
 		static constexpr size_t timeSize = size;
 
-		constexpr Interval() = default;
+		constexpr Timer() = default;
 
-		template <float Spacing, size_t Index = 0, bool Strict = false>
+		template <size_t Index = 0, bool Strict = false>
 			requires requires {Index < size;}
-		void run(const float delta, Concepts::Invokable<void()> auto&& func){
+		void run(const float spacing, const float delta, Concepts::Invokable<void()> auto&& func){
 			auto& reload = reloads[Index];
 			reload += delta;
 
-			if(reload >= Spacing){
+			if(reload >= spacing){
 				if constexpr(Strict){
-					const int total = Math::floor(reload / Spacing);
+					const int total = Math::floor(reload / spacing);
 					for(int i = 0; i < total; ++i){
 						func();
 					}
 				}else{
 					func();
 				}
-				reload = Math::mod(reload, Spacing);
+				reload = Math::mod(reload, spacing);
 			}
 		}
 
-		template <float Spacing, size_t Index = 0>
+		template <size_t Index = 0>
 			requires requires {Index < size;}
-		constexpr bool getValid(const float delta = 0){
+		constexpr bool getValid(const float spacing, const float delta = 0){
 			auto& reload = reloads[Index];
 			reload += delta;
 
 			if(reload >= delta){
-				reload = Math::mod(reload, Spacing);
+				reload = Math::mod(reload, spacing);
 				return true;
 			}
 
 			return false;
 		}
 
-		template <float Spacing, size_t Index = 0>
+		template <size_t Index = 0>
 			requires requires {Index < size;}
-		constexpr bool isValid() const{
-			return reloads[Index] > Spacing;
+		[[nodiscard]] constexpr bool isValid(const float spacing) const{
+			return reloads[Index] > spacing;
 		}
 
 		constexpr void clear(){

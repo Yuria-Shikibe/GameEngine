@@ -265,7 +265,7 @@ export namespace Graphic{
 			return std::bit_cast<float>(value & 0xfeffffff);
 		}
 
-		[[nodiscard]] constexpr float diff(const Color& other) const {
+		[[nodiscard]] float diff(const Color& other) const {
 			return Math::abs(hue() - other.hue()) / 360 + Math::abs(value() - other.value()) + Math::abs(saturation() - other.saturation());
 		}
 

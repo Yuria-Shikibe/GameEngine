@@ -104,9 +104,9 @@ export namespace Graphic{
 
 	using BatchPtr = std::unique_ptr<Core::Batch>;
 
-	constexpr auto OverlayBatch = &Core::BatchGroup::batchOverlay;
-	constexpr auto WorldBatch = &Core::BatchGroup::batchWorld;
-	constexpr auto DefBatch = OverlayBatch;
+	constexpr auto BatchOverlay = &Core::BatchGroup::batchOverlay;
+	constexpr auto BatchWorld = &Core::BatchGroup::batchWorld;
+	constexpr auto DefBatch = BatchOverlay;
 
 	extern Core::BatchGroup& batchGroup;
 
@@ -394,13 +394,13 @@ export namespace Graphic{
 			const float x3, const float y3, const float u3, const float v3, const Color c3, const Color cm3,
 			const float x4, const float y4, const float u4, const float v4, const Color c4, const Color cm4
 		){
-			if constexpr(batchPtr == WorldBatch){
-				VertexPasser<WorldBatch>::vert(texture,
+			if constexpr(batchPtr == BatchWorld){
+				VertexPasser<BatchWorld>::vert(texture,
 				                   x1, y1, contextNorZ, u1, v1, c1, cm1, x2, y2, contextNorZ, u2, v2, c2, cm2,
 				                   x3, y3, contextNorZ, u3, v3, c3, cm3, x4, y4, contextNorZ, u4, v4, c4, cm4
 				);
 			} else{
-				VertexPasser<OverlayBatch>::vert(texture,
+				VertexPasser<BatchOverlay>::vert(texture,
 				                   x1, y1, u1, v1, c1, cm1, x2, y2, u2, v2, c2, cm2,
 				                   x3, y3, u3, v3, c3, cm3, x4, y4, u4, v4, c4, cm4
 				);
@@ -415,13 +415,13 @@ export namespace Graphic{
 			const float x3, const float y3, const float u3, const float v3, const Color c3,
 			const float x4, const float y4, const float u4, const float v4, const Color c4
 		){
-			if constexpr(batchPtr == WorldBatch){
-				VertexPasser<WorldBatch>::vert_monochromeMix(texture, cm,
+			if constexpr(batchPtr == BatchWorld){
+				VertexPasser<BatchWorld>::vert_monochromeMix(texture, cm,
 				                                 x1, y1, contextNorZ, u1, v1, c1, x2, y2, contextNorZ, u2, v2, c2,
 				                                 x3, y3, contextNorZ, u3, v3, c3, x4, y4, contextNorZ, u4, v4, c4
 				);
 			} else{
-				VertexPasser<OverlayBatch>::vert_monochromeMix(texture, cm,
+				VertexPasser<BatchOverlay>::vert_monochromeMix(texture, cm,
 				                                 x1, y1, u1, v1, c1, x2, y2, u2, v2, c2,
 				                                 x3, y3, u3, v3, c3, x4, y4, u4, v4, c4
 				);
@@ -436,13 +436,13 @@ export namespace Graphic{
 			const float x3, const float y3, const float u3, const float v3,
 			const float x4, const float y4, const float u4, const float v4
 		){
-			if constexpr(batchPtr == WorldBatch){
-				VertexPasser<WorldBatch>::vert_monochromeAll(texture, cm, c,
+			if constexpr(batchPtr == BatchWorld){
+				VertexPasser<BatchWorld>::vert_monochromeAll(texture, cm, c,
 				                                 x1, y1, contextNorZ, u1, v1, x2, y2, contextNorZ, u2, v2,
 				                                 x3, y3, contextNorZ, u3, v3, x4, y4, contextNorZ, u4, v4
 				);
 			} else{
-				VertexPasser<OverlayBatch>::vert_monochromeAll(texture, cm, c,
+				VertexPasser<BatchOverlay>::vert_monochromeAll(texture, cm, c,
 				                                 x1, y1, u1, v1, x2, y2, u2, v2,
 				                                 x3, y3, u3, v3, x4, y4, u4, v4
 				);
@@ -566,7 +566,7 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void rect(const TextureRegionRect* region, auto trans) requires Concepts::Derived<decltype(trans), Geom::Transform> {
+		void rect(const TextureRegionRect* region, Concepts::Derived<Geom::Transform> auto trans){
 			::Graphic::Draw::rect<batchPtr>(region, trans.vec.x, trans.vec.y, trans.rot);
 		}
 
@@ -700,6 +700,12 @@ export namespace Graphic{
 				vec2_0.setPolar(angle, length);
 
 				line<batchPtr>(contextTexture, x, y, x + vec2_0.x, y + vec2_0.y, contextColor, contextColor, cap);
+			}
+
+			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+			void lineAngle(const Geom::Transform trans, const float length,
+						   const bool cap = true){
+				lineAngle<batchPtr>(trans.vec.x, trans.vec.y, trans.rot, length, cap);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>

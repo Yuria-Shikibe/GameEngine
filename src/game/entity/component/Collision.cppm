@@ -319,10 +319,10 @@ export namespace Game{
 									}
 
 									this->clampCCDTo(subjectIndex);
-									this->trans.vec.add(transitionCCD, subjectIndex);
+									this->trans.vec.mulAdd(transitionCCD, subjectIndex);
 
 									other.clampCCDTo(objectIndex);
-									other.trans.vec.add(other.transitionCCD, objectIndex);
+									other.trans.vec.mulAdd(other.transitionCCD, objectIndex);
 
 									return collisionData;
 								}

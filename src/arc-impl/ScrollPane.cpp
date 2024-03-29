@@ -15,8 +15,8 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 
 	if(pane->enableHorizonScroll()) {
 		Graphic::Draw::rectOrtho(
-			pane->drawSrcX() + pane->margin_bottomLeft.x + pane->horiScrollRatio() * (pane->getWidth() - pane->marginWidth() - pane->horiBarLength()),
-			pane->drawSrcY() + pane->margin_bottomLeft.y,
+			pane->drawSrcX() + pane->getMargin().left + pane->horiScrollRatio() * (pane->getWidth() - pane->getBorderWidth() - pane->horiBarLength()),
+			pane->drawSrcY() + pane->getMargin().bottom,
 			pane->horiBarLength(),
 			pane->horiBarStroke()
 		);
@@ -24,8 +24,8 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 
 	if(pane->enableVerticalScroll()) {
 		Graphic::Draw::rectOrtho(
-			pane->drawSrcX() + pane->getWidth() - pane->margin_topRight.x,
-			pane->drawSrcY() + pane->margin_bottomLeft.y + pane->vertScrollRatio() * (pane->getHeight() - pane->marginHeight() - pane->vertBarSLength()),
+			pane->drawSrcX() + pane->getWidth() - pane->getMargin().right,
+			pane->drawSrcY() + pane->getMargin().bottom + pane->vertScrollRatio() * (pane->getHeight() - pane->getBorderHeight() - pane->vertBarSLength()),
 			-pane->vertBarStroke(),
 			pane->vertBarSLength()
 		);
@@ -37,7 +37,7 @@ void UI::ScrollPane::drawContent() const {
 
 	GL::enable(GL::Test::SCISSOR);
 
-	GL::scissor(Math::round<int>(absoluteSrc.x + margin_bottomLeft.x), Math::round<int>(absoluteSrc.y + horiBarStroke() + margin_bottomLeft.y), Math::round<int>(getWidth() - vertBarStroke() - marginWidth()), Math::round<int>(getHeight() - marginHeight()));
+	GL::scissor(Math::round<int>(absoluteSrc.x + border.left), Math::round<int>(absoluteSrc.y + horiBarStroke() + border.bottom), Math::round<int>(getWidth() - vertBarStroke() - getBorderWidth()), Math::round<int>(getHeight() - getBorderHeight()));
 
 	drawChildren();
 

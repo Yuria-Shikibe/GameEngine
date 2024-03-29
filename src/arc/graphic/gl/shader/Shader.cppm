@@ -292,6 +292,8 @@ export namespace GL {
 
 		void readSource() const {
 			for(auto& [file, source] : typeList | std::views::values) {
+				std::cout << file << std::endl;
+
 				source = shaderDir.find(file).readString();
 			}
 		}

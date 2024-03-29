@@ -79,7 +79,7 @@ export namespace Concepts {
 	concept InvokeNullable = std::same_as<std::nullptr_t, T> || FunctionTraits<functype>::template invocableAs_v<T>();
 
 	template <typename T, typename functype>
-	concept InvokableFunc = std::is_convertible_v<T, functype>;
+	concept InvokableFunc = std::is_convertible_v<T, std::function<functype>>;
 
 	template <typename T>
 	concept Enum = std::is_enum_v<T>;

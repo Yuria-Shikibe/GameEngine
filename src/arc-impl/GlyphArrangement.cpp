@@ -4,31 +4,32 @@ module Font.GlyphArrangement;
 
 import Graphic.Draw;
 import RuntimeException;
+import Math;
 
 import std;
 
 
 void Font::GlyphLayout::render() const {
-	if(count <= 0) return;
-	std::ranges::for_each_n(toRender.begin(), count, [this](const decltype(toRender)::value_type& glyph) {
+	if(count <= 0 || this->lastText.empty()) return;
+	for (auto& glyph : this->toRender | std::ranges::views::take(count)){
 		Graphic::Draw::vert_monochromeAll(
 			glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
-			glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0,
-			glyph.region->v0,
-			glyph.u0 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u0,
-			glyph.region->v1,
-			glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u1,
-			glyph.region->v1,
-			glyph.u1 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u1,
-			glyph.region->v0
+			glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y,
+			glyph.region->u0,glyph.region->v0,
+			glyph.u0 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y,
+			glyph.region->u0,glyph.region->v1,
+			glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y,
+			glyph.region->u1,glyph.region->v1,
+			glyph.u1 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y,
+			glyph.region->u1,glyph.region->v0
 		);
-	});
+	}
 }
 
-void Font::GlyphLayout::render(const float progress) const {
-	if(count <= 0) return;
-	for(size_t i = 0; i < static_cast<size_t>(progress * static_cast<float>(count)); ++i) {
-		const GlyphVertData& glyph = toRender.at(i);
+void Font::GlyphLayout::render(float progress) const {
+	if(count <= 0 || this->lastText.empty()) return;
+	progress = Math::clamp(progress);
+	for (auto& glyph : this->toRender | std::ranges::views::take(static_cast<size_t>(progress * static_cast<float>(count)))){
 		Graphic::Draw::vert_monochromeAll(
 			glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
 			glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0,
@@ -52,7 +53,7 @@ Font::TypesettingTable::TypesettingTable(const FontFlags* const font): defaultFo
 }
 
 void Font::TokenParser::parse(const std::string_view token, const ModifierableData& data) const {
-	const int hasType = token.find('#');
+	const auto hasType = token.find('#');
 
 	if(hasType != std::string_view::npos) {
 		if(const auto itr = modifier.find(token.substr(0, hasType)); itr != modifier.end()) {
@@ -65,32 +66,27 @@ void Font::TokenParser::parse(const std::string_view token, const ModifierableDa
 	}
 }
 
-void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout> layout, const std::string_view text, const float newMaxWidth) const {
+void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const {
 	constexpr auto npos = std::string::npos;
-
-	//TODO maxWidth may changed!
-	if(layout->last == text && newMaxWidth == layout->maxWidth) return;
-	layout->last = text;
-	layout->maxWidth = newMaxWidth;
 
 	context.reset();
 	layout->clear();
 	auto& datas = layout->toRender;
-	datas.resize(std::max(text.size(), datas.capacity()));
+	datas.resize(std::max(layout->lastText.size(), datas.capacity()));
 
 	const Font::CharData* lastCharData = &Font::emptyCharData;
 	bool tokenState                              = false;
 	size_t tokenBegin                            = npos;
 	Geom::Vec2 currentPosition{ 0, -context.lineSpacing };
 
-	if(text.empty()) {
+	if(layout->lastText.empty()) {
 		layout->bound.set(0, 0, 0, 0);
 		return;
 	}
 
-	size_t count = 0;
-	for(size_t index = 0; index < text.size(); ++index) {
-		const char currentChar = text.at(index);
+	int count = 0;
+	for(int index = 0; index < layout->lastText.size(); ++index) {
+		const char currentChar = layout->lastText.at(index);
 		//Token Check
 		if(currentChar == TokenSignal) {
 			if(tokenState) tokenState = false;
@@ -110,7 +106,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout> layout, const s
 			} else if(currentChar == TokenEndCode) {
 				if(tokenBegin != npos) {
 					tokenParser->parse(
-						text.substr(tokenBegin, index - tokenBegin),
+						layout->lastText.substr(tokenBegin, index - tokenBegin),
 						{ context, currentPosition, lastCharData, *layout }
 					);
 				}
@@ -171,7 +167,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout> layout, const s
 
 	layout->count = count;
 
-	if(text.back() != '\n' && charParser->contains('\n')) {
+	if(layout->lastText.back() != '\n' && charParser->contains('\n')) {
 		charParser->parse('\n', { context, currentPosition, lastCharData, *layout });
 	}
 
@@ -183,7 +179,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout> layout, const s
 	//TODO should this really work?
 	float offsetY = layout->bound.getHeight() + context.currentLineBound.getHeight() * 0.255f;
 
-	std::for_each_n(std::execution::par_unseq, datas.begin(), text.size(), [offsetY](GlyphVertData& data) {
+	std::for_each_n(std::execution::par_unseq, datas.begin(), layout->lastText.size(), [offsetY](GlyphVertData& data) {
 		data.moveY(offsetY);
 	});
 }
@@ -223,8 +219,8 @@ void Font::initParser(const FontFlags* const defFont) {
 				data.context.fallbackFont = data.context.currentFont;
 				try {
 					data.context.currentFont = glyphParser->fontLib->obtain(std::stoi(static_cast<std::string>(sub)));
-				} catch(std::invalid_argument e) {
-					//TODO maybe ?
+				} catch(std::invalid_argument& e) {
+					//TODO throw maybe ?
 				}
 			}
 		} else {
@@ -258,7 +254,10 @@ void Font::initParser(const FontFlags* const defFont) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const std::string_view sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float scl = 1.0f;
-				try { scl = std::stof(static_cast<std::string>(sub)); } catch(std::invalid_argument e) {
+				try{
+					scl = std::stof(static_cast<std::string>(sub));
+				} catch(std::invalid_argument& e) {
+
 				}
 
 				ParserFunctions::setScl(data, scl);
@@ -281,7 +280,7 @@ void Font::initParser(const FontFlags* const defFont) {
 					const float moveY = std::stof(static_cast<std::string>(sub.substr(splitIndex + 1)));
 
 					data.context.offset.set(moveX, moveY);
-				} catch(std::invalid_argument e) {
+				} catch(std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			}
@@ -289,13 +288,13 @@ void Font::initParser(const FontFlags* const defFont) {
 			if(std::tolower(command.front()) == 'x') {
 				try {
 					data.context.offset.set(std::stof(static_cast<std::string>(command.substr(1))), 0);
-				} catch(std::invalid_argument e) {
+				} catch(std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			} else if(std::tolower(command.front()) == 'y') {
 				try {
 					data.context.offset.set(0, std::stof(static_cast<std::string>(command.substr(1))));
-				} catch(std::invalid_argument e) {
+				} catch(std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			}
@@ -306,7 +305,7 @@ void Font::initParser(const FontFlags* const defFont) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const auto sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float alpha = 1.0f;
-				try { alpha = std::stof(static_cast<std::string>(sub)); } catch(std::invalid_argument e) {
+				try { alpha = std::stof(static_cast<std::string>(sub)); } catch(std::invalid_argument& e) {
 				}
 
 				data.context.currentColor.setA(alpha);

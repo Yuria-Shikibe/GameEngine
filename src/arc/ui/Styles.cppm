@@ -76,11 +76,11 @@ export namespace UI::Styles {
 
 	void load(Graphic::TextureAtlas& atlas) {
 		auto&& applyMargin_16 = [](const std::unique_ptr<UI::UIStyle>& style) {
-			style->margin_bottom = style->margin_top = style->margin_left = style->margin_right = 16.0f;
+			style->margin.set(16.0f);
 		};
 
 		auto&& applyMargin_8 = [](const std::unique_ptr<UI::UIStyle>& style) {
-			style->margin_bottom = style->margin_top = style->margin_left = style->margin_right = 8.0f;
+			style->margin.set(8.0f);
 		};
 
 		{

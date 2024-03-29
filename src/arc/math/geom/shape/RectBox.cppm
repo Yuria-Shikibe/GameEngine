@@ -61,10 +61,10 @@ export namespace Geom {
 		}
 
 		constexpr void move(const Vec2 vec2, const float scl) {
-			v0.add(vec2, scl);
-			v1.add(vec2, scl);
-			v2.add(vec2, scl);
-			v3.add(vec2, scl);
+			v0.mulAdd(vec2, scl);
+			v1.mulAdd(vec2, scl);
+			v2.mulAdd(vec2, scl);
+			v3.mulAdd(vec2, scl);
 
 			maxOrthoBound.move(vec2.x * scl, vec2.y * scl);
 		}

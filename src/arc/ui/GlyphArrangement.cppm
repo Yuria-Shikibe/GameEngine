@@ -7,7 +7,7 @@ module;
 export module Font.GlyphArrangement;
 
 import Container.Pool;
-import Font;
+export import Font;
 
 import Graphic.Color;
 import Container.Pool;
@@ -15,7 +15,7 @@ import Geom.Shape.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import Geom.Vector2D;
 
-export import Align;
+export import UI.Align;
 
 import std;
 
@@ -78,12 +78,12 @@ export namespace Font {
 
 		Geom::OrthoRectFloat bound{};
 
-		std::string last{};
+		std::string lastText{};
 
-		size_t count = 0;
+		int count = 0;
 
 		void reset() {
-			last.clear();
+			lastText.clear();
 			maxWidth = std::numeric_limits<float>::max();
 			bound.set(0, 0, 0, 0);
 			offset.setZero();
@@ -274,16 +274,46 @@ namespace ParserFunctions {
 		/**
 		 * \brief Customizable Fields
 		 */
-		[[nodiscard]] explicit GlyphParser(const FontFlags* const defFont) : context{defFont}{
+		[[nodiscard]] explicit GlyphParser(const FontFlags* const defFont) : context{defFont}{}
 
+		virtual void parse(const std::shared_ptr<GlyphLayout>& layout) const;
+
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, std::string&& str, const float maxWidth = std::numeric_limits<float>::max()) const{
+			bool requiresRelayout = layout->maxWidth != maxWidth;
+
+			if(layout->lastText != str){
+				requiresRelayout = true;
+				layout->lastText = std::move(str);
+			}
+
+			if(requiresRelayout)parse(layout);
 		}
 
-		virtual void parse(std::shared_ptr<GlyphLayout> layout, std::string_view text, float newMaxWidth = std::numeric_limits<float>::max()) const;
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const std::string_view str, const float maxWidth = std::numeric_limits<float>::max()) const{
+			bool requiresRelayout = layout->maxWidth != maxWidth;
+
+			if(layout->lastText != str){
+				requiresRelayout = true;
+				layout->lastText = str;
+			}
+
+			if(requiresRelayout)parse(layout);
+		}
+
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const char* str, const float maxWidth = std::numeric_limits<float>::max()) const{
+			parseWith(layout, std::string_view{str}, maxWidth);
+		}
+
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const float maxWidth = std::numeric_limits<float>::max(), const bool forceLayout = false) const{
+			if(layout->maxWidth != maxWidth)parse(layout);
+		}
 
 		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string_view text) const {
-			const auto layout = std::make_shared<GlyphLayout>();
+			const auto layout = obtainLayoutPtr();
 
-			parse(layout, text);
+			layout->lastText = text;
+
+			parse(layout);
 
 			return layout;
 		}

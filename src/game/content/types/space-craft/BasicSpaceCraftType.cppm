@@ -12,7 +12,7 @@ import std;
 
 export namespace Game::Content{
 	struct BasicSpaceCraftType : SpaceCraftTrait, Game::ContentTrait{
-		std::unique_ptr<Game::Drawer::DrawComponent> drawer{nullptr}; //I believe drawers should be unique!
+		std::unique_ptr<Game::Drawer::DrawComponent<SpaceCraft>> drawer{nullptr}; //I believe drawers should be unique!
 
 		explicit BasicSpaceCraftType(const std::string_view name)
 			: ContentTrait(name){}

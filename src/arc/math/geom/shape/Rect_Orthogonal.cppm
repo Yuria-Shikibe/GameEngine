@@ -268,7 +268,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		constexpr Rect_Orthogonal& setSrc(const Vec2& v) {
+		constexpr Rect_Orthogonal& setSrc(const Vec2 v) {
 			srcX = v.x;
 			srcY = v.y;
 
@@ -292,6 +292,13 @@ export namespace Geom{
 		constexpr Rect_Orthogonal& move(const T x, const T y) {
 			srcX += x;
 			srcY += y;
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& move(const typename Geom::Vector2D<T>::PassType vec) {
+			srcX += vec.x;
+			srcY += vec.y;
 
 			return *this;
 		}

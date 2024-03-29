@@ -44,7 +44,7 @@ export namespace Core{
 
 		void log(const std::string_view message) {
 #ifndef _DEBUG
-			logOfStream << message << std::endl; //Flush after message;
+			// logOfStream << message << std::endl; //Flush after message;
 #endif
 		}
 

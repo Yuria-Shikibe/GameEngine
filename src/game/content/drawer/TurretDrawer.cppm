@@ -13,7 +13,7 @@ export namespace Game::Drawer{
 	struct TurretDrawer {
 		virtual ~TurretDrawer() = default;
 
-		std::vector<std::unique_ptr<DrawComponent>> components{};
+		std::vector<std::unique_ptr<DrawComponent<TurretEntity>>> components{};
 
 		virtual void paramOperate(DrawParam& param, TurretTrait* trait, TurretEntity* entity){
 

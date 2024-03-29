@@ -1,148 +1,121 @@
 module UI.Table;
 
 void UI::Table::layoutRelative() {
-	if(cells.empty() || std::ranges::all_of(std::as_const(cells), [](const LayoutCell& cell) {
-		return cell.ignore();
-	}))return;
+	if(cells.empty() || std::ranges::all_of(cells, std::identity{}, &LayoutCell::ignore))return;
 
-	size_t curLayoutRows = std::ranges::count_if(std::as_const(cells), [](const auto& t) {
-		return t.endRow();
-	});
+	auto curLayoutRows =
+		std::ranges::count_if(cells, std::identity{}, &LayoutCell::endRow);
 
 	//Make Sure There at least exist one row!
-	if(!cells.back().endRow()) {
-		curLayoutRows++;
-	}
+	if(!cells.back().endRow())curLayoutRows++;
 
-	rowsCount = curLayoutRows;
+	elemLayoutCount.y = static_cast<int>(curLayoutRows);
 
-	//Register Row Max width / height
+	{ //Register Row Max width / height
+		int curElemPerRow = 0;
+		float totalRowMaxHeight = 0.0f;
 
-	{
-		size_t curElemPerRow        = 0;
-		float currentColunmMaxWidth = 0.0f;
-
-		float currentRowMaxHeight = 0.0f;
-		float totalRowMaxHeight   = 0.0f;
+		Geom::Vec2 currentCellSize{};
 
 		for(const auto& cell : cells) {
-			if(!cell.scaleRelativeToParentX) {
-				currentColunmMaxWidth += cell.widthScale() * cell.item->getWidth();
+			if(!cell.ignore()){
+				curElemPerRow++;
+
+				if(!cell.scaleRelativeToParentX) {
+					currentCellSize.x += cell.getHoriScale() * cell.item->getWidth();
+				}
+
+				if(!cell.scaleRelativeToParentY) {
+					currentCellSize.y = std::max(cell.getScaledCellHeight(), currentCellSize.y);
+				}
 			}
 
-			if(cell.ignore()) {
-				if(cell.endRow())goto endRow;
+			if(cell.endRow()){
+				elemLayoutCount.x = std::max(elemLayoutCount.x, curElemPerRow);
+				totalRowMaxHeight += currentCellSize.y;
+				bound.setLargerWidth(currentCellSize.x);
+
+				currentCellSize.setZero();
+				curElemPerRow = 0;
 			}
-
-			curElemPerRow++;
-
-			if(!cell.scaleRelativeToParentY) {
-				currentRowMaxHeight = std::fmaxf(cell.heightScale() * cell.item->getHeight(), currentRowMaxHeight);
-			}
-
-			if(cell.endRow())goto endRow;
-
-			continue;
-
-			endRow:
-				totalRowMaxHeight += currentRowMaxHeight;
-			bound.setLargerWidth(currentColunmMaxWidth);
-			currentRowMaxHeight = currentColunmMaxWidth = 0.0f;
-
-			if(curElemPerRow > maxElemPerRow) {
-				maxElemPerRow = curElemPerRow;
-			}
-
-			curElemPerRow = 0;
 		}
 
-		if(curElemPerRow > maxElemPerRow) {
-			maxElemPerRow = curElemPerRow;
-		}
+		//This is a patch if the loop for last linefeed
+		elemLayoutCount.x = std::max(elemLayoutCount.x, curElemPerRow);
+		totalRowMaxHeight += currentCellSize.y;
+		bound.setLargerWidth(currentCellSize.x);
 
-		totalRowMaxHeight += currentRowMaxHeight;
-
-		bound.setLargerWidth(currentColunmMaxWidth);
 		bound.setLargerHeight(totalRowMaxHeight);
 	}
 
 	//Split all into boxes
 	//TODO should cells have their own column or row data?
-	int curX{0};
-	int curY{0};
+	Geom::Point2 curPos{};
 
-	//TODO is this necessary?
+	// [y0, y1, ... yn, x1, x2, ... xn]
 	std::vector<float> maxSizeArr(columns() + curLayoutRows);
 
-
-	{
-		const float spacingX = std::fmaxf(0.0f, bound.getWidth() - marginWidth())  / static_cast<float>(columns());
-		const float spacingY = std::fmaxf(0.0f, bound.getHeight() - marginHeight()) / static_cast<float>(curLayoutRows);
+	{ //Assign Cell Position
+		const float spacingX = std::max(0.0f, bound.getWidth() - getBorderWidth())  / static_cast<float>(columns());
+		const float spacingY = std::max(0.0f, bound.getHeight() - getBorderHeight()) / static_cast<float>(curLayoutRows);
 
 		for(auto& cell : cells) {
-			if(cell.ignore()) {
-				if(cell.endRow()) {
-					curY++;
-					curX = 0;
-				}
-				continue;
+			if(!cell.ignore()){
+				cell.allocatedBound.setSize(spacingX, spacingY);
+
+				cell.allocatedBound.setSrc(
+					spacingX * static_cast<float>(curPos.x),
+					spacingY * static_cast<float>(curLayoutRows - curPos.y - 1) //Top src to Bottom src transform
+				);
+
+				cell.applySizeToItem();
+
+				const auto curPosX_indexed = curLayoutRows + curPos.x;
+
+				maxSizeArr[curPosX_indexed] = std::max(maxSizeArr[curPosX_indexed], cell.getCellWidth());
+				maxSizeArr[curPos.y] = std::max(maxSizeArr[curPos.y], cell.getCellHeight());
+
+				curPos.x++;
 			}
 
-			cell.allocatedBound.setSize(spacingX, spacingY);
-
-			cell.allocatedBound.setSrc(spacingX * curX, spacingY * (curLayoutRows - curY - 1));
-
-			cell.applySize();
-
-			maxSizeArr[curLayoutRows + curX] = std::fmaxf(maxSizeArr[curLayoutRows + curX], cell.getCellWidth());
-			maxSizeArr[curY]                 = std::fmaxf(maxSizeArr[curY], cell.getCellHeight());
-
-			curX++;
 			if(cell.endRow()) {
-				curY++;
-				curX = 0;
+				curPos.y++;
+				curPos.x = 0;
 			}
 		}
 	}
 
-	curX = curY = 0;
+	curPos.setZero();
 
 	{
-		float currentSrcX = 0;
-		float currentSrcY = std::accumulate(maxSizeArr.begin() + 1, maxSizeArr.begin() + curLayoutRows, 0.0f);
+		Geom::Vec2 currentSrcCoord{
+			0.0f,
+			std::accumulate(maxSizeArr.begin() + 1, maxSizeArr.begin() + curLayoutRows, 0.0f)
+		};
 
 		for(auto& cell : cells) {
-			if(cell.ignore()) {
-				if(cell.endRow()) {
-					curY++;
-					curX = 0;
-				}
-				continue;
+			if(!cell.ignore()){
+				//TODO fix this for shrink, should uses accumlate
+				cell.allocatedBound.setSrc(currentSrcCoord);
+
+				cell.applyPosToItem(this);
+
+				currentSrcCoord.x += maxSizeArr[curLayoutRows + curPos.x];
+				curPos.x++;
 			}
 
-			//TODO fix this for shrink, should uses accumlate
-			cell.allocatedBound.setSrc(
-				currentSrcX,
-				currentSrcY
-			);
-
-			cell.applyPos(this);
-
-			currentSrcX += maxSizeArr[curLayoutRows + curX];
-
-			curX++;
 			if(cell.endRow()) {
-				curY++;
-				curX = 0;
-				currentSrcX = 0;
-				currentSrcY -= maxSizeArr[curY];
+				curPos.y++;
+				curPos.x = 0;
+				currentSrcCoord.x = 0;
+				currentSrcCoord.y -= maxSizeArr[curPos.y];
 			}
 		}
 	}
 
 	setSize(
-		std::accumulate(maxSizeArr.begin() + curLayoutRows, maxSizeArr.end(), 0.0f) + marginWidth(),
-		std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + curLayoutRows, 0.0f) + marginHeight()
+		std::accumulate(maxSizeArr.begin() + curLayoutRows, maxSizeArr.end(), 0.0f) + getBorderWidth(),
+		std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + curLayoutRows, 0.0f) + getBorderHeight()
 	);
 }
 
@@ -153,10 +126,10 @@ void UI::Table::layoutIrrelative() {
 		cell.allocatedBound = bound;
 
 		// cell.allocatedBound.setSrc(0, 0);
-		cell.allocatedBound.setSrc(margin_bottomLeft.x, margin_bottomLeft.y);
-		cell.allocatedBound.addSize(-marginWidth(), -marginHeight());
+		cell.allocatedBound.setSrc(border.bot_lft());
+		cell.allocatedBound.addSize(-getBorderWidth(), -getBorderHeight());
 
-		cell.applySize();
-		cell.applyPos(this);
+		cell.applySizeToItem();
+		cell.applyPosToItem(this);
 	}
 }

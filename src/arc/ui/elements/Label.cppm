@@ -3,7 +3,7 @@ module;
 export module UI.Label;
 
 import RuntimeException;
-import Align;
+import UI.Align;
 import UI.Elem;
 import Font.GlyphArrangement;
 import std;
@@ -14,28 +14,28 @@ export namespace UI {
 	protected:
 		bool dynamic{false};
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{Font::obtainLayoutPtr()};
+
 		Align::Mode textAlignMode{Align::Mode::top_left};
 
-		//TODO Support characters apart from ASCII
-		TextView text{" "};
-		std::shared_ptr<TextView::value_type> dataSource{nullptr};
+		TextView text{""};
+		std::function<std::string()> textSource{};
 
 		bool textChanged = false;
 		bool adoptHeight = false;
 
 	public:
 		[[nodiscard]] Label() {
-			setMargin(12.0f);
-			setText(" ");
+			setBorder(12.0f);
 		}
 
 		void textUpdated() {
 			textChanged = true;
 		}
 
-		void updateTextLayout() const {
-			Font::glyphParser->parse(glyphLayout, text, bound.getWidth() - marginWidth());
+		void updateTextLayout() {
+			Font::glyphParser->parseWith(glyphLayout, getValidWidth(), textChanged);
 			glyphLayout->setAlign(textAlignMode);
+			textChanged = false;
 		}
 
 		void setLayoutDataPtr(const std::shared_ptr<Font::GlyphLayout>& layoutPtr) {
@@ -44,19 +44,25 @@ export namespace UI {
 
 		void setText(const TextView text) {
 			this->text = text;
+			glyphLayout->lastText = text;
+			textSource = nullptr;
 			textUpdated();
 			changed();
 		}
 
 		void setText(const TextView::const_pointer text) {
 			this->text = std::string_view{text};
+			glyphLayout->lastText = text;
+			textSource = nullptr;
 			textUpdated();
 			changed();
 		}
 
-		void setText(std::shared_ptr<TextView::value_type> text) {
-			dataSource = std::move(text);
-			this->text = std::string_view{dataSource.get()};
+		void setText(Concepts::Invokable<TextView()> auto&& charSource) {
+			textSource = std::forward<decltype(charSource)>(charSource);
+			glyphLayout->lastText = std::move(textSource());
+			text = glyphLayout->lastText;
+
 			textUpdated();
 			changed();
 		}
@@ -67,14 +73,20 @@ export namespace UI {
 
 		void drawContent() const override;
 
-		void calAbsolute(Elem* parent) override {
-			Elem::calAbsolute(parent);
-			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::motionOf(textAlignMode, margin_bottomLeft, margin_topRight));
+		void calAbsoluteSrc(Elem* parent) override {
+			Elem::calAbsoluteSrc(parent);
+			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::getOffsetOf(textAlignMode, border));
 		}
 
 		void update(float delta) override {
-			if(dynamic)updateTextLayout();
-			else if(textChanged) {
+			if(dynamic){
+				if(textSource){
+					glyphLayout->lastText = std::move(textSource());
+					text = glyphLayout->lastText;
+				}
+
+				updateTextLayout();
+			}else if(textChanged) {
 				updateTextLayout();
 				textChanged = false;
 			}
@@ -92,6 +104,7 @@ export namespace UI {
 			this->dynamic = dynamic;
 		}
 
+	protected:
 		void childrenCheck(const Elem* ptr) override {
 			throw ext::IllegalArguments{"Labels shouldn't have children!"};
 		}

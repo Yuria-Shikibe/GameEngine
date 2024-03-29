@@ -42,7 +42,7 @@ void Core::initMainWindow() {
 		});
 
 		glfwMaximizeWindow(mainWindow);
-		setScreenBound();
+		setScreenBound(mainWindow);
 
 		GL::viewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
 		glfwSwapInterval(1);
@@ -63,9 +63,10 @@ void Core::initFileSystem() {
 
 	const auto dir = self.getParent().subFile("resource");
 
+	std::cout << "Targeted Resource Root:" << dir.absolutePath() << std::endl;
+
 	rootFileTree = new OS::FileTree{dir};
 
-	std::cout << "Targeted Resource Root:" << dir.absolutePath() << '\n';
 #endif
 	OS::crashFileGetter = std::bind(&Core::Log::generateCrashFilePath, log);
 }

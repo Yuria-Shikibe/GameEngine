@@ -46,6 +46,14 @@ export namespace Math {
 
 	using Progress = float;
 
+	template <Concepts::Number T>
+	struct Section{
+		T from{};
+		T to{};
+	};
+
+	using Interval = Section<float>;
+
 	[[nodiscard]] std::string printSinTable() {
 		const SinTable<SIN_COUNT, SIN_MASK, DEG_TO_INDEX> table{};
 
@@ -150,9 +158,9 @@ export namespace Math {
 	float atan2(float x, const float y) noexcept {
 		float n = y / x;
 
-		if(std::isnan(n)) {
+		if(std::isnan(n)) [[unlikely]] {
 			n = y == x ? 1.0f : -1.0f; // if both y and x are infinite, n would be NaN
-		} else if(std::isinf(n)) {
+		} else if(std::isinf(n)) [[unlikely]]  {
 			x = 0.0f; // if n is infinite, y is infinitely larger than x.
 		}
 
@@ -324,9 +332,14 @@ export namespace Math {
 		}
 	}
 
+	template <>
+	float abs(const float v) noexcept {
+		return std::abs(v); //std::bit_cast<float>(std::bit_cast<unsigned>(v) & ~(1 << 31));
+	}
+
 
 	template <Concepts::Number T>
-	constexpr T clampRange(const T v, const T absMax)
+	T clampRange(const T v, const T absMax)
 #ifndef _DEBUG
 		noexcept
 #endif
@@ -337,7 +350,7 @@ export namespace Math {
 		}
 #endif
 
-		if(Math::abs(v) > absMax){
+		if(std::abs(v) > absMax){
 			return std::copysign(absMax, v);
 		}
 
@@ -368,7 +381,7 @@ export namespace Math {
 		return clamp(value, 0.0f, 1.0f);
 	}
 
-	constexpr float clampNegative(const float val) noexcept {
+	constexpr float clampPositive(const float val) noexcept {
 		return val > 0.0f ? val : 0.0f;
 	}
 
@@ -461,16 +474,21 @@ export namespace Math {
 		return static_cast<T>(value + BIG_ENOUGH_ROUND) - BIG_ENOUGH_INT;
 	}
 
-	constexpr int round(const int value, const int step) noexcept {
+	constexpr int floor(const int value, const int step) noexcept {
 		return value / step * step;
 	}
 
-	constexpr float round(const float value, const float step) noexcept {
+	constexpr float floor(const float value, const float step) noexcept {
 		return static_cast<float>(static_cast<int>(value / step)) * step;
 	}
 
-	constexpr int round(const float value, const int step) noexcept {
+	constexpr int floor(const float value, const int step) noexcept {
 		return static_cast<int>(value / static_cast<float>(step)) * step;
+	}
+
+	template <Concepts::Number T>
+	T round(const T num, const T step) {
+		return std::round(num / step) * step;
 	}
 
 	/** Returns the closest integer to the specified float. This method will only properly round floats that are positive. */
@@ -483,7 +501,7 @@ export namespace Math {
 	 * @param value N/A
 	 * @param tolerance represent an upper bound below which the value is considered zero.
 	 */
-	constexpr bool zero(const float value, const float tolerance = FLOAT_ROUNDING_ERROR) noexcept {
+	bool zero(const float value, const float tolerance = FLOAT_ROUNDING_ERROR) noexcept {
 		return abs(value) <= tolerance;
 	}
 
@@ -492,7 +510,7 @@ export namespace Math {
 	 * @param a the first value.
 	 * @param b the second value.
 	 */
-	constexpr bool equal(const float a, const float b) noexcept {
+	bool equal(const float a, const float b) noexcept {
 		return abs(a - b) <= FLOAT_ROUNDING_ERROR;
 	}
 
@@ -568,7 +586,7 @@ export namespace Math {
 	}
 
 	/** @return the input 0-1 value scaled to 0-1-0. */
-	constexpr float slope(const float fin) noexcept {
+	float slope(const float fin) noexcept {
 		return 1.0f - abs(fin - 0.5f) * 2.0f;
 	}
 

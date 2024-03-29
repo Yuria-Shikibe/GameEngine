@@ -17,7 +17,7 @@ import std;
 using namespace GL;
 
 export namespace Graphic {
-	struct FramePort {
+	struct FramePort { //TODO uses bitfield to hint what to active
 		unsigned int inPort = 0;
 		unsigned int outPort = 0;
 

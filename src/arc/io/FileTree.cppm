@@ -89,7 +89,7 @@ export namespace OS{
 		void mapSubFiles(Concepts::Invokable<std::string(const OS::File&)> auto&& func) {
 			for(auto& element : files | std::ranges::views::values) {
 				for(auto& file : element) {
-					if(const auto [itr, success] = flatView.try_emplace(func(file), file); !success) {
+					if(const auto [itr, success] = flatView.try_emplace(std::forward<std::string>(func(file)), file); !success) {
 						throw ext::IllegalArguments{"It's illegal to map file tree that has files with the same stem name! :" + itr->first};
 					}
 				}

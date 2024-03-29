@@ -36,8 +36,8 @@ export namespace Game {
 	 */
 	class RealityEntity : public BaseEntity {
 	public:
-		static constexpr float angularVelocityLimit = 2;
-		static constexpr float angularAccelerationLimit = 0.35;
+		static constexpr float angularVelocityLimit = 0.75f;
+		static constexpr float angularAccelerationLimit = 0.05f;
 		static constexpr float accelerationLimit = 8000;
 		static constexpr float speedLimit = 10000;
 
@@ -328,7 +328,7 @@ export namespace Game {
 
 		virtual void updateMovement(const float delta) {
 			accel.vec.clampMax(accelerationLimit);
-			accel.rot = Math::clamp(accel.rot, -angularAccelerationLimit, angularAccelerationLimit);
+			accel.rot = Math::clampRange(accel.rot, angularAccelerationLimit);
 
 			{
 				//TODO pre global force field process.
@@ -338,13 +338,13 @@ export namespace Game {
 			}
 
 			//Loacl process
-			velo.vec.add(accel.vec, delta);
+			velo.vec.mulAdd(accel.vec, delta);
 			velo.rot += accel.rot * delta;
 
 			velo.rot = Math::clampRange(velo.rot, angularVelocityLimit);
 			velo.vec.clampMax(speedLimit);
 
-			trans.vec.add(velo.vec, delta);
+			trans.vec.mulAdd(velo.vec, delta);
 
 			if(controller->moveCommand.rotateActivated()){
 				trans.rot = Math::Angle::moveToward_signed(
@@ -356,11 +356,9 @@ export namespace Game {
 				trans.rot += velo.rot * delta;
 			}
 
+			trans.rot = Math::Angle::getAngleInPi2(trans.rot);
 
-			trans.rot = std::fmod(trans.rot, Math::DEG_FULL);
-
-			accel.rot = 0;
-			accel.vec.setZero();
+			accel.setZero();
 
 			updateHitbox(delta);
 		}

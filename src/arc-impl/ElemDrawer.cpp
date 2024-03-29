@@ -32,7 +32,7 @@ void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 	base.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	edge.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	if(elem->isPressed())pressed.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
-	if(elem->cursorInbound())inbound.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+	if(elem->isCursorInbound())inbound.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 
 	Graphic::Draw::mixColor();
 	//TODO disabled
@@ -40,11 +40,7 @@ void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 }
 
 void UI::StyleDrawer::applyToElem(Elem* elem) {
-	elem->margin_bottomLeft.x = style->margin_left;
-	elem->margin_bottomLeft.y = style->margin_bottom;
-
-	elem->margin_topRight.x = style->margin_right;
-	elem->margin_topRight.y = style->margin_top;
+	elem->setBorder(style->margin);
 
 	elem->changed();
 }
@@ -55,7 +51,7 @@ void UI::EdgeDrawer::drawBackground(const UI::Elem* elem) const {
 	elem->tempColor.a *= elem->maskOpacity;
 	Graphic::Draw::mixColor(elem->tempColor);
 
-	if(elem->cursorInbound()) {
+	if(elem->isCursorInbound()) {
 		color.mul(1.1f).lerp(Graphic::Colors::WHITE, 0.3f);
 		Graphic::Draw::color(color);
 		Graphic::Draw::alpha(elem->isPressed() ? 0.5f : 0.2f);

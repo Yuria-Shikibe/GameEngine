@@ -15,10 +15,14 @@ export namespace Game{
 	public:
 		using EntityMap::idMap;
 
+		void updateInScreen(auto& tree){
+
+		}
+
 		void render(){
 			auto view = idMap | std::ranges::views::values;
 
-			std::for_each(std::execution::par_unseq, view.begin(), view.end(), [this](decltype(idMap)::value_type::second_type& v) {
+			std::for_each(std::execution::unseq, view.begin(), view.end(), [this](decltype(idMap)::value_type::second_type& v) {
 				v->calculateInScreen(viewPort);
 			});
 
@@ -26,6 +30,16 @@ export namespace Game{
 				if(entity->isInScreen())entity->draw();
 			}
 		}
+
+		void renderDebug(){
+			auto view = idMap | std::ranges::views::values;
+
+			for(const auto& entity : view) {
+				if(entity->isInScreen())entity->drawDebug();
+			}
+		}
+
+		[[nodiscard]] Geom::OrthoRectFloat getViewPort() const{ return viewPort; }
 
 		void setViewport(const Geom::OrthoRectFloat& view) {
 			viewPort = view;

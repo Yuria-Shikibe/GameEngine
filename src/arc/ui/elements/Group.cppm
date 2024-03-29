@@ -3,6 +3,7 @@ module;
 export module UI.Group;
 
 export import UI.Elem;
+export import UI.Flags;
 
 import Concepts;
 
@@ -44,7 +45,7 @@ export namespace UI {
 			return children.back().get();
 		}
 
-		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem, const size_t depth) {
+		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem, const int depth) {
 			if(depth >= children.size()) {
 				addChildren(std::forward<std::unique_ptr<Elem>>(elem));
 				return children.back().get();
@@ -59,7 +60,7 @@ export namespace UI {
 			children.emplace_back(elem);
 		}
 
-		virtual void addChildren(Elem* elem, const size_t depth) {
+		virtual void addChildren(Elem* elem, const int depth) {
 			if(depth >= children.size()) {
 				addChildren(elem);
 			}else {
@@ -78,12 +79,12 @@ export namespace UI {
 
 		virtual void calAbsoluteChildren() {
 			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& elem) {
-				elem->calAbsolute(this);
+				elem->calAbsoluteSrc(this);
 			});
 		}
 
-		void calAbsolute(Elem* parent) override {
-			Elem::calAbsolute(parent);
+		void calAbsoluteSrc(Elem* parent) override {
+			Elem::calAbsoluteSrc(parent);
 
 			calAbsoluteChildren();
 		}
