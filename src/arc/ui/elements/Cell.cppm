@@ -48,8 +48,14 @@ export namespace UI {
 		bool scaleRelativeToParentX{true};
 		bool scaleRelativeToParentY{true};
 
-		[[nodiscard]] bool endRow() const {
+		[[nodiscard]] bool isEndRow() const {
 			return item->isEndingRow();
+		}
+
+		LayoutCell& lineFeed(){
+			item->setEndRow(true);
+
+			return *this;
 		}
 
 		LayoutCell& setSize(const float w, const float h){
@@ -79,12 +85,14 @@ export namespace UI {
 		LayoutCell& wrapX() {
 			changed();
 			scaleRelativeToParentX = false;
+			modifyParentX = false;
 			return *this;
 		}
 
 		LayoutCell& wrapY() {
 			changed();
 			scaleRelativeToParentY = false;
+			modifyParentY = false;
 			return *this;
 		}
 
@@ -136,6 +144,16 @@ export namespace UI {
 
 			return *this;
 		}
+
+		LayoutCell& setPad(const Align::Spacing pad) {
+			if(this->pad != pad){
+				this->pad = pad;
+				changed();
+			}
+
+			return *this;
+		}
+
 
 		LayoutCell& expandX(const bool val = true) {
 			val ? wrapX() : fillParentX();
@@ -241,6 +259,13 @@ export namespace UI {
 		[[nodiscard]] float getScaledCellHeight() const {return getVertScale() * getCellHeight();}
 		[[nodiscard]] float getScaledCellWidth() const {return getHoriScale() * getCellWidth();}
 
+		[[nodiscard]] float getExpectedItemHeight() const{
+			return item->getHeight();
+		}
+		[[nodiscard]] float getExpectedItemWidth() const{
+			return item->getWidth();
+		}
+
 
 		[[nodiscard]] float getHoriScale() const {return scale.right - scale.left;}
 		[[nodiscard]] float getVertScale() const {return scale.top - scale.bottom;}
@@ -261,13 +286,18 @@ export namespace UI {
 			//Apply Expansion
 			if(modifyParentX) {
 				allocatedBound.setWidth(item->getWidth());
+			}else{
+				// allocatedBound.setShorterWidth(item->getWidth());
 			}
 
 			if(modifyParentY) {
 				allocatedBound.setHeight(item->getHeight());
+			}else{
+				// allocatedBound.setShorterHeight(item->getHeight());
 			}
 
 			item->getBoundRef().addSize(-getMarginHori(), -getMarginVert());
+			item->changed();
 
 			allocatedBound.addSize(getPadHori(), getPadVert());
 		}
@@ -323,12 +353,12 @@ export namespace UI {
 			item->calAbsoluteSrc(parent);
 		}
 
-		[[nodiscard]] bool ignore() const {
-			return item->ignoreLayout();
+		[[nodiscard]] bool isIgnoreLayout() const {
+			return item->isIgnoreLayout();
 		}
 
 		template <Concepts::Derived<Elem> T>
-		T& as() {
+		T& as() {//TODO static cast maybe??
 			return dynamic_cast<T&>(*item);
 		}
 	};

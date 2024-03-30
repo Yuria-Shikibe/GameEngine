@@ -4,6 +4,7 @@ export module UI.Elem;
 
 export import UI.Flags;
 export import UI.Align;
+export import UI.Action;
 import Event;
 import Math;
 import Geom.Vector2D;
@@ -41,6 +42,7 @@ export namespace UI {
 		Group* parent{nullptr};
 		mutable ::UI::Root* root{nullptr};
 
+		//TODO is this necessary?
 		std::unordered_set<Elem*> focusTarget{};
 
 		Event::EventManager inputListener{
@@ -56,6 +58,7 @@ export namespace UI {
 		TouchbilityFlags touchbility = TouchbilityFlags::enabled;
 
 		std::function<bool()> visibilityChecker{nullptr};
+		std::function<bool()> disableChecker{nullptr};
 
 		mutable bool layoutChanged{false};
 
@@ -64,7 +67,8 @@ export namespace UI {
 		bool endRow{false};
 		bool visiable{true};
 		bool requiresLayout{false};
-		bool pressed = false;
+		bool pressed{false};
+		bool disabled{false};
 
 		bool quitInboundFocus = true;
 
@@ -74,6 +78,8 @@ export namespace UI {
 
 		Align::Spacing border{};
 
+		std::queue<std::unique_ptr<Action<Elem>>> actions{};
+
 	public:
 		std::string name{"undefind"};
 
@@ -81,6 +87,7 @@ export namespace UI {
 
 		mutable Graphic::Color tempColor{0.0f, 0.0f, 0.0f, 0.0f};
 		mutable float maskOpacity = 1.0f;
+		float selfMaskOpacity = 1.0f;
 
 		std::any animationData{};
 
@@ -129,9 +136,14 @@ export namespace UI {
 
 		virtual void applySettings() {}
 
-		virtual bool ignoreLayout() const {
+		virtual bool isIgnoreLayout() const {
 			return !visiable;
 		}
+
+		/**
+		 * @brief Used to create blur effect, this is draw as a mask
+		 */
+		virtual void drawBase(){}
 
 		virtual void draw() const;
 
@@ -288,8 +300,26 @@ export namespace UI {
 			//TODO tree print support
 		}
 
-		virtual void update(float delta){
+		virtual void setDisabled(const bool disabled){
+			this->disabled = disabled;
+		}
 
+		virtual void update(const float delta){
+			if(visibilityChecker)visiable = visibilityChecker();
+			if(disableChecker)setDisabled(disableChecker());
+
+			float actionDelta = delta;
+
+			while(!actions.empty()){
+				const auto& current = actions.front();
+				actionDelta = current->update(actionDelta, this);
+
+				if(actionDelta >= 0) [[unlikely]] {
+					actions.pop();
+				}else{
+					break;
+				}
+			}
 		}
 
 		virtual std::vector<std::unique_ptr<Elem>>* getChildren() {return nullptr;}
@@ -298,11 +328,11 @@ export namespace UI {
 
 		[[nodiscard]] constexpr bool isInteractable() const {return touchbility == TouchbilityFlags::enabled && visiable;}
 
-		virtual bool inbound_validToParent(Geom::Vec2 screenPos) const {
-			return inbound(screenPos);
+		virtual bool hintInbound_validToParent(const Geom::Vec2 screenPos){
+			return isInbound(screenPos);
 		}
 
-		virtual bool inbound(Geom::Vec2 screenPos) const;
+		virtual bool isInbound(Geom::Vec2 screenPos);
 
 		bool isFocusedKeyInput() const;
 
@@ -312,17 +342,17 @@ export namespace UI {
 
 		void setFocusedKey(bool focus) const;
 
-		void setFocusedScroll(bool focus) const;
+		void setFocusedScroll(bool focus);
 
 		void setUnfocused() const;
 
-		[[nodiscard]] constexpr  float drawSrcX() const {return absoluteSrc.x;}
+		[[nodiscard]] constexpr float drawSrcX() const {return absoluteSrc.x;}
 
-		[[nodiscard]] constexpr  float drawSrcY() const {return absoluteSrc.y;}
+		[[nodiscard]] constexpr float drawSrcY() const {return absoluteSrc.y;}
 
-		[[nodiscard]] constexpr  float getWidth() const {return bound.getWidth();}
+		[[nodiscard]] constexpr float getWidth() const {return bound.getWidth();}
 
-		[[nodiscard]] constexpr  float getHeight() const {return bound.getHeight();}
+		[[nodiscard]] constexpr float getHeight() const {return bound.getHeight();}
 
 		[[nodiscard]] Align::Spacing getMargin() const{ return border; }
 
@@ -344,11 +374,7 @@ export namespace UI {
 
 	protected:
 		virtual void childrenCheck(const Elem* ptr) {
-#ifdef  _DEBUG
-			if(!ptr)throw ext::NullPointerException{"Empty Elem"};
-#else
-			return;
-#endif
+			throw ext::IllegalArguments{"Labels shouldn't have children!"};
 		}
 	};
 }

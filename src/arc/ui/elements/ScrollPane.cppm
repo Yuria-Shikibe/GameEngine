@@ -9,6 +9,7 @@ import Geom.Vector2D;
 import Geom.Matrix3D;
 import GL;
 import std;
+import Concepts;
 
 export namespace UI {
 	class ScrollPane;
@@ -19,11 +20,13 @@ export namespace UI {
 		virtual void operator()(const ScrollPane* pane) const;
 	};
 
+	//TODO move this other place
 	std::unique_ptr defScrollBarDrawer{std::make_unique<ScrollerDrawer>()};
 
 	class ScrollPane : public Group {
 	protected:
 		Geom::Vec2 scrollOffset{};
+		Geom::Vec2 scrollTempOffset{};
 
 		Geom::Vec2 scrollVelocity{};
 		Geom::Vec2 scrollTargetVelocity{};
@@ -36,11 +39,10 @@ export namespace UI {
 		bool enableVerticalScroll_always = false;
 		float vertScrollerWidth{20.0f};
 
+		//TODO fade
 		bool fadeWhenUnused = true;
 		bool hoverScroller = false;
 
-		float dragSensitivityCoefficient = 2.15f;
-		float scrollSensitivityCoefficient = 60.0f;
 		float scrollMarginCoefficient = 6.0f;
 
 		float accel = 0.126f;
@@ -49,23 +51,43 @@ export namespace UI {
 
 		Elem* item{nullptr};
 
+		void clamp(Geom::Vec2& offset) const{
+			offset.clampX(-Math::max(0.0f, itemSize.getWidth() - getValidWidth() + vertBarStroke()), 0);
+			offset.clampY(0, Math::max(0.0f, itemSize.getHeight() - getValidHeight() + horiBarStroke()));
+		}
+
+		void move(const Geom::Vec2 offset){
+			scrollTempOffset = scrollOffset + offset;
+
+			clamp(scrollTempOffset);
+		}
+
+		void applyTemp(){
+			scrollOffset = scrollTempOffset;
+		}
+
+		void resumeTemp(){
+			scrollTempOffset = scrollOffset;
+		}
+
 		//TODO uses layout cell
-		Rect itemSize;
+		Rect itemSize{};
 	public:
+		Geom::Vec2 scrollSensitivity{90.0f, 60.0f};
 		ScrollPane(){
-			inputListener.on<UI::MouseActionDrag>([this](const auto& event) {
-				scrollTargetVelocity = static_cast<Geom::Vec2>(event);
-				scrollTargetVelocity.scl(dragSensitivityCoefficient, -dragSensitivityCoefficient);
+			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
+				move(event.relativeMove * Geom::Vec2{itemSize.getWidth() / getValidWidth(), -(itemSize.getHeight() / getValidHeight())});
 				pressed = true;
 			});
 
 			inputListener.on<UI::MouseActionRelease>([this](const auto& event) {
 				pressed = false;
+				applyTemp();
 			});
 
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
-				scrollTargetVelocity = static_cast<Geom::Vec2>(event);
-				scrollTargetVelocity.scl(scrollSensitivityCoefficient, -scrollSensitivityCoefficient);
+				scrollTargetVelocity = event;
+				scrollTargetVelocity.scl(scrollSensitivity.x, -scrollSensitivity.y);
 			});
 
 			touchbility = UI::TouchbilityFlags::enabled;
@@ -73,17 +95,19 @@ export namespace UI {
 		}
 
 		void update(const float delta) override {
-			scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : std::clamp(accel * delta, 0.0f, 1.0f)) : 1.0f);
-			scrollOffset.add(scrollVelocity);
+			scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta)) : 1.0f);
 
-			// scrollTargetVelocity.scl(scrollMarginCoefficient).abs();
+			if(scrollTempOffset != scrollOffset){
 
-			scrollOffset.clampX(-std::fmaxf(0, itemSize.getWidth() - getWidth() + getBorderWidth() + vertBarStroke()), 0);
-			scrollOffset.clampY(0, std::fmaxf(0, itemSize.getHeight() - getHeight() + getBorderHeight() + horiBarStroke()));
+			}else{
+				scrollOffset.add(scrollVelocity);
+				clamp(scrollOffset);
+				resumeTemp();
+			}
+
+			scrollTargetVelocity.scl(scrollMarginCoefficient).toAbs();
 
 			scrollTargetVelocity.setZero();
-
-			// pressed = false;
 
 			Group::update(delta);
 
@@ -94,7 +118,7 @@ export namespace UI {
 			if(hasChildren()) {
 
 				const Geom::Vec2 absOri = absoluteSrc;
-				absoluteSrc += scrollOffset;
+				absoluteSrc += scrollTempOffset;
 				absoluteSrc.x += border.left;
 				absoluteSrc.y -= border.bottom;
 
@@ -116,14 +140,20 @@ export namespace UI {
 			}
 		}
 
-		void setItem(Group* item) {
-			this->item = item;
-			if(item != nullptr) {
-				itemSize = item->getBoundRef();
+		template <Concepts::Derived<Elem> T>
+		void setItem(Concepts::Invokable<void(T&)> auto&& func, const int depth = std::numeric_limits<int>::max()) {
+			auto ptr = std::make_unique<T>();
+
+			if constexpr (!std::same_as<decltype(func), std::nullptr_t>) {
+				func(*ptr);
 			}
 
 			getChildren()->clear();
-			addChildren(item);
+			this->item = ptr.get();
+			if(item != nullptr) {
+				this->addChildren(std::move(ptr), depth);
+				itemSize = item->getBoundRef();
+			}
 		}
 
 		//TODO this has bug when resized !
@@ -149,8 +179,8 @@ export namespace UI {
 			return rect;
 		}
 
-		[[nodiscard]] bool inbound_validToParent(const Geom::Vec2 screenPos) const override {
-			return Elem::inbound(screenPos) && !inbound_scrollBars(screenPos);
+		[[nodiscard]] bool hintInbound_validToParent(const Geom::Vec2 screenPos) override {
+			return Elem::isInbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
 		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2& screenPos) const {
@@ -159,8 +189,8 @@ export namespace UI {
 			(enableVerticalScroll() && screenPos.x - absoluteSrc.x + border.left > getWidth() - vertScrollerWidth);
 		}
 
-		[[nodiscard]] bool inbound(const Geom::Vec2 screenPos) const override {
-			if(Elem::inbound(screenPos)) {
+		[[nodiscard]] bool isInbound(const Geom::Vec2 screenPos) override {
+			if(Elem::isInbound(screenPos)) {
 				Elem::setFocusedScroll(true);
 				return inbound_scrollBars(screenPos);
 			}
@@ -194,19 +224,29 @@ export namespace UI {
 		}
 
 		[[nodiscard]] float horiBarLength() const {
-			return std::fminf(getWidth() / itemSize.getWidth(), 1.0f) * getWidth();
+			return Math::min(getWidth() / itemSize.getWidth(), 1.0f) * getWidth();
 		}
 
 		[[nodiscard]] float vertBarSLength() const {
-			return std::fminf(getHeight() / itemSize.getHeight(), 1.0f) * getHeight();
+			return Math::min(getHeight() / itemSize.getHeight(), 1.0f) * getHeight();
+		}
+
+		/** @return Valid Width - Bar Stroke*/
+		[[nodiscard]] float getContentWidth() const {
+			return getValidWidth() - vertBarStroke();
+		}
+
+		/** @return Valid Height - Bar Stroke*/
+		[[nodiscard]] float getContentHeight() const {
+			return getValidHeight() - horiBarStroke();
 		}
 
 		[[nodiscard]] float horiScrollRatio() const {
-			return std::clamp(-scrollOffset.x / (itemSize.getWidth() - getWidth() + getBorderWidth() + vertBarStroke()), 0.0f, 1.0f);
+			return Math::clamp(-scrollTempOffset.x / (itemSize.getWidth() - getContentWidth()));
 		}
 
 		[[nodiscard]] float vertScrollRatio() const {
-			return std::clamp(1.0f - scrollOffset.y / (itemSize.getHeight() - getHeight() + getBorderHeight() + horiBarStroke()), 0.0f, 1.0f);
+			return Math::clamp(1.0f - scrollTempOffset.y / (itemSize.getHeight() - getContentHeight()));
 		}
 
 		void drawContent() const override;

@@ -13,13 +13,17 @@ import UI.Align;
 import Concepts;
 import Geom.Vector2D;
 
+//TODO this is a temp import
+import Graphic.Draw;
+
 using Rect = Geom::OrthoRectFloat;
 
 //TODO Using Pool to avoid heap allocation
 export namespace UI {
 	class Table : public Group{
 	public:
-		Geom::Point2 elemLayoutCount{};
+		std::vector<unsigned> elemLayoutCountData{};
+		Geom::Point2 elemLayoutMaxCount{};
 
 		[[nodiscard]] Table() {
 			touchbility = TouchbilityFlags::childrenOnly;
@@ -52,11 +56,11 @@ export namespace UI {
 		}
 
 		[[nodiscard]] int rows() const {
-			return elemLayoutCount.y;
+			return elemLayoutMaxCount.y;
 		}
 
 		[[nodiscard]] int columns() const {
-			return elemLayoutCount.x;
+			return elemLayoutMaxCount.x;
 		}
 
 		template <Concepts::Derived<Elem> T>
@@ -101,7 +105,7 @@ export namespace UI {
 		void lineFeed() {
 			if(!relativeLayoutFormat || children.empty())return;
 
-			elemLayoutCount.y++;
+			elemLayoutMaxCount.y++;
 			children.back()->setEndRow(true);
 			changed();
 		}
@@ -113,6 +117,54 @@ export namespace UI {
 			}
 
 			Group::update(delta);
+		}
+
+		void recalculateLayoutSize(){
+			elemLayoutMaxCount.setZero();
+			elemLayoutCountData.clear();
+
+			auto curLayoutRows =
+				std::ranges::count_if(cells, std::identity{}, &LayoutCell::isEndRow);
+
+			//Make Sure There at least exist one row!
+			if(!cells.back().isEndRow())curLayoutRows++;
+			elemLayoutMaxCount.y = static_cast<int>(curLayoutRows);
+
+			elemLayoutCountData.resize(rows());
+
+			int curElemPerRow = 0;
+			int curLine = 0;
+			for(const auto& cell : cells) {
+				if(!cell.isIgnoreLayout()){
+					curElemPerRow++;
+				}
+
+				if(cell.isEndRow()){
+					elemLayoutMaxCount.maxX(curElemPerRow);
+					elemLayoutCountData.at(curLine++) = curElemPerRow;
+					curElemPerRow = 0;
+				}
+			}
+
+			if(!cells.back().isEndRow()){
+				elemLayoutMaxCount.maxX(curElemPerRow);
+				elemLayoutCountData.at(curLine++) = curElemPerRow;
+			}
+		}
+
+		void drawContent() const override{
+			// for(auto& cell : this->cells){
+			// 	Rect rect{};
+			// 	rect.setSrc(this->absoluteSrc + cell.allocatedBound.getSrc() + this->border.bot_lft()).setSize(cell.allocatedBound);
+			//
+			// 	using namespace Graphic;
+			// 	Draw::color(Colors::YELLOW);
+			// 	Draw::Line::setLineStroke(2.0f);
+			// 	Draw::Line::rectOrtho(rect);
+			// }
+
+			Group::drawContent();
+
 		}
 	};
 }

@@ -68,6 +68,10 @@ export namespace Geom{
 			return srcX;
 		}
 
+		[[nodiscard]] constexpr Geom::Vector2D<T> getSrc() const{
+			return {srcX, srcY};
+		}
+
 		[[nodiscard]] constexpr T* getSrcXRaw(){
 			return &srcX;
 		}
@@ -202,6 +206,33 @@ export namespace Geom{
 			}else {
 				T abs = v < 0 ? -v : v;
 				if(abs > height) {
+					this->template setHeight<T>(v);
+				}
+			}
+		}
+
+		constexpr void setShorterWidth(const T v) {
+			if constexpr(std::is_unsigned_v<T>) {
+				if(v < width) {
+					this->template setWidth<T>(v);
+				}
+			}else {
+				T abs = v < 0 ? -v : v;
+				if(abs < width) {
+					this->template setWidth<T>(v);
+				}
+			}
+
+		}
+
+		constexpr void setShorterHeight(const T v) {
+			if constexpr(std::is_unsigned_v<T>) {
+				if(v < height) {
+					this->template setHeight<T>(v);
+				}
+			}else {
+				T abs = v < 0 ? -v : v;
+				if(abs < height) {
 					this->template setHeight<T>(v);
 				}
 			}

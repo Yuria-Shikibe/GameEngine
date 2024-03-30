@@ -239,10 +239,10 @@ export namespace Core{
 		}
 
 		void setScrollOffset(const float x, const float y) {
-			scrollOffset.set(x, y);
+			scrollOffset.set(-x, y);
 
 			std::ranges::for_each(scrollListeners, [x, y](const PosListener& listener) {
-				listener(x, y);
+				listener(-x, y);
 			});
 		}
 

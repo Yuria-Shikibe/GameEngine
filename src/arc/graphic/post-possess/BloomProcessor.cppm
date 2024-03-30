@@ -39,7 +39,7 @@ export namespace Graphic {
 
 		float intensity_blo = 0.9f;
 		float intensity_ori = 1.225f;
-		float scale = 0.25f;
+		float scale = 0.5f;
 
 		void setIntensity(const float intensity) {
 			intensity_ori = intensity;

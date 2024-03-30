@@ -177,7 +177,7 @@ export namespace GL {
 		 */
 		void render_RelativeExter(float x, float y, float width, float height) const;
 
-		void render_RelativeExter(const Rect& rect) const{
+		void render_RelativeExter(const Rect rect) const{
 			render_RelativeExter(rect.getSrcX(), rect.getSrcY(), rect.getWidth(), rect.getHeight());
 		}
 

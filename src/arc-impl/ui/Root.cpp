@@ -1,7 +1,6 @@
 module UI.Root;
 
 import UI.ElemDrawer;
-import UI.Table;
 import std;
 
 
@@ -11,7 +10,7 @@ UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-d
 	root->relativeLayoutFormat = false;
 	root->setTouchbility(UI::TouchbilityFlags::childrenOnly);
 	root->setRoot(this);
-	root->setDrawer(UI::emptyDrawer.get());
+	root->setDrawer(&UI::emptyDrawer);
 	root->setBorder({marginX, marginX, marginY, marginY});
 	root->name = "UI Root";
 	root->defaultCellLayout.setMargin(marginX, marginX, marginY, marginY);
@@ -20,10 +19,10 @@ UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-d
 void UI::Root::update(const float delta) {
 	bool stop = false;
 
-	const Elem* last = nullptr;
+	Elem* last = nullptr;
 
-	iterateAll_DFS(root.get(), stop, [this, &last](const Elem* elem) mutable {
-		if(elem->isInteractable() && elem->inbound(cursorPos)) {
+	iterateAll_DFS(root.get(), stop, [this, &last](Elem* elem) mutable {
+		if(elem->isInteractable() && elem->isInbound(cursorPos)) {
 			last = elem;
 		}
 
@@ -71,7 +70,7 @@ void UI::Root::render() const {
 	root->draw();
 }
 
-void UI::Root::onDoubleClick(const int id, int mode) const{
+void UI::Root::onDoubleClick(const int id, int mode){
 	if(currentCursorFocus == nullptr)return;
 	doubleClickAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(doubleClickAction);

@@ -13,7 +13,7 @@ export namespace Math {
 	 */
 	class Rand {
 	public:
-		using SeedType = size_t;
+		using SeedType = std::size_t;
 
 	private:
 		/** Normalization constant for double. */

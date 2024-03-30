@@ -4,6 +4,7 @@ export module UI.Group;
 
 export import UI.Elem;
 export import UI.Flags;
+import RuntimeException;
 
 import Concepts;
 
@@ -23,7 +24,7 @@ export namespace UI {
 
 		virtual void layoutChildren() {
 			for(const auto& child : children) {
-				if(!child->ignoreLayout())child->layout();
+				if(!child->isIgnoreLayout())child->layout();
 			}
 		}
 
@@ -107,7 +108,7 @@ export namespace UI {
 			func(this);
 
 			for (const auto& child : getChildren()) {
-				auto group = dynamic_cast<Group*>(child.get());
+				auto* group = dynamic_cast<Group*>(child.get());
 				if(!group)return;
 				group->iterateAll(std::forward<decltype(func)>(func));
 			}
@@ -122,19 +123,38 @@ export namespace UI {
 		}
 
 		virtual void updateChildren(const float delta) {
-			//TODO worth it a 'par' ?
-			std::ranges::for_each(children, [delta](const std::unique_ptr<Elem>& elem) {
-				elem->update(delta);
-			});
+			for (auto& child : children){
+				child->update(delta);
+			}
 		}
 
 		void update(const float delta) override {
 			removePosted();
+
+			Elem::update(delta);
+
 			updateChildren(delta);
+		}
+
+		void setDisabled(const bool disabled) override{
+			if(this->disabled != disabled){
+				this->disabled = disabled;
+				for (auto& child : children){
+					child->setDisabled(disabled);
+				}
+			}
 		}
 
 		void drawContent() const override {
 			drawChildren();
+		}
+
+		void childrenCheck(const Elem* ptr) override{
+#ifdef  _DEBUG
+			if(!ptr)throw ext::NullPointerException{"Empty Elem"};
+#else
+			return;
+#endif
 		}
 	};
 }

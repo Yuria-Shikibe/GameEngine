@@ -133,6 +133,7 @@ export namespace Assets{
 				try {
 					task();
 				}catch(...){
+					//TODO exception handle
 					throw std::current_exception();
 				}
 

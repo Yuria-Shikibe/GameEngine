@@ -94,6 +94,8 @@ export namespace UI {
 			if(layoutChanged) {
 				layout();
 			}
+
+			Elem::update(delta);
 		}
 
 		[[nodiscard]] bool isDynamic() const {
@@ -102,11 +104,6 @@ export namespace UI {
 
 		void setDynamic(const bool dynamic) {
 			this->dynamic = dynamic;
-		}
-
-	protected:
-		void childrenCheck(const Elem* ptr) override {
-			throw ext::IllegalArguments{"Labels shouldn't have children!"};
 		}
 	};
 }

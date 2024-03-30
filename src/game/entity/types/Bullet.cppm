@@ -15,7 +15,7 @@ import Graphic.TextureAtlas;
 import OS.File;
 import Geom.Vector2D;
 
-import Graphic.Timed;
+import Math.Timed;
 
 export namespace Game{
 	class Bullet;
@@ -55,7 +55,7 @@ export namespace Game{
 	public:
 		const BulletTrait* trait{nullptr};
 
-		Graphic::Timed life{};
+		Math::Timed life{};
 
 		DamageComposition damage{};
 

@@ -18,6 +18,7 @@ bool UI::Elem::layout_tryFillParent() {
 	if(parent) {
 		if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
 			bound = rect;
+			changed();
 			return true;
 		}
 	}
@@ -64,7 +65,7 @@ UI::Group* UI::Elem::setParent(Group* const parent) {
 
 UI::Elem& UI::Elem::prepareRemove() {
 	if(parent == nullptr) {
-		throw ext::NullPointerException{"This Elem: " + name + " Doesn't Have A Parent!"};
+		throw ext::NullPointerException{"Elem: [" + name + "] Doesn't Have A Parent!"};
 	}
 	parent->postRemove(this);
 
@@ -76,9 +77,9 @@ void UI::Elem::setFocusedKey(const bool focus) const {
 	this->root->currentInputFocused = focus ? const_cast<Elem*>(this)  : nullptr;
 }
 
-void UI::Elem::setFocusedScroll(const bool focus) const {
+void UI::Elem::setFocusedScroll(const bool focus){
 	if(!isFocusedScroll() && !focus)return;
-	this->root->currentScrollFocused = focus ? const_cast<Elem*>(this) : nullptr;
+	this->root->currentScrollFocused = focus ? this : nullptr;
 }
 
 void UI::Elem::changed() const {
@@ -86,9 +87,9 @@ void UI::Elem::changed() const {
 	if(parent)parent->changed();
 }
 
-bool UI::Elem::inbound(const Geom::Vec2 screenPos) const {
+bool UI::Elem::isInbound(const Geom::Vec2 screenPos){
 	if(touchbility == TouchbilityFlags::disabled)return false;
-	if(parent != nullptr && !parent->inbound_validToParent(screenPos))return false;
+	if(parent != nullptr && !parent->hintInbound_validToParent(screenPos))return false;
 	return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
 }
 

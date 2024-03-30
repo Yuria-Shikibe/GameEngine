@@ -376,6 +376,24 @@ export namespace Math {
 		return v1 < v2 ? v1 : v2;
 	}
 
+	template <Concepts::Number T>
+	T maxAbs(const T v1, const T v2) noexcept {
+		if constexpr (Concepts::NonNegative<T>){
+			return std::max(v1, v2);
+		}else{
+			return std::abs(v1) > std::abs(v2) ? v1 : v2;
+		}
+	}
+
+	template <Concepts::Number T>
+	T minAbs(const T v1, const T v2) noexcept {
+		if constexpr (Concepts::NonNegative<T>){
+			return std::min(v1, v2);
+		}else{
+			return std::abs(v1) < std::abs(v2) ? v1 : v2;
+		}
+	}
+
 	/** Clamps to [0, 1]. */
 	constexpr float clamp(const float value) noexcept {
 		return clamp(value, 0.0f, 1.0f);

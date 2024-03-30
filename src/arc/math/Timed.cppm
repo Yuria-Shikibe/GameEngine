@@ -2,17 +2,17 @@
 // Created by Matrix on 2024/3/8.
 //
 
-export module Graphic.Timed;
+export module Math.Timed;
 
 export import Math;
 export import Math.Interpolation;
 import Concepts;
 
 //TODO is this namespace appropriate?
-export namespace Graphic{
+export namespace Math{
 	struct Timed {
-		float lifetime{};
 		float time{};
+		float lifetime{};
 
 		template <bool autoClamp = false>
 		constexpr void set(const float time, const float lifetime){
@@ -38,7 +38,7 @@ export namespace Graphic{
 		template <bool autoClamp = true>
 		[[nodiscard]] constexpr float getWith(const float otherLifetime) const{
 			if constexpr (autoClamp){
-				return Math::clamp(time / otherLifetime);
+				return clamp(time / otherLifetime);
 			}
 
 			return time / lifetime;

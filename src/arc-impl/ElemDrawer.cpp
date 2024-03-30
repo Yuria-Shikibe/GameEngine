@@ -5,34 +5,38 @@ import Graphic.Color;
 import Graphic.Draw;
 import RuntimeException;
 
-void UI::TextureRegionRectDrawable::draw(const float srcx, const float srcy, const float width, const float height) const {
+void UI::TextureRegionRectDrawable::draw(const Geom::OrthoRectFloat rect) const {
 #ifdef _DEBUG
-	if(!rect)throw ext::NullPointerException{"Null Tex On Draw Call!"};
+	if(!texRegion)throw ext::NullPointerException{"Null Tex On Draw Call!"};
 #endif
-	Graphic::Draw::rectOrtho(rect, srcx, srcy, width, height);
+	Graphic::Draw::rectOrtho(texRegion, rect);
 }
 
-void UI::TextureNineRegionDrawable::draw(float srcx, float srcy, float width, float height) const {
+void UI::TextureNineRegionDrawable::draw(const Geom::OrthoRectFloat rect) const {
 #ifdef _DEBUG
-	if(!rect)throw ext::NullPointerException{"Null Tex On Draw Call!"};
+	if(!texRegion)throw ext::NullPointerException{"Null Tex On Draw Call!"};
 #endif
-	rect->render_RelativeExter(srcx, srcy, width, height);
+	texRegion->render_RelativeExter(rect);
 }
 
-void UI::DrawPair::draw(const float srcx, const float srcy, const float width, const float height) const {
-	Graphic::Draw::color(color);
-	region->draw(srcx, srcy, width, height);
+void UI::DrawPair::draw(const UI::Elem* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {
+	Graphic::Draw::color<false>(color);
+	Graphic::Draw::alpha(alphaScl * color.a);
+	region->draw(rect);
 }
 
 void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 	elem->tempColor = elem->color;
 	elem->tempColor.a *= elem->maskOpacity;
-	Graphic::Draw::mixColor(elem->tempColor);
 
-	base.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
-	edge.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
-	if(elem->isPressed())pressed.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
-	if(elem->isCursorInbound())inbound.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+	float alphaScl = elem->selfMaskOpacity * elem->maskOpacity;
+
+	Graphic::Draw::mixColor(elem->tempColor);
+	const Rect rect = elem->getBound().setSrc(elem->getAbsSrc());
+	base.draw(elem, alphaScl, rect);
+	edge.draw(elem, alphaScl, rect);
+	if(elem->isCursorInbound())inbound.draw(elem, alphaScl, rect);
+	if(elem->isPressed())pressed.draw(elem, alphaScl, rect);
 
 	Graphic::Draw::mixColor();
 	//TODO disabled
@@ -62,7 +66,11 @@ void UI::EdgeDrawer::drawBackground(const UI::Elem* elem) const {
 	Graphic::Draw::color(color);
 	Graphic::Draw::Line::setLineStroke(1.0f);
 	Graphic::Draw::alpha(color.a * elem->maskOpacity);
-	Graphic::Draw::Line::rect(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+	Graphic::Draw::Line::rectOrtho(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 
 	Graphic::Draw::reset();
+}
+
+void UI::EmptyDrawer::applyToElem(Elem* elem){
+	elem->setBorder(0.0f);
 }

@@ -3,6 +3,7 @@ import std;
 import Graphic.Color;
 import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
+import Geom.Shape.Rect_Orthogonal;
 
 export import UI.Align;
 
@@ -12,29 +13,29 @@ export namespace UI {
 	struct Drawable {
 		virtual ~Drawable() = default;
 
-		virtual void draw(float srcx, float srcy, float width, float height) const{
+		virtual void draw(Geom::OrthoRectFloat rect) const{
 
 		}
 	};
 
 	struct TextureRegionRectDrawable : Drawable{
-		GL::TextureRegion* rect{nullptr};
+		GL::TextureRegion* texRegion{nullptr};
 
 		[[nodiscard]] explicit TextureRegionRectDrawable(GL::TextureRegion* const rect)
-			: rect(rect) {
+			: texRegion(rect) {
 		}
 
-		void draw(float srcx, float srcy, float width, float height) const override;
+		void draw(Geom::OrthoRectFloat rect) const override;
 	};
 
 	struct TextureNineRegionDrawable : Drawable{
-		GL::TextureNineRegion* rect{nullptr};
+		GL::TextureNineRegion* texRegion{nullptr};
 
 		[[nodiscard]] explicit TextureNineRegionDrawable(GL::TextureNineRegion* const rect)
-			: rect(rect) {
+			: texRegion(rect) {
 		}
 
-		void draw(float srcx, float srcy, float width, float height) const override;
+		void draw(Geom::OrthoRectFloat rect) const override;
 	};
 
 	struct DrawPair {
@@ -52,7 +53,7 @@ export namespace UI {
 
 		[[nodiscard]] DrawPair() = default;
 
-		void draw(float srcx, float srcy, float width, float height) const;
+		void draw(const UI::Elem* elem, float alphaScl, Geom::OrthoRectFloat rect) const;
 	};
 
 	struct UIStyle {
@@ -75,7 +76,6 @@ export namespace UI {
 		virtual void drawBackground(const UI::Elem* elem) const = 0;
 
 		virtual void applyToElem(Elem* elem) {
-
 		}
 	};
 
@@ -103,9 +103,11 @@ export namespace UI {
 		void drawBackground(const UI::Elem* elem) const override {
 
 		}
+
+		void applyToElem(Elem* elem) override;
 	};
 
 	// std::unique_ptr<ElemDrawer> defDrawer{std::make_unique<EdgeDrawer>()};
 	ElemDrawer* defDrawer{nullptr};
-	std::unique_ptr<ElemDrawer> emptyDrawer{std::make_unique<EmptyDrawer>()};
+	EmptyDrawer emptyDrawer{};
 }

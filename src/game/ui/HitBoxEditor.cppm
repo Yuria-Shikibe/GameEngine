@@ -337,7 +337,7 @@ export namespace Game{
 				Draw::rectOrtho(Draw::defaultTexture, orthoRectBox);
 
 				Draw::alpha();
-				Draw::Line::rect(orthoRectBox);
+				Draw::Line::rectOrtho(orthoRectBox);
 			}
 
 

@@ -4,7 +4,7 @@
 
 export module Graphic.Effect;
 
-export import Graphic.Timed;
+export import Math.Timed;
 
 import Geom.Transform;
 import Graphic.Color;
@@ -73,7 +73,7 @@ export namespace Graphic{
 		using HandleType = size_t;
 		static constexpr float DefLifetime = -1.0f;
 
-		Timed progress{};
+		Math::Timed progress{};
 
 		float zOffset{3};
 		Geom::Transform trans{};

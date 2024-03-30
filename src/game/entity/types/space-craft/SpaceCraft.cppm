@@ -68,7 +68,7 @@ export namespace Game {
 			}
 
 			for(const auto& turret : turretEntities){
-				turret->relativePosition.add(rand.range(40), rand.range(40));
+				turret->relativePosition.add(rand.range(40.0f), rand.range(40.0f));
 			}
 		}
 
@@ -152,7 +152,7 @@ export namespace Game {
 		void update(const float deltaTick) override {
 			RealityEntity::update(deltaTick);
 
-			if(const auto t = trans.vec.copy().abs(); t.x > 50000 || t.y > 50000) {
+			if(const auto t = trans.vec.copy().toAbs(); t.x > 50000 || t.y > 50000) {
 				deactivate();
 			}
 
@@ -180,8 +180,6 @@ export namespace Game {
 		void drawDebug() const override {
 			using namespace Graphic;
 
-			Graphic::Draw::setTexture(Graphic::Draw::defaultLightTexture);
-
 			GL::setDepthMask(false);
 			Font::glyphParser->parseWith(coordText, std::format("${{scl#[0.85]}}${{color#[eeeeeeff]}}Health: {:.1f}", this->health));
 			coordText->offset.set(this->trans.vec).add(this->maxBound.getWidth() * 0.55f, this->maxBound.getHeight() * 0.55f);
@@ -194,7 +192,7 @@ export namespace Game {
 			Draw::color(Colors::RED);
 
 			for(const auto& data : intersectedPointWith | std::ranges::views::values) {
-				Draw::rectOrtho<BatchWorld>(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
+				Draw::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
 			}
 
 			Draw::Line::setLineStroke(1.0f);
@@ -214,7 +212,7 @@ export namespace Game {
 					const Vec2 end = cur[(i + 1) % 4];
 					const Vec2 center = (begin + end) / 2;
 
-					Draw::Line::line<BatchWorld>(center, center + cur.getNormalVec(i).normalize().scl(25));
+					Draw::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
 				}
 
 				if(controller->selected) {
@@ -222,12 +220,12 @@ export namespace Game {
 				}else Draw::color(Colors::LIGHT_GRAY);
 
 				Draw::Line::setLineStroke(2);
-				Draw::Line::quad<BatchWorld>(cur);
+				Draw::Line::quad(cur);
 
-				Draw::Line::line<BatchWorld>(cur.v0, cur.originPoint, colors[0], Colors::RED);
+				Draw::Line::line(cur.v0, cur.originPoint, colors[0], Colors::RED);
 
 				Draw::color(Colors::RED);
-				Draw::rectOrtho<BatchWorld>(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
+				Draw::rectOrtho(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
 			}
 
 
@@ -237,8 +235,6 @@ export namespace Game {
 			for(auto& turretEntity : turretEntities){
 				turretEntity->drawDebug();
 			}
-
-			Graphic::Draw::setTexture();
 		}
 	};
 }

@@ -726,7 +726,7 @@ export namespace Graphic{
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-			void rect(const float srcx, const float srcy, const float width, const float height, const bool cap = true){
+			void rectOrtho(const float srcx, const float srcy, const float width, const float height, const bool cap = true){
 				line<batchPtr>(contextTexture, srcx, srcy, srcx, srcy + height - contextStroke, contextColor,
 							   contextColor, cap);
 				line<batchPtr>(contextTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height,
@@ -740,8 +740,8 @@ export namespace Graphic{
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-			void rect(const Geom::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO){
-				Line::rect<batchPtr>(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(),
+			void rectOrtho(const Geom::OrthoRectFloat& rect, const bool cap = true, const Vec2& offset = Geom::ZERO){
+				Line::rectOrtho<batchPtr>(rect.getSrcX() + offset.getX(), rect.getSrcY() + offset.getY(), rect.getWidth(),
 				                     rect.getHeight(),
 				                     cap);
 			}

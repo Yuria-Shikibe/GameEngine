@@ -74,6 +74,9 @@ export namespace UI::Styles {
 		drawer_elem_s1{nullptr}
 	;
 
+	UI::ElemDrawer*
+		empty = &UI::emptyDrawer;
+
 	void load(Graphic::TextureAtlas& atlas) {
 		auto&& applyMargin_16 = [](const std::unique_ptr<UI::UIStyle>& style) {
 			style->margin.set(16.0f);

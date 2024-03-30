@@ -1,3 +1,5 @@
+#include <Windows.h>
+
 #include "src/application_head.h"
 
 #include <glad/glad.h>
@@ -84,6 +86,7 @@ import UI.Label;
 import UI.ScrollPane;
 import UI.ElemDrawer;
 import UI.Styles;
+import UI.Button;
 import UI.SliderBar;
 
 
@@ -120,14 +123,13 @@ void setupUITest() {
 
 	HUD->relativeLayoutFormat = false;
 	HUD->setBorderZero();
-	HUD->setDrawer(UI::emptyDrawer.get()); {
+	HUD->setDrawer(UI::Styles::empty); {
 		HUD->add<UI::Label>([](UI::Label& label){
 			label.setText([]{
 				auto str = sstream.str();
 				sstream.str("");
 				return str;
 			});
-			label.color = Colors::RED;
 			label.color.mul(0.6f);
 			label.setDynamic(true);
 			label.getInputListener().on<UI::MouseActionPress>([&label](const auto& e){
@@ -145,8 +147,30 @@ void setupUITest() {
         .setMargin(0, 10, 0, 10);
 
 
-		HUD->add<UI::Table>([](UI::Table& t){
-			t.add<UI::SliderBar>().fillParentY().wrapX().setWidth(300);
+		HUD->add<UI::Table>([](UI::Table& table){
+			table.add<UI::Table>([](UI::Table& t){
+				t.selfMaskOpacity = 0.0f;
+				t.setBorderZero();
+				t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
+				for(int i = 0; i < 8; ++i){
+					t.add<UI::Button>([i](UI::Button& button){
+						button.setCall([i](){
+							std::cout << i << std::endl;
+						});
+					});
+				}
+
+			}).fillParentY().setWidth(300);
+
+			table.add<UI::Table>([](UI::Table& t){
+				t.setDrawer(UI::Styles::empty);
+				t.add<UI::SliderBar>([](UI::SliderBar& s){
+					s.setClampedOnHori();
+				}).fillParentY().wrapX().setWidth(300).lineFeed();
+				t.add<UI::SliderBar>();
+				t.add<UI::SliderBar>().setSrcScale(0.5f, 0.0f, false).lineFeed();
+			}).fillParent().setPad({.left = 2.0f});
+
 		})
 		   .setAlign(Align::Mode::top_left)
 		   .setSizeScale(0.4f, 0.08f)
@@ -162,7 +186,6 @@ void setupUITest() {
 
 		{
 			auto& cell2 = HUD->add<UI::Table>([](UI::Table& table){
-				table.color = Colors::GREEN;
 				table.add<UI::Elem>();
 				table.lineFeed();
 				table.add<UI::Elem>();
@@ -185,22 +208,21 @@ void setupUITest() {
 	} {
 		auto pane = new UI::ScrollPane{};
 
-		auto rt = new UI::Table{};
-		rt->setSize(400, 900);
-		rt->setFillparentX();
-		pane->setItem(rt);
+		pane->setItem<UI::Table>([](UI::Table& rt){
+			rt.setSize(400, 900);
+			rt.setFillparentX();
+
+			auto t   = new UI::Table{};
+			t->color = Colors::RED;
+			t->name  = "testT";
+			rt.transferElem(t);
+			// rt->add(new UI::Elem);
+			rt.lineFeed();
+			rt.transferElem(new UI::Elem{});
+			rt.transferElem(new UI::Elem{});
+		});
 
 		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
-
-		auto t   = new UI::Table{};
-		t->color = Colors::RED;
-		t->name  = "testT";
-		rt->transferElem(t);
-		// rt->add(new UI::Elem);
-
-		rt->lineFeed();
-		rt->transferElem(new UI::Elem{});
-		rt->transferElem(new UI::Elem{});
 	} {
 		HUD->transferElem(new UI::Table{})
 		   .setAlign(Align::top_right)
@@ -412,7 +434,7 @@ int main(const int argc, char* argv[]) {
 		Draw::Line::setLineStroke(5);
 		Draw::color(Colors::GRAY);
 		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
-			Draw::Line::rect(t->getBoundary());
+			Draw::Line::rectOrtho(t->getBoundary());
 		});
 
 		Game::EntityManage::renderDebug();

@@ -62,6 +62,8 @@ export namespace UI{
 		// // //Input Listeners
 		std::unique_ptr<Table> root{ nullptr };
 
+		std::unique_ptr<Table> cursorFloatRoot{ nullptr };
+
 		[[nodiscard]] bool mouseFocusFree() const {
 			return currentCursorFocus == nullptr;
 		}
@@ -116,7 +118,7 @@ export namespace UI{
 		}
 
 		//TODO mode support
-		void onDoubleClick(int id, int mode = 0) const;
+		void onDoubleClick(int id, int mode = 0);
 
 		void onPress(const int id, int mode = 0);
 

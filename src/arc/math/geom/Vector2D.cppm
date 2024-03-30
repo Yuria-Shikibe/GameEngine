@@ -286,6 +286,13 @@ export namespace Geom{
 			return div(length());
 		}
 
+		Vector2D& normalizeToBase() {
+			x = Math::sign<T>(x);
+			y = Math::sign<T>(y);
+
+			return *this;
+		}
+
 		Vector2D& rotateRad(const float rad) {
 			//  Matrix Multi
 			//  cos rad		-sin rad	x    crx   -sry
@@ -441,7 +448,7 @@ export namespace Geom{
 		}
 
 
-		Vector2D& abs() {
+		Vector2D& toAbs() {
 			if constexpr(!std::is_unsigned_v<T>) {
 				x = std::abs(x);
 				y = std::abs(y);
@@ -592,7 +599,7 @@ export namespace Geom{
 		}
 
 		template <Concepts::Number TN>
-		[[nodiscard]] constexpr Vector2D<TN> as(){
+		[[nodiscard]] constexpr Vector2D<TN> as() const {
 			return Vector2D<TN>{static_cast<TN>(x), static_cast<TN>(y)};
 		}
 
