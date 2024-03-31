@@ -118,9 +118,8 @@ target_sources(${PROJECT_NAME}
         ${FAST_MODULES}      #[[Modules]]
 )
 
-#set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
-target_link_options(${PROJECT_NAME} PRIVATE "/NODEFAULTLIB:MSVCRT")
+set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+#target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     set(FILE_TO_DELETE "${EXE_DIR}/${PROJECT_NAME}.pdb")

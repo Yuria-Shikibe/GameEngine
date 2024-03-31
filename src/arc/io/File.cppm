@@ -279,8 +279,8 @@ export namespace OS{
 
 			if(!file_stream.is_open())return "";
 
-			std::stringstream file_contents;
-			std::string line;
+			std::stringstream file_contents{};
+			std::string line{};
 
 			while (std::getline(file_stream, line)) {
 				file_contents << line;
