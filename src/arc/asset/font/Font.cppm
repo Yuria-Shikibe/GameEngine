@@ -59,7 +59,7 @@ namespace Font {
 	}
 
 	void writeIntoPixmap(const FT_Bitmap& map, unsigned char* data) {
-		for(size_t size = 0; size < map.width * map.rows; ++size) {
+		for(auto size = 0; size < map.width * map.rows; ++size) {
 			//Normal
 			data[size * 4 + 0] = 0xff;
 			data[size * 4 + 1] = 0xff;
@@ -72,6 +72,7 @@ namespace Font {
 }
 
 export namespace Font {
+	using CharCode = unsigned int;
 	FT_Library GlobalFreeTypeLib{};
 
 	enum struct Style : unsigned char{
@@ -126,7 +127,7 @@ export namespace Font {
 
 	struct FontData {
 		OrthoRectUInt box{};
-		std::unordered_map<FT_ULong, CharData> charDatas{};
+		std::unordered_map<CharCode, CharData> charDatas{};
 		float spaceSpacing{-1};
 		float lineSpacingMin{-1};
 
@@ -157,7 +158,7 @@ export namespace Font {
 
 			for(size_t i = 0; i < size; ++i) {
 				CharData value{};
-				FT_ULong key;
+				CharCode key;
 				istream.read(reinterpret_cast<char*>(&key		    ), sizeof(key           ));
 				istream.read(reinterpret_cast<char*>(&value.matrices), sizeof(value.matrices));
 				istream.read(reinterpret_cast<char*>(&value.charBox ), sizeof(value.charBox ));
@@ -175,7 +176,7 @@ export namespace Font {
 		static constexpr auto fontOffset = 0;
 
 		OS::File fontFile{};
-		std::vector<FT_ULong> segments{};
+		std::vector<CharCode> segments{};
 		FT_Int loadFlags = FT_LOAD_RENDER; //
 		FT_UInt height = 48;
 
@@ -209,7 +210,7 @@ export namespace Font {
 
 		[[nodiscard]] FontFlags(
 			const OS::File& fontFile,
-			const std::vector<FT_ULong>& segments,
+			const std::vector<CharCode>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
 			const FT_UInt height = 48,
 			const std::function<bool(FT_Face)>& loader = nullptr
@@ -224,7 +225,7 @@ export namespace Font {
 
 		[[nodiscard]] FontFlags(
 			OS::File&& fontFile,
-			const std::vector<FT_ULong>& segments,
+			const std::vector<CharCode>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
 			const FT_UInt height = 48,
 			const std::function<bool(FT_Face)>& loader = nullptr
@@ -237,7 +238,7 @@ export namespace Font {
 			familyName = fontFile.filename();
 		}
 
-		FontFlags* tryLoad(const FT_ULong charCode){
+		FontFlags* tryLoad(const CharCode charCode){
 			if(!face) { //Fall back may roll to font that doesn't need cache, just load its face
 				if(FT_New_Face(GlobalFreeTypeLib, fontFile.absolutePath().string().data(), 0, &face)) {
 					exitLoad(fullname());
@@ -260,7 +261,7 @@ export namespace Font {
 			return this;
 		}
 
-		[[nodiscard]] bool containsData(const FT_ULong charCode) const {
+		[[nodiscard]] bool containsData(const CharCode charCode) const {
 			if(data) {
 				if(data->charDatas.contains(charCode))return true;
 			}
@@ -272,7 +273,7 @@ export namespace Font {
 			return false;
 		}
 
-		[[nodiscard]] const CharData* getCharData(const FT_ULong charCode) const {
+		[[nodiscard]] const CharData* getCharData(const CharCode charCode) const {
 			if(data) {
 				if(const auto itr = data->charDatas.find(charCode); itr != data->charDatas.end()) {
 					return &itr->second;
@@ -365,7 +366,7 @@ export namespace Font {
 			for(auto& value: fontsRaw) {
 				//Register valid chars
 				for(size_t t = 0; t < value->segments.size() / 2; ++t) {
-					for(FT_ULong i = value->segments[t * 2]; i <= value->segments[t * 2 + 1]; ++i) {
+					for(CharCode i = value->segments[t * 2]; i <= value->segments[t * 2 + 1]; ++i) {
 						supportedFonts[i].insert(value->internalID);
 					}
 				}
@@ -413,24 +414,24 @@ export namespace Font {
 			return nullptr;
 		}
 
-		[[nodiscard]] bool contains(const FT_UInt id, const FT_ULong charCode) const {
+		[[nodiscard]] bool contains(const FT_UInt id, const CharCode charCode) const {
 			return supportedFonts.at(charCode).contains(id);
 		}
 
-		[[nodiscard]] const CharData* getCharData(const FT_UInt id, const FT_ULong charCode) const {
+		[[nodiscard]] const CharData* getCharData(const FT_UInt id, const CharCode charCode) const {
 			return contains(id, charCode) ? &fonts.at(id)->data->charDatas.at(charCode) : nullptr;
 		}
 	};
 
 	struct FontData_Preload{
-		FT_ULong charCode{0};
+		CharCode charCode{0};
 		FT_Glyph_Metrics matrices{};
 		OrthoRectUInt box{};
 		Graphic::Pixmap pixmap{};
 
 		[[nodiscard]] FontData_Preload() = default;
 
-		[[nodiscard]] FontData_Preload(const FT_ULong charCode, const FT_GlyphSlot glyph) : // NOLINT(*-misplaced-const)
+		[[nodiscard]] FontData_Preload(const CharCode charCode, const FT_GlyphSlot glyph) : // NOLINT(*-misplaced-const)
 			charCode(charCode),
 			matrices(glyph->metrics),
 			box(glyph->bitmap.width, glyph->bitmap.rows),
@@ -463,6 +464,10 @@ export namespace Font {
 		std::unique_ptr<FontCache> manager{nullptr};
 
 		[[nodiscard]] FontManager() = default;
+
+		[[nodiscard]] explicit FontManager(OS::File&& root_cache_dir) :
+			rootCacheDir(std::move(root_cache_dir)) {
+		}
 
 		[[nodiscard]] explicit FontManager(const OS::File& root_cache_dir) :
 			rootCacheDir(root_cache_dir) {
@@ -523,7 +528,7 @@ export namespace Font {
 				FT_UInt maxHeight = 0;
 
 				for(size_t t = 0; t < params.segments.size() / 2; ++t) {
-					for(FT_ULong i = params.segments[t * 2]; i <= params.segments[t * 2 + 1]; ++i) {
+					for(CharCode i = params.segments[t * 2]; i <= params.segments[t * 2 + 1]; ++i) {
 						const FontFlags& valid = * params.tryLoad(i);
 
 						if(!valid.face->glyph) {

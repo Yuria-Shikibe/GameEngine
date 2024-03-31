@@ -7,6 +7,7 @@ import OS.File;
 import Assets.Loader;
 import RuntimeException;
 import <irrKlang.h>;
+import std;
 
 using namespace irrklang;
 

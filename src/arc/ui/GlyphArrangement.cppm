@@ -17,30 +17,33 @@ import Geom.Vector2D;
 
 export import UI.Align;
 
+import Encoding;
 import std;
 
 export namespace Font {
 	constexpr int MAX_CAHCE = 1000;
-	typedef signed long FT_ULong;
 
-	std::unordered_map<std::string_view, const FontFlags*> parserableFonts{};
-	std::unordered_map<std::string_view, Graphic::Color> parserableColors{};
+	using TextView = std::string_view;
+	using TextString = std::string;
+
+	std::unordered_map<TextView, const FontFlags*> parserableFonts{};
+	std::unordered_map<TextView, Graphic::Color> parserableColors{};
 
 	void registerParserableFont(const Font::FontFlags* const flag) {
 		parserableFonts.insert_or_assign(flag->fullname(), flag);
 	}
 
-	void registerParserableFont(const std::string_view name, const Font::FontFlags* const flag) {
+	void registerParserableFont(const TextView name, const Font::FontFlags* const flag) {
 		parserableFonts.insert_or_assign(name, flag);
 	}
 
 	//TODO color managements
-	void registerParserableColor(const std::string_view name, const Graphic::Color& color) {
+	void registerParserableColor(const TextView name, const Graphic::Color& color) {
 		parserableColors.insert_or_assign(name, color);
 	}
 
-	float normalize(const FT_ULong pos) {
-		return static_cast<float>(pos) / 64.0f;
+	float normalize(const long pos) {
+		return static_cast<float>(pos >> 6);
 	}
 
 	struct GlyphVertData {
@@ -78,7 +81,7 @@ export namespace Font {
 
 		Geom::OrthoRectFloat bound{};
 
-		std::string lastText{};
+		TextString lastText{};
 
 		int count = 0;
 
@@ -228,11 +231,11 @@ namespace ParserFunctions {
 	public:
 		virtual ~TokenParser() = default;
 
-		std::unordered_map<std::string_view, std::function<void(const std::string_view, const ModifierableData& data)>> modifier{};
+		std::unordered_map<TextView, std::function<void(const TextView, const ModifierableData& data)>> modifier{};
 
-		virtual void parse(std::string_view token, const ModifierableData& data) const;
+		virtual void parse(TextView token, const ModifierableData& data) const;
 
-		void operator()(const std::string_view token, const ModifierableData& data) const {
+		void operator()(const TextView token, const ModifierableData& data) const {
 			parse(token, data);
 		}
 	};
@@ -278,7 +281,7 @@ namespace ParserFunctions {
 
 		virtual void parse(const std::shared_ptr<GlyphLayout>& layout) const;
 
-		void parseWith(const std::shared_ptr<GlyphLayout>& layout, std::string&& str, const float maxWidth = std::numeric_limits<float>::max()) const{
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, TextString&& str, const float maxWidth = std::numeric_limits<float>::max()) const{
 			bool requiresRelayout = layout->maxWidth != maxWidth;
 
 			if(requiresRelayout){
@@ -293,7 +296,7 @@ namespace ParserFunctions {
 			if(requiresRelayout)parse(layout);
 		}
 
-		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const std::string_view str, const float maxWidth = std::numeric_limits<float>::max()) const{
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const TextView str, const float maxWidth = std::numeric_limits<float>::max()) const{
 			bool requiresRelayout = layout->maxWidth != maxWidth;
 
 			if(layout->lastText != str){
@@ -305,8 +308,8 @@ namespace ParserFunctions {
 			if(requiresRelayout)parse(layout);
 		}
 
-		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const char* str, const float maxWidth = std::numeric_limits<float>::max()) const{
-			parseWith(layout, std::string_view{str}, maxWidth);
+		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const TextView::value_type* str, const float maxWidth = std::numeric_limits<float>::max()) const{
+			parseWith(layout, TextView{str}, maxWidth);
 		}
 
 		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const float maxWidth = std::numeric_limits<float>::max(), const bool forceLayout = false) const{
@@ -317,7 +320,7 @@ namespace ParserFunctions {
 			}
 		}
 
-		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string_view text) const {
+		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const TextView text) const {
 			const auto layout = obtainLayoutPtr();
 
 			layout->lastText = text;
@@ -327,7 +330,7 @@ namespace ParserFunctions {
 			return layout;
 		}
 
-		std::shared_ptr<GlyphLayout> operator()(const std::string_view text) const {
+		std::shared_ptr<GlyphLayout> operator()(const TextView text) const {
 			//TODO complete glyph layout cache;
 			/*if(
 				const auto itr = layoutCache.find(text);

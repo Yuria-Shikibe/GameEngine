@@ -17,7 +17,8 @@ import Assets.Graphic;
 
 import Ctrl.Constants;
 
-import Interval;
+import Timer;
+import Encoding;
 
 import std;
 

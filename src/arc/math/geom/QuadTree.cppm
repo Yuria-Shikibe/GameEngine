@@ -62,7 +62,7 @@ export namespace Geom {
 		}
 
 		// The rectangles in this node
-		std::vector<const Cont *> rectangles{};
+		std::vector<Cont *> rectangles{};
 
 		// The four children of this node
 		std::unique_ptr<QuadTree> topLeft{ nullptr };
@@ -133,7 +133,7 @@ export namespace Geom {
 			this->boundary.setSize(width, height);
 		}
 
-		bool remove(const Cont* box) {
+		bool remove(Cont* box) {
 			bool result;
 			if(isLeaf()) {
 				std::lock_guard guard{containerlock};
@@ -179,7 +179,7 @@ export namespace Geom {
 			}
 		}
 
-		bool intersectAny(const Cont* object) {
+		bool intersectAny(Cont* object) {
 			if(!this->inbound(object)) {
 				return false;
 			}
@@ -257,11 +257,11 @@ export namespace Geom {
 				bottomRight->intersect(object, pred);
 			}
 
-			std::ranges::for_each(rectangles, [this, object, pred = std::forward<Pred>(pred)](const Cont* cont) {
+			for (const auto cont : rectangles){
 				if(this->isInersectedBetween(object, cont)) {
-					pred(const_cast<Cont*>(cont));
+					pred(cont);
 				}
-			});
+			}
 		}
 
 		template <typename Rect>
@@ -278,11 +278,11 @@ export namespace Geom {
 				bottomRight->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
 			}
 
-			std::ranges::for_each(rectangles, [this, rect, pred = std::forward<decltype(pred)>(pred), check = std::forward<decltype(check)>(check)](const Cont* cont) {
+			for (const auto cont : rectangles){
 				if(check(cont, rect)) {
-					pred(const_cast<Cont*>(cont));
+					pred(cont);
 				}
-			});
+			}
 		}
 
 		template <Concepts::Invokable<void(Cont*)> Pred>
@@ -297,11 +297,11 @@ export namespace Geom {
 				bottomRight->intersectPoint(point, std::forward<Pred>(pred));
 			}
 
-			std::for_each(rectangles.begin(), rectangles.end(), [this, point, pred = std::forward<Pred>(pred)](const Cont* cont) {
+			for (const auto cont : rectangles){
 				if(this->intersectWith(cont, point)) {
-					pred(const_cast<Cont*>(cont));
+					pred(cont);
 				}
-			});
+			}
 		}
 
 		template <Concepts::Invokable<void(Cont*)> Pred>
@@ -318,7 +318,7 @@ export namespace Geom {
 
 			std::ranges::for_each(rectangles, [this, object, dst, pred = std::forward<Pred>(pred)](const Cont* cont) {
 				if(this->obtainBound(cont).getCenter().within(this->obtainBound(object), dst)) {
-					pred(const_cast<Cont*>(cont));
+					pred(cont);
 				}
 			});
 		}
@@ -341,7 +341,7 @@ export namespace Geom {
 				if(intersected) return;
 				if(this->isInersectedBetween(object, cont)) {
 					intersected = true;
-					pred(const_cast<Cont*>(cont));
+					pred(cont);
 				}
 			});
 
@@ -370,7 +370,7 @@ export namespace Geom {
 			return obtainBound(object).getCenter().within(boundary.getCenter(), dst);
 		}
 
-		bool insert(const Cont* box) {
+		bool insert(Cont* box) {
 			// Ignore objects that do not belong in this quad tree
 			if(!this->inbound(box)) {
 				return false;

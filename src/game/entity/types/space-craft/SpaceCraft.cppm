@@ -16,6 +16,7 @@ import Font.GlyphArrangement;
 import RuntimeException;
 
 import std;
+import Encoding;
 
 export namespace Game {
 	class SpaceCraft;

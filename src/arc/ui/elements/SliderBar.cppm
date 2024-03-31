@@ -86,7 +86,6 @@ export namespace UI{
 				}
 
 				if(isClamped()){
-					std::cout << scrollSensitivity * slideSensitivity.normalizeToBase() * move.y << std::endl;
 					moveBar(scrollSensitivity * slideSensitivity.normalizeToBase() * move.y);
 				}else{
 					moveBar(move * scrollSensitivity);

@@ -72,7 +72,7 @@ import GL.Texture.TextureNineRegion;
 import GL.Blending;
 import Event;
 import Font.GlyphArrangement;
-import Interval;
+import Timer;
 
 import Assets.TexturePacker;
 import Assets.Loader;
@@ -108,6 +108,8 @@ import Game.Content.Type.Turret.BasicTurretType;
 import Game.Content.Builtin.SpaceCrafts;
 
 import Game.Graphic.CombinePostProcessor;
+
+import Encoding;
 
 using namespace std;
 using namespace Graphic;
@@ -153,7 +155,7 @@ void setupUITest() {
 				t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
 				for(int i = 0; i < 8; ++i){
 					t.add<UI::Button>([i](UI::Button& button){
-						button.setCall([i](){
+						button.setCall([i](bool){
 							std::cout << i << std::endl;
 						});
 					});

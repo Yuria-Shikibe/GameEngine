@@ -78,7 +78,7 @@ export namespace UI {
 		}
 	};
 
-	struct CurosrInbound final : Event::EventType, Geom::Vec2 {
+	struct CurosrInbound final : EventType, Geom::Vec2 {
 		[[nodiscard]] CurosrInbound() = default;
 
 		[[nodiscard]] CurosrInbound(const float x, const float y)
@@ -86,7 +86,7 @@ export namespace UI {
 		}
 	};
 
-	struct CurosrExbound final : Event::EventType, Geom::Vec2 {
+	struct CurosrExbound final : EventType, Geom::Vec2 {
 		[[nodiscard]] CurosrExbound() = default;
 
 		[[nodiscard]] CurosrExbound(const float x, const float y)

@@ -7,6 +7,14 @@ module OS.ApplicationListenerSetter;
 import Core;
 import GL.Constants;
 import UI.Scl;
+import std;
+import Encoding;
+
+void charCallback(GLFWwindow* window, unsigned int codepoint){
+
+	std::cout << reinterpret_cast<char*>(ext::convertTo<wchar_t>(codepoint).data()) << std::endl;
+	// std::wcout << cvrt. << std::endl;
+}
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	if(width * height == 0)return;

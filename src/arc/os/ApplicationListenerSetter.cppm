@@ -73,40 +73,34 @@ export namespace OS{
 }
 
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-
 void windowRefreshCallback(GLFWwindow* window){
 
 }
 
-void mouseBottomCallBack(GLFWwindow* window, int button, int action, int mods);
-
-void cursorPosCallback(GLFWwindow* window, double xPos, double yPos);
-
 void dropCallback(GLFWwindow* window, int path_count, const char* paths[]) {
 
-
 }
 
-void cursorEnteredCallback(GLFWwindow* window, int entered);
-
-void charCallback(GLFWwindow* window, unsigned int codepoint) {
-
-
-}
+void charCallback(GLFWwindow* window, unsigned int codepoint);
 
 void charModCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
 
-
 }
-
-void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 
 void scaleCallback(GLFWwindow* window, const float xScale, const float yScale){
 	// cout << "Scale CallBack: " << xScale << " | " << yScale << endl;
 }
 
-// ReSharper disable once CppParameterMayBeConstPtrOrRef
+void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+
+void mouseBottomCallBack(GLFWwindow* window, int button, int action, int mods);
+
+void cursorPosCallback(GLFWwindow* window, double xPos, double yPos);
+
+void cursorEnteredCallback(GLFWwindow* window, int entered);
+
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
+
 void keyCallback(GLFWwindow* window, int key, int scanCode, int action, int mods);
 
 void monitorCallback(GLFWmonitor* monitor, int event);

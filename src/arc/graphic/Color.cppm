@@ -87,6 +87,12 @@ export namespace Graphic{
 			return os;
 		}
 
+		friend std::wostream& operator<<(std::wostream& os, const Color& obj){
+			os << std::setw(8) << std::setfill<wchar_t>('0') << std::hex << (static_cast<ColorBits>(255 * obj.r) << 24 | static_cast<ColorBits>(255 * obj.g) << 16 | static_cast<ColorBits>(255 * obj.b) << 8 | static_cast<ColorBits>(255 * obj.a));
+
+			return os;
+		}
+
 		friend bool operator==(const Color& lhs, const Color& rhs){
 			return lhs.r == rhs.r
 				&& lhs.g == rhs.g
@@ -99,6 +105,16 @@ export namespace Graphic{
 		}
 
 		static constexpr Color valueOf(const std::string_view hex){
+			const int offset = hex[0] == '#' ? 1 : 0;
+
+			const int r = parseHex(hex, offset, offset + 2);
+			const int g = parseHex(hex, offset + 2, offset + 4);
+			const int b = parseHex(hex, offset + 4, offset + 6);
+			const int a = hex.length() - offset != 8 ? 255 : parseHex(hex, offset + 6, offset + 8);
+			return Color{static_cast<float>(r) / 255.0f, static_cast<float>(g) / 255.0f, static_cast<float>(b) / 255.0f, static_cast<float>(a) / 255.0f};
+		}
+
+		static constexpr Color valueOf(const std::wstring_view hex){
 			const int offset = hex[0] == '#' ? 1 : 0;
 
 			const int r = parseHex(hex, offset, offset + 2);
@@ -122,6 +138,14 @@ export namespace Graphic{
 			int total = 0;
 			for (int i = from; i < to; i++) {
 				total += Math::charToDigitValue(string[i], 16) * (i == from ? 16 : 1);
+			}
+			return total;
+		}
+
+		static constexpr int parseHex(const std::wstring_view string, const int from, const int to){
+			int total = 0;
+			for (int i = from; i < to; i++) {
+				total += Math::charToDigitValue(static_cast<signed char>(string[i] & 0x00ff), 16) * (i == from ? 16 : 1);
 			}
 			return total;
 		}

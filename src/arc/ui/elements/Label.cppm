@@ -10,18 +10,17 @@ import std;
 
 export namespace UI {
 	class Label : public Elem {
-		using TextView = std::string_view;
 	protected:
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{Font::obtainLayoutPtr()};
 
 		Align::Mode textAlignMode{Align::Mode::top_left};
-		std::function<std::string()> textSource{};
+		std::function<Font::TextString()> textSource{};
 
 		bool textChanged = false;
 
 	public:
 
-		[[nodiscard]] TextView getLastText() const{
+		[[nodiscard]] Font::TextView getLastText() const{
 			return glyphLayout->lastText;
 		};
 
@@ -48,21 +47,21 @@ export namespace UI {
 			glyphLayout = layoutPtr;
 		}
 
-		void setText(const TextView text) {
+		void setText(const Font::TextView text) {
 			glyphLayout->lastText = text;
 			textSource = nullptr;
 			textUpdated();
 			changed();
 		}
 
-		void setText(const TextView::const_pointer text) {
-			glyphLayout->lastText = std::string_view{text};
+		void setText(const Font::TextView::const_pointer text) {
+			glyphLayout->lastText = Font::TextView{text};
 			textSource = nullptr;
 			textUpdated();
 			changed();
 		}
 
-		void setText(Concepts::Invokable<TextView()> auto&& charSource) {
+		void setText(Concepts::Invokable<Font::TextView()> auto&& charSource) {
 			textSource = std::forward<decltype(charSource)>(charSource);
 			glyphLayout->lastText = std::move(textSource());
 
@@ -79,7 +78,7 @@ export namespace UI {
 
 		void update(float delta) override {
 			if(textSource){
-				std::string cur = std::move(textSource());
+				Font::TextString cur = std::move(textSource());
 
 				if(cur != getLastText()){
 					glyphLayout->lastText = std::move(cur);

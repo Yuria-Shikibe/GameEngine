@@ -22,6 +22,7 @@ import Font.GlyphArrangement;
 
 import std;
 import GL;
+import Encoding;
 
 using namespace Graphic;
 
@@ -177,7 +178,8 @@ export namespace Assets {
 			Graphic::Batch::shader();
 
 			ss.str("");
-			ss << "${scl#[0.4]}Loading${scl#[0.3]}: (${color#[" << end << "]}"<< std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";
+			ss << "${scl#[0.4]}Loading${scl#[0.3]}: (${color#[" << end << "]}";
+			ss << std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";
 			ss << "\n${scl#[0.3]}${color#[" << end << "]}" << static_cast<float>(loader->getTimer().toMark().count()) / 1000.0f << "${color#[]}sec.";
 
 			Font::glyphParser->parseWith(loadStatus, ss.str());

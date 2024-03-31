@@ -2,7 +2,7 @@
 // Created by Matrix on 2024/3/7.
 //
 
-export module Interval;
+export module Timer;
 
 import Concepts;
 import Math;

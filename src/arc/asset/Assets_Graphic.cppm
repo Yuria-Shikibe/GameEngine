@@ -41,8 +41,6 @@ export namespace Assets{
 //	namespace Shaders{
 //		inline std::unique_ptr<Shader> texPost;
 //	}
-	typedef unsigned long CharCode;
-
 	inline OS::File assetsDir;
 	inline OS::File shaderDir;
 	inline OS::File textureDir;
@@ -138,7 +136,7 @@ export namespace Assets{
 		OS::File cacheDir;
 		// Font::FontsManager
 
-		const std::vector<CharCode> targetChars {' ' + 1, '~'};
+		const std::vector<Font::CharCode> targetChars {' ' + 1, '~'};
 
 		const Font::FontFlags
 			*consola_Regular{nullptr},

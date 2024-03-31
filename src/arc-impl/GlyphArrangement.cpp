@@ -6,9 +6,6 @@ import Graphic.Draw;
 import RuntimeException;
 import Math;
 
-import std;
-
-
 void Font::GlyphLayout::render() const {
 	if(count <= 0 || this->lastText.empty()) return;
 	for (auto& glyph : this->toRender | std::ranges::views::take(count)){
@@ -52,10 +49,10 @@ Font::TypesettingTable::TypesettingTable(const FontFlags* const font): defaultFo
 	paragraphSpacing = lineSpacing * 1.1f;
 }
 
-void Font::TokenParser::parse(const std::string_view token, const ModifierableData& data) const {
+void Font::TokenParser::parse(const Font::TextView token, const ModifierableData& data) const {
 	const auto hasType = token.find('#');
 
-	if(hasType != std::string_view::npos) {
+	if(hasType != Font::TextView::npos) {
 		if(const auto itr = modifier.find(token.substr(0, hasType)); itr != modifier.end()) {
 			itr->second(token.substr(hasType + 1), data);
 		}
@@ -67,7 +64,7 @@ void Font::TokenParser::parse(const std::string_view token, const ModifierableDa
 }
 
 void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const {
-	constexpr auto npos = std::string::npos;
+	constexpr auto npos = Font::TextString::npos;
 
 	context.reset();
 	layout->clear();
@@ -84,8 +81,9 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 		return;
 	}
 
+	const auto totalSize = layout->lastText.size();
 	int count = 0;
-	for(int index = 0; index < layout->lastText.size(); ++index) {
+	for(int index = 0; index < totalSize; ++index) {
 		const char currentChar = layout->lastText.at(index);
 		//Token Check
 		if(currentChar == TokenSignal) {
@@ -125,8 +123,17 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 			continue;
 		}
 
+		//TODO check currentChar to adapt to UTF characters
+		unsigned int charCode = static_cast<unsigned char>(currentChar);
+		if(
+			const int charCodeLength = ext::getCharCodeLength(currentChar);
+			charCodeLength > 1 && index + charCodeLength <= totalSize
+		){
+			charCode = *reinterpret_cast<unsigned*>(&layout->lastText.at(index));
+		}
+
 		// datas.emplace_back();
-		const auto* charData = context.currentFont->getCharData(currentChar);
+		const auto* charData = context.currentFont->getCharData(charCode);
 
 		if(charData) {
 			auto& data = datas.at(count++);
@@ -197,7 +204,7 @@ void Font::initParser(const FontFlags* const defFont) {
 		ParserFunctions::endLine(data);
 	};
 
-	glyphParser->tokenParser->modifier["color"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["color"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const auto sub = command.substr(1, command.size() - 2); sub.empty()) {
 				data.context.currentColor = data.context.fallbackColor;
@@ -213,14 +220,14 @@ void Font::initParser(const FontFlags* const defFont) {
 		}
 	};
 
-	glyphParser->tokenParser->modifier["font"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["font"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
-			if(const std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
+			if(const Font::TextView sub = command.substr(1, command.size() - 2); sub.empty()) {
 				data.context.set(data.context.fallbackFont);
 			} else {
 				data.context.fallbackFont = data.context.currentFont;
 				try {
-					data.context.currentFont = glyphParser->fontLib->obtain(std::stoi(static_cast<std::string>(sub)));
+					data.context.currentFont = glyphParser->fontLib->obtain(std::stoi(static_cast<Font::TextString>(sub)));
 				} catch(std::invalid_argument& e) {
 					//TODO throw maybe ?
 				}
@@ -242,22 +249,22 @@ void Font::initParser(const FontFlags* const defFont) {
 	};
 
 	//igl for Ignore Line, used for a line for token.
-	glyphParser->tokenParser->modifier["igl"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["ig"] = [](const Font::TextView command, const ModifierableData& data) {
 		data.context.endlineOperation.push_back([](const ModifierableData& d) {
 			d.context.currentLineBound.setHeight(0);
 		});
 	};
 
-	glyphParser->tokenParser->modifier["tab"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["tab"] = [](const Font::TextView command, const ModifierableData& data) {
 		data.cursorPos.add(30, 0);
 	};
 
-	glyphParser->tokenParser->modifier["scl"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["scl"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
-			if(const std::string_view sub = command.substr(1, command.size() - 2); !sub.empty()) {
+			if(const Font::TextView sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float scl = 1.0f;
 				try{
-					scl = std::stof(static_cast<std::string>(sub));
+					scl = std::stof(static_cast<Font::TextString>(sub));
 				} catch(std::invalid_argument& e) {
 
 				}
@@ -270,16 +277,16 @@ void Font::initParser(const FontFlags* const defFont) {
 		ParserFunctions::resetScl(data);
 	};
 
-	glyphParser->tokenParser->modifier["off"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["off"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
-			if(const std::string_view sub = command.substr(1, command.size() - 2); sub.empty()) {
+			if(const Font::TextView sub = command.substr(1, command.size() - 2); sub.empty()) {
 				data.context.offset.setZero();
 			} else {
 				const auto splitIndex = sub.find_first_of(',');
 
 				try {
-					const float moveX = std::stof(static_cast<std::string>(sub.substr(0, splitIndex)));
-					const float moveY = std::stof(static_cast<std::string>(sub.substr(splitIndex + 1)));
+					const float moveX = std::stof(static_cast<Font::TextString>(sub.substr(0, splitIndex)));
+					const float moveY = std::stof(static_cast<Font::TextString>(sub.substr(splitIndex + 1)));
 
 					data.context.offset.set(moveX, moveY);
 				} catch(std::invalid_argument& e) {
@@ -289,13 +296,13 @@ void Font::initParser(const FontFlags* const defFont) {
 		} else {
 			if(std::tolower(command.front()) == 'x') {
 				try {
-					data.context.offset.set(std::stof(static_cast<std::string>(command.substr(1))), 0);
+					data.context.offset.set(std::stof(static_cast<Font::TextString>(command.substr(1))), 0);
 				} catch(std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			} else if(std::tolower(command.front()) == 'y') {
 				try {
-					data.context.offset.set(0, std::stof(static_cast<std::string>(command.substr(1))));
+					data.context.offset.set(0, std::stof(static_cast<Font::TextString>(command.substr(1))));
 				} catch(std::invalid_argument& e) {
 					//TODO maybe ?
 				}
@@ -303,11 +310,11 @@ void Font::initParser(const FontFlags* const defFont) {
 		}
 	};
 
-	glyphParser->tokenParser->modifier["alp"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["alp"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const auto sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float alpha = 1.0f;
-				try { alpha = std::stof(static_cast<std::string>(sub)); } catch(std::invalid_argument& e) {
+				try { alpha = std::stof(static_cast<Font::TextString>(sub)); } catch(std::invalid_argument& e) {
 				}
 
 				data.context.currentColor.setA(alpha);
@@ -319,20 +326,20 @@ void Font::initParser(const FontFlags* const defFont) {
 	};
 
 	//SuperScript Begin
-	glyphParser->tokenParser->modifier["sut"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["sut"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::setScl(data, 0.5f);
 		data.context.offset.set(-normalize(data.charData->matrices.horiAdvance) * 0.05f,
 		                        normalize(data.charData->matrices.horiBearingY + 45));
 	};
 
 	//SuperScript End
-	glyphParser->tokenParser->modifier["\\sut"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["\\sut"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
 	//SubScript Begin
-	glyphParser->tokenParser->modifier["sbt"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["sbt"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::setScl(data, 0.5f);
 		data.context.offset.set(-normalize(data.charData->matrices.horiAdvance) * 0.05f,
 		                        -normalize(
@@ -340,18 +347,18 @@ void Font::initParser(const FontFlags* const defFont) {
 	};
 
 	//SubScript End
-	glyphParser->tokenParser->modifier["\\sbt"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["\\sbt"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
 	//Script End
-	glyphParser->tokenParser->modifier["\\spt"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["\\spt"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
-	glyphParser->tokenParser->modifier["rst"] = [](const std::string_view command, const ModifierableData& data) {
+	glyphParser->tokenParser->modifier["rst"] = [](const Font::TextView command, const ModifierableData& data) {
 		data.context.currentColor = Graphic::Colors::WHITE;
 
 		ParserFunctions::resetScl(data);
