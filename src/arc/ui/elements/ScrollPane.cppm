@@ -115,8 +115,9 @@ export namespace UI {
 				layout();
 			}
 
-			if(hasChildren()) {
+			calAbsoluteSrc(parent);
 
+			if(hasChildren()) {
 				const Geom::Vec2 absOri = absoluteSrc;
 				absoluteSrc += scrollTempOffset;
 				absoluteSrc.x += border.left;
@@ -130,6 +131,12 @@ export namespace UI {
 
 				absoluteSrc = absOri;
 			}
+		}
+
+		void calAbsoluteSrc(Elem* parent) override{
+			Geom::Vec2 vec{parent->getAbsSrc()};
+			vec.add(bound.getSrcX(), bound.getSrcY());
+			absoluteSrc.set(vec);
 		}
 
 		void layout() override {

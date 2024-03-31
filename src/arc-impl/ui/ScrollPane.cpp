@@ -32,17 +32,29 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 	}
 }
 
-void UI::ScrollPane::drawContent() const {
+void UI::ScrollPane::drawContent() const{
 	Graphic::Batch::flush();
 
+	const auto lastRect = GL::getScissorRect();
+
+	const Geom::OrthoRectInt clip{
+		Math::round<int>(absoluteSrc.x + border.left), Math::round<int>(absoluteSrc.y + horiBarStroke() + border.bottom),
+	Math::round<int>(this->getContentWidth()), Math::round<int>(this->getContentHeight())
+	};
+
+	const auto count = GL::getSrhinkCount();
 	GL::enable(GL::Test::SCISSOR);
 
-	GL::scissor(Math::round<int>(absoluteSrc.x + border.left), Math::round<int>(absoluteSrc.y + horiBarStroke() + border.bottom), Math::round<int>(getWidth() - vertBarStroke() - getBorderWidth()), Math::round<int>(getHeight() - getBorderHeight()));
+	if(!count)GL::forceSetScissor(clip);
+	GL::scissorShrinkBegin();
+	GL::setScissor(clip);
 
 	drawChildren();
-
 	Graphic::Batch::flush();
-	GL::disable(GL::Test::SCISSOR);
+
+	GL::forceSetScissor(lastRect);
+	GL::scissorShrinkEnd();
+	if(!count)GL::disable(GL::Test::SCISSOR);
 
 	scrollBarDrawer->operator()(this);
 }

@@ -244,6 +244,15 @@ export namespace Geom{
 				other.srcY > srcY && other.srcY + other.height < srcY + height;
 		}
 
+		constexpr Rect_Orthogonal getOverlap(const Rect_Orthogonal& r){
+			T minEndX = Math::min(getEndX(), r.getEndX());
+			T minEndY = Math::min(getEndY(), r.getEndY());
+			T maxSrcX = Math::max(getSrcX(), r.getSrcX());
+			T maxSrcY = Math::max(getSrcY(), r.getSrcY());
+
+			return Rect_Orthogonal{maxSrcX, maxSrcY, Math::clampPositive(minEndX - maxSrcX), Math::clampPositive(minEndY - maxSrcY)};
+		}
+
 		[[nodiscard]] constexpr bool overlap(const Rect_Orthogonal& r) const{
 			return
 				getSrcX() < r.getEndX() &&

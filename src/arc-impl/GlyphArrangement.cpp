@@ -95,6 +95,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 			continue;
 		}
 
+		//Get Token
 		if(tokenState) {
 			if(currentChar == TokenSignal) {
 				tokenState = false;
@@ -116,6 +117,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 			continue;
 		}
 
+		//Process Glyph
 	process:
 
 		if(charParser->contains(currentChar)) {

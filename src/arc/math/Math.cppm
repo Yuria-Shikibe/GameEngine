@@ -399,7 +399,13 @@ export namespace Math {
 		return clamp(value, 0.0f, 1.0f);
 	}
 
-	constexpr float clampPositive(const float val) noexcept {
+	template <Concepts::Number T>
+	constexpr T clampPositive(const T val) noexcept {
+		return val > 0 ? val : 0;
+	}
+
+	template <>
+	constexpr float clampPositive<float>(const float val) noexcept {
 		return val > 0.0f ? val : 0.0f;
 	}
 

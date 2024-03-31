@@ -55,6 +55,10 @@ void UI::Elem::setDrawer(ElemDrawer* drawer) {
 	}
 }
 
+void UI::Elem::setEmptyDrawer(){
+	setDrawer(&UI::emptyDrawer);
+}
+
 UI::Group* UI::Elem::setParent(Group* const parent) {
 	Group* former = parent;
 	this->parent  = parent;

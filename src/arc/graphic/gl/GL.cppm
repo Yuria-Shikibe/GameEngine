@@ -5,6 +5,8 @@ module;
 export module GL;
 
 import std;
+import RuntimeException;
+import Geom.Shape.Rect_Orthogonal;
 
 namespace GL {
     GLuint lastProgram{0};
@@ -24,10 +26,9 @@ namespace GL {
     GLuint currentDrawFrameBufferID = 0;
     GLuint currentReadFrameBufferID = 0;
 
-    GLint scissor_x{0};
-    GLint scissor_y{0};
-    GLint scissor_w{0};
-    GLint scissor_h{0};
+    Geom::OrthoRectInt scissorRect{};
+
+    unsigned scissorShrinkActivatedCount{0};
 
     GLenum
         globalBlend_src{}, globalBlend_dst{}, globalBlend_srcAlpha{}, globalBlend_dstAlpha;
@@ -189,13 +190,53 @@ export namespace GL {
         viewport(0, 0, width, height);
     }
 
-    void scissor(const GLint x, const GLint y, const GLint width, const GLint height) {
-        if(x == scissor_x && y == scissor_y && scissor_w == width && scissor_h == height)return;
-        glScissor(x, y, width, height);
-        scissor_x = x;
-        scissor_y = y;
-        scissor_w = width;
-        scissor_h = height;
+    void scissorShrinkBegin(){
+        scissorShrinkActivatedCount++;
+    }
+
+    void scissorShrinkEnd(){
+        if(scissorShrinkActivatedCount){
+            scissorShrinkActivatedCount--;
+        }else{
+            throw ext::IllegalArguments{"Scissor Shrink Deactivated After Count Is Zero!"};
+        }
+    }
+
+    unsigned getSrhinkCount(){
+        return scissorShrinkActivatedCount;
+    }
+
+    Geom::OrthoRectInt getScissorRect(){
+        return scissorRect;
+    }
+
+    void forceSetScissor(const Geom::OrthoRectInt rect){
+        scissorRect = rect;
+        glScissor(
+            rect.getSrcX(),
+            rect.getSrcY(),
+            rect.getWidth(),
+            rect.getHeight());
+    }
+
+    void setScissor(Geom::OrthoRectInt cur) {
+        if(cur == scissorRect)return;
+        if(scissorShrinkActivatedCount){
+            auto& rect_ = scissorRect;
+
+            const Geom::OrthoRectInt rect = scissorRect.getOverlap(cur);
+
+            glScissor(
+                rect.getSrcX(),
+                rect.getSrcY(),
+                rect.getWidth(),
+                rect.getHeight());
+
+            scissorRect = rect;
+        }else{
+            glScissor(cur.getSrcX(), cur.getSrcY(), cur.getWidth(), cur.getHeight());
+            scissorRect = cur;
+        }
     }
 
     void blendFunc(const GLenum src, const GLenum dst) {

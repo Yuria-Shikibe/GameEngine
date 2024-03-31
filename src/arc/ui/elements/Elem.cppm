@@ -200,6 +200,8 @@ export namespace UI {
 
 		void setDrawer(ElemDrawer* drawer);
 
+		void setEmptyDrawer();
+
 		/**
 		 * @return The former parent group
 		 */
@@ -266,7 +268,10 @@ export namespace UI {
 			vec.add(bound.getSrcX(), bound.getSrcY());
 			if(vec == absoluteSrc)return;
 			absoluteSrc.set(vec);
+			calAbsoluteChildren();
 		}
+
+		virtual void calAbsoluteChildren() {}
 
 		[[nodiscard]] Geom::Vec2 getAbsSrc() const{
 			return absoluteSrc;

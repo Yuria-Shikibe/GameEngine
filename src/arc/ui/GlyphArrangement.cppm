@@ -281,6 +281,10 @@ namespace ParserFunctions {
 		void parseWith(const std::shared_ptr<GlyphLayout>& layout, std::string&& str, const float maxWidth = std::numeric_limits<float>::max()) const{
 			bool requiresRelayout = layout->maxWidth != maxWidth;
 
+			if(requiresRelayout){
+				layout->maxWidth = maxWidth;
+			}
+
 			if(layout->lastText != str){
 				requiresRelayout = true;
 				layout->lastText = std::move(str);
@@ -294,6 +298,7 @@ namespace ParserFunctions {
 
 			if(layout->lastText != str){
 				requiresRelayout = true;
+				layout->maxWidth = maxWidth;
 				layout->lastText = str;
 			}
 
@@ -305,7 +310,11 @@ namespace ParserFunctions {
 		}
 
 		void parseWith(const std::shared_ptr<GlyphLayout>& layout, const float maxWidth = std::numeric_limits<float>::max(), const bool forceLayout = false) const{
-			if(layout->maxWidth != maxWidth)parse(layout);
+			if(layout->maxWidth != maxWidth || forceLayout){
+
+				layout->maxWidth = maxWidth;
+				parse(layout);
+			}
 		}
 
 		[[nodiscard]] std::shared_ptr<GlyphLayout> parse(const std::string_view text) const {

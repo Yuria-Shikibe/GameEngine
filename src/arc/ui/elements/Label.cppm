@@ -12,18 +12,24 @@ export namespace UI {
 	class Label : public Elem {
 		using TextView = std::string_view;
 	protected:
-		bool dynamic{false};
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{Font::obtainLayoutPtr()};
 
 		Align::Mode textAlignMode{Align::Mode::top_left};
-
-		TextView text{""};
 		std::function<std::string()> textSource{};
 
 		bool textChanged = false;
-		bool adoptHeight = false;
 
 	public:
+
+		[[nodiscard]] TextView getLastText() const{
+			return glyphLayout->lastText;
+		};
+
+		void setTextAlign(const Align::Mode align){
+			textAlignMode = align;
+			glyphLayout->setAlign(textAlignMode);
+		}
+
 		[[nodiscard]] Label() {
 			setBorder(12.0f);
 		}
@@ -43,7 +49,6 @@ export namespace UI {
 		}
 
 		void setText(const TextView text) {
-			this->text = text;
 			glyphLayout->lastText = text;
 			textSource = nullptr;
 			textUpdated();
@@ -51,8 +56,7 @@ export namespace UI {
 		}
 
 		void setText(const TextView::const_pointer text) {
-			this->text = std::string_view{text};
-			glyphLayout->lastText = text;
+			glyphLayout->lastText = std::string_view{text};
 			textSource = nullptr;
 			textUpdated();
 			changed();
@@ -61,14 +65,9 @@ export namespace UI {
 		void setText(Concepts::Invokable<TextView()> auto&& charSource) {
 			textSource = std::forward<decltype(charSource)>(charSource);
 			glyphLayout->lastText = std::move(textSource());
-			text = glyphLayout->lastText;
 
 			textUpdated();
 			changed();
-		}
-
-		TextView& getView() {
-			return text;
 		}
 
 		void drawContent() const override;
@@ -79,16 +78,17 @@ export namespace UI {
 		}
 
 		void update(float delta) override {
-			if(dynamic){
-				if(textSource){
-					glyphLayout->lastText = std::move(textSource());
-					text = glyphLayout->lastText;
+			if(textSource){
+				std::string cur = std::move(textSource());
+
+				if(cur != getLastText()){
+					glyphLayout->lastText = std::move(cur);
+					textChanged = true;
 				}
 
 				updateTextLayout();
 			}else if(textChanged) {
 				updateTextLayout();
-				textChanged = false;
 			}
 
 			if(layoutChanged) {
@@ -99,11 +99,7 @@ export namespace UI {
 		}
 
 		[[nodiscard]] bool isDynamic() const {
-			return dynamic;
-		}
-
-		void setDynamic(const bool dynamic) {
-			this->dynamic = dynamic;
+			return textSource != nullptr;
 		}
 	};
 }

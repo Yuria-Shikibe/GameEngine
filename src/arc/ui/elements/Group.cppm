@@ -78,16 +78,10 @@ export namespace UI {
 
 		virtual void modifyAddedChildren(Elem* elem);
 
-		virtual void calAbsoluteChildren() {
-			std::for_each(std::execution::par_unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& elem) {
+		void calAbsoluteChildren() override{
+			std::for_each(std::execution::unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& elem) {
 				elem->calAbsoluteSrc(this);
 			});
-		}
-
-		void calAbsoluteSrc(Elem* parent) override {
-			Elem::calAbsoluteSrc(parent);
-
-			calAbsoluteChildren();
 		}
 
 		std::vector<std::unique_ptr<Elem>>* getChildren() override {

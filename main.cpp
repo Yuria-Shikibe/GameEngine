@@ -131,7 +131,6 @@ void setupUITest() {
 				return str;
 			});
 			label.color.mul(0.6f);
-			label.setDynamic(true);
 			label.getInputListener().on<UI::MouseActionPress>([&label](const auto& e){
 				switch(e.buttonID){
 					case Ctrl::RMB :{
@@ -160,13 +159,13 @@ void setupUITest() {
 					});
 				}
 
-			}).fillParentY().setWidth(300);
+			}).fillParent();
 
 			table.add<UI::Table>([](UI::Table& t){
-				t.setDrawer(UI::Styles::empty);
+				t.setEmptyDrawer();
 				t.add<UI::SliderBar>([](UI::SliderBar& s){
 					s.setClampedOnHori();
-				}).fillParentY().wrapX().setWidth(300).lineFeed();
+				}).fillParent().lineFeed();
 				t.add<UI::SliderBar>();
 				t.add<UI::SliderBar>().setSrcScale(0.5f, 0.0f, false).lineFeed();
 			}).fillParent().setPad({.left = 2.0f});
@@ -212,10 +211,17 @@ void setupUITest() {
 			rt.setSize(400, 900);
 			rt.setFillparentX();
 
-			auto t   = new UI::Table{};
-			t->color = Colors::RED;
-			t->name  = "testT";
-			rt.transferElem(t);
+			rt.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+				pane.setItem<UI::Table>([](UI::Table& paneT){
+					paneT.setHeight(600);
+					paneT.setFillparentX();
+
+					paneT.add<UI::Elem>();
+					paneT.lineFeed();
+					paneT.add<UI::Elem>();
+					paneT.add<UI::Elem>();
+				});
+			});
 			// rt->add(new UI::Elem);
 			rt.lineFeed();
 			rt.transferElem(new UI::Elem{});
