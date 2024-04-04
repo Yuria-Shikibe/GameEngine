@@ -14,6 +14,10 @@ export namespace OS{
 
 		}
 
+		virtual void updatePost(float delta){
+
+		}
+
 		ApplicationListener() = default;
 
 		friend bool operator==(const ApplicationListener& lhs, const ApplicationListener& rhs){

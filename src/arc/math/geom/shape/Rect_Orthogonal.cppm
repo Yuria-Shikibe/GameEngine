@@ -72,6 +72,10 @@ export namespace Geom{
 			return {srcX, srcY};
 		}
 
+		[[nodiscard]] constexpr Geom::Vector2D<T> getEnd() const{
+			return {getEndX(), getEndY()};
+		}
+
 		[[nodiscard]] constexpr T* getSrcXRaw(){
 			return &srcX;
 		}
@@ -427,14 +431,16 @@ export namespace Geom{
 			return collector;
 		}
 
-		constexpr void setVert(const T srcX, const T srcY, const T endX, const T endY) {
+		constexpr Rect_Orthogonal& setVert(const T srcX, const T srcY, const T endX, const T endY) {
 			auto [minX, maxX] = Math::minmax(srcX, endX);
 			auto [minY, maxY] = Math::minmax(srcY, endY);
 			this->set(minX, minY, maxX - minX, maxY - minY);
+
+			return *this;
 		}
 
-		constexpr void setVert(const typename Vector2D<T>::PassType src, const typename Vector2D<T>::PassType end) {
-			this->setVert(src.x, src.y, end.x, end.y);
+		constexpr Rect_Orthogonal& setVert(const typename Vector2D<T>::PassType src, const typename Vector2D<T>::PassType end) {
+			return this->setVert(src.x, src.y, end.x, end.y);
 		}
 
 		constexpr void expand(const T x, const T y){

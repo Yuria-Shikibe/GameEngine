@@ -69,19 +69,23 @@ export namespace Test{
 
 			Core::batchGroup.batchOverlay->setProjection(&Core::camera->getWorldToScreen());
 
-			int w, h;
-			glfwGetWindowSize(Core::mainWindow, &w, &h);
-			Core::uiRoot = new UI::Root{};
-			Core::renderer = new Core::Renderer{static_cast<unsigned>(w), static_cast<unsigned>(h)};
+			{
+				int w, h;
+			   glfwGetWindowSize(Core::mainWindow, &w, &h);
+			   Core::uiRoot = new UI::Root{};
+			   Core::renderer = new Core::Renderer{static_cast<unsigned>(w), static_cast<unsigned>(h)};
 
-			Core::uiRoot->resize(w, h);
-			Core::camera->resize(w, h);
+			   Core::uiRoot->resize(w, h);
+			   Core::camera->resize(w, h);
+			}
 
 			Core::renderer->registerSynchronizedResizableObject(Core::camera);
 			Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
 
 			Ctrl::registerCommands(Core::input);
 			OS::registerListener(Core::uiRoot);
+
+			Core::input->registerSubInput(Core::uiRoot->uiInput.get());
 		});
 
 		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);

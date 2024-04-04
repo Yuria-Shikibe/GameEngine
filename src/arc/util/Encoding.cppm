@@ -44,6 +44,23 @@ export namespace ext{
 		return buffer;
 	}
 
+	template <typename ToType, typename FromType>
+	void convertTo(FromType charCode, MultiByteBuffer<ToType> buffer){
+#ifdef WIN_SYS
+		int failed{};
+
+		WideCharToMultiByte(
+			CP_UTF8, 0,
+			reinterpret_cast<wchar_t*>(&charCode), 1,
+			reinterpret_cast<char*>(buffer.data()), buffer.size() * sizeof(ToType),
+			nullptr, &failed);
+
+		if(failed){
+			//TODO warning or exception here
+		}
+#endif
+	}
+
 	template <typename FromType, typename ToType>
 	std::basic_string<ToType> convertTo(const std::basic_string_view<FromType> src){
 		std::basic_string<ToType> str{};
@@ -80,21 +97,60 @@ export namespace ext{
 		return to;
 	}
 
-	constexpr int getCharCodeLength(const char code){
+	constexpr bool isUnicodeHead(const char code){
+		constexpr char Mask = 0b0000'0001;
+
+		// 0b'10...
+		if((code >> 7 & Mask) == 1 && (code >> 6 & Mask) == 0){
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * @brief Warning: this function assume that inItr is always derreferenceable
+	 * @param inItr Search Pos
+	 */
+	std::string::iterator gotoUnicodeHead(std::string::iterator inItr){
+		while(!isUnicodeHead(inItr.operator*())){
+			--inItr;
+		}
+
+		return inItr;
+	}
+
+	/**
+	 * @brief
+	 * @param code Unicode Head
+	 * @return 0 if this code is not a unicode head
+	 */
+	template <std::integral Ret = unsigned>
+	constexpr Ret getUnicodeLength(const char code){
 		//TODO check if this code is really a unicode character
 		constexpr char Mask = 0b0000'0001;
-		if(code >> 7 & Mask){
-			if(code >> 6 & Mask){
-				if(code >> 5 & Mask){
-					if(code >> 4 & Mask){
+
+		if(code >> 7 & Mask){ //0b'1...
+			if(code >> 6 & Mask){ //0b'11...
+				if(code >> 5 & Mask){ //0b'111...
+					if(code >> 4 & Mask){ //0b'1111...
+						if(code >> 3 & Mask){
+							return 0; //0b'11111... ,Undefined
+						}
+						//0b'11110... ,4
 						return 4;
 					}
+					//0b'1110... ,3
 					return 3;
 				}
+				//0b'110... ,2
 				return 2;
 			}
-			return 1;
+			//0b'10... ,Not Head
+			return 0;
 		}
+
+		//0b'0... ,ASCII
 		return 1;
 	}
 }
@@ -102,6 +158,6 @@ export namespace ext{
 export std::ostream& operator<<(std::ostream& stream, const ext::CharBuffer buffer){
 	// stream.write(buffer.data(), 2);
 
-	stream << std::string{buffer.data()};
+	stream << std::string{buffer.data(), ext::getUnicodeLength(buffer.front())};
 	return stream;
 }

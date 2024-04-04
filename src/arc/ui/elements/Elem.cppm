@@ -29,6 +29,7 @@ export namespace UI {
 
 	class Elem {
 	public:
+		int PointCheck{0};
 		virtual ~Elem();
 
 		// ReSharper disable once CppFunctionIsNotImplemented
@@ -186,9 +187,9 @@ export namespace UI {
 			this->touchbility = flag;
 		}
 
-		[[nodiscard]] constexpr float getBorderWidth() const {return border.getMarginWidth();}
+		[[nodiscard]] constexpr float getBorderWidth() const {return border.getWidth();}
 
-		[[nodiscard]] constexpr float getBorderHeight() const {return border.getMarginHeight();}
+		[[nodiscard]] constexpr float getBorderHeight() const {return border.getHeight();}
 
 		[[nodiscard]] constexpr float getValidWidth() const{return Math::clampPositive(getWidth() - getBorderWidth());}
 
@@ -359,7 +360,7 @@ export namespace UI {
 
 		[[nodiscard]] constexpr float getHeight() const {return bound.getHeight();}
 
-		[[nodiscard]] Align::Spacing getMargin() const{ return border; }
+		[[nodiscard]] Align::Spacing getBorder() const{ return border; }
 
 		void setBorderZero() {setBorder(0.0f);}
 
@@ -376,6 +377,8 @@ export namespace UI {
 				changed();
 			}
 		}
+
+		bool keyDown(const int code, const int action, const int mode) const;
 
 	protected:
 		virtual void childrenCheck(const Elem* ptr) {

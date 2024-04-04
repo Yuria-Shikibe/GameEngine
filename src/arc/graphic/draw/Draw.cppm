@@ -20,13 +20,13 @@ export import Geom.Transform;
 export import Geom.Shape.RectBox;
 export import Geom.Shape.Rect_Orthogonal;
 export import Geom.Matrix3D;
-
+//
 export import Graphic.Color;
-
+//
 import Math;
 import std;
 import RuntimeException;
-
+//
 import Core.BatchGroup;
 
 namespace Graphic::Draw{
@@ -108,12 +108,7 @@ export namespace Graphic{
 	constexpr auto BatchWorld = &Core::BatchGroup::batchWorld;
 	constexpr auto DefBatch = BatchOverlay;
 
-	extern Core::BatchGroup& batchGroup;
-
-	template <BatchPtr Core::BatchGroup::* batchPtr>
-	BatchPtr& getBatch(){
-		return batchGroup.*batchPtr;
-	}
+	BatchPtr& getBatch(BatchPtr Core::BatchGroup::* batchPtr);
 
 	template <BatchPtr Core::BatchGroup::* batchPtr>
 	struct VertexPasser;
@@ -128,17 +123,17 @@ export namespace Graphic{
 
 		static void vert(const Texture* texture, const auto... args){
 			World::vert(vertices, args...);
-			getBatch<batchPtr>()->post(texture, vertices, 0, size);
+			getBatch(batchPtr)->post(texture, vertices, 0, size);
 		}
 
 		static void vert_monochromeMix(const Texture* texture, const auto... args){
 			World::vert_monochromeMix(vertices, args...);
-			getBatch<batchPtr>()->post(texture, vertices, 0, size);
+			getBatch(batchPtr)->post(texture, vertices, 0, size);
 		}
 
 		static void vert_monochromeAll(const Texture* texture, const auto... args){
 			World::vert_monochromeAll(vertices, args...);
-			getBatch<batchPtr>()->post(texture, vertices, 0, size);
+			getBatch(batchPtr)->post(texture, vertices, 0, size);
 		}
 	};
 
@@ -152,17 +147,17 @@ export namespace Graphic{
 
 		static void vert(const Texture* texture, const auto... args){
 			Overlay::vert(vertices, args...);
-			getBatch<batchPtr>()->post(texture, vertices, 0, size);
+			getBatch(batchPtr)->post(texture, vertices, 0, size);
 		}
 
 		static void vert_monochromeMix(const Texture* texture, const auto... args){
 			Overlay::vert_monochromeMix(vertices, args...);
-			getBatch<batchPtr>()->post(texture, vertices, 0, size);
+			getBatch(batchPtr)->post(texture, vertices, 0, size);
 		}
 
 		static void vert_monochromeAll(const Texture* texture, const auto... args){
 			Overlay::vert_monochromeAll(vertices, args...);
-			getBatch<batchPtr>()->post(texture, vertices, 0, size);
+			getBatch(batchPtr)->post(texture, vertices, 0, size);
 		}
 	};
 
@@ -261,39 +256,39 @@ export namespace Graphic{
 	namespace Batch{
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		const Matrix3D* getPorj(){
-			return getBatch<batchPtr>()->getProjection();
+			return getBatch(batchPtr)->getProjection();
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void beginPorj(const Matrix3D& mat){
-			getBatch<batchPtr>()->beginTempProjection(mat);
+			getBatch(batchPtr)->beginTempProjection(mat);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void endPorj(){
-			getBatch<batchPtr>()->endTempProjection();
+			getBatch(batchPtr)->endTempProjection();
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void blend(const GL::Blending& blending = Blendings::Normal){
-			getBatch<batchPtr>()->switchBlending(blending);
+			getBatch(batchPtr)->switchBlending(blending);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void flush(){
-			getBatch<batchPtr>()->flush();
+			getBatch(batchPtr)->flush();
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void shader(Shader* shader, const bool flushContext){
 			if(flushContext) flush<batchPtr>();
 
-			getBatch<batchPtr>()->setCustomShader(shader);
+			getBatch(batchPtr)->setCustomShader(shader);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void shader(const bool flushContext = true){
-			getBatch<batchPtr>()->clearCustomShader(flushContext);
+			getBatch(batchPtr)->clearCustomShader(flushContext);
 		}
 	}
 
@@ -357,6 +352,15 @@ export namespace Graphic{
 			}else{
 				contextColor.set(color.r, color.g, color.b);
 			}
+		}
+
+		template <bool applyAlpha = true>
+		void color(const Color color, float alpha){
+			contextColor.set(color.r, color.g, color.b, alpha);
+		}
+
+		void tint(const Color color = Colors::WHITE, const float alpha = 0.0f){
+			contextColor.set(color.r, color.g, color.b, alpha);
 		}
 
 		template <bool applyAlpha = true>
@@ -542,6 +546,11 @@ export namespace Graphic{
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rectOrtho(const TextureRegion* region, const Geom::OrthoRectFloat rect){
 			rectOrtho<batchPtr>(region, rect.getSrcX(), rect.getSrcY(), rect.getWidth(), rect.getHeight());
+		}
+
+		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+		void rectPoint(const Geom::Vec2 pos, const float size){
+			rectOrtho<batchPtr>(contextTexture, pos.x - size * 0.5f, pos.y - size * 0.5f, size, size);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>

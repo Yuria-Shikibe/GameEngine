@@ -9,8 +9,6 @@ import Geom.Vector3D;
 
 
 export namespace Graphic{
-	using std::max;
-	using std::min;
 
 	/**
 	 * \brief  32Bits for 4 u byte[0, 255]
@@ -83,12 +81,6 @@ export namespace Graphic{
 
 		friend std::ostream& operator<<(std::ostream& os, const Color& obj){
 			os << std::setw(8) << std::setfill('0') << std::hex << (static_cast<ColorBits>(255 * obj.r) << 24 | static_cast<ColorBits>(255 * obj.g) << 16 | static_cast<ColorBits>(255 * obj.b) << 8 | static_cast<ColorBits>(255 * obj.a));
-
-			return os;
-		}
-
-		friend std::wostream& operator<<(std::wostream& os, const Color& obj){
-			os << std::setw(8) << std::setfill<wchar_t>('0') << std::hex << (static_cast<ColorBits>(255 * obj.r) << 24 | static_cast<ColorBits>(255 * obj.g) << 16 | static_cast<ColorBits>(255 * obj.b) << 8 | static_cast<ColorBits>(255 * obj.a));
 
 			return os;
 		}
@@ -651,8 +643,8 @@ export namespace Graphic{
 		[[nodiscard]] constexpr HSVType toHsv() const{
 			HSVType hsv = {};
 
-			const float maxV = max(max(r, g), b);
-			const float minV = min(min(r, g), b);
+			const float maxV = Math::max(Math::max(r, g), b);
+			const float minV = Math::min(Math::min(r, g), b);
 			if (const float range = maxV - minV; range == 0) {
 				hsv[0] = 0;
 			}
@@ -686,7 +678,7 @@ export namespace Graphic{
 			s /= 100.0f;
 			v /= 100.0f;
 			h /= 60.0f;
-			const int i = Math::floor(h);
+			const int i = Math::floorLEqual(h);
 			const float f = h - static_cast<float>(i);
 			const float p = v * (1 - s);
 			const float q = v * (1 - s * f);

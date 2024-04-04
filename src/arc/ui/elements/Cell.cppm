@@ -163,7 +163,7 @@ export namespace UI {
 
 		LayoutCell& expandY(const bool val = true) {
 			val ? wrapY() : fillParentY();
-			modifyParentY = true;
+			modifyParentY = val;
 			return *this;
 		}
 
@@ -270,11 +270,11 @@ export namespace UI {
 		[[nodiscard]] float getHoriScale() const {return scale.right - scale.left;}
 		[[nodiscard]] float getVertScale() const {return scale.top - scale.bottom;}
 
-		[[nodiscard]] float getMarginHori() const {return margin.getMarginWidth();}
-		[[nodiscard]] float getMarginVert() const {return margin.getMarginHeight();}
+		[[nodiscard]] float getMarginHori() const {return margin.getWidth();}
+		[[nodiscard]] float getMarginVert() const {return margin.getHeight();}
 
-		[[nodiscard]] float getPadHori() const {return pad.getMarginWidth();}
-		[[nodiscard]] float getPadVert() const {return pad.getMarginHeight();}
+		[[nodiscard]] float getPadHori() const {return pad.getWidth();}
+		[[nodiscard]] float getPadVert() const {return pad.getHeight();}
 
 		void applySizeToItem(){ // NOLINT(*-make-member-function-const)
 			const float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getWidth());
@@ -343,8 +343,8 @@ export namespace UI {
 			const bool left   = xSign == 1;
 			const bool bottom = ySign == 1;
 
-			const float xMove = xSign * ((left   ? (pad.left + margin.left + parent->getMargin().left) : (pad.right + margin.right + parent->getMargin().right)) + getCellWidth() * scale.left);
-			const float yMove = ySign * ((bottom ? (pad.bottom + margin.bottom + parent->getMargin().bottom) : (pad.top + margin.top + parent->getMargin().top)) + getCellHeight() * scale.bottom);
+			const float xMove = xSign * ((left   ? (pad.left + margin.left + parent->getBorder().left) : (pad.right + margin.right + parent->getBorder().right)) + getCellWidth() * scale.left);
+			const float yMove = ySign * ((bottom ? (pad.bottom + margin.bottom + parent->getBorder().bottom) : (pad.top + margin.top + parent->getBorder().top)) + getCellHeight() * scale.bottom);
 
 			item->getBoundRef().move(xMove, yMove);
 

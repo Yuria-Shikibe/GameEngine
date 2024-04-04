@@ -88,6 +88,7 @@ import UI.ElemDrawer;
 import UI.Styles;
 import UI.Button;
 import UI.SliderBar;
+import UI.InputArea;
 
 
 import Geom.Shape.RectBox;
@@ -125,88 +126,82 @@ void setupUITest() {
 
 	HUD->relativeLayoutFormat = false;
 	HUD->setBorderZero();
-	HUD->setDrawer(UI::Styles::empty); {
-		HUD->add<UI::Label>([](UI::Label& label){
-			label.setText([]{
-				auto str = sstream.str();
-				sstream.str("");
-				return str;
+	HUD->setDrawer(UI::Styles::empty);
+
+
+	HUD->add<UI::Table>([](UI::Table& label){
+			label.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+				pane.setItem<UI::InputArea>([](UI::InputArea& area){
+					area.usingGlyphWidth = true;
+					area.usingGlyphHeight = true;
+					area.setText("Test Test TTT\n123123 123@@vasdasdasdasdasd\nasdasdasdasd\n\n123123123");
+					//area.setFillparentY();
+				});
+				// pane.setItem<UI::Elem>([](UI::Elem& area){
+				// 	area.setWidth(1000);
+				// 	area.setFillparentY();
+				// });
 			});
-			label.color.mul(0.6f);
-			label.getInputListener().on<UI::MouseActionPress>([&label](const auto& e){
-				switch(e.buttonID){
-					case Ctrl::RMB :{
-					   label.color = Colors::RED;
-					   label.color.mul(0.6f);
-					   break;
-					}
-					default : label.color.lerp(Colors::BLUE, 0.1f);
-				}
-			});
-		})
-        .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
-        .setMargin(0, 10, 0, 10);
+	   })
+	   .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
+	   .setMargin(0, 10, 0, 10);
 
 
-		HUD->add<UI::Table>([](UI::Table& table){
-			table.add<UI::Table>([](UI::Table& t){
-				t.selfMaskOpacity = 0.0f;
-				t.setBorderZero();
-				t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
-				for(int i = 0; i < 8; ++i){
-					t.add<UI::Button>([i](UI::Button& button){
-						button.setCall([i](bool){
-							std::cout << i << std::endl;
-						});
-					});
-				}
+	HUD->add<UI::Table>([](UI::Table& table){
+		   table.add<UI::Table>([](UI::Table& t){
+			   t.selfMaskOpacity = 0.0f;
+			   t.setBorderZero();
+			   t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
+			   for(int i = 0; i < 8; ++i){
+				   t.add<UI::Button>([i](UI::Button& button){
+					   button.setCall([i](bool){
+						   std::cout << i << std::endl;
+					   });
+				   });
+			   }
+		   }).fillParent();
 
-			}).fillParent();
-
-			table.add<UI::Table>([](UI::Table& t){
-				t.setEmptyDrawer();
-				t.add<UI::SliderBar>([](UI::SliderBar& s){
-					s.setClampedOnHori();
-				}).fillParent().lineFeed();
-				t.add<UI::SliderBar>();
-				t.add<UI::SliderBar>().setSrcScale(0.5f, 0.0f, false).lineFeed();
-			}).fillParent().setPad({.left = 2.0f});
-
-		})
-		   .setAlign(Align::Mode::top_left)
-		   .setSizeScale(0.4f, 0.08f)
-		   .setSrcScale(0.25f, 0.0f)
-		   .setMargin(10, 0, 0, 0);
+		   table.add<UI::Table>([](UI::Table& t){
+			   t.setEmptyDrawer();
+			   t.add<UI::SliderBar>([](UI::SliderBar& s){
+				   s.setClampedOnHori();
+			   }).fillParent().lineFeed();
+			   t.add<UI::SliderBar>();
+			   t.add<UI::SliderBar>().setSrcScale(0.5f, 0.0f, false).lineFeed();
+		   }).fillParent().setPad({.left = 2.0f});
+	   })
+	   .setAlign(Align::Mode::top_left)
+	   .setSizeScale(0.4f, 0.08f)
+	   .setSrcScale(0.25f, 0.0f)
+	   .setMargin(10, 0, 0, 0);
 
 
-		HUD->transferElem(new UI::Table{})
-		   .setAlign(Align::Mode::top_left)
-		   .setSizeScale(0.1f, 0.6f)
-		   .setSrcScale(0.0f, 0.2f)
-		   .setMargin(0, 0, 10, 10);
+	HUD->transferElem(new UI::Table{})
+	   .setAlign(Align::Mode::top_left)
+	   .setSizeScale(0.1f, 0.6f)
+	   .setSrcScale(0.0f, 0.2f)
+	   .setMargin(0, 0, 10, 10);
 
-		{
-			auto& cell2 = HUD->add<UI::Table>([](UI::Table& table){
-				table.add<UI::Elem>();
-				table.lineFeed();
-				table.add<UI::Elem>();
-				table.add<UI::Elem>();
-			})
-			.setAlign(Align::Mode::bottom_left)
-			.setSizeScale(0.25f, 0.2f)
-			.setMargin(0, 10, 10, 10);
 
-			Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Continuous, [&]{
-				cell2.setSizeScale(cell2.getHoriScale() + 0.05f, 0.2f);
-			});
-		}
+	HUD->add<UI::Table>([](UI::Table& table){
+		   table.add<UI::Elem>();
+		   table.lineFeed();
+		   table.add<UI::Elem>();
+		   table.add<UI::Elem>();
+	   })
+	   .setAlign(Align::Mode::bottom_left)
+	   .setSizeScale(0.25f, 0.2f)
+	   .setMargin(0, 10, 10, 10);
 
-		HUD->transferElem(new UI::Table{})
-		   .setAlign(Align::Mode::bottom_left)
-		   .setSizeScale(0.075f, 0.2f)
-		   .setSrcScale(0.25f, 0.0f)
-		   .setMargin(10, 0, 10, 10);
-	} {
+
+	HUD->transferElem(new UI::Table{})
+	   .setAlign(Align::Mode::bottom_left)
+	   .setSizeScale(0.075f, 0.2f)
+	   .setSrcScale(0.25f, 0.0f)
+	   .setMargin(10, 0, 10, 10);
+
+
+	{
 		auto pane = new UI::ScrollPane{};
 
 		pane->setItem<UI::Table>([](UI::Table& rt){
@@ -231,22 +226,34 @@ void setupUITest() {
 		});
 
 		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
-	} {
-		HUD->transferElem(new UI::Table{})
-		   .setAlign(Align::top_right)
-		   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
-		   .setMargin(10, 0, 10, 0);
-		//
-		HUD->transferElem(new UI::Table{})
-		   .setAlign(Align::top_right)
-		   .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
-		   .setMargin(10, 10, 10, 0);
-		//
-		HUD->transferElem(new UI::Table{})
-		   .setAlign(Align::Mode::bottom_right)
-		   .setSizeScale(0.3f, 0.15f)
-		   .setMargin(10, 0, 10, 0);
 	}
+
+	HUD->transferElem(new UI::Table{})
+	   .setAlign(Align::top_right)
+	   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
+	   .setMargin(10, 0, 10, 0);
+	//
+	HUD->transferElem(new UI::Table{})
+	   .setAlign(Align::top_right)
+	   .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
+	   .setMargin(10, 10, 10, 0);
+	//
+	HUD->add<UI::Table>([](UI::Table& table){
+		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+			   // pane.setItem<UI::Table>([](UI::Table& paneT){
+			   // 	paneT.add<UI::InputArea>([](UI::InputArea& area){
+			   // 		area.usingGlyphWidth = area.usingGlyphHeight = true;
+			   // 		area.setText("Test Test TTT\n123123 123@@vasdasd\nasdasdasdasd");
+			   // 	}).expand();
+			   // });
+
+			   pane.setFillparent();
+		   }).fillParent();
+	   })
+	   .setAlign(Align::Mode::bottom_right)
+	   .setSizeScale(0.3f, 0.25f)
+	   .setMargin(10, 0, 10, 0);
+
 }
 
 void setupCtrl(){
@@ -256,7 +263,7 @@ void setupCtrl(){
 	// 	effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
 	// });
 
-	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, [] {
+	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Release, [] {
 		static ext::Timer<> timer{};
 
 		timer.run(12, OS::updateDeltaTick(), []{

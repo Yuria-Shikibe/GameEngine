@@ -6,45 +6,60 @@ import Graphic.Draw;
 import RuntimeException;
 import Math;
 
+
+const Font::GlyphDrawData* Font::GlyphLayout::find(const Geom::Point2U layoutPos) const{
+	auto itr = std::ranges::lower_bound(glyphs, layoutPos,
+		[](const Geom::Point2U pos, const Geom::Point2U inputPos) -> bool {
+		return (pos.y == inputPos.y && pos.x < inputPos.x) || pos.y < inputPos.y;
+	}, &GlyphDrawData::layoutPos);
+
+	if(itr != glyphs.end())return &itr.operator*();
+	if(itr != glyphs.begin())return &(--itr).operator*();
+	return nullptr;
+}
+
 void Font::GlyphLayout::render() const {
-	if(count <= 0 || this->lastText.empty()) return;
-	for (auto& glyph : this->toRender | std::ranges::views::take(count)){
-		Graphic::Draw::vert_monochromeAll(
-			glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
-			glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y,
-			glyph.region->u0,glyph.region->v0,
-			glyph.u0 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y,
-			glyph.region->u0,glyph.region->v1,
-			glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y,
-			glyph.region->u1,glyph.region->v1,
-			glyph.u1 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y,
-			glyph.region->u1,glyph.region->v0
+	if(empty() || this->lastText.empty()) return;
+	const Geom::Vec2 off = bound.getSrc() + offset;
+	for (auto& glyph : glyphs){
+
+		Graphic::Draw::color(glyph.fontColor);
+		Graphic::Draw::quad(
+			glyph.region,
+			glyph.v00() + off,
+			glyph.v10() + off,
+			glyph.v11() + off,
+			glyph.v01() + off
 		);
+
+		Graphic::Draw::color(Graphic::Colors::RED_DUSK);
+		Graphic::Draw::rectPoint(glyph.v10() + off, 4);
+		Graphic::Draw::tint(Graphic::Colors::YELLOW, .35f);
+		Graphic::Draw::Line::setLineStroke(1.25f);
+		Graphic::Draw::Line::rectOrtho(glyph.getBound().move(off));
 	}
 }
 
 void Font::GlyphLayout::render(float progress) const {
-	if(count <= 0 || this->lastText.empty()) return;
+	if(empty() || this->lastText.empty()) return;
 	progress = Math::clamp(progress);
-	for (auto& glyph : this->toRender | std::ranges::views::take(static_cast<size_t>(progress * static_cast<float>(count)))){
-		Graphic::Draw::vert_monochromeAll(
-			glyph.region->getData(), glyph.fontColor, Graphic::Draw::contextMixColor,
-			glyph.u0 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u0,
-			glyph.region->v0,
-			glyph.u0 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u0,
-			glyph.region->v1,
-			glyph.u1 + bound.getSrcX() + offset.x, glyph.v1 + bound.getSrcY() + offset.y, glyph.region->u1,
-			glyph.region->v1,
-			glyph.u1 + bound.getSrcX() + offset.x, glyph.v0 + bound.getSrcY() + offset.y, glyph.region->u1,
-			glyph.region->v0
+
+	const Geom::Vec2 off = bound.getSrc() + offset;
+	for (auto& glyph : this->glyphs | std::ranges::views::take(static_cast<size_t>(progress * static_cast<float>(glyphs.size())))){
+		Graphic::Draw::color(glyph.fontColor);
+		Graphic::Draw::quad(
+			glyph.region,
+			glyph.v00() + off,
+			glyph.v10() + off,
+			glyph.v11() + off,
+			glyph.v01() + off
 		);
 	}
 }
 
-Font::TypesettingTable::TypesettingTable(const FontFlags* const font): defaultFont(font), currentFont(font),
+Font::TypesettingContext::TypesettingContext(const FontFlags* const font): defaultFont(font), currentFont(font),
 	fallbackFont(font) {
 	if(!currentFont) throw ext::NullPointerException{};
-	spaceSpaceing    = currentFont->data->spaceSpacing;
 	lineSpacing      = currentFont->data->lineSpacingMin * 1.8f;
 	paragraphSpacing = lineSpacing * 1.1f;
 }
@@ -68,21 +83,24 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 
 	context.reset();
 	layout->clear();
-	auto& datas = layout->toRender;
-	datas.resize(std::max(layout->lastText.size(), datas.capacity()));
+
+	//The glyphs must have no address move during the parse
+	auto& datas = layout->getGlyphs();
+	datas.reserve(layout->lastText.size());
 
 	const Font::CharData* lastCharData = &Font::emptyCharData;
-	bool tokenState                              = false;
-	size_t tokenBegin                            = npos;
-	Geom::Vec2 currentPosition{ 0, -context.lineSpacing };
+	bool tokenState = false;
+	size_t tokenBegin = npos;
 
+	layout->bound.set(0, 0, 0, 0);
 	if(layout->lastText.empty()) {
-		layout->bound.set(0, 0, 0, 0);
 		return;
 	}
 
+	Geom::Vec2 currentPosition{ 0, -context.lineSpacing };
+
 	const auto totalSize = layout->lastText.size();
-	int count = 0;
+
 	for(int index = 0; index < totalSize; ++index) {
 		const char currentChar = layout->lastText.at(index);
 		//Token Check
@@ -118,93 +136,63 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 		//Process Glyph
 	process:
 
-		if(charParser->contains(currentChar)) {
-			charParser->parse(currentChar, { context, currentPosition, lastCharData, *layout });
-			continue;
-		}
-
 		//TODO check currentChar to adapt to UTF characters
 		unsigned int charCode = static_cast<unsigned char>(currentChar);
 		if(
-			const int charCodeLength = ext::getCharCodeLength(currentChar);
+			const int charCodeLength = ext::getUnicodeLength<int>(currentChar);
 			charCodeLength > 1 && index + charCodeLength <= totalSize
 		){
-			charCode = *reinterpret_cast<unsigned*>(&layout->lastText.at(index));
+			charCode = 0;
+			for(int i = 0; i < charCodeLength; ++i){
+				const unsigned int curByte = static_cast<unsigned char>(layout->lastText.at(index + i)) & 0xff;
+				charCode |= curByte << 8 * (charCodeLength - i - 1);
+			}
+			index += charCodeLength - 1;
 		}
 
-		// datas.emplace_back();
 		const auto* charData = context.currentFont->getCharData(charCode);
+		const bool hasCharToken = charParser->contains(charCode);
 
-		if(charData) {
-			auto& data = datas.at(count++);
-
-			if(currentPosition.x + normalize(lastCharData->matrices.width + lastCharData->matrices.horiBearingX) *
-			   context.currentScale > layout->maxWidth) {
-				currentPosition.x = layout->maxWidth - normalize(lastCharData->matrices.horiAdvance) * context.
-				                    currentScale;
-				ParserFunctions::endLine({ context, currentPosition, lastCharData, *layout });
+		if(hasCharToken){
+			if(charParser->shouldNotContinue(charCode)){
+				lastCharData = charData;
+				ParserFunctions::pushData(charCode, index, charData, { context, currentPosition, lastCharData, *layout });
+				charParser->parse(charCode, { context, currentPosition, lastCharData, *layout });
+			}else{
+				charParser->parse(charCode, { context, currentPosition, lastCharData, *layout });
 			}
-
+		}else{
 			lastCharData = charData;
-			data.region  = &charData->region;
-			if(!data.region) {
-				throw ext::NullPointerException{ "Null TextureRegion" };
-			}
-			data.fontColor = context.currentColor;
-
-			Geom::OrthoRectFloat box = charData->charBox.as<float>();
-
-
-			box.setSrc(
-				normalize(charData->matrices.horiBearingX) * context.currentScale,
-				normalize(charData->matrices.horiBearingY - charData->matrices.height) * context.currentScale
-			);
-
-			box.move(currentPosition.getX(), currentPosition.getY());
-			box.scl(context.currentScale, context.currentScale);
-
-			data.u0 = box.getSrcX() + context.offset.x * context.currentScale;
-			data.v0 = box.getSrcY() + context.offset.y * context.currentScale;
-			data.u1 = box.getEndX() + context.offset.x * context.currentScale;
-			data.v1 = box.getEndY() + context.offset.y * context.currentScale;
-
-			context.currentLineData.push_back(&data);
-
-			currentPosition.add(normalize(charData->matrices.horiAdvance) * context.currentScale, 0);
+			ParserFunctions::pushData(charCode, index, charData, { context, currentPosition, lastCharData, *layout });
 		}
 	}
 
-	layout->count = count;
+	if(datas.empty())return;
 
 	if(layout->lastText.back() != '\n' && charParser->contains('\n')) {
+		ParserFunctions::pushData(0, static_cast<int>(totalSize), context.currentFont->getCharData('\n'), { context, currentPosition, lastCharData, *layout });
 		charParser->parse('\n', { context, currentPosition, lastCharData, *layout });
 	}
 
 	layout->bound.addSize(0, -2 * context.currentLineBound.getHeight());
 
-	layout->bound.setLargerWidth(currentPosition.getX() + normalize(lastCharData->matrices.horiAdvance));
-	layout->bound.setWidth(std::min(layout->bound.getWidth(), layout->maxWidth));
+	layout->bound.setShorterWidth(layout->maxWidth);
 
-	//TODO should this really work?
-	float offsetY = layout->bound.getHeight() + context.currentLineBound.getHeight() * 0.255f;
+	float offsetY = layout->bound.getHeight() + layout->getGlyphs().front().getBelowBaseHeight();
 
-	std::for_each_n(std::execution::par_unseq, datas.begin(), layout->lastText.size(), [offsetY](GlyphVertData& data) {
+	std::for_each(std::execution::unseq, datas.begin(), datas.end(), [offsetY](GlyphDrawData& data) {
 		data.moveY(offsetY);
 	});
 }
 
 void Font::initParser(const FontFlags* const defFont) {
-	glyphParser = new GlyphParser{ defFont };
+	defGlyphParser = std::make_unique<GlyphParser>(defFont);
+	forwardParser = std::make_unique<GlyphParser>(defFont);
 
-	glyphParser->charParser->modifier[' '] = [](const ModifierableData& data) {
-		data.cursorPos.add(data.context.spaceSpaceing * data.context.currentScale, 0);
-	};
+	defGlyphParser->charParser->registerDefParser();
+	forwardParser->charParser->registerDefParser();
 
-	glyphParser->charParser->modifier['\n'] = [](const ModifierableData& data) {
-		ParserFunctions::endLine(data);
-	};
-
-	glyphParser->tokenParser->modifier["color"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["color"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const auto sub = command.substr(1, command.size() - 2); sub.empty()) {
 				data.context.currentColor = data.context.fallbackColor;
@@ -220,14 +208,14 @@ void Font::initParser(const FontFlags* const defFont) {
 		}
 	};
 
-	glyphParser->tokenParser->modifier["font"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["font"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const Font::TextView sub = command.substr(1, command.size() - 2); sub.empty()) {
 				data.context.set(data.context.fallbackFont);
 			} else {
 				data.context.fallbackFont = data.context.currentFont;
 				try {
-					data.context.currentFont = glyphParser->fontLib->obtain(std::stoi(static_cast<Font::TextString>(sub)));
+					data.context.currentFont = defGlyphParser->fontLib->obtain(std::stoi(static_cast<Font::TextString>(sub)));
 				} catch(std::invalid_argument& e) {
 					//TODO throw maybe ?
 				}
@@ -241,25 +229,25 @@ void Font::initParser(const FontFlags* const defFont) {
 
 		if(data.context.currentFont != data.context.fallbackFont) {
 			data.context.additionalYOffset = std::max(
-				static_cast<float>(data.context.currentFont->height) - static_cast<float>(data.context.fallbackFont->
-					height), data.context.additionalYOffset);
+				static_cast<float>(data.context.currentFont->size) - static_cast<float>(data.context.fallbackFont->
+					size), data.context.additionalYOffset);
 			data.context.set(data.context.currentFont);
 			data.context.currentLineBound.setLargerHeight(data.context.lineSpacing);
 		}
 	};
 
 	//igl for Ignore Line, used for a line for token.
-	glyphParser->tokenParser->modifier["ig"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["ig"] = [](const Font::TextView command, const ModifierableData& data) {
 		data.context.endlineOperation.push_back([](const ModifierableData& d) {
 			d.context.currentLineBound.setHeight(0);
 		});
 	};
 
-	glyphParser->tokenParser->modifier["tab"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["tab"] = [](const Font::TextView command, const ModifierableData& data) {
 		data.cursorPos.add(30, 0);
 	};
 
-	glyphParser->tokenParser->modifier["scl"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["scl"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const Font::TextView sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float scl = 1.0f;
@@ -277,7 +265,7 @@ void Font::initParser(const FontFlags* const defFont) {
 		ParserFunctions::resetScl(data);
 	};
 
-	glyphParser->tokenParser->modifier["off"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["off"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const Font::TextView sub = command.substr(1, command.size() - 2); sub.empty()) {
 				data.context.offset.setZero();
@@ -310,7 +298,7 @@ void Font::initParser(const FontFlags* const defFont) {
 		}
 	};
 
-	glyphParser->tokenParser->modifier["alp"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["alp"] = [](const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const auto sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float alpha = 1.0f;
@@ -326,39 +314,39 @@ void Font::initParser(const FontFlags* const defFont) {
 	};
 
 	//SuperScript Begin
-	glyphParser->tokenParser->modifier["sut"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["sut"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::setScl(data, 0.5f);
-		data.context.offset.set(-normalize(data.charData->matrices.horiAdvance) * 0.05f,
-		                        normalize(data.charData->matrices.horiBearingY + 45));
+		data.context.offset.set(-normalizeLen(data.charData->matrices.horiAdvance) * 0.05f,
+		                        normalizeLen(data.charData->matrices.horiBearingY + 45));
 	};
 
 	//SuperScript End
-	glyphParser->tokenParser->modifier["\\sut"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["\\sut"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
 	//SubScript Begin
-	glyphParser->tokenParser->modifier["sbt"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["sbt"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::setScl(data, 0.5f);
-		data.context.offset.set(-normalize(data.charData->matrices.horiAdvance) * 0.05f,
-		                        -normalize(
+		data.context.offset.set(-normalizeLen(data.charData->matrices.horiAdvance) * 0.05f,
+		                        -normalizeLen(
 			                        -data.charData->matrices.horiBearingY + data.charData->matrices.height + 65));
 	};
 
 	//SubScript End
-	glyphParser->tokenParser->modifier["\\sbt"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["\\sbt"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
 	//Script End
-	glyphParser->tokenParser->modifier["\\spt"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["\\spt"] = [](const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
-	glyphParser->tokenParser->modifier["rst"] = [](const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["rst"] = [](const Font::TextView command, const ModifierableData& data) {
 		data.context.currentColor = Graphic::Colors::WHITE;
 
 		ParserFunctions::resetScl(data);
@@ -388,11 +376,10 @@ void Font::ParserFunctions::setScl(const ModifierableData& data, const float tar
 
 void Font::ParserFunctions::endLine(const ModifierableData& data) {
 	data.context.currentLineBound.setLargerWidth(
-		data.cursorPos.getX() + normalize(data.charData->matrices.horiAdvance) * data.context.currentScale
+		data.cursorPos.getX() + normalizeLen(data.charData->matrices.horiAdvance) * data.context.currentScale
 	);
 
 	data.charData = &Font::emptyCharData;
-	data.cursorPos.setX(0);
 
 	data.context.currentLineBound.setHeight(data.context.lineSpacing * data.context.currentScale);
 
@@ -402,14 +389,22 @@ void Font::ParserFunctions::endLine(const ModifierableData& data) {
 
 	data.context.currentLineBound.addSize(0, data.context.additionalYOffset);
 
-	if(data.context.additionalYOffset != 0.0f)
-		std::for_each(std::execution::par_unseq, data.context.currentLineData.begin(),
-		              data.context.currentLineData.end(),
-		              [lineSpacing = data.context.additionalYOffset](GlyphVertData* vertData) {
-			              vertData->moveY(-lineSpacing);
-		              });
+	const bool requiresLineSpacingCorrection  = data.context.additionalYOffset != 0.0f;
 
-	data.cursorPos.add(0, -data.context.currentLineBound.getHeight());
+	float heightOffset = data.context.currentLineBound.getHeight() * 0.175f;
+
+	for (const auto vertData : data.context.currentLineData){
+		if(requiresLineSpacingCorrection){
+			vertData->moveY(-data.context.additionalYOffset);
+		}
+
+		vertData->heightAlign.from = data.cursorPos.y - vertData->src.y - heightOffset;
+		vertData->heightAlign.to = data.context.currentLineBound.getHeight() - (vertData->end.y - data.cursorPos.y) - vertData->heightAlign.from - heightOffset;
+	}
+
+	data.cursorPos.x = 0;
+
+	data.cursorPos.y -= data.context.currentLineBound.getHeight();
 
 	data.context.currentLineData.clear();
 	data.layout.bound.setLargerWidth(data.context.currentLineBound.getWidth());
@@ -419,5 +414,45 @@ void Font::ParserFunctions::endLine(const ModifierableData& data) {
 
 	data.context.additionalYOffset = 0;
 
+	data.context.currentLayoutPos.x = 0;
+	data.context.currentLayoutPos.y++;
+
 	data.context.endlineOperation.clear();
+}
+
+void Font::ParserFunctions::pushData(const CharCode code, const int index, const CharData* charData, const ModifierableData& data){
+	static CharData tmpDummy{};
+	static const CharData* tmpDummyPtr = &tmpDummy;
+
+	if(data.cursorPos.x + normalizeLen(charData->matrices.width + charData->matrices.horiBearingX) * data.context.currentScale > data.layout.maxWidth){
+		ParserFunctions::endLine({data.context, data.cursorPos, tmpDummyPtr, data.layout});
+	}
+
+	Geom::OrthoRectFloat box = charData->charBox.as<float>();
+	box.setSrc(
+		normalizeLen(charData->matrices.horiBearingX) * data.context.currentScale,
+		normalizeLen(charData->matrices.horiBearingY - charData->matrices.height) * data.context.currentScale
+	);
+
+	box.move(data.cursorPos.getX(), data.cursorPos.getY());
+	box.scl(data.context.currentScale, data.context.currentScale);
+
+	auto& glyphData = data.layout.getGlyphs().emplace_back(
+		code,
+		index,
+		&charData->region,
+		data.context.currentColor,
+		box.getSrc() + data.context.offset * data.context.currentScale,
+		box.getEnd() + data.context.offset * data.context.currentScale,
+		data.context.currentLayoutPos
+	);
+
+	if(!glyphData.region) {
+		throw ext::NullPointerException{ "Null TextureRegion" };
+	}
+
+	data.context.currentLineData.push_back(&glyphData);
+	data.context.currentLayoutPos.x++;
+
+	data.cursorPos.add(normalizeLen(charData->matrices.horiAdvance) * data.context.currentScale, 0);
 }

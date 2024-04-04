@@ -1,7 +1,7 @@
 // ReSharper disable CppDFAUnreachableCode
 module;
 
-export module Geom.QuadTree;
+export module Geom.QuadTreeBrief;
 
 export import Geom.Shape.Rect_Orthogonal;
 export import Geom.Vector2D;
@@ -14,101 +14,67 @@ using Geom::Rect_Orthogonal;
 
 //TODO The design is so bad!
 export namespace Geom {
-	template <typename Cont, Concepts::Number T, Concepts::InvokeNullable<const Rect_Orthogonal<T>&(const Cont*)> auto transformer>
-	class QuadTree {
-		using Rect = Rect_Orthogonal<T>;
+	template <typename Cont, Concepts::Number T, Concepts::InvokeNullable<Rect_Orthogonal<T>(const Cont&)> auto transformer>
+	class QuadTreeBrief {
 
 	public:
+		using Rect = Rect_Orthogonal<T>;
 		using ValueType = Cont;
-		using SubTree = std::array<QuadTree *, 4>;
-		// using Obtainer = std::function<const Rect&(const Cont*)>;
-		using InersectCheck = std::function<bool(const Cont*, const Cont*)>;
-
-		using PointType = Geom::Vector2D<T>;
-		using InersectPointCheck = std::function<bool(const Cont*, Vec2)>;
 
 		static constexpr bool ValidTrans = !std::same_as<std::nullptr_t, decltype(transformer)>;
+		static_assert(ValidTrans, "Invalid Trans Func!");
 
 	protected:
-		// Obtainer transformer{ nullptr };
-		InersectCheck interscetExactFunc{ nullptr };
-		InersectCheck interscetRoughFunc{ nullptr };
-
-		InersectPointCheck interscetPointFunc{ nullptr };
 		// The boundary of this node
 		Rect boundary{};
-
-		std::mutex containerlock{};
-		std::mutex subTreelock{};
 
 		bool isInersectedBetween(const Cont* subject, const Cont* object) {
 			if(subject == object) return false;
 			const bool intersected =
-				this->obtainBound(subject).overlap(this->obtainBound(object))
-					&& (!interscetRoughFunc || interscetRoughFunc(subject, object))
-					&& (!interscetExactFunc || interscetExactFunc(subject, object));
+				this->obtainBound(subject).overlap(this->obtainBound(object));
 
 			return intersected;
 		}
 
-		const Rect& obtainBound(const Cont* const cont) {
-			if constexpr (ValidTrans)return transformer(cont);
-			else return boundary;
+		static Rect obtainBound(const Cont* const cont) {
+			return transformer(*cont);
 		}
 
-		const Rect& obtainBound(const Cont& cont) {
-			if constexpr (ValidTrans)return transformer(&cont);
-			else return boundary;
+		static Rect obtainBound(const Cont& cont) {
+			return transformer(cont);
 		}
 
 		// The rectangles in this node
 		std::vector<Cont *> rectangles{};
 
 		// The four children of this node
-		std::unique_ptr<QuadTree> topLeft{ nullptr };
-		std::unique_ptr<QuadTree> topRight{ nullptr };
-		std::unique_ptr<QuadTree> bottomLeft{ nullptr };
-		std::unique_ptr<QuadTree> bottomRight{ nullptr };
+		std::unique_ptr<QuadTreeBrief> topLeft{ nullptr };
+		std::unique_ptr<QuadTreeBrief> topRight{ nullptr };
+		std::unique_ptr<QuadTreeBrief> bottomLeft{ nullptr };
+		std::unique_ptr<QuadTreeBrief> bottomRight{ nullptr };
 
 		unsigned int maximumItemCount = 4;
-		bool strict                   = false;
+		bool strict = false;
 
-		std::atomic_uint currentSize = 0;
-		std::atomic_bool leaf        = true;
+		unsigned currentSize = 0;
+		bool leaf = true;
 
 	public:
+		QuadTreeBrief() = default;
+
 		[[nodiscard]] unsigned int size() const {
 			return currentSize;
 		}
 
-		void setExactInterscet(const InersectCheck& interscetExactJudger) {
-			this->interscetExactFunc = interscetExactJudger;
-		}
-
-		void setRoughInterscet(const InersectCheck& interscetRoughJudger) {
-			this->interscetRoughFunc = interscetRoughJudger;
-		}
-
-		void setPointInterscet(const InersectPointCheck& interscetPointJudger) {
-			this->interscetPointFunc = interscetPointJudger;
-		}
-
-		explicit QuadTree(unsigned int maxCount) {
+		explicit QuadTreeBrief(unsigned int maxCount) {
 			rectangles.reserve(maxCount);
 		}
 
-		explicit QuadTree(const Rect& boundary) : boundary(boundary) {
+		explicit QuadTreeBrief(const Rect boundary) : boundary(boundary) {
 			rectangles.reserve(maximumItemCount);
 		}
 
-		QuadTree(const Rect& boundary, unsigned int maxCount,
-			const InersectCheck& interectRoughJudger,
-			const InersectCheck& interectExactJudger,
-			const InersectPointCheck& interectPointJudger
-		) :
-		interscetExactFunc(interectExactJudger),
-		interscetRoughFunc(interectRoughJudger),
-		interscetPointFunc(interectPointJudger),
+		QuadTreeBrief(const Rect boundary, unsigned int maxCount) :
 			boundary(boundary), maximumItemCount(maxCount) {
 			this->rectangles.reserve(maxCount);
 		}
@@ -117,8 +83,12 @@ export namespace Geom {
 			return boundary;
 		}
 
-		void setBoundary(const Rect& boundary) {
-			if(!allChildrenEmpty()) throw ext::RuntimeException{ "QuadTree Boundary Should be set initially" };
+		[[nodiscard]] const Rect& getBoundary() const {
+			return boundary;
+		}
+
+		void setBoundary(const Rect boundary) {
+			if(!allChildrenEmpty()) throw ext::RuntimeException{ "QuadTreeBrief Boundary Should be set initially" };
 
 			this->boundary = boundary;
 		}
@@ -128,7 +98,7 @@ export namespace Geom {
 		}
 
 		void setBoundary(const T width, const T height) {
-			if(!allChildrenEmpty()) throw ext::RuntimeException{ "QuadTree Boundary Should be set initially" };
+			if(!allChildrenEmpty()) throw ext::RuntimeException{ "QuadTreeBrief Boundary Should be set initially" };
 
 			this->boundary.setSize(width, height);
 		}
@@ -136,13 +106,11 @@ export namespace Geom {
 		bool remove(Cont* box) {
 			bool result;
 			if(isLeaf()) {
-				std::lock_guard guard{containerlock};
 				result = static_cast<bool>(std::erase(rectangles, box));
 			} else {
-				if(QuadTree* child = this->getFittingChild(this->obtainBound(box))) {
+				if(QuadTreeBrief* child = this->getFittingChild(this->obtainBound(box))) {
 					result = child->remove(box);
 				} else {
-					std::lock_guard guard{containerlock};
 					result = static_cast<bool>(std::erase(rectangles, box));
 				}
 
@@ -167,8 +135,20 @@ export namespace Geom {
 			return currentSize == rectangles.size();
 		}
 
-		template <Concepts::Invokable<void(QuadTree*)> Func>
+		template <Concepts::Invokable<void(QuadTreeBrief*)> Func>
 		void each(Func&& func) {
+			func(this);
+
+			if(!isLeaf()) {
+				topLeft->each(std::forward<Func>(func));
+				topRight->each(std::forward<Func>(func));
+				bottomLeft->each(std::forward<Func>(func));
+				bottomRight->each(std::forward<Func>(func));
+			}
+		}
+
+		template <Concepts::Invokable<void(const QuadTreeBrief*)> Func>
+		void each(Func&& func) const {
 			func(this);
 
 			if(!isLeaf()) {
@@ -202,6 +182,32 @@ export namespace Geom {
 
 			// Otherwise, the rectangle does not overlap with any rectangle in the quad tree
 			return false;
+		}
+
+		[[nodiscard]] const std::vector<Cont*>& getChildren() const{ return rectangles; }
+
+		Cont* getIntersectAny(const Vec2 point) const {
+			if(!this->inbound(point)) {
+				return nullptr;
+			}
+
+			for (const auto cont : rectangles){
+				if(this->intersectWith(cont, point)){
+					return cont;
+				}
+			}
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()) {
+				Cont* cur{nullptr};
+				if((cur = topLeft->getIntersectAny(point)))return cur; // NOLINT(*-assignment-in-if-condition)
+				if((cur = topRight->getIntersectAny(point)))return cur; // NOLINT(*-assignment-in-if-condition)
+				if((cur = bottomLeft->getIntersectAny(point)))return cur; // NOLINT(*-assignment-in-if-condition)
+				if((cur = bottomRight->getIntersectAny(point)))return cur; // NOLINT(*-assignment-in-if-condition)
+			}
+
+			// Otherwise, the rectangle does not overlap with any rectangle in the quad tree
+			return nullptr;
 		}
 
 		bool intersectAny(const Vec2 point) {
@@ -348,21 +354,21 @@ export namespace Geom {
 			return intersected;
 		}
 
-		bool intersectWith(const Cont* object, const Vec2 point) {
-			return this->obtainBound(object).containsPos_edgeExclusive(point) && (!static_cast<bool>(interscetPointFunc) || interscetPointFunc(object, point));
+		bool intersectWith(const Cont* object, const Vec2 point) const {
+			return this->obtainBound(object).containsPos_edgeExclusive(point);
 		}
 
-		bool inbound(const Rect& rect) {
+		bool inbound(const Rect& rect) const {
 			if(strict) return boundary.contains(rect);
 			return boundary.overlap(rect);
 		}
 
-		bool inbound(const Cont* object) {
+		bool inbound(const Cont* object) const {
 			if(strict) return boundary.contains(obtainBound(object));
 			return boundary.overlap(obtainBound(object));
 		}
 
-		bool inbound(const Vec2 object) {
+		bool inbound(const Vec2 object) const {
 			return boundary.containsPos_edgeExclusive(object);
 		}
 
@@ -384,7 +390,6 @@ export namespace Geom {
 				if(rectangles.size() >= maximumItemCount) {
 					split();
 				} else {
-					std::lock_guard guard{ containerlock };
 					rectangles.push_back(box);
 					return true;
 				}
@@ -392,12 +397,11 @@ export namespace Geom {
 
 			const Rect& rect = this->obtainBound(box);
 			// Add to relevant child, or root if can't fit completely in a child
-			if(QuadTree* child = this->getFittingChild(rect)) {
+			if(QuadTreeBrief* child = this->getFittingChild(rect)) {
 				return child->insert(box);
 			}
 
 			//Fallback
-			std::lock_guard guard{ containerlock };
 			rectangles.push_back(box);
 			return true;
 		}
@@ -429,7 +433,6 @@ export namespace Geom {
 		void split() {
 			if(!isLeaf()) return;
 			leaf = false;
-			if(topLeft != nullptr) return;
 
 			const T x = boundary.getSrcX();
 			const T y = boundary.getSrcY();
@@ -441,16 +444,16 @@ export namespace Geom {
 			const Rect tl{ x, y + h, w, h };
 			const Rect tr{ x + w, y + h, w, h };
 
-			if(std::lock_guard guard{subTreelock}; topLeft != nullptr){
+			if(topLeft != nullptr){
 				topLeft    ->setBoundary(tl);
 				topRight   ->setBoundary(tr);
 				bottomLeft ->setBoundary(bl);
 				bottomRight->setBoundary(br);
-			}{
-				topLeft     = std::make_unique<QuadTree>(tl, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
-				topRight    = std::make_unique<QuadTree>(tr, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
-				bottomLeft  = std::make_unique<QuadTree>(bl, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
-				bottomRight = std::make_unique<QuadTree>(br, maximumItemCount, interscetRoughFunc, interscetExactFunc, interscetPointFunc);
+			}else{
+				topLeft     = std::make_unique<QuadTreeBrief>(tl, maximumItemCount);
+				topRight    = std::make_unique<QuadTreeBrief>(tr, maximumItemCount);
+				bottomLeft  = std::make_unique<QuadTreeBrief>(bl, maximumItemCount);
+				bottomRight = std::make_unique<QuadTreeBrief>(br, maximumItemCount);
 			}
 		}
 
@@ -459,16 +462,10 @@ export namespace Geom {
 			leaf = true;
 
 			{
-				std::scoped_lock guard{containerlock,
-					topLeft->containerlock,
-					topRight->containerlock,
-					bottomLeft->containerlock,
-					bottomRight->containerlock,
-				};
-				std::ranges::copy(topLeft->rectangles, std::back_inserter(rectangles));
-				std::ranges::copy(topRight->rectangles, std::back_inserter(rectangles));
-				std::ranges::copy(bottomLeft->rectangles, std::back_inserter(rectangles));
-				std::ranges::copy(bottomRight->rectangles, std::back_inserter(rectangles));
+				std::copy(topLeft->rectangles.begin(), topLeft->rectangles.end(), std::back_inserter(rectangles));
+				std::copy(topRight->rectangles.begin(), topLeft->rectangles.end(), std::back_inserter(rectangles));
+				std::copy(bottomLeft->rectangles.begin(), topLeft->rectangles.end(), std::back_inserter(rectangles));
+				std::copy(bottomRight->rectangles.begin(), topLeft->rectangles.end(), std::back_inserter(rectangles));
 			}
 
 			topLeft->clearItemsOnly();
@@ -477,7 +474,7 @@ export namespace Geom {
 			bottomRight->clearItemsOnly();
 		}
 
-		QuadTree* getFittingChild(const Rect boundingBox) {
+		QuadTreeBrief* getFittingChild(const Rect boundingBox) {
 			if(isLeaf()) return nullptr;
 			const T verticalMidpoint   = boundary.getSrcX() + boundary.getWidth() / 2;
 			const T horizontalMidpoint = boundary.getSrcY() + boundary.getHeight() / 2;
@@ -510,5 +507,5 @@ export namespace Geom {
 	};
 
 	template <typename T, auto func>
-	using QuadTreeF = QuadTree<T, float, func>;
+	using QuadTreeBriefF = QuadTreeBrief<T, float, func>;
 }

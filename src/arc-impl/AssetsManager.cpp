@@ -75,8 +75,8 @@ void Assets::Manager::loadPost() {
 	atlas.flush();
 	Assets::loadAfter();
 
-	Font::glyphParser->context.defaultFont = Assets::Fonts::telegrama;
-	Font::glyphParser->fontLib = fonts.manager.get();
+	Font::defGlyphParser->context.defaultFont = Assets::Fonts::telegrama;
+	Font::defGlyphParser->fontLib = fonts.manager.get();
 }
 
 void Assets::Manager::loadEnd() {
@@ -98,7 +98,7 @@ Graphic::TextureAtlas& Assets::Manager::getAtlas() {
 	return atlas;
 }
 
-Font::FontCache& Assets::Manager::getonts() const{
+Font::FontAtlas& Assets::Manager::getonts() const{
 	return *fonts.manager;
 }
 

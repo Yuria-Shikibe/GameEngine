@@ -20,6 +20,7 @@ import RuntimeException;
 import OS.File;
 import Image;
 import Event;
+import Math;
 
 using namespace Geom;
 using Graphic::Pixmap;
@@ -68,7 +69,7 @@ namespace Font {
 		}
 	}
 
-	constexpr unsigned int TexturePackGap{2};
+	constexpr unsigned int TexturePackGap{1};
 }
 
 export namespace Font {
@@ -128,7 +129,6 @@ export namespace Font {
 	struct FontData {
 		OrthoRectUInt box{};
 		std::unordered_map<CharCode, CharData> charDatas{};
-		float spaceSpacing{-1};
 		float lineSpacingMin{-1};
 
 		std::unique_ptr<Pixmap> fontPixmap{nullptr};
@@ -176,9 +176,9 @@ export namespace Font {
 		static constexpr auto fontOffset = 0;
 
 		OS::File fontFile{};
-		std::vector<CharCode> segments{};
+		std::vector<Math::Section<CharCode>> segments{};
 		FT_Int loadFlags = FT_LOAD_RENDER; //
-		FT_UInt height = 48;
+		FT_UInt size = 48;
 
 		unsigned char version = 0;
 
@@ -210,7 +210,7 @@ export namespace Font {
 
 		[[nodiscard]] FontFlags(
 			const OS::File& fontFile,
-			const std::vector<CharCode>& segments,
+			const std::vector<Math::Section<CharCode>>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
 			const FT_UInt height = 48,
 			const std::function<bool(FT_Face)>& loader = nullptr
@@ -218,14 +218,14 @@ export namespace Font {
 			: fontFile(fontFile),
 			  segments(segments),
 			  loadFlags(loadFlags),
-			  height(height),
+			  size(height),
 			  loader(loader) {
 			familyName = fontFile.filename();
 		}
 
 		[[nodiscard]] FontFlags(
 			OS::File&& fontFile,
-			const std::vector<CharCode>& segments,
+			const std::vector<Math::Section<CharCode>>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
 			const FT_UInt height = 48,
 			const std::function<bool(FT_Face)>& loader = nullptr
@@ -233,7 +233,7 @@ export namespace Font {
 			: fontFile(std::forward<OS::File>(fontFile)),
 			  segments(segments),
 			  loadFlags(loadFlags),
-			  height(height),
+			  size(height),
 			  loader(loader) {
 			familyName = fontFile.filename();
 		}
@@ -245,7 +245,7 @@ export namespace Font {
 				}
 			}
 
-			FT_Set_Pixel_Sizes(face, 0, height);
+			FT_Set_Pixel_Sizes(face, 0, size);
 
 			if(const auto state = FT_Load_Char(face, charCode, loadFlags); state != 0) {
 				if(state == FT_Err_Invalid_Glyph_Index) {
@@ -304,11 +304,11 @@ export namespace Font {
 		}
 
 		[[nodiscard]] OS::File dataFile(const OS::File& cacheDir) const {
-			return cacheDir.subFile(fullname() + "-" + std::to_string(height) + static_cast<std::string>(data_suffix));
+			return cacheDir.subFile(fullname() + "-" + std::to_string(size) + static_cast<std::string>(data_suffix));
 		}
 
 		[[nodiscard]] OS::File texFile(const OS::File& cacheDir) const {
-			return cacheDir.subFile(fullname() + "-" + std::to_string(height) + static_cast<std::string>(tex_suffix ));
+			return cacheDir.subFile(fullname() + "-" + std::to_string(size) + static_cast<std::string>(tex_suffix ));
 		}
 
 		template <typename ...T>
@@ -346,16 +346,16 @@ export namespace Font {
 	};
 
 	//this will contain all the fonts with a single texture, for fast batch process
-	struct FontCache {
+	struct FontAtlas {
 	protected:
 		std::unique_ptr<GL::Texture2D> fontTexture{nullptr};
 		std::unordered_map<FT_UInt, std::set<FT_UInt>> supportedFonts{};
 		std::unordered_map<FT_UInt, std::unique_ptr<FontFlags>> fonts{}; //Access it by FontFlags.internalID
 
 	public:
-		[[nodiscard]] FontCache() = default;
+		[[nodiscard]] FontAtlas() = default;
 
-		[[nodiscard]] explicit FontCache(Graphic::Pixmap& textureBitmap, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
+		[[nodiscard]] explicit FontAtlas(Graphic::Pixmap& textureBitmap, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
 			fontTexture.reset(new GL::Texture2D(textureBitmap.getWidth(), textureBitmap.getHeight(), std::move(textureBitmap).release()));
 
 			fontTexture->setScale(GL::TexParams::mipmap_linear_linear);
@@ -365,8 +365,8 @@ export namespace Font {
 			fonts.reserve(fontsRaw.size());
 			for(auto& value: fontsRaw) {
 				//Register valid chars
-				for(size_t t = 0; t < value->segments.size() / 2; ++t) {
-					for(CharCode i = value->segments[t * 2]; i <= value->segments[t * 2 + 1]; ++i) {
+				for (const auto [from, to] : value->segments){
+					for(CharCode i = from; i <= to; ++i) {
 						supportedFonts[i].insert(value->internalID);
 					}
 				}
@@ -385,16 +385,7 @@ export namespace Font {
 				//The pixmap data for a single font wont be needed anymore in all cases, release it if possible;
 				if(value->data->fontPixmap)value->data->fontPixmap->free();
 
-				const auto fontValue = value.get();
 				fonts[value->internalID] = std::move(value);
-
-
-				if(fontValue->data->spaceSpacing < 0) {
-					fontValue->data->spaceSpacing =
-						static_cast<float>(contains(fontValue->internalID, '_') ?
-						getCharData(fontValue->internalID, '_')->charBox.getWidth() : 15
-					);
-				}
 			}
 		}
 
@@ -461,7 +452,7 @@ export namespace Font {
 		std::vector<std::unique_ptr<FontFlags>> flags{};
 		Event::CycleSignalManager fontLoadListeners{};
 		OS::File rootCacheDir{};
-		std::unique_ptr<FontCache> manager{nullptr};
+		std::unique_ptr<FontAtlas> manager{nullptr};
 
 		[[nodiscard]] FontManager() = default;
 
@@ -527,8 +518,8 @@ export namespace Font {
 				FT_UInt currentWidth = 0;
 				FT_UInt maxHeight = 0;
 
-				for(size_t t = 0; t < params.segments.size() / 2; ++t) {
-					for(CharCode i = params.segments[t * 2]; i <= params.segments[t * 2 + 1]; ++i) {
+				for (const auto [from, to] : params.segments){
+					for(CharCode i = from; i <= to; ++i) {
 						const FontFlags& valid = * params.tryLoad(i);
 
 						if(!valid.face->glyph) {
@@ -541,13 +532,72 @@ export namespace Font {
 							}
 						}
 
-						fontDatas.emplace_back(i, valid.face->glyph);
-						fontDatas.back().box.move(currentWidth, 0);
+						auto& cur = fontDatas.emplace_back(i, valid.face->glyph);
+						cur.box.move(currentWidth, 0);
 
+						//TODO font linefeed to support many glyphs
+						//TODO uses texture packer instead?
 						maxHeight = std::max(maxHeight, valid.face->glyph->bitmap.rows);
 						currentWidth += valid.face->glyph->bitmap.width + TexturePackGap;
 					}
 				}
+
+				//TODO customized glyph support
+				if(auto itr = std::ranges::find(fontDatas, '_', &FontData_Preload::charCode);
+					itr != fontDatas.end()){
+					if(!std::ranges::contains(fontDatas, ' ', &FontData_Preload::charCode)){
+						FontData_Preload spaceData{};
+						spaceData.box = itr->box;
+						spaceData.box.setSrcX(currentWidth);
+						spaceData.box.setWidth(itr->box.getWidth());
+						spaceData.matrices = itr->matrices;
+						spaceData.charCode = ' ';
+						spaceData.pixmap.create(spaceData.box.getWidth(), spaceData.box.getHeight());
+						spaceData.pixmap.clear();
+
+						currentWidth += spaceData.box.getWidth() + TexturePackGap;
+
+						fontDatas.push_back(std::move(spaceData));
+
+						if(!std::ranges::contains(fontDatas, '\n', &FontData_Preload::charCode)){
+							FontData_Preload lineFeedData{};
+							lineFeedData.box = spaceData.box;
+							lineFeedData.box.setSrcX(TexturePackGap);
+							lineFeedData.box.setWidth(1);
+							lineFeedData.matrices = spaceData.matrices;
+							lineFeedData.matrices.width = TexturePackGap;
+							lineFeedData.matrices.horiBearingX = 0;
+							lineFeedData.matrices.horiAdvance = 0;
+
+							lineFeedData.charCode = '\n';
+							lineFeedData.pixmap.create(lineFeedData.box.getWidth(), lineFeedData.box.getHeight());
+							lineFeedData.pixmap.clear();
+
+							currentWidth += TexturePackGap;
+
+							fontDatas.push_back(std::move(lineFeedData));
+						}
+
+						if(!std::ranges::contains(fontDatas, '\t', &FontData_Preload::charCode)){
+							FontData_Preload lineFeedData{};
+							lineFeedData.box = spaceData.box;
+							lineFeedData.box.setSrcX(TexturePackGap);
+							lineFeedData.box.setWidth(1);
+							lineFeedData.matrices = spaceData.matrices;
+							lineFeedData.matrices.width *= 4;
+							lineFeedData.matrices.horiAdvance *= 4;
+
+							lineFeedData.charCode = '\t';
+							lineFeedData.pixmap.create(lineFeedData.box.getWidth(), lineFeedData.box.getHeight());
+							lineFeedData.pixmap.clear();
+
+							currentWidth += TexturePackGap;
+
+							fontDatas.push_back(std::move(lineFeedData));
+						}
+					}
+				}
+
 
 				size = fontDatas.size();
 				width = currentWidth;
@@ -756,10 +806,10 @@ export namespace Font {
 			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
 			//FontsManager obtain the texture from the total cache; before this no texture should be generated!
 			if(quickInit) {
-				manager = std::make_unique<FontCache>(mergedMap, flags);
+				manager = std::make_unique<FontAtlas>(mergedMap, flags);
 			}else {
 				postToHandler([&mergedMap, this] {
-					manager = std::make_unique<FontCache>(mergedMap, flags);
+					manager = std::make_unique<FontAtlas>(mergedMap, flags);
 				}).get();
 			}
 
@@ -782,12 +832,12 @@ export namespace Font {
 		}
 
 	public:
-		std::unique_ptr<FontCache> getManager() && {
+		std::unique_ptr<FontAtlas> getManager() && {
 			return std::move(manager);
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override{
-			return std::async(policy, std::bind(&FontManager::load, this));
+			return std::async(policy, &FontManager::load, this);
 		}
 
 		[[nodiscard]] std::string_view getTaskName() const override {

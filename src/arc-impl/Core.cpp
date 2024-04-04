@@ -86,8 +86,8 @@ void Core::initCore(const std::function<void()>& initializer) {
 	}
 
 	{
-		if(!input)input = new Input(mainWindow);
-		if(!camera)camera = new Camera2D();
+		if(!input)input = new Input{};
+		if(!camera)camera = new Camera2D{};
 		if(!log)log = new Log{rootFileTree->findDir("logs")};
 	}
 

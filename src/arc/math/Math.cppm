@@ -39,7 +39,7 @@ export namespace Math {
 	constexpr float DEG_TO_INDEX      = SIN_COUNT / DEG_FULL;
 	constexpr int BIG_ENOUGH_INT      = 16 * 1024;
 	constexpr double BIG_ENOUGH_FLOOR = BIG_ENOUGH_INT;
-	constexpr double CEIL             = 0.9999999;
+	constexpr double CEIL             = 0.99999;
 	constexpr double BIG_ENOUGH_ROUND = static_cast<double>(BIG_ENOUGH_INT) + 0.5f;
 
 	constexpr auto sinTable = genTable<SIN_MASK, DEG_TO_INDEX>();
@@ -52,7 +52,7 @@ export namespace Math {
 		T to{};
 	};
 
-	using Interval = Section<float>;
+	using Range = Section<float>;
 
 	[[nodiscard]] std::string printSinTable() {
 		const SinTable<SIN_COUNT, SIN_MASK, DEG_TO_INDEX> table{};
@@ -266,8 +266,9 @@ export namespace Math {
 	}
 
 	/**Converts a bool to an integer: 1 if true, 0, if false.*/
-	constexpr int num(const bool b) noexcept {
-		return b ? 1 : 0;
+	template <Concepts::Number T>
+	constexpr T num(const bool b) noexcept {
+		return static_cast<T>(b);
 	}
 
 	float pow_float(const float a, const float b) noexcept {
@@ -460,16 +461,18 @@ export namespace Math {
 	 * Returns the largest integer less than or equal to the specified float. This method will only properly floor floats from
 	 * -(2^14) to (Float.MAX_VALUE - 2^14).
 	 */
-	constexpr int floor(const float value) noexcept {
-		return static_cast<int>(value + BIG_ENOUGH_FLOOR) - BIG_ENOUGH_INT;
+	template <std::integral T = int>
+	constexpr T floorLEqual(const float value) noexcept {
+		return static_cast<T>(value + BIG_ENOUGH_FLOOR) - BIG_ENOUGH_INT;
 	}
 
 	/**
 	 * Returns the largest integer less than or equal to the specified float. This method will only properly floor floats that are
 	 * positive. Note this method simply casts the float to int.
 	 */
-	constexpr int floorPositive(const float value) noexcept {
-		return static_cast<int>(value);
+	template <std::integral T = int>
+	constexpr T floorPositive(const float value) noexcept {
+		return static_cast<T>(value);
 	}
 
 	/**
@@ -484,8 +487,9 @@ export namespace Math {
 	 * Returns the smallest integer greater than or equal to the specified float. This method will only properly ceil floats that
 	 * are positive.
 	 */
-	inline int ceilPositive(const float value) noexcept {
-		return static_cast<int>(value + CEIL);
+	template <std::integral T = int>
+	constexpr T ceilPositive(const float value) noexcept {
+		return static_cast<T>(value + CEIL);
 	}
 
 	/**
@@ -495,7 +499,7 @@ export namespace Math {
 	template <typename T>
 		requires std::is_integral_v<T>
 	constexpr T round(const float value) noexcept {
-		return static_cast<T>(value + BIG_ENOUGH_ROUND) - BIG_ENOUGH_INT;
+		return static_cast<T>(std::round(value) + FLOAT_ROUNDING_ERROR);
 	}
 
 	constexpr int floor(const int value, const int step) noexcept {
@@ -547,6 +551,8 @@ export namespace Math {
 	inline bool equal(const float a, const float b, const float tolerance) noexcept {
 		return abs(a - b) <= tolerance;
 	}
+
+
 
 	// /** @return the logarithm of value with base a */
 	// float log(float a, float value) {
@@ -703,6 +709,12 @@ export namespace Math {
 		} else {
 			return a > b ? a - b : b - a;
 		}
+	}
+
+
+	template<Concepts::Number auto cycle, auto trigger = cycle / 2>
+	bool cycleStep(Concepts::Number auto cur){
+		return Math::mod(cur, cycle) < trigger;
 	}
 
 	namespace Angle{

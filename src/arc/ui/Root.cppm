@@ -13,10 +13,12 @@ export import UI.Flags;
 import Ctrl.Constants;
 import Graphic.Resizeable;
 import OS.ApplicationListener;
+import OS.TextInputListener;
 import OS.InputListener;
 
 import UI.Elem;
 import UI.Table;
+import Core.Input;
 
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{
@@ -57,12 +59,15 @@ export namespace UI{
 		Elem* currentInputFocused{ nullptr };
 		Elem* currentScrollFocused{ nullptr };
 		const Elem* currentCursorFocus{ nullptr };
+		OS::TextInputListener* textInputListener{ nullptr };
 		// // //Focus
 		// //
 		// // //Input Listeners
 		std::unique_ptr<Table> root{ nullptr };
 
 		std::unique_ptr<Table> cursorFloatRoot{ nullptr };
+
+		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
 
 		[[nodiscard]] bool mouseFocusFree() const {
 			return currentCursorFocus == nullptr;
@@ -101,6 +106,10 @@ export namespace UI{
 		//TODO shit named fucntion and logic!
 		void determinShiftFocus(const Elem* newFocus);
 
+		void setTextFocus(OS::TextInputListener* listener){
+			this->textInputListener = listener;
+		}
+
 		void resize(unsigned w, unsigned h) override;
 
 		[[nodiscard]] float getMarginX() const {return marginX;}
@@ -115,6 +124,18 @@ export namespace UI{
 
 		[[nodiscard]] Geom::Vec2 getCursorDst() const{
 			return cursorPos - cursorPressedBeginPos;
+		}
+
+		/**
+		 * @return true if there is nothing can do
+		 */
+		bool onEsc(){
+			if(this->textInputListener){
+				this->setTextFocus(nullptr);
+				return false;
+			}
+
+			return true;
 		}
 
 		//TODO mode support
@@ -133,6 +154,40 @@ export namespace UI{
 		[[nodiscard]] bool onDrag(const int id, int mode = 0) const;
 
 		void onDragUpdate() const;
+
+		bool keyDown(const int code, const int action, const int mode) const;
+
+		void textInputInform(const unsigned int code, const int mods) const{
+			if(textInputListener){
+				textInputListener->informTextInput(code, mods);
+			}
+		}
+
+		void registerCtrl() const{
+			uiInput->registerKeyBind({{Ctrl::KEY_BACKSPACE, Ctrl::Act_Press}, {Ctrl::KEY_BACKSPACE, Ctrl::Act_Repeat}}, [this]{
+				if(textInputListener){
+					textInputListener->informBackSpace();
+				}
+			});
+
+			uiInput->registerKeyBind({{Ctrl::KEY_DELETE, Ctrl::Act_Press}, {Ctrl::KEY_DELETE, Ctrl::Act_Repeat}}, [this]{
+				if(textInputListener){
+					textInputListener->informDelete();
+				}
+			});
+
+			uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl}}, [this]{
+				if(textInputListener){
+					textInputListener->snapBackTrace();
+				}
+			});
+
+			uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl_Shift}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl_Shift}}, [this]{
+				if(textInputListener){
+					textInputListener->snapForwardTrace();
+				}
+			});
+		}
 
 	protected:
 		void inform(int keyCode, int action, int mods) override {

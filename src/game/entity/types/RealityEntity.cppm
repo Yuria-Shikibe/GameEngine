@@ -416,7 +416,7 @@ export namespace Game {
 			if(subject->deletable() || object->deletable() || subject == object)return false;
 			if(subject->ignoreCollisionTo(object) || object->ignoreCollisionTo(subject))return false;
 			// if(subject->intersectedPointWith.contains(object))return false;
-			return subject->hitBox.collideWithRough(object->hitBox);
+			return true;
 		}
 
 		static bool pointInterscet(const RealityEntity* subject, const Geom::Vec2 point) {

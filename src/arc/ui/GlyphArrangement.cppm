@@ -17,6 +17,7 @@ import Geom.Vector2D;
 
 export import UI.Align;
 
+import Math;
 import Encoding;
 import std;
 
@@ -42,48 +43,133 @@ export namespace Font {
 		parserableColors.insert_or_assign(name, color);
 	}
 
-	float normalize(const long pos) {
+	float normalizeLen(const long pos) {
 		return static_cast<float>(pos >> 6);
 	}
 
-	struct GlyphVertData {
+	struct GlyphDrawData {
+		CharCode code{};
+		int index{};
+
 		const GL::TextureRegionRect* region{nullptr};
 		Graphic::Color fontColor{};
 
-		float u0{0}, v0{0};
-		float u1{0}, v1{0};
+		Geom::Vec2 src{};
+		Geom::Vec2 end{};
+		Geom::Point2U layoutPos{};
+
+		Math::Range heightAlign{};
+
+		[[nodiscard]] bool isEnd() const{
+			return code == 0;
+		}
+
+		[[nodiscard]] bool isEndRow() const{
+			return code == '\n';
+		}
+
+		[[nodiscard]] bool isBeginRow() const{
+			return layoutPos.x == 0 && layoutPos.y != 0;
+		}
+
+		[[nodiscard]] bool isBegin() const{
+			return layoutPos.isZero();
+		}
+
+		[[nodiscard]] Geom::Vec2 v00() const{return src;}
+		[[nodiscard]] Geom::Vec2 v01() const{return {src.x, end.y};}
+		[[nodiscard]] Geom::Vec2 v11() const{return end;}
+		[[nodiscard]] Geom::Vec2 v10() const{return {end.x, src.y};}
+
+		//{ src.x,  src.y - getBelowBaseHeight(),  getWidth(),  getFullHeight()};
+		[[nodiscard]] Geom::Vec2 getSrc() const{return {src.x,  src.y - getBelowBaseHeight()};}
+		[[nodiscard]] Geom::Vec2 getEnd() const{return {end.x,  src.y - getBelowBaseHeight() + getFullHeight()};}
 
 		void move(const float x, const float y) {
-			u0 += x;
-			u1 += x;
-
-			v0 += y;
-			v1 += y;
+			src.add(x, y);
+			end.add(x, y);
 		}
 
 		void moveX(const float x) {
-			u0 += x;
-			u1 += x;
+			src.x += x;
+			end.x += x;
 		}
 
 		void moveY(const float y) {
-			v0 += y;
-			v1 += y;
+			src.y += y;
+			end.y += y;
+		}
+
+		[[nodiscard]] unsigned getRow() const{
+			return layoutPos.y;
+		}
+
+		[[nodiscard]] unsigned getColumn() const{
+			return layoutPos.x;
+		}
+
+		[[nodiscard]] float getAboveBaseHeight() const{
+			return getFullHeight() - getBelowBaseHeight();
+		}
+
+		[[nodiscard]] float getBelowBaseHeight() const{
+			return -heightAlign.from;
+		}
+
+		[[nodiscard]] float getWidth() const{
+			return end.x - src.x;
+		}
+
+		[[nodiscard]] float getGlyphHeight() const{
+			return end.y - src.y;
+		}
+
+		[[nodiscard]] float getFullHeight() const{
+			return end.y - src.y + heightAlign.to;
+		}
+
+		[[nodiscard]] Geom::OrthoRectFloat getBound() const{
+			return Geom::OrthoRectFloat{ src.x,  src.y - getBelowBaseHeight(),  getWidth(),  getFullHeight()};
 		}
 	};
 
-	struct GlyphLayout { // NOLINT(*-pro-type-member-init)
-		Geom::Vec2 offset{};
-		//TODO uses pools!
-		std::vector<GlyphVertData> toRender{};
+	class GlyphLayout { // NOLINT(*-pro-type-member-init)
 
+		//TODO uses pools!
+		std::vector<GlyphDrawData> glyphs{};
+	public:
+		Geom::Vec2 offset{};
 		float maxWidth{std::numeric_limits<float>::max()};
 
 		Geom::OrthoRectFloat bound{};
 
 		TextString lastText{};
 
-		int count = 0;
+		GlyphDrawData& front(){
+			return glyphs.front();
+		}
+
+		GlyphDrawData& back(){
+			return glyphs.back();
+		}
+
+		[[nodiscard]] std::vector<GlyphDrawData>& getGlyphs(){
+			return glyphs;
+		}
+
+		[[nodiscard]] bool empty() const{
+			return glyphs.empty();
+		}
+
+		[[nodiscard]] auto takeValid() {
+			return glyphs | std::ranges::views::all;
+		}
+
+		[[nodiscard]] auto takeValid() const {
+			return glyphs | std::ranges::views::all;
+		}
+
+		[[nodiscard]] const GlyphDrawData* find(const Geom::Point2U layoutPos) const;
 
 		void reset() {
 			lastText.clear();
@@ -95,7 +181,7 @@ export namespace Font {
 		void clear() {
 			bound.setSize(0, 0);
 			bound.setSrc(0, 0);
-			count = 0;
+			glyphs.clear();
 		}
 
 		void move(const float x, const float y) {
@@ -150,17 +236,19 @@ export namespace Font {
 
 	struct ModifierableData;
 
-	struct TypesettingTable {
-		float spaceSpaceing{-1};
+	struct TypesettingContext {
 		float lineSpacing{-1};
 		float currentScale{1.0f};
 		float paragraphSpacing{-1};
 
 		float additionalYOffset{0.0f}; // This happens when the font changes, maybe
 
+		/** x for column, y for row*/
+		Geom::Point2U currentLayoutPos{};
+
 		Geom::Vec2 offset{};
 
-		std::vector<GlyphVertData*> currentLineData{};
+		std::vector<GlyphDrawData*> currentLineData{};
 		std::vector<std::function<void(const ModifierableData&)>> endlineOperation{};
 		Geom::OrthoRectFloat currentLineBound{};
 
@@ -172,13 +260,12 @@ export namespace Font {
 		const FontFlags* currentFont{nullptr};
 		const FontFlags* fallbackFont{nullptr};
 
-		[[nodiscard]] explicit TypesettingTable(const FontFlags* font);
+		[[nodiscard]] explicit TypesettingContext(const FontFlags* font);
 
-		[[nodiscard]] TypesettingTable() = default;
+		[[nodiscard]] TypesettingContext() = default;
 
 		void set(const FontFlags* const currentFont) {
 			this->currentFont = currentFont;
-			spaceSpaceing = currentFont->data->spaceSpacing;
 			lineSpacing = currentFont->data->lineSpacingMin * 1.8f;
 			paragraphSpacing = lineSpacing * 1.1f;
 		}
@@ -199,16 +286,18 @@ export namespace Font {
 
 			offset.setZero();
 			additionalYOffset = 0;
+			currentLayoutPos.setZero();
+			currentLineBound = {};
 		}
 	};
 
 	struct ModifierableData {
-		TypesettingTable& context;
+		TypesettingContext& context;
 		Geom::Vec2& cursorPos;
 		const Font::CharData*& charData;
 		GlyphLayout& layout;
 
-		[[nodiscard]] ModifierableData(TypesettingTable& context, Geom::Vec2& vec2,
+		[[nodiscard]] ModifierableData(TypesettingContext& context, Geom::Vec2& vec2,
 			const Font::CharData*& data, GlyphLayout& layout)
 			: context(context),
 			cursorPos(vec2),
@@ -225,6 +314,8 @@ namespace ParserFunctions {
 	}
 
 	void endLine(const ModifierableData& data);
+
+	void pushData(const CharCode code, const int index, const CharData* charData, const ModifierableData& data);
 }
 
 	class TokenParser {
@@ -240,22 +331,37 @@ namespace ParserFunctions {
 		}
 	};
 
-	class CharParser {
+	class CharParser{
 	public:
 		virtual ~CharParser() = default;
 
-		std::unordered_map<char, std::function<void(const ModifierableData& data)>> modifier{};
+		/** @return true if this char should be passed*/
+		//TODO wchar_t support
+		std::unordered_map<CharCode, std::function<void(const ModifierableData& data)>> modifier{};
+		std::unordered_set<CharCode> shouldNotContinueSet{};
 
-		virtual void parse(const char& token, const ModifierableData& data) const {
+		virtual void parse(const CharCode token, const ModifierableData& data) const {
 			modifier.at(token)(data);
 		}
 
-		[[nodiscard]] bool contains(const char c) const {
+		[[nodiscard]] bool shouldNotContinue(const CharCode code) const{
+			return shouldNotContinueSet.contains(code);
+		}
+
+		[[nodiscard]] bool contains(const CharCode c) const {
 			return modifier.contains(c);
 		}
 
-		void operator()(const char c, const ModifierableData& data) const {
-			parse(c, data);
+		void registerDefParser(){
+			// modifier[' '] = [](const ModifierableData& data) {
+			// 	data.cursorPos.add(data.context.spaceSpaceing * data.context.currentScale, 0);
+			// };
+
+			modifier['\n'] = [](const ModifierableData& data) {
+				ParserFunctions::endLine(data);
+			};
+
+			shouldNotContinueSet.insert('\n');
 		}
 	};
 
@@ -264,12 +370,13 @@ namespace ParserFunctions {
 		virtual ~GlyphParser() = default;
 
 		const char TokenSignal = '$'; //$$for$
+		//TODO switch this to '< >' to make this compatible with std::format
 		const char TokenBeginCode = '{';
 		const char TokenEndCode = '}';
 
-		Font::FontCache* fontLib{nullptr};
+		Font::FontAtlas* fontLib{nullptr};
 
-		mutable TypesettingTable context{};
+		mutable TypesettingContext context{};
 
 		std::unique_ptr<TokenParser> tokenParser{std::make_unique<TokenParser>()};
 		std::unique_ptr<CharParser> charParser{std::make_unique<CharParser>()};
@@ -348,7 +455,8 @@ namespace ParserFunctions {
 		}
 	};
 
-	GlyphParser* glyphParser = nullptr;
+	std::unique_ptr<GlyphParser> defGlyphParser = nullptr;
+	std::unique_ptr<GlyphParser> forwardParser = nullptr;
 
 	void initParser(const FontFlags* defFont);
 }

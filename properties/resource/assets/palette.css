@@ -1,4 +1,41 @@
 body {
     color: #ffffff;
     color: #ffffff;
+
+    color: /*ROYAL*/ #4169e1ff;
+    color: /*SLATE*/ #708090ff;
+    color: /*SKY*/ #87ceebff;
+
+    color: AQUA #85A2F3ff;
+    color: CYAN 0, 1, 1, 1;
+    color: TEAL 0, 0.5f, 0.5f, 1;
+
+    color: /*GREEN*/ #00ff00ff;
+    color: /*ACID*/ #7fff00ff;
+    color: /*LIME*/ #32cd32ff;
+    color: /*FOREST*/ #228b22ff;
+    color: /*OLIVE*/ #6b8e23ff;
+
+    color: YELLOW #ffff00ff;
+    color: GOLD #ffd700ff;
+    color: GOLDENROD #daa520ff;
+    color: ORANGE #ffa500ff;
+
+    color: /*BROWN*/ #8b4513ff;
+    color: /*TAN*/ #d2b48cff;
+    color: /*BRICK*/ #b22222ff;
+
+    color: RED #ff0000ff;
+    color: RED_DUSK #DE6663ff;
+    color: SCARLET #ff341cff;
+    color: CRIMSON #dc143cff;
+    color: CORAL #ff7f50ff;
+    color: SALMON #fa8072ff;
+    color: PINK #ff69b4ff;
+    color: MAGENTA 1, 0, 1, 1;
+
+    color: PURPLE #a020f0ff;
+    color: VIOLET #ee82eeff;
+    color: MAROON #b03060ff;
 }
+

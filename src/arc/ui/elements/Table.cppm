@@ -119,6 +119,10 @@ export namespace UI {
 			Group::update(delta);
 		}
 
+		Rect getFilledChildrenBound(Elem* elem) const override{
+			return elem->getBound();
+		}
+
 		void recalculateLayoutSize(){
 			elemLayoutMaxCount.setZero();
 			elemLayoutCountData.clear();
@@ -153,15 +157,15 @@ export namespace UI {
 		}
 
 		void drawContent() const override{
-			// for(auto& cell : this->cells){
-			// 	Rect rect{};
-			// 	rect.setSrc(this->absoluteSrc + cell.allocatedBound.getSrc() + this->border.bot_lft()).setSize(cell.allocatedBound);
-			//
-			// 	using namespace Graphic;
-			// 	Draw::color(Colors::YELLOW);
-			// 	Draw::Line::setLineStroke(2.0f);
-			// 	Draw::Line::rectOrtho(rect);
-			// }
+			for(auto& cell : this->cells){
+				Rect rect{};
+				rect.setSrc(this->absoluteSrc + cell.allocatedBound.getSrc() + this->border.bot_lft()).setSize(cell.allocatedBound);
+
+				using namespace Graphic;
+				Draw::color(Colors::YELLOW);
+				Draw::Line::setLineStroke(2.0f);
+				Draw::Line::rectOrtho(rect);
+			}
 
 			Group::drawContent();
 

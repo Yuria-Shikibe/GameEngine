@@ -113,3 +113,7 @@ void UI::Elem::setUnfocused() const {
 	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
 }
+
+bool UI::Elem::keyDown(const int code, const int action, const int mode) const{
+	return root->keyDown(code, action, mode);
+}

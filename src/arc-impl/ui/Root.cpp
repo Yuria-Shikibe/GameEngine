@@ -2,9 +2,10 @@ module UI.Root;
 
 import UI.ElemDrawer;
 import std;
+import Core;
 
-
-UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-default)
+UI::Root::Root(): root(std::make_unique<UI::Table>()){
+	// NOLINT(*-use-equals-default)
 	root->setSrc(0.0f, 0.0f);
 	root->setAbsSrc(Geom::ZERO);
 	root->relativeLayoutFormat = false;
@@ -14,15 +15,17 @@ UI::Root::Root(): root(std::make_unique<UI::Table>()) { // NOLINT(*-use-equals-d
 	root->setBorder({marginX, marginX, marginY, marginY});
 	root->name = "UI Root";
 	root->defaultCellLayout.setMargin(marginX, marginX, marginY, marginY);
+
+	registerCtrl();
 }
 
-void UI::Root::update(const float delta) {
+void UI::Root::update(const float delta){
 	bool stop = false;
 
 	Elem* last = nullptr;
 
-	iterateAll_DFS(root.get(), stop, [this, &last](Elem* elem) mutable {
-		if(elem->isInteractable() && elem->isInbound(cursorPos)) {
+	iterateAll_DFS(root.get(), stop, [this, &last](Elem* elem) mutable{
+		if(elem->isInteractable() && elem->isInbound(cursorPos)){
 			last = elem;
 		}
 
@@ -36,28 +39,28 @@ void UI::Root::update(const float delta) {
 	root->update(delta);
 }
 
-void UI::Root::determinShiftFocus(const Elem* newFocus) {
-	if(newFocus == nullptr) {
-		if(currentCursorFocus != nullptr) {
-			if(currentCursorFocus->needSetMouseUnfocusedAtCursorOutOfBound()) {
+void UI::Root::determinShiftFocus(const Elem* newFocus){
+	if(newFocus == nullptr){
+		if(currentCursorFocus != nullptr){
+			if(currentCursorFocus->needSetMouseUnfocusedAtCursorOutOfBound()){
 				setEnter(nullptr);
-			}else if(pressedMouseButtons.none()){
+			} else if(pressedMouseButtons.none()){
 				setEnter(nullptr);
 			}
 		}
-	}else {
-		if(currentCursorFocus != nullptr) {
-			if(pressedMouseButtons.none()) {
+	} else{
+		if(currentCursorFocus != nullptr){
+			if(pressedMouseButtons.none()){
 				setEnter(newFocus);
 			}
-		}else {
+		} else{
 			setEnter(newFocus);
 		}
 	}
 }
 
-void UI::Root::resize(const unsigned w, const unsigned h) {
-	width  = static_cast<float>(w);
+void UI::Root::resize(const unsigned w, const unsigned h){
+	width = static_cast<float>(w);
 	height = static_cast<float>(h);
 	root->setSize(static_cast<float>(w), static_cast<float>(h));
 
@@ -66,76 +69,81 @@ void UI::Root::resize(const unsigned w, const unsigned h) {
 	projection.setOrthogonal(0, 0, static_cast<float>(w), static_cast<float>(h));
 }
 
-void UI::Root::render() const {
+void UI::Root::render() const{
 	root->draw();
 }
 
 void UI::Root::onDoubleClick(const int id, int mode){
-	if(currentCursorFocus == nullptr)return;
+	if(currentCursorFocus == nullptr) return;
 	doubleClickAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(doubleClickAction);
 }
 
-void UI::Root::onPress(const int id, int mode) {
-	if(currentCursorFocus == nullptr)return;
+void UI::Root::onPress(const int id, int mode){
+	if(currentCursorFocus == nullptr) return;
 	pressAction.set(cursorPos, id);
 	cursorPressedBeginPos = cursorPos;
 	currentCursorFocus->getInputListener().fire(pressAction);
 	pressedMouseButtons[id] = true;
 }
 
-void UI::Root::onRelease(const int id, int mode) {
-	if(currentCursorFocus == nullptr)return;
+void UI::Root::onRelease(const int id, int mode){
+	if(currentCursorFocus == nullptr) return;
 	releaseAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(releaseAction);
 	pressedMouseButtons[id] = false;
 }
 
-void UI::Root::onScroll() const {
-	if(currentScrollFocused == nullptr)return;
+void UI::Root::onScroll() const{
+	if(currentScrollFocused == nullptr) return;
 	scrollAction.set(mouseScroll);
 	currentScrollFocused->getInputListener().fire(scrollAction);
 }
 
-void UI::Root::disable() {
+void UI::Root::disable(){
 	root->setVisible(false);
 	root->setTouchbility(TouchbilityFlags::disabled);
 	allHidden = true;
 }
 
-void UI::Root::enable() {
+void UI::Root::enable(){
 	root->setVisible(true);
 	root->setTouchbility(TouchbilityFlags::childrenOnly);
 	allHidden = false;
 }
 
-bool UI::Root::onDrag(const int id, int mode) const {
+bool UI::Root::onDrag(const int id, int mode) const{
 	return pressedMouseButtons[id] && currentCursorFocus != nullptr;
 }
 
-void UI::Root::onDragUpdate() const {
-	if(currentCursorFocus == nullptr)return;
-	for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {
-		dragAction.relativeMove = getCursorDst();
+void UI::Root::onDragUpdate() const{
+	if(currentCursorFocus == nullptr) return;
+	for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i){
+		dragAction.begin = cursorPressedBeginPos;
+		dragAction.end = cursorPos;
 
-		if(onDrag(i)) {
+		if(onDrag(i)){
 			dragAction.set(cursorVel, i);
 			currentCursorFocus->getInputListener().fire(dragAction);
 		}
 	}
 }
 
-void UI::Root::setEnter(const Elem* elem) {
-	if(elem == currentCursorFocus)return;
+bool UI::Root::keyDown(const int code, const int action, const int mode) const{
+	return uiInput->keyGroup.get(code, action, mode);
+}
 
-	if(currentCursorFocus != nullptr) {
+void UI::Root::setEnter(const Elem* elem){
+	if(elem == currentCursorFocus) return;
+
+	if(currentCursorFocus != nullptr){
 		exboundAction.set(cursorPos);
 		currentCursorFocus->getInputListener().fire(exboundAction);
 	}
 
 	currentCursorFocus = elem;
 
-	if(currentCursorFocus != nullptr) {
+	if(currentCursorFocus != nullptr){
 		inboundAction.set(cursorPos);
 		currentCursorFocus->getInputListener().fire(inboundAction);
 	}

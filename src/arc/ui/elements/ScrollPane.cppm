@@ -24,6 +24,7 @@ export namespace UI {
 	std::unique_ptr defScrollBarDrawer{std::make_unique<ScrollerDrawer>()};
 
 	class ScrollPane : public Group {
+
 	protected:
 		Geom::Vec2 scrollOffset{};
 		Geom::Vec2 scrollTempOffset{};
@@ -76,7 +77,8 @@ export namespace UI {
 		Geom::Vec2 scrollSensitivity{90.0f, 60.0f};
 		ScrollPane(){
 			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
-				move(event.relativeMove * Geom::Vec2{itemSize.getWidth() / getValidWidth(), -(itemSize.getHeight() / getValidHeight())});
+				Geom::Vec2 clamp{Math::num<float>(isInHoriBar(event.begin)), Math::num<float>(isInVertBar(event.begin))};
+				move(event.getRelativeMove() * clamp * Geom::Vec2{-itemSize.getWidth() / getValidWidth(), -itemSize.getHeight() / getValidHeight()});
 				pressed = true;
 			});
 
@@ -87,7 +89,11 @@ export namespace UI {
 
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
 				scrollTargetVelocity = event;
-				scrollTargetVelocity.scl(scrollSensitivity.x, -scrollSensitivity.y);
+				if(ishoriOutOfBound() ^ isvertOutOfBound()){
+					scrollTargetVelocity.x = scrollTargetVelocity.y;
+				}
+
+				scrollTargetVelocity.scl(-scrollSensitivity.x, -scrollSensitivity.y);
 			});
 
 			touchbility = UI::TouchbilityFlags::enabled;
@@ -116,16 +122,21 @@ export namespace UI {
 			}
 
 			calAbsoluteSrc(parent);
+		}
+
+		void calAbsoluteSrc(Elem* parent) override{
+			Geom::Vec2 vec{parent->getAbsSrc()};
+			vec.add(bound.getSrcX(), bound.getSrcY());
+			//TODO scroll offset check
+			absoluteSrc.set(vec);
 
 			if(hasChildren()) {
 				const Geom::Vec2 absOri = absoluteSrc;
-				absoluteSrc += scrollTempOffset;
-				absoluteSrc.x += border.left;
-				absoluteSrc.y -= border.bottom;
 
-				if(vertOutbound()) {
-					absoluteSrc.y += getHeight() - itemSize.getHeight();
-				}
+				absoluteSrc += border.bot_lft();
+				absoluteSrc += scrollTempOffset;// * Geom::Vec2{Math::num<float>(horiExbound), Math::num<float>(vertExbound)};
+
+				absoluteSrc.y += getValidHeight() - itemSize.getHeight();
 
 				calAbsoluteChildren();
 
@@ -133,17 +144,11 @@ export namespace UI {
 			}
 		}
 
-		void calAbsoluteSrc(Elem* parent) override{
-			Geom::Vec2 vec{parent->getAbsSrc()};
-			vec.add(bound.getSrcX(), bound.getSrcY());
-			absoluteSrc.set(vec);
-		}
-
 		void layout() override {
 			Group::layout();
 
 			if(item) {
-				itemSize = item->getBoundRef();
+				itemSize = item->getBound();
 			}
 		}
 
@@ -159,7 +164,7 @@ export namespace UI {
 			this->item = ptr.get();
 			if(item != nullptr) {
 				this->addChildren(std::move(ptr), depth);
-				itemSize = item->getBoundRef();
+				itemSize = item->getBound();
 			}
 		}
 
@@ -170,8 +175,8 @@ export namespace UI {
 
 			if(hoverScroller)return rect;
 
-			const bool enableX = !elem->isFillParentX() && bound.getWidth() > getWidth() - getBorderWidth() && bound.getHeight() > getHeight() - getBorderHeight() - hoirScrollerHeight;
-			const bool enableY = !elem->isFillParentY() && bound.getHeight() > getHeight() - getBorderHeight() && bound.getWidth() > getWidth() - getBorderWidth() - vertScrollerWidth;
+			const bool enableX = !elem->isFillParentX() && elem->getWidth() > getValidWidth();
+			const bool enableY = !elem->isFillParentY() && elem->getHeight() > getValidHeight();
 
 			rect.addSize(
 				enableY ? -vertScrollerWidth : 0.0f,
@@ -186,14 +191,25 @@ export namespace UI {
 			return rect;
 		}
 
+
 		[[nodiscard]] bool hintInbound_validToParent(const Geom::Vec2 screenPos) override {
 			return Elem::isInbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
-		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2& screenPos) const {
-			return
-			(enableHorizonScroll() && screenPos.y - absoluteSrc.y + border.bottom < hoirScrollerHeight) ||
-			(enableVerticalScroll() && screenPos.x - absoluteSrc.x + border.left > getWidth() - vertScrollerWidth);
+		[[nodiscard]] bool inbound_scrollBars(Geom::Vec2 screenPos) const {
+			return isInVertBar(screenPos) || isInHoriBar(screenPos);
+		}
+
+		[[nodiscard]] bool isInHoriBar(Geom::Vec2 screenPos) const{
+			if(!enableHorizonScroll())return false;
+			screenPos.y -= absoluteSrc.y + border.bottom;
+			return screenPos.y < hoirScrollerHeight;
+		}
+
+		[[nodiscard]] bool isInVertBar(Geom::Vec2 screenPos) const{
+			if(!enableVerticalScroll())return false;
+			screenPos.x -= absoluteSrc.x + border.left;
+			return screenPos.x > getValidWidth() - vertScrollerWidth;
 		}
 
 		[[nodiscard]] bool isInbound(const Geom::Vec2 screenPos) override {
@@ -206,20 +222,20 @@ export namespace UI {
 			return false;
 		}
 
-		[[nodiscard]] bool horiOutbound() const {
-			return itemSize.getWidth() > getWidth() - getBorderWidth();
+		[[nodiscard]] bool ishoriOutOfBound() const {
+			return itemSize.getWidth() > getValidWidth();
 		}
 
-		[[nodiscard]] bool vertOutbound() const {
-			return itemSize.getHeight() > getHeight() - getBorderHeight();
+		[[nodiscard]] bool isvertOutOfBound() const {
+			return itemSize.getHeight() > getValidHeight();
 		}
 
 		[[nodiscard]] bool enableVerticalScroll() const {
-			return enableVerticalScroll_always || vertOutbound();
+			return enableVerticalScroll_always || isvertOutOfBound();
 		}
 
 		[[nodiscard]] bool enableHorizonScroll() const {
-			return enableHorizonScroll_always || horiOutbound();
+			return enableHorizonScroll_always || ishoriOutOfBound();
 		}
 
 		[[nodiscard]] float horiBarStroke() const {
@@ -231,11 +247,11 @@ export namespace UI {
 		}
 
 		[[nodiscard]] float horiBarLength() const {
-			return Math::min(getWidth() / itemSize.getWidth(), 1.0f) * getWidth();
+			return Math::clampPositive(Math::min(getContentWidth() / itemSize.getWidth(), 1.0f) * getContentWidth());
 		}
 
 		[[nodiscard]] float vertBarSLength() const {
-			return Math::min(getHeight() / itemSize.getHeight(), 1.0f) * getHeight();
+			return Math::clampPositive(Math::min(getValidHeight() / itemSize.getHeight(), 1.0f) * getValidHeight());
 		}
 
 		/** @return Valid Width - Bar Stroke*/
@@ -253,7 +269,25 @@ export namespace UI {
 		}
 
 		[[nodiscard]] float vertScrollRatio() const {
-			return Math::clamp(1.0f - scrollTempOffset.y / (itemSize.getHeight() - getContentHeight()));
+			return Math::clamp(scrollTempOffset.y / (itemSize.getHeight() - getContentHeight()));
+		}
+
+		[[nodiscard]] Rect getHoriBarRect() const {
+			return {
+				drawSrcX() + border.left + horiScrollRatio() * (getValidWidth() - horiBarLength() - vertBarStroke()),
+				drawSrcY() + border.bottom,
+				horiBarLength(),
+				horiBarStroke()
+			};
+		}
+
+		[[nodiscard]] Rect getVertBarRect() const {
+			return {
+				drawSrcX() + getWidth() - border.right - vertBarStroke(),
+				drawSrcY() + getHeight() - border.top - vertScrollRatio() * (getValidHeight() - vertBarSLength() - horiBarStroke()),
+				vertBarStroke(),
+				-vertBarSLength()
+			};
 		}
 
 		void drawContent() const override;

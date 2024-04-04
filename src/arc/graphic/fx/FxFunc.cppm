@@ -19,7 +19,7 @@ export namespace Graphic{
 		float progress{0};
 		float direction{0};
 		float toleranceAngle{180};
-		Math::Interval radius{};
+		Math::Range radius{};
 	};
 
 	void splashVec(

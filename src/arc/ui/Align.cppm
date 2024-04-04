@@ -41,20 +41,20 @@ export namespace Align {
 
 		friend bool operator!=(const Spacing& lhs, const float rhs){ return !(lhs == rhs); }
 
-		[[nodiscard]] constexpr float getMarginWidth() const{
+		[[nodiscard]] constexpr float getWidth() const{
 			return left + right;
 		}
 
-		[[nodiscard]] constexpr float getMarginHeight() const{
+		[[nodiscard]] constexpr float getHeight() const{
 			return bottom + top;
 		}
 
 		[[nodiscard]] constexpr float getRemainWidth(const float total = 1.0f) const{
-			return total - getMarginWidth();
+			return total - getWidth();
 		}
 
 		[[nodiscard]] constexpr float getRemainHeight(float total = 1.0f) const{
-			return total - getMarginHeight();
+			return total - getHeight();
 		}
 
 		constexpr void set(const float val){

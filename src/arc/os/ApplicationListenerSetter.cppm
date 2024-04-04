@@ -83,9 +83,7 @@ void dropCallback(GLFWwindow* window, int path_count, const char* paths[]) {
 
 void charCallback(GLFWwindow* window, unsigned int codepoint);
 
-void charModCallback(GLFWwindow* window, unsigned int codepoint, int mods) {
-
-}
+void charModCallback(GLFWwindow* window, unsigned int codepoint, int mods);
 
 void scaleCallback(GLFWwindow* window, const float xScale, const float yScale){
 	// cout << "Scale CallBack: " << xScale << " | " << yScale << endl;

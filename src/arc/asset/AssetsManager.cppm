@@ -76,7 +76,7 @@ namespace Assets{
 
 		[[nodiscard]] Graphic::TextureAtlas& getAtlas();
 
-		[[nodiscard]] Font::FontCache& getonts() const;
+		[[nodiscard]] Font::FontAtlas& getonts() const;
 
 		[[nodiscard]] Assets::AssetsLoader& getLoader();
 

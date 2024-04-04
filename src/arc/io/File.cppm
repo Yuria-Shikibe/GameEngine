@@ -277,7 +277,9 @@ export namespace OS{
 		[[nodiscard]] std::string readString() const {
 			std::ifstream file_stream(getPath());
 
-			if(!file_stream.is_open())return "";
+			if(!file_stream.is_open()){
+				throw ext::RuntimeException{"Illegal Reading An Invalid File!: " + filename()};
+			}
 
 			std::stringstream file_contents{};
 			std::string line{};

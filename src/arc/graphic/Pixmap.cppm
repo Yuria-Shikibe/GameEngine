@@ -119,11 +119,13 @@ export namespace Graphic{
         }
 
         void create(const unsigned int width, const unsigned int height){
-            data.reset(new (std::nothrow) unsigned char[width * height * Channels]{0});
-            if(data == nullptr)throw ext::RuntimeException{"Failed to create pixmap!"};
-
             this->width = width;
             this->height = height;
+
+            auto size = this->size();
+            if(!size)return;
+
+            data = std::make_unique<unsigned char[]>(size);
         }
 
         void free() {
@@ -161,6 +163,10 @@ export namespace Graphic{
             }
         }
 
+        void clear() const{
+            std::fill_n(this->data.get(), size(), 0);
+        }
+
         //TODO fix these two function!
         [[nodiscard]] GL::Texture2D genTex() const {
             return GL::Texture2D{width, height, copyData()};
@@ -178,15 +184,19 @@ export namespace Graphic{
         }
 
         [[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
-            const auto size = dataSize();
-            auto *const dataN = new unsigned char[size];
-            std::memcpy(dataN, data.get(), size);
+            const auto size = this->size();
+            auto ptr = std::make_unique<unsigned char[]>(size);
+            std::memcpy(ptr.get(), data.get(), size);
 
-            return std::unique_ptr<unsigned char[]>(dataN);
+            return std::move(ptr);
         }
 
         [[nodiscard]] constexpr auto dataSize() const {
             return width * height;
+        }
+
+        [[nodiscard]] constexpr auto size() const {
+            return width * height * Channels;
         }
 
         void setRaw(const unsigned int x, const unsigned int y, const colorBits colorBit) const{
@@ -227,6 +237,7 @@ export namespace Graphic{
             }
         }
 
+    protected:
         static bool empty(const colorBits i){
             return (i & 0x000000ff) == 0;
         }
@@ -253,6 +264,7 @@ export namespace Graphic{
                     a << Color::a_Offset;
         }
 
+    public:
         void blend(const unsigned int x, const unsigned int y, const Color& color) const {
             const colorBits raw = getRaw(x, y);
             setRaw(x, y, blend(raw, color.rgba8888()));

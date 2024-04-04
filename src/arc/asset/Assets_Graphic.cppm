@@ -30,6 +30,7 @@ import GL.Constants;
 import OS.File;
 
 import std;
+import Math;
 
 using namespace GL;
 
@@ -136,7 +137,7 @@ export namespace Assets{
 		OS::File cacheDir;
 		// Font::FontsManager
 
-		const std::vector<Font::CharCode> targetChars {' ' + 1, '~'};
+		const std::vector<Math::Section<Font::CharCode>> targetChars {{' ' + 1, '~'}};
 
 		const Font::FontFlags
 			*consola_Regular{nullptr},

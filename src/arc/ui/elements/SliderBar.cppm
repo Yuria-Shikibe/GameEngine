@@ -95,7 +95,7 @@ export namespace UI{
 			});
 
 			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
-				moveBar(event.relativeMove);
+				moveBar(event.getRelativeMove());
 			});
 
 			inputListener.on<UI::MouseActionRelease>([this](const auto& event) {

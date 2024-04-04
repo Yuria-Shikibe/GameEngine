@@ -83,10 +83,10 @@ export namespace Assets {
 			Draw::mixColor(Colors::DARK_GRAY);
 
 			if(!loader->finished()) {
-				Font::glyphParser->parseWith(loadTasks, loader->getTaskNames("${alp#[0.3]}${scl#[1.5]}", ">> "));
+				Font::defGlyphParser->parseWith(loadTasks, loader->getTaskNames("${alp#[0.3]}${scl#[1.5]}", ">> "));
 				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
 			}else {
-				Font::glyphParser->parseWith(loadTasks, "${alp#[0.3]}${scl#[1.8]}LOAD DONE");
+				Font::defGlyphParser->parseWith(loadTasks, "${alp#[0.3]}${scl#[1.8]}LOAD DONE");
 				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.15f);
 			}
 
@@ -182,7 +182,7 @@ export namespace Assets {
 			ss << std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";
 			ss << "\n${scl#[0.3]}${color#[" << end << "]}" << static_cast<float>(loader->getTimer().toMark().count()) / 1000.0f << "${color#[]}sec.";
 
-			Font::glyphParser->parseWith(loadStatus, ss.str());
+			Font::defGlyphParser->parseWith(loadStatus, ss.str());
 			loadStatus->offset.set(x, y - stroke - slideLineSize * 2.0f);
 
 			loadStatus->setAlign(Align::Mode::top_left);

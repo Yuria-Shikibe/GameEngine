@@ -182,7 +182,7 @@ export namespace Game {
 			using namespace Graphic;
 
 			GL::setDepthMask(false);
-			Font::glyphParser->parseWith(coordText, std::format("${{scl#[0.85]}}${{color#[eeeeeeff]}}Health: {:.1f}", this->health));
+			Font::defGlyphParser->parseWith(coordText, std::format("${{scl#[0.85]}}${{color#[eeeeeeff]}}Health: {:.1f}", this->health));
 			coordText->offset.set(this->trans.vec).add(this->maxBound.getWidth() * 0.55f, this->maxBound.getHeight() * 0.55f);
 			coordText->setAlign(Align::Mode::bottom_left);
 			coordText->render();

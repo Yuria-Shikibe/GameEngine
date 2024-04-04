@@ -8,12 +8,13 @@ import Core;
 import GL.Constants;
 import UI.Scl;
 import std;
-import Encoding;
 
 void charCallback(GLFWwindow* window, unsigned int codepoint){
 
-	std::cout << reinterpret_cast<char*>(ext::convertTo<wchar_t>(codepoint).data()) << std::endl;
-	// std::wcout << cvrt. << std::endl;
+}
+
+void charModCallback(GLFWwindow* window, unsigned int codepoint, int mods){
+	Core::uiRoot->textInputInform(codepoint, mods);
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -41,7 +42,7 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 
 void mouseBottomCallBack(GLFWwindow* window, const int button, const int action, const int mods) {
 	// std::cout << button << " | " << action << '\n';
-	Core::input->informMouseAction(window, button, action, mods);
+	Core::input->informMouseAction(button, action, mods);
 }
 
 void cursorPosCallback(GLFWwindow* window, const double xPos, const double yPos) {
@@ -58,7 +59,7 @@ void scrollCallback(GLFWwindow* window, const double xOffset, const double yOffs
 
 void keyCallback(GLFWwindow* window, const int key, const int scanCode, const int action, const int mods) {
 	// std::cout << key << " | " << action << " | " << mods << std::endl;
-	if(key >= 0 && key < GLFW_KEY_LAST)Core::input->informKeyAction(window, key, scanCode, action, mods);
+	if(key >= 0 && key < GLFW_KEY_LAST)Core::input->informKeyAction(key, scanCode, action, mods);
 }
 
 void monitorCallback(GLFWmonitor* monitor, int event) {

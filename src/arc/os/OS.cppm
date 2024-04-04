@@ -236,6 +236,10 @@ export namespace OS{
 			listener->updateGlobal(deltaTick_internal);
 		}
 
+		for(const auto & listener : applicationListeners){
+			listener->updatePost(deltaTick_internal);
+		}
+
 		updateSignalManager.fire(Event::CycleSignalState::end);
 	}
 }

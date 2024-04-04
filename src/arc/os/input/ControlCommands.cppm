@@ -31,20 +31,20 @@ export namespace Ctrl{
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_PRESS, []{baseMoveSpeed = 200;}));
 		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_LEFT_SHIFT, GLFW_RELEASE, []{baseMoveSpeed = 60;}));
 
-		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_A, Act_Continuous, []{
+		input->registerKeyBind(new OS::KeyBind(KEY_A, Act_Continuous, []{
 			camera->trans(-baseMoveSpeed * disableMoveScl * OS::delta(), 0);
 		}));
-		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_D, Act_Continuous, []{
+		input->registerKeyBind(new OS::KeyBind(KEY_D, Act_Continuous, []{
 			camera->trans( baseMoveSpeed * disableMoveScl * OS::delta(), 0);
 		}));
-		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_W, Act_Continuous, []{
+		input->registerKeyBind(new OS::KeyBind(KEY_W, Act_Continuous, []{
 			camera->trans(0,  baseMoveSpeed * disableMoveScl * OS::delta());
 		}));
-		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_S, Act_Continuous, [] {
+		input->registerKeyBind(new OS::KeyBind(KEY_S, Act_Continuous, [] {
 			camera->trans(0, -baseMoveSpeed * disableMoveScl * OS::delta());
 		}));
 
-		input->registerKeyBind(new OS::KeyBind(Ctrl::KEY_M, Act_Press, [] {
+		input->registerKeyBind(new OS::KeyBind(KEY_M, Act_Press, [] {
 			if(disableMoveScl < 1.0f){
 				disableMoveScl = 1.0f;
 			}else{
@@ -68,7 +68,7 @@ export namespace Ctrl{
 		auto keys = std::array{OS::KeyBind(GLFW_KEY_LEFT_SHIFT, Act_Continuous), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) };
 		input->registerKeyBindMulti(keys, []() {camera->setTargetScaleDef();});
 
-		input->registerMouseBind(Ctrl::LMB, Ctrl::Act_DoubleClick, [] {
+		input->registerMouseBind(LMB, Act_DoubleClick, [] {
 			if(Core::uiRoot->cursorCaptured())return;
 			auto pos = Core::input->getMousePos();
 			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
@@ -77,7 +77,7 @@ export namespace Ctrl{
 			Core::camera->setPosition(pos);
 		});
 
-		input->registerKeyBind(Ctrl::KEY_H, Ctrl::Act_Press, [] {
+		input->registerKeyBind(KEY_H, Act_Press, [] {
 			if(Core::uiRoot->allHidden) {
 				Core::uiRoot->enable();
 			}else {
@@ -85,19 +85,25 @@ export namespace Ctrl{
 			}
 		});
 
-		for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i) {//TODO auto mode resgister
-			Core::input->registerMouseBind(i, Ctrl::Act_Press, [i] {
+		for(int i = 0; i < MOUSE_BUTTON_COUNT; ++i) {//TODO auto mode resgister
+			Core::input->registerMouseBind(i, Act_Press, [i] {
 				Core::uiRoot->onPress(i);
 			});
 
-			Core::input->registerMouseBind(i, Ctrl::Act_Release, [i] {
+			Core::input->registerMouseBind(i, Act_Release, [i] {
 				Core::uiRoot->onRelease(i);
 			});
 
-			Core::input->registerMouseBind(i, Ctrl::Act_DoubleClick, [i] {
+			Core::input->registerMouseBind(i, Act_DoubleClick, [i] {
 				Core::uiRoot->onDoubleClick(i);
 			});
 		}
+
+		input->registerKeyBind(Ctrl::KEY_ESCAPE, Act_Press, [] {
+			if(Core::uiRoot->onEsc()){
+				//TODO...
+			}
+		});
 
 
 		Core::input->cursorMoveListeners.emplace_back([](const float x, const float y) {
@@ -118,12 +124,12 @@ export namespace Ctrl{
 		});
 
 
-		Core::input->registerKeyBind(Ctrl::KEY_P, Ctrl::Act_Press, [] {
+		Core::input->registerKeyBind(KEY_P, Act_Press, [] {
 			OS::setPause(!OS::isPaused());
 		});
 
 		{//TODO pack this into a class like screen shot manager
-			// Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, []() mutable  {
+			// Core::input->registerKeyBind(KEY_F1, Act_Press, []() mutable  {
 			// 	screenShotRequest = true;
 			// });
 

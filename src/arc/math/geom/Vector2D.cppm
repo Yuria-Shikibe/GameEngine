@@ -575,7 +575,7 @@ export namespace Geom{
 			return length2() == static_cast<T>(0);
 		}
 
-		[[nodiscard]] constexpr bool isZero(const float margin) const {
+		[[nodiscard]] constexpr bool isZero(const T margin) const {
 			return length2() < margin;
 		}
 

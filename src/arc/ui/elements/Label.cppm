@@ -18,11 +18,30 @@ export namespace UI {
 
 		bool textChanged = false;
 
+		void textUpdated() {
+			textChanged = true;
+		}
+
+		void updateTextLayout() {
+			Font::defGlyphParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : getValidWidth(), textChanged);
+			glyphLayout->setAlign(textAlignMode);
+			textChanged = false;
+			if(usingGlyphHeight){
+				setHeight(border.getHeight() + glyphLayout->bound.getHeight());
+			}
+
+			if(usingGlyphWidth){
+				setWidth(border.getWidth() + glyphLayout->bound.getHeight());
+			}
+		}
+
 	public:
+		bool usingGlyphHeight = false;
+		bool usingGlyphWidth = false;
 
 		[[nodiscard]] Font::TextView getLastText() const{
 			return glyphLayout->lastText;
-		};
+		}
 
 		void setTextAlign(const Align::Mode align){
 			textAlignMode = align;
@@ -33,16 +52,6 @@ export namespace UI {
 			setBorder(12.0f);
 		}
 
-		void textUpdated() {
-			textChanged = true;
-		}
-
-		void updateTextLayout() {
-			Font::glyphParser->parseWith(glyphLayout, getValidWidth(), textChanged);
-			glyphLayout->setAlign(textAlignMode);
-			textChanged = false;
-		}
-
 		void setLayoutDataPtr(const std::shared_ptr<Font::GlyphLayout>& layoutPtr) {
 			glyphLayout = layoutPtr;
 		}
@@ -51,14 +60,12 @@ export namespace UI {
 			glyphLayout->lastText = text;
 			textSource = nullptr;
 			textUpdated();
-			changed();
 		}
 
 		void setText(const Font::TextView::const_pointer text) {
 			glyphLayout->lastText = Font::TextView{text};
 			textSource = nullptr;
 			textUpdated();
-			changed();
 		}
 
 		void setText(Concepts::Invokable<Font::TextView()> auto&& charSource) {
@@ -66,7 +73,6 @@ export namespace UI {
 			glyphLayout->lastText = std::move(textSource());
 
 			textUpdated();
-			changed();
 		}
 
 		void drawContent() const override;
@@ -82,7 +88,7 @@ export namespace UI {
 
 				if(cur != getLastText()){
 					glyphLayout->lastText = std::move(cur);
-					textChanged = true;
+					textUpdated();
 				}
 
 				updateTextLayout();

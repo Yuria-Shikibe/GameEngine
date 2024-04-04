@@ -2,8 +2,6 @@ module Graphic.Draw;
 
 import Core;
 
-extern Core::BatchGroup& Graphic::batchGroup = Core::batchGroup;
-
 void Graphic::World::vert(float* vertices, const float x1, const float y1, const float z1, const float u1, const float v1, const Color c1, const Color cm1, const float x2,
                        const float y2, const float z2, const float u2, const float v2, const Color c2, const Color cm2, const float x3, const float y3, const float z3, const float u3, const float v3,
                        const Color c3,
@@ -356,4 +354,8 @@ void Graphic::Overlay::vert_monochromeAll(float* vertices, const Color c, const 
 		vertices[9 + 3 * VERT_GROUP_SIZE_LAYOUT]  = c.g;
 		vertices[10 + 3 * VERT_GROUP_SIZE_LAYOUT] = c.b;
 		vertices[11 + 3 * VERT_GROUP_SIZE_LAYOUT] = c.a;
+}
+
+Graphic::BatchPtr& Graphic::getBatch(BatchPtr Core::BatchGroup::* batchPtr){
+	return Core::batchGroup.*batchPtr;
 }

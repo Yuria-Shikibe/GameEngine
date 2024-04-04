@@ -14,21 +14,11 @@ void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
 	Graphic::Draw::color(Graphic::Colors::GRAY);
 
 	if(pane->enableHorizonScroll()) {
-		Graphic::Draw::rectOrtho(
-			pane->drawSrcX() + pane->getMargin().left + pane->horiScrollRatio() * (pane->getValidWidth() - pane->horiBarLength()),
-			pane->drawSrcY() + pane->getMargin().bottom,
-			pane->horiBarLength(),
-			pane->horiBarStroke()
-		);
+		Graphic::Draw::rectOrtho(Graphic::Draw::contextTexture, pane->getHoriBarRect());
 	}
 
 	if(pane->enableVerticalScroll()) {
-		Graphic::Draw::rectOrtho(
-			pane->drawSrcX() + pane->getWidth() - pane->getMargin().right,
-			pane->drawSrcY() + pane->getMargin().bottom + pane->vertScrollRatio() * (pane->getValidHeight() - pane->vertBarSLength()),
-			-pane->vertBarStroke(),
-			pane->vertBarSLength()
-		);
+		Graphic::Draw::rectOrtho(Graphic::Draw::contextTexture, pane->getVertBarRect());
 	}
 }
 
@@ -38,8 +28,8 @@ void UI::ScrollPane::drawContent() const{
 	const auto lastRect = GL::getScissorRect();
 
 	const Geom::OrthoRectInt clip{
-		Math::round<int>(absoluteSrc.x + border.left), Math::round<int>(absoluteSrc.y + horiBarStroke() + border.bottom),
-	Math::round<int>(this->getContentWidth()), Math::round<int>(this->getContentHeight())
+		Math::floorPositive(absoluteSrc.x + border.left), Math::floorPositive(absoluteSrc.y + horiBarStroke() + border.bottom),
+	Math::ceilPositive(getContentWidth()), Math::ceilPositive(getContentHeight())
 	};
 
 	const auto count = GL::getSrhinkCount();
