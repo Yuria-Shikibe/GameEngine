@@ -12,7 +12,7 @@ export import Game.Faction;
 import Game.Entity.Collision;
 
 import Geom.Shape.RectBox;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import Geom.Matrix3D;
 import Geom.Vector2D;
 import Geom;

@@ -2,7 +2,7 @@ module;
 
 export module Game.Entity.Drawable;
 
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import Game.Entity;
 
 export namespace Game {

@@ -1,18 +1,10 @@
 module UI.Elem;
 
 import UI.Group;
-import UI.ElemDrawer;
+import UI.Drawer;
 import UI.Root;
 import RuntimeException;
 import Core;
-
-UI::Elem::~Elem() {
-	setUnfocused();
-}
-
-UI::Elem::Elem() {
-	if(!drawer)setDrawer(UI::defDrawer);
-}
 
 bool UI::Elem::layout_tryFillParent() {
 	if(parent) {
@@ -37,6 +29,10 @@ void UI::Elem::draw() const {
 	drawContent();
 
 	maskOpacity = 1.0f;
+}
+
+void UI::Elem::applyDefDrawer(){
+	setDrawer(UI::defDrawer);
 }
 
 void UI::Elem::drawBackground() const {

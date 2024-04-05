@@ -19,10 +19,9 @@ const Font::GlyphDrawData* Font::GlyphLayout::find(const Geom::Point2U layoutPos
 }
 
 void Font::GlyphLayout::render() const {
-	if(empty() || this->lastText.empty()) return;
+	if(empty()) return;
 	const Geom::Vec2 off = bound.getSrc() + offset;
 	for (auto& glyph : glyphs){
-
 		Graphic::Draw::color(glyph.fontColor);
 		Graphic::Draw::quad(
 			glyph.region,
@@ -41,7 +40,7 @@ void Font::GlyphLayout::render() const {
 }
 
 void Font::GlyphLayout::render(float progress) const {
-	if(empty() || this->lastText.empty()) return;
+	if(empty()) return;
 	progress = Math::clamp(progress);
 
 	const Geom::Vec2 off = bound.getSrc() + offset;

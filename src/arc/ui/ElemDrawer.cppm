@@ -1,14 +1,29 @@
-export module UI.ElemDrawer;
+export module UI.Drawer;
+
 import std;
 import Graphic.Color;
 import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
+import Geom.Vector2D;
+
 
 export import UI.Align;
 
 export namespace UI {
 	class Elem;
+
+	class ScrollPane;
+
+	struct ScrollBarDrawer {
+		float margin = 1.0f;
+		Geom::Vec2 offsetScl{0.35f, 0.35f};
+		Graphic::Color barColor{Graphic::Colors::GRAY};
+		GL::TextureNineRegion region{};
+		virtual ~ScrollBarDrawer() = default;
+
+		virtual void operator()(const ScrollPane* pane) const;
+	};
 
 	struct Drawable {
 		virtual ~Drawable() = default;
@@ -110,4 +125,6 @@ export namespace UI {
 	// std::unique_ptr<ElemDrawer> defDrawer{std::make_unique<EdgeDrawer>()};
 	ElemDrawer* defDrawer{nullptr};
 	EmptyDrawer emptyDrawer{};
+
+	ScrollBarDrawer defScrollBarDrawer{};
 }

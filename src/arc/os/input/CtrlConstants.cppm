@@ -22,6 +22,7 @@ export namespace Ctrl {
 	constexpr int Mode_Ctrl_Shift = Mode_Ctrl | Mode_Shift;
 	constexpr int Mode_Alt = 0b0000'0100;
 	constexpr int Mode_Win = 0b0000'1000;
+	constexpr int Mode_Frequent_Bound = Mode_Shift | Mode_Ctrl | Mode_Alt + 1;
 	constexpr int Mode_NO_IGNORE = 0xff'00'00'00;
 	constexpr int Mode_IGNORE = 0xf0'00'00'00;
 	constexpr std::array Modes{

@@ -8,7 +8,7 @@ import Concepts;
 export import Geom.Matrix3D;
 export import Geom.Vector3D;
 export import Geom.Vector2D;
-export import Geom.Shape.Rect_Orthogonal;
+export import Geom.Rect_Orthogonal;
 
 using Geom::OrthoRectFloat;
 

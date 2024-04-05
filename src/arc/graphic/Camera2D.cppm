@@ -10,7 +10,7 @@ import Concepts;
 import Graphic.Viewport;
 import Graphic.Resizeable;
 import Graphic.Viewport.Viewport_OrthoRect;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import OS.ApplicationListener;
 import Geom.Vector2D;
 import Geom.Matrix3D;

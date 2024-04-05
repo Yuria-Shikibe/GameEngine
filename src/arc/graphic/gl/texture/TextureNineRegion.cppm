@@ -4,12 +4,13 @@ import std;
 import Math;
 import GL.Texture.TextureRegionRect;
 import GL.Texture;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import RuntimeException;
 import Geom.Vector2D;
+import UI.Align;
 
 using Rect = Geom::OrthoRectFloat;
-using HardRect = Geom::OrthoRectUInt;
+using HardRect = Geom::OrthoRectInt;
 
 export namespace GL {
 	/**
@@ -53,8 +54,7 @@ export namespace GL {
 
 		Geom::Vec2 innerSize{};
 
-		Geom::Vec2 bottomLeftSize{};
-		Geom::Vec2 topRightSize{};
+		Align::Spacing edge{};
 
 
 		[[nodiscard]] TextureNineRegion() = default;
@@ -65,10 +65,10 @@ export namespace GL {
 
 		void loadFrom(const TextureRegionRect* const rect, HardRect&& innerBound) {
 			const HardRect totalBound{
-				Math::round<unsigned>(rect->u00() * rect->getData()->getWidth()),
-				Math::round<unsigned>(rect->v00() * rect->getData()->getHeight()),
-				Math::round<unsigned>(rect->getWidth()),
-				Math::round<unsigned>(rect->getHeight())
+				Math::round<int>(rect->u00() * static_cast<float>(rect->getData()->getWidth())),
+				Math::round<int>(rect->v00() * static_cast<float>(rect->getData()->getHeight())),
+				Math::round<int>(rect->getWidth()),
+				Math::round<int>(rect->getHeight())
 			};
 
 			innerBound.move(totalBound.getSrcX(), totalBound.getSrcY());
@@ -90,27 +90,27 @@ export namespace GL {
 				region.setData(rect);
 			}
 
-			const unsigned int
+			const int
 				srcX = totalBound.getSrcX(),
 				srcY = totalBound.getSrcY(),
-				bottomLeft_W = innerBound.getSrcX() - srcX,
-				bottomLeft_H = innerBound.getSrcY() - srcY,
-				inner_W = innerBound.getWidth(),
-				inner_H = innerBound.getHeight(),
-				topRight_W = totalBound.getEndX() - innerBound.getEndX(),
-				topRight_H = totalBound.getEndY() - innerBound.getEndY();
+				left = innerBound.getSrcX() - srcX,
+				bottom = innerBound.getSrcY() - srcY,
+				innerWidth = innerBound.getWidth(),
+				innerHeight = innerBound.getHeight(),
+				right = totalBound.getEndX() - innerBound.getEndX(),
+				top = totalBound.getEndY() - innerBound.getEndY();
 
 			regions[ID_center     ].fetchIntoCurrent(innerBound);
 
-			regions[ID_right      ].fetchIntoCurrent(HardRect{innerBound.getEndX(), innerBound.getSrcY(), topRight_W, inner_H});
-			regions[ID_top        ].fetchIntoCurrent(HardRect{innerBound.getSrcX(), innerBound.getEndY(), inner_W, topRight_H});
-			regions[ID_left       ].fetchIntoCurrent(HardRect{srcX, innerBound.getSrcY(), bottomLeft_W, inner_H});
-			regions[ID_bottom     ].fetchIntoCurrent(HardRect{innerBound.getSrcX(), srcY, inner_W, bottomLeft_H});
+			regions[ID_right      ].fetchIntoCurrent(HardRect{innerBound.getEndX(), innerBound.getSrcY(), right, innerHeight});
+			regions[ID_top        ].fetchIntoCurrent(HardRect{innerBound.getSrcX(), innerBound.getEndY(), innerWidth, top});
+			regions[ID_left       ].fetchIntoCurrent(HardRect{srcX, innerBound.getSrcY(), left, innerHeight});
+			regions[ID_bottom     ].fetchIntoCurrent(HardRect{innerBound.getSrcX(), srcY, innerWidth, bottom});
 
-			regions[ID_topRight   ].fetchIntoCurrent(HardRect{innerBound.getEndX(), innerBound.getEndY(), topRight_W, topRight_H});
-			regions[ID_topLeft    ].fetchIntoCurrent(HardRect{srcX, innerBound.getEndY(), bottomLeft_W, topRight_H});
-			regions[ID_bottomLeft ].fetchIntoCurrent(HardRect{srcX, srcY, bottomLeft_W, bottomLeft_H});
-			regions[ID_bottomRight].fetchIntoCurrent(HardRect{innerBound.getEndX(), srcY, topRight_W, bottomLeft_H});
+			regions[ID_topRight   ].fetchIntoCurrent(HardRect{innerBound.getEndX(), innerBound.getEndY(), right, top});
+			regions[ID_topLeft    ].fetchIntoCurrent(HardRect{srcX, innerBound.getEndY(), left, top});
+			regions[ID_bottomLeft ].fetchIntoCurrent(HardRect{srcX, srcY, left, bottom});
+			regions[ID_bottomRight].fetchIntoCurrent(HardRect{innerBound.getEndX(), srcY, right, bottom});
 
 			for(TextureRegionRect& region : regions) {
 				if(region.getWidth() * region.getHeight() < 0.2f) {
@@ -118,33 +118,37 @@ export namespace GL {
 				}
 			}
 
-			innerSize.set(inner_W, inner_H);
-			bottomLeftSize.set(bottomLeft_W, bottomLeft_H);
-			topRightSize.set(topRight_W, topRight_H);
+			innerSize.set(static_cast<float>(innerWidth), static_cast<float>(innerHeight));
+			edge.set(
+				static_cast<float>(left),
+				static_cast<float>(right),
+				static_cast<float>(bottom),
+				static_cast<float>(top)
+			);
 		}
 
 		[[nodiscard]] float getSrcX() const {
-			return -bottomLeftSize.x;
+			return -edge.left;
 		}
 
 		[[nodiscard]] float getSrcY() const {
-			return -bottomLeftSize.y;
+			return -edge.bottom;
 		}
 
 		[[nodiscard]] float getEndX() const {
-			return innerSize.x + topRightSize.x;
+			return innerSize.x + edge.right;
 		}
 
 		[[nodiscard]] float getEndY() const {
-			return innerSize.y + topRightSize.y;
+			return innerSize.y + edge.top;
 		}
 
 		[[nodiscard]] float getWidth() const {
-			return innerSize.x + topRightSize.x + bottomLeftSize.x;
+			return innerSize.x + edge.getWidth();
 		}
 
 		[[nodiscard]] float getHeight() const {
-			return innerSize.y + topRightSize.y + bottomLeftSize.y;
+			return innerSize.y + edge.getHeight();
 		}
 
 		[[nodiscard]] Rect bound() const {

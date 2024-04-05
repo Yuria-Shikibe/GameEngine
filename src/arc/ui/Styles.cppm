@@ -2,9 +2,9 @@ module;
 
 export module UI.Styles;
 
-import UI.ElemDrawer;
+import UI.Drawer;
 
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureNineRegion;
 import Graphic.TextureAtlas;
@@ -74,8 +74,9 @@ export namespace UI::Styles {
 		drawer_elem_s1{nullptr}
 	;
 
-	UI::ElemDrawer*
-		empty = &UI::emptyDrawer;
+	std::unique_ptr<UI::ScrollBarDrawer>
+		scrollBar_drawer_roundCorner{nullptr}
+	;
 
 	void load(Graphic::TextureAtlas& atlas) {
 		auto&& applyMargin_16 = [](const std::unique_ptr<UI::UIStyle>& style) {
@@ -183,5 +184,9 @@ export namespace UI::Styles {
 		}
 
 		UI::defDrawer = drawer_elem_s1.get();
+		UI::defScrollBarDrawer.region = tex_elem_s1_back;
+		UI::defScrollBarDrawer.margin = 2.0f;
+		UI::defScrollBarDrawer.offsetScl.set(0.35f, 0.35f);
+
 	}
 }

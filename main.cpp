@@ -37,7 +37,7 @@ import Math.Rand;
 import Math.StripPacker2D;
 import Geom.Vector2D;
 import Geom.Matrix3D;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 import OS;
 import OS.ApplicationListenerSetter;
@@ -84,7 +84,7 @@ import UI.Root;
 import UI.Table;
 import UI.Label;
 import UI.ScrollPane;
-import UI.ElemDrawer;
+import UI.Drawer;
 import UI.Styles;
 import UI.Button;
 import UI.SliderBar;
@@ -126,16 +126,23 @@ void setupUITest() {
 
 	HUD->relativeLayoutFormat = false;
 	HUD->setBorderZero();
-	HUD->setDrawer(UI::Styles::empty);
-
+	HUD->setDrawer(&UI::emptyDrawer);
 
 	HUD->add<UI::Table>([](UI::Table& label){
 			label.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-				pane.setItem<UI::InputArea>([](UI::InputArea& area){
-					area.usingGlyphWidth = true;
-					area.usingGlyphHeight = true;
-					area.setText("Test Test TTT\n123123 123@@vasdasdasdasdasd\nasdasdasdasd\n\n123123123");
-					//area.setFillparentY();
+				pane.setItem<UI::Label>([](UI::Label& label){
+					label.setText([](){
+						sstream.str("");
+						sstream << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << Core::camera->getPosition().x << ", " <<
+							Core::camera->getPosition().y << ") | " << std::to_string(OS::getFPS());
+						sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
+						sstream << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{}, &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
+
+						return sstream.str();
+					});
+
+					label.setFillparentX();
+					label.usingGlyphHeight = true;
 				});
 				// pane.setItem<UI::Elem>([](UI::Elem& area){
 				// 	area.setWidth(1000);
@@ -240,14 +247,17 @@ void setupUITest() {
 	//
 	HUD->add<UI::Table>([](UI::Table& table){
 		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-			   // pane.setItem<UI::Table>([](UI::Table& paneT){
-			   // 	paneT.add<UI::InputArea>([](UI::InputArea& area){
-			   // 		area.usingGlyphWidth = area.usingGlyphHeight = true;
-			   // 		area.setText("Test Test TTT\n123123 123@@vasdasd\nasdasdasdasd");
-			   // 	}).expand();
-			   // });
+		   	pane.setItem<UI::InputArea>([](UI::InputArea& area){
+					   area.usingGlyphWidth = area.usingGlyphHeight = true;
+					   area.setText("Test Test TTT\n123123 123@@vasdasd\nasdasdasdasd");
+				   });
+				   // paneT.setFillparentX();
 
-			   pane.setFillparent();
+			   // pane.setItem<UI::Table>([](UI::Table& paneT){
+				  //
+			   // });
+			   //
+			   // pane.setFillparent();
 		   }).fillParent();
 	   })
 	   .setAlign(Align::Mode::bottom_right)
@@ -484,13 +494,6 @@ int main(const int argc, char* argv[]) {
 
 				Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 				Draw::color();
-
-				sstream << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << cameraPos.getX() << ", " <<
-						cameraPos.getY() << ") | " << std::to_string(OS::getFPS());
-				sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
-				sstream << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, [](const decltype(Game::EntityManage::drawables.idMap)::value_type::second_type& i) {
-					return i->isInScreen();
-				});
 
 				// Font::glyphParser->parse(coordCenter, R"()");
 				//

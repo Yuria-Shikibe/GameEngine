@@ -12,7 +12,7 @@ import Geom.Vector2D;
 import Geom.Shape;
 import Geom.Shape.Circle;
 import Geom.Shape.RectBox;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 
 using namespace Geom::Shape;

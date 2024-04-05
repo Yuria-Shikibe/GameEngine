@@ -11,7 +11,7 @@ export import Font;
 
 import Graphic.Color;
 import Container.Pool;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import Geom.Vector2D;
 
@@ -82,8 +82,8 @@ export namespace Font {
 		[[nodiscard]] Geom::Vec2 v10() const{return {end.x, src.y};}
 
 		//{ src.x,  src.y - getBelowBaseHeight(),  getWidth(),  getFullHeight()};
-		[[nodiscard]] Geom::Vec2 getSrc() const{return {src.x,  src.y - getBelowBaseHeight()};}
-		[[nodiscard]] Geom::Vec2 getEnd() const{return {end.x,  src.y - getBelowBaseHeight() + getFullHeight()};}
+		[[nodiscard]] Geom::Vec2 getBoundSrc() const{return {src.x,  src.y - getBelowBaseHeight()};}
+		[[nodiscard]] Geom::Vec2 getBoundEnd() const{return {end.x,  src.y - getBelowBaseHeight() + getFullHeight()};}
 
 		void move(const float x, const float y) {
 			src.add(x, y);
@@ -145,11 +145,15 @@ export namespace Font {
 
 		TextString lastText{};
 
-		GlyphDrawData& front(){
+		[[nodiscard]] Geom::Vec2 getDrawOffset() const{
+			return bound.getSrc() + offset;
+		}
+
+		[[nodiscard]] GlyphDrawData& front(){
 			return glyphs.front();
 		}
 
-		GlyphDrawData& back(){
+		[[nodiscard]] GlyphDrawData& back(){
 			return glyphs.back();
 		}
 
@@ -213,8 +217,6 @@ export namespace Font {
 		void render() const;
 
 		void render(float progress) const;
-
-		[[nodiscard]] GlyphLayout() = default;
 	};
 
 	//TODO cache support. maybe?

@@ -1,6 +1,6 @@
 module UI.Root;
 
-import UI.ElemDrawer;
+import UI.Drawer;
 import std;
 import Core;
 
@@ -88,7 +88,10 @@ void UI::Root::onPress(const int id, int mode){
 }
 
 void UI::Root::onRelease(const int id, int mode){
-	if(currentCursorFocus == nullptr) return;
+	if(currentCursorFocus == nullptr){
+		pressedMouseButtons[id] = false;
+		return;
+	}
 	releaseAction.set(cursorPos, id);
 	currentCursorFocus->getInputListener().fire(releaseAction);
 	pressedMouseButtons[id] = false;

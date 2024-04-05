@@ -5,7 +5,7 @@ import std;
 import Assets.Loader;
 import Math.StripPacker2D;
 import Graphic.Pixmap;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
 
 import GL.Texture.Texture2D;

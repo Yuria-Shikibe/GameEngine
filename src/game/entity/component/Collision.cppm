@@ -6,7 +6,7 @@ export module Game.Entity.Collision;
 
 export import Geom.Shape.RectBox;
 import Geom.Transform;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import Geom.Matrix3D;
 import Math;
 import Geom;

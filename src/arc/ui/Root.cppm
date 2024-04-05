@@ -166,25 +166,37 @@ export namespace UI{
 		void registerCtrl() const{
 			uiInput->registerKeyBind({{Ctrl::KEY_BACKSPACE, Ctrl::Act_Press}, {Ctrl::KEY_BACKSPACE, Ctrl::Act_Repeat}}, [this]{
 				if(textInputListener){
-					textInputListener->informBackSpace();
+					textInputListener->informBackSpace(0);
 				}
 			});
 
 			uiInput->registerKeyBind({{Ctrl::KEY_DELETE, Ctrl::Act_Press}, {Ctrl::KEY_DELETE, Ctrl::Act_Repeat}}, [this]{
 				if(textInputListener){
-					textInputListener->informDelete();
+					textInputListener->informDelete(0);
 				}
 			});
 
 			uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl}}, [this]{
 				if(textInputListener){
-					textInputListener->snapBackTrace();
+					textInputListener->informDo();
+				}
+			});
+
+			uiInput->registerKeyBind({{Ctrl::KEY_ENTER, Ctrl::Act_Press}, {Ctrl::KEY_ENTER, Ctrl::Act_Repeat}}, [this]{
+				if(textInputListener){
+					textInputListener->informEnter(0);
 				}
 			});
 
 			uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl_Shift}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl_Shift}}, [this]{
 				if(textInputListener){
-					textInputListener->snapForwardTrace();
+					textInputListener->informUndo();
+				}
+			});
+
+			uiInput->registerKeyBind({{Ctrl::KEY_A, Ctrl::Act_Press, Ctrl::Mode_Ctrl}}, [this]{
+				if(textInputListener){
+					textInputListener->informSelectAll();
 				}
 			});
 		}

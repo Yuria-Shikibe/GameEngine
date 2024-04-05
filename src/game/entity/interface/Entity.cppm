@@ -2,7 +2,7 @@ export module Game.Entity;
 
 import std;
 import RuntimeException;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import Event;
 
 

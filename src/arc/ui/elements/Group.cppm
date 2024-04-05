@@ -133,7 +133,7 @@ export namespace UI {
 		void setDisabled(const bool disabled) override{
 			if(this->disabled != disabled){
 				this->disabled = disabled;
-				for (auto& child : children){
+				for (const auto& child : children){
 					child->setDisabled(disabled);
 				}
 			}

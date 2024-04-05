@@ -5,7 +5,7 @@ export module Math.StripPacker2D;
 import std;
 import RuntimeException;
 import Concepts;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 export namespace Math {
     template <typename Cont, Concepts::Number T, Concepts::Invokable<Geom::Rect_Orthogonal<T>&(Cont&)> auto trans>

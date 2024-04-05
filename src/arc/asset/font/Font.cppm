@@ -13,7 +13,8 @@ import Assets.Loader;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureRegion;
-import Geom.Shape.Rect_Orthogonal;
+import Assets.TexturePacker;
+import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
 import Graphic.Pixmap;
 import RuntimeException;
@@ -334,7 +335,7 @@ export namespace Font {
 			return internalID & mask | static_cast<FT_UInt>(Style::regualr) << styleOffset;
 		}
 
-		void free() {
+		void freeFontFace() {
 			if(!face)FT_Done_Face(face);
 			face = nullptr;
 		}
@@ -453,6 +454,7 @@ export namespace Font {
 		Event::CycleSignalManager fontLoadListeners{};
 		OS::File rootCacheDir{};
 		std::unique_ptr<FontAtlas> manager{nullptr};
+		Assets::TexturePackPage* fontAtlas{nullptr};
 
 		[[nodiscard]] FontManager() = default;
 
@@ -799,8 +801,9 @@ export namespace Font {
 			assignID();
 			setProgress(0.8f);
 
+			//TODO is this necessary?
 			for (const auto& flag : flags) {
-				flag->free();
+				flag->freeFontFace();
 			}
 
 			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;

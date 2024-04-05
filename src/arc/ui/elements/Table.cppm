@@ -8,7 +8,7 @@ export import UI.Cell;
 
 import std;
 
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import UI.Align;
 import Concepts;
 import Geom.Vector2D;

@@ -3,7 +3,7 @@ module;
 export module Geom.Shape.RectBox;
 
 import Geom.Vector2D;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 import Math;
 import std;

@@ -1,7 +1,6 @@
-module;
-
 module UI.ScrollPane;
 
+import UI.Drawer;
 import Graphic.Draw;
 
 import UI.Root;
@@ -10,16 +9,21 @@ import Math;
 
 using UI::Root;
 
-void UI::ScrollerDrawer::operator()(const ScrollPane* pane) const {
-	Graphic::Draw::color(Graphic::Colors::GRAY);
+void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
+	Graphic::Draw::color(barColor);
 
 	if(pane->enableHorizonScroll()) {
-		Graphic::Draw::rectOrtho(Graphic::Draw::contextTexture, pane->getHoriBarRect());
+		region.render_RelativeExter(pane->getHoriBarRect().copy().shrink(margin).moveY(pane->getBorder().bottom * -offsetScl.x));
 	}
 
 	if(pane->enableVerticalScroll()) {
-		Graphic::Draw::rectOrtho(Graphic::Draw::contextTexture, pane->getVertBarRect());
+		region.render_RelativeExter(pane->getVertBarRect().copy().shrink(margin).moveX(pane->getBorder().right * offsetScl.y));
 	}
+}
+
+void UI::ScrollPane::applyDefDrawer(){
+	Group::applyDefDrawer();
+	scrollBarDrawer = &UI::defScrollBarDrawer;
 }
 
 void UI::ScrollPane::drawContent() const{

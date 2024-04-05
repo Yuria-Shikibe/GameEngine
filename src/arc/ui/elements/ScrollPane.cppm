@@ -12,16 +12,8 @@ import std;
 import Concepts;
 
 export namespace UI {
-	class ScrollPane;
+	struct ScrollBarDrawer;
 
-	struct ScrollerDrawer {
-		virtual ~ScrollerDrawer() = default;
-
-		virtual void operator()(const ScrollPane* pane) const;
-	};
-
-	//TODO move this other place
-	std::unique_ptr defScrollBarDrawer{std::make_unique<ScrollerDrawer>()};
 
 	class ScrollPane : public Group {
 
@@ -35,10 +27,10 @@ export namespace UI {
 		bool usingAccel = true;
 
 		bool enableHorizonScroll_always = false;
-		float hoirScrollerHeight{20.0f};
+		float hoirScrollerHeight{24.0f};
 
 		bool enableVerticalScroll_always = false;
-		float vertScrollerWidth{20.0f};
+		float vertScrollerWidth{24.0f};
 
 		//TODO fade
 		bool fadeWhenUnused = true;
@@ -48,13 +40,15 @@ export namespace UI {
 
 		float accel = 0.126f;
 
-		ScrollerDrawer* scrollBarDrawer{defScrollBarDrawer.get()};
+		ScrollBarDrawer* scrollBarDrawer{nullptr};
 
-		Elem* item{nullptr};
+		Elem* getItem(){
+			return children.front().get();
+		};
 
 		void clamp(Geom::Vec2& offset) const{
-			offset.clampX(-Math::max(0.0f, itemSize.getWidth() - getValidWidth() + vertBarStroke()), 0);
-			offset.clampY(0, Math::max(0.0f, itemSize.getHeight() - getValidHeight() + horiBarStroke()));
+			offset.clampX(-Math::max(0.0f, itemSize.getWidth() - getContentWidth()), 0);
+			offset.clampY(0, Math::max(0.0f, itemSize.getHeight() - getContentHeight()));
 		}
 
 		void move(const Geom::Vec2 offset){
@@ -98,13 +92,14 @@ export namespace UI {
 
 			touchbility = UI::TouchbilityFlags::enabled;
 			quitInboundFocus = false;
+			ScrollPane::applyDefDrawer();
 		}
 
 		void update(const float delta) override {
 			scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta)) : 1.0f);
 
 			if(scrollTempOffset != scrollOffset){
-
+				//TODO what...?
 			}else{
 				scrollOffset.add(scrollVelocity);
 				clamp(scrollOffset);
@@ -116,6 +111,11 @@ export namespace UI {
 			scrollTargetVelocity.setZero();
 
 			Group::update(delta);
+
+			if(hasChildren()) {
+				//TODO make this passive
+				itemSize = getItem()->getBound();
+			}
 
 			if(layoutChanged) {
 				layout();
@@ -133,7 +133,7 @@ export namespace UI {
 			if(hasChildren()) {
 				const Geom::Vec2 absOri = absoluteSrc;
 
-				absoluteSrc += border.bot_lft();
+				// absoluteSrc += border.bot_lft();
 				absoluteSrc += scrollTempOffset;// * Geom::Vec2{Math::num<float>(horiExbound), Math::num<float>(vertExbound)};
 
 				absoluteSrc.y += getValidHeight() - itemSize.getHeight();
@@ -146,10 +146,6 @@ export namespace UI {
 
 		void layout() override {
 			Group::layout();
-
-			if(item) {
-				itemSize = item->getBound();
-			}
 		}
 
 		template <Concepts::Derived<Elem> T>
@@ -161,11 +157,7 @@ export namespace UI {
 			}
 
 			getChildren()->clear();
-			this->item = ptr.get();
-			if(item != nullptr) {
-				this->addChildren(std::move(ptr), depth);
-				itemSize = item->getBound();
-			}
+			this->addChildren(std::move(ptr), depth);
 		}
 
 		//TODO this has bug when resized !
@@ -175,28 +167,27 @@ export namespace UI {
 
 			if(hoverScroller)return rect;
 
-			const bool enableX = !elem->isFillParentX() && elem->getWidth() > getValidWidth();
-			const bool enableY = !elem->isFillParentY() && elem->getHeight() > getValidHeight();
+			const bool enableX = elem->getWidth() > getValidWidth();
+			const bool enableY = elem->getHeight() > getValidHeight();
 
 			rect.addSize(
 				enableY ? -vertScrollerWidth : 0.0f,
 				enableX ? -hoirScrollerHeight : 0.0f
 			);
 
-			rect.move(
-				elem->isFillParentX() && enableY ? -border.left : 0.0f,
-				elem->isFillParentY() && enableX ? -border.bottom : 0.0f
-			);
+			// rect.move(
+			// 	elem->isFillParentX() && enableY ? -border.left : 0.0f,
+			// 	elem->isFillParentY() && enableX ? -border.bottom : 0.0f
+			// );
 
 			return rect;
 		}
-
 
 		[[nodiscard]] bool hintInbound_validToParent(const Geom::Vec2 screenPos) override {
 			return Elem::isInbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
-		[[nodiscard]] bool inbound_scrollBars(Geom::Vec2 screenPos) const {
+		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2 screenPos) const {
 			return isInVertBar(screenPos) || isInHoriBar(screenPos);
 		}
 
@@ -264,17 +255,25 @@ export namespace UI {
 			return getValidHeight() - horiBarStroke();
 		}
 
-		[[nodiscard]] float horiScrollRatio() const {
-			return Math::clamp(-scrollTempOffset.x / (itemSize.getWidth() - getContentWidth()));
+		[[nodiscard]] float horiScrollRatio(const float pos) const {
+			return Math::clamp(pos / (itemSize.getWidth() - getContentWidth()));
 		}
 
-		[[nodiscard]] float vertScrollRatio() const {
-			return Math::clamp(scrollTempOffset.y / (itemSize.getHeight() - getContentHeight()));
+		[[nodiscard]] float vertScrollRatio(const float pos) const {
+			return Math::clamp(pos / (itemSize.getHeight() - getContentHeight()));
+		}
+
+		[[nodiscard]] float getHoriBarSpacing() const {
+			return horiBarStroke() + border.bottom;
+		}
+
+		[[nodiscard]] float getVertBarSpacing() const {
+			return vertBarStroke() + border.right;
 		}
 
 		[[nodiscard]] Rect getHoriBarRect() const {
 			return {
-				drawSrcX() + border.left + horiScrollRatio() * (getValidWidth() - horiBarLength() - vertBarStroke()),
+				drawSrcX() + border.left + horiScrollRatio(-scrollTempOffset.x) * (getValidWidth() - horiBarLength() - vertBarStroke()),
 				drawSrcY() + border.bottom,
 				horiBarLength(),
 				horiBarStroke()
@@ -284,11 +283,13 @@ export namespace UI {
 		[[nodiscard]] Rect getVertBarRect() const {
 			return {
 				drawSrcX() + getWidth() - border.right - vertBarStroke(),
-				drawSrcY() + getHeight() - border.top - vertScrollRatio() * (getValidHeight() - vertBarSLength() - horiBarStroke()),
+				drawSrcY() + getHeight() - border.top - vertScrollRatio(scrollTempOffset.y) * (getValidHeight() - vertBarSLength() - horiBarStroke()),
 				vertBarStroke(),
 				-vertBarSLength()
 			};
 		}
+
+		void applyDefDrawer() override;
 
 		void drawContent() const override;
 	};

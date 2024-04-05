@@ -9,7 +9,7 @@ import Event;
 import Math;
 import Geom.Vector2D;
 import Graphic.Color;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import RuntimeException;
 
 
@@ -25,15 +25,16 @@ export namespace UI {
 export namespace UI {
 	using Rect = Geom::OrthoRectFloat;
 
-	//TODO fuck this bug!
-
 	class Elem {
 	public:
 		int PointCheck{0};
-		virtual ~Elem();
+		virtual ~Elem(){
+			setUnfocused();
+		}
 
-		// ReSharper disable once CppFunctionIsNotImplemented
-		[[nodiscard]] Elem();
+		[[nodiscard]] Elem(){
+			Elem::applyDefDrawer();
+		}
 
 	protected:
 		/**
@@ -74,12 +75,21 @@ export namespace UI {
 		bool quitInboundFocus = true;
 
 		Geom::Vec2 absoluteSrc{};
+		Geom::Vec2 minimumSize{};
 
 		ElemDrawer* drawer{nullptr};
 
 		Align::Spacing border{};
 
 		std::queue<std::unique_ptr<Action<Elem>>> actions{};
+
+		void clampTargetWidth(float& w) const{
+			w = Math::max(w, minimumSize.x);
+		}
+
+		void clampTargetHeight(float& h) const{
+			h = Math::max(h, minimumSize.y);
+		}
 
 	public:
 		std::string name{"undefind"};
@@ -106,14 +116,14 @@ export namespace UI {
 		virtual Rect getFilledChildrenBound(Elem* elem) const {
 			Rect bound = elem->bound;
 
+			bound.setSrc(border.bot_lft());
+
 			if(elem->fillParentX){
-				bound.setSrcX(border.left);
-				bound.setWidth(getWidth() - getBorderWidth());
+				bound.setWidth(getValidWidth());
 			}
 
 			if(elem->fillParentY){
-				bound.setSrcY(border.bottom);
-				bound.setHeight(getHeight() - getBorderHeight());
+				bound.setHeight(getValidHeight());
 			}
 
 			return bound;
@@ -157,6 +167,8 @@ export namespace UI {
 		virtual void setRoot(Root* const root) {
 			this->root = root;
 		}
+
+		virtual void applyDefDrawer();
 
 		void setFillparentX(const bool val = true) {
 			if(val != fillParentX)changed();
@@ -232,25 +244,31 @@ export namespace UI {
 			changed();
 		}
 
-		virtual void setWidth(const float w) {
+		virtual void setWidth(float w) {
+			clampTargetWidth(w);
 			if(bound.getWidth() == w)return;
 			bound.setWidth(w);
 			changed();
 		}
 
-		virtual void setHeight(const float h) {
+		virtual void setHeight(float h) {
+			clampTargetHeight(h);
 			if(bound.getHeight() == h)return;
 			bound.setHeight(h);
 			changed();
 		}
 
-		virtual void setSize(const float w, const float h) {
+		virtual void setSize(float w, float h) {
+			clampTargetWidth(w);
+			clampTargetHeight(h);
 			if(bound.getWidth() == w && bound.getHeight() == h)return;
 			bound.setSize(w, h);
 			changed();
 		}
 
-		virtual void setSize(const float s) {
+		virtual void setSize(float s) {
+			clampTargetWidth(s);
+			clampTargetHeight(s);
 			if(bound.getWidth() == s && bound.getHeight() == s)return;
 			bound.setSize(s, s);
 			changed();
@@ -266,7 +284,7 @@ export namespace UI {
 
 		virtual void calAbsoluteSrc(Elem* parent) {
 			Geom::Vec2 vec{parent->absoluteSrc};
-			vec.add(bound.getSrcX(), bound.getSrcY());
+			vec.add(bound.getSrc());
 			if(vec == absoluteSrc)return;
 			absoluteSrc.set(vec);
 			calAbsoluteChildren();

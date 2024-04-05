@@ -61,6 +61,13 @@ export namespace Align {
 			bottom = top = left = right = val;
 		}
 
+		constexpr void set(const float l, const float r, const float b, const float t){
+			left = l;
+			right = r;
+			bottom = b;
+			top = t;
+		}
+
 		constexpr void setZero(){
 			set(0);
 		}

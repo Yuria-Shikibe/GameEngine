@@ -383,7 +383,7 @@ export namespace Geom{
 			return std::sqrt(this->projLen2(axis));
 		}
 
-		friend void swap(PassType lhs, PassType rhs) noexcept {
+		friend void swap(Vector2D& lhs, Vector2D& rhs) noexcept {
 			const float x1 = lhs.x;
 			const float y1 = lhs.y;
 

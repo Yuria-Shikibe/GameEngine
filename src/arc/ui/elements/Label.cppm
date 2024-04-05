@@ -68,7 +68,7 @@ export namespace UI {
 			textUpdated();
 		}
 
-		void setText(Concepts::Invokable<Font::TextView()> auto&& charSource) {
+		void setText(Concepts::Invokable<Font::TextString()> auto&& charSource) {
 			textSource = std::forward<decltype(charSource)>(charSource);
 			glyphLayout->lastText = std::move(textSource());
 

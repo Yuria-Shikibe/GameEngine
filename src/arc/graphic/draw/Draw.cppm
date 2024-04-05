@@ -18,7 +18,7 @@ import GL.Buffer.FrameBuffer;
 
 export import Geom.Transform;
 export import Geom.Shape.RectBox;
-export import Geom.Shape.Rect_Orthogonal;
+export import Geom.Rect_Orthogonal;
 export import Geom.Matrix3D;
 //
 export import Graphic.Color;

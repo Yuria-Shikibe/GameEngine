@@ -6,7 +6,7 @@ export module Core;
 
 import std;
 
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 export import Core.Audio;
 export import Assets.Manager;

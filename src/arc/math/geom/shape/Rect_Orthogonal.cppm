@@ -1,4 +1,4 @@
-export module Geom.Shape.Rect_Orthogonal;
+export module Geom.Rect_Orthogonal;
 
 import std;
 
@@ -13,7 +13,7 @@ export namespace Geom{
 	 */
 	template <Concepts::Number T>
 	class Rect_Orthogonal/* : public Shape<Rect_Orthogonal<T>, T>*/{
-		static constexpr T HALF = static_cast<T>(2);
+		static constexpr T TWO{2};
 
 	protected:
 		T srcX{0};
@@ -290,11 +290,11 @@ export namespace Geom{
 		}
 
 		[[nodiscard]] constexpr T getCenterX() const{
-			return srcX + width / HALF;
+			return srcX + width / TWO;
 		}
 
 		[[nodiscard]] constexpr T getCenterY() const{
-			return srcY + height / HALF;
+			return srcY + height / TWO;
 		}
 
 		[[nodiscard]] constexpr Vector2D<T> getCenter() const{
@@ -329,6 +329,18 @@ export namespace Geom{
 		constexpr Rect_Orthogonal& setSize(const Rect_Orthogonal& other) {
 			this->setWidth(other.width);
 			this->setHeight(other.height);
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& moveY(const T y) {
+			srcY += y;
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& moveX(const T x) {
+			srcX += x;
 
 			return *this;
 		}
@@ -375,13 +387,13 @@ export namespace Geom{
 		}
 
 		constexpr Rect_Orthogonal& setCenter(const T x, const T y){
-			this->setSrc(x - width / HALF, y - height / HALF);
+			this->setSrc(x - width / TWO, y - height / TWO);
 
 			return *this;
 		}
 
 		constexpr Rect_Orthogonal& setCenter(const typename Vector2D<T>::PassType v) {
-			this->setSrc(v.x - width / HALF, v.y - height / HALF);
+			this->setSrc(v.x - width / TWO, v.y - height / TWO);
 
 			return *this;
 		}
@@ -444,7 +456,43 @@ export namespace Geom{
 		}
 
 		constexpr void expand(const T x, const T y){
-			this->set(srcX - x, srcY - y, width + x * 2,  height + y * 2);
+			this->set(srcX - x, srcY - y, width + x * TWO,  height + y * TWO);
+		}
+
+		/**
+		 * @brief
+		 * @param marginX Negative is acceptable
+		 * @return
+		 */
+		constexpr Rect_Orthogonal& shrinkX(T marginX){
+			marginX = Math::min(marginX, width / TWO);
+			srcX += marginX;
+			width -= marginX * TWO;
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& shrinkY(T marginY){
+			marginY = Math::min(marginY, height / TWO);
+			srcY += marginY / TWO;
+			height -= marginY * TWO;
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& shrink(const T marginX, const T marginY){
+			(void)this->shrinkX(marginX);
+			(void)this->shrinkY(marginY);
+
+			return *this;
+		}
+
+		constexpr Rect_Orthogonal& shrink(const T margin){
+			return this->shrink(margin, margin);
+		}
+
+		[[nodiscard]] constexpr Rect_Orthogonal copy(){
+			return *this;
 		}
 	};
 

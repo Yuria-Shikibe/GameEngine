@@ -6,7 +6,7 @@ export module GL;
 
 import std;
 import RuntimeException;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 namespace GL {
     GLuint lastProgram{0};

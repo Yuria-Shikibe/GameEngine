@@ -3,7 +3,7 @@ module;
 
 export module Geom.QuadTree;
 
-export import Geom.Shape.Rect_Orthogonal;
+export import Geom.Rect_Orthogonal;
 export import Geom.Vector2D;
 
 import Concepts;

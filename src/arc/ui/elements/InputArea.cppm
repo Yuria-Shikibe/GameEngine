@@ -25,8 +25,8 @@ export namespace UI{
 	struct TextCursorDrawer;
 	struct TextCaret{
 		/** x for rows, y for columns*/
-		Geom::Point2U begin{};
-		Geom::Point2U end{};
+		Geom::Point2U beginPos{};
+		Geom::Point2U endPos{};
 
 		bool insertMode{};
 
@@ -35,25 +35,36 @@ export namespace UI{
 
 		//TODO should this thing here or in the area class?
 		TextCursorDrawer* drawer{};
+
+		using SeqType = std::vector<Font::GlyphDrawData>;
 		/** THIS MUST BE IN A CONTINIOUS SEQ*/
 		const Font::GlyphDrawData* dataBegin{};
 		const Font::GlyphDrawData* dataEnd{};
 
 		void draw() const;
 
+		[[nodiscard]] bool contains(const Font::GlyphDrawData* data) const{
+			return data >= dataBegin && data < dataEnd;
+		}
+
 		[[nodiscard]] bool isRangeSelecting() const{
-			return dataBegin != dataEnd || begin != end;
+			return dataBegin != dataEnd || beginPos != endPos;
+		}
+
+		void swapSentinal(){
+			std::swap(beginPos, endPos);
+			std::swap(dataBegin, dataEnd);
 		}
 
 		/** smooth caret support usage*/
 		[[nodiscard]] Geom::Vec2 getDrawPos(const bool end = true) const{
 			if(end){
 				if(dataEnd){
-					return dataEnd->getSrc();
+					return dataEnd->getBoundSrc();
 				}
 			}else{
 				if(dataBegin){
-					return dataBegin->getSrc();
+					return dataBegin->getBoundSrc();
 				}
 			}
 
@@ -74,13 +85,24 @@ export namespace UI{
 			return 0;
 		}
 
-		[[nodiscard]] int getStrIndex() const{
-			return dataEnd ? dataEnd->index : 0;
+		[[nodiscard]] Math::Section<int> getStrIndex() const{
+			return {dataBegin ? dataBegin->index : 0, dataEnd ? dataEnd->index : 0};
+		}
+
+		void alignPos(){
+			if(dataBegin){beginPos = dataBegin->layoutPos;}
+			if(dataEnd){endPos = dataEnd->layoutPos;}
 		}
 
 		void refreshDataPtr(const Font::GlyphLayout* layout){
-			dataBegin = layout->find(begin);
-			dataEnd = layout->find(end);
+			dataBegin = layout->find(beginPos);
+			dataEnd = layout->find(endPos);
+
+			alignPos();
+
+			if(dataBegin > dataEnd){
+				swapSentinal();
+			}
 		}
 
 		/**
@@ -89,10 +111,10 @@ export namespace UI{
 		void alignToSentinal(const bool toEnd){
 			if(toEnd){
 				dataBegin = dataEnd;
-				begin = end = dataEnd->layoutPos;
+				beginPos = endPos = dataEnd->layoutPos;
 			}else{
 				dataEnd = dataBegin;
-				end = begin = dataBegin->layoutPos;
+				endPos = beginPos = dataBegin->layoutPos;
 			}
 		}
 
@@ -117,8 +139,8 @@ export namespace UI{
 			}
 
 			if(dataBegin->isEnd()){
-				end.x ++;
-				begin.x ++;
+				endPos.x ++;
+				beginPos.x ++;
 				return *this;
 			}
 
@@ -143,12 +165,12 @@ export namespace UI{
 		}
 
 		TextCaret& tryGotoAboveRow(const Font::GlyphLayout* layout){
-			Geom::Point2U pos = begin;
+			Geom::Point2U pos = beginPos;
 			if(pos.y == 0)return *this;
 
 			pos.y--;
 			if(auto* rst = layout->find(pos)){
-				if(rst->getRow() == begin.y){
+				if(rst->getRow() == beginPos.y){
 					rst--;
 				}
 
@@ -160,7 +182,7 @@ export namespace UI{
 		}
 
 		TextCaret& tryGotoBelowRow(const Font::GlyphLayout* layout){
-			Geom::Point2U pos = begin;
+			Geom::Point2U pos = beginPos;
 			pos.y++;
 
 			if(auto* rst = layout->find(pos)){
@@ -186,9 +208,24 @@ export namespace UI{
 		drawer->operator()(this);
 	}
 
+	/*
+	 * TODO shift + -> / <-
+	 * TODO shift + up / down
+	 * TODO ctrl + -> / <-
+	 * TODO ctrl + shift + -> / <-
+	 * TODO ctrl + Delete / Backspace
+	 * TODO IME context support
+	 * TODO clipboard support
+	 * TODO hint text support
+	 * TODO length limit
+	 * TODO better do/undo
+	 * TODO multiple carets
+	 * TODO bound checks
+	 * TODO token highlight parser
+	 */
 	class InputArea : public UI::Elem, public OS::TextInputListener{
 	public:
-		struct BacktrackingData{
+		struct BacktrackingData{ //TODO this is really a violent way to do/undo
 			std::string text{};
 			std::vector<TextCaret> carets{};
 		};
@@ -216,7 +253,10 @@ export namespace UI{
 		bool textChanged = false;
 
 		void updateTextLayout(const bool forceUpdate = false) {
-			if(textChanged)takeSnapshot();
+			if(textChanged){
+				if(glyphLayout->lastText.empty())glyphLayout->lastText.push_back('\n');
+				takeSnapshot();
+			}
 			Font::defGlyphParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : getValidWidth(), textChanged || forceUpdate);
 			glyphLayout->setAlign(textAlignMode);
 			textChanged = false;
@@ -236,8 +276,12 @@ export namespace UI{
 
 		void setTextUnfocused() const;
 
-		void genTextCursor(const std::optional<Geom::Point2U> pos, const bool multi = false){
-			if(!pos.has_value())return;
+		void genTextCaret(const std::optional<Geom::Point2U> pos, const bool multi = false){
+			genTextSection(pos, pos, multi);
+		}
+
+		void genTextSection(const std::optional<Geom::Point2U> begin, const std::optional<Geom::Point2U> end, const bool multi = false){
+			if(!begin.has_value() || !end.has_value())return;
 
 			setTextFocused();
 
@@ -245,7 +289,7 @@ export namespace UI{
 
 			resetTime();
 
-			auto& cursor = carets.emplace_back(pos.value(), pos.value());
+			auto& cursor = carets.emplace_back(begin.value(), end.value());
 			getLastSnapshot().carets.push_back(cursor);
 		}
 
@@ -273,7 +317,13 @@ export namespace UI{
 			inputListener.on<UI::MouseActionPress>([this](const UI::MouseActionPress& event) {
 				lastMousePos = static_cast<Geom::Vec2>(event);
 
-				genTextCursor(getLayoutPos(static_cast<Geom::Vec2>(event)));
+				// genTextCaret(getLayoutPos(static_cast<Geom::Vec2>(event)));
+			});
+
+			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
+				auto begin = getLayoutPos(event.begin);
+				auto end = getLayoutPos(event.end);
+				genTextSection(begin, end);
 			});
 		}
 
@@ -281,18 +331,6 @@ export namespace UI{
 			time = 0;
 		}
 
-		unsigned getTextRows() const{
-			return glyphLayout->empty() ? 0u : glyphLayout->takeValid().back().layoutPos.y;
-		}
-
-		float getAvgHeight() const{
-			const unsigned int textRows = getTextRows();
-			if(textRows){
-				return glyphLayout->bound.getHeight() / static_cast<float>(textRows);
-			}else{
-				return 0;
-			}
-		}
 
 		//TODO use std::optional instead of {}?
 		[[nodiscard]] std::optional<Geom::Point2U> getLayoutPos(Geom::Vec2 caretPos) const {
@@ -305,7 +343,7 @@ export namespace UI{
 
 			auto beforeGlyph =
 				std::lower_bound(validView.begin(), validView.end(), caretPos, [this](const Font::GlyphDrawData& glyph, const Geom::Vec2 caret){
-					const float heightDst = caret.y - glyph.getSrc().y;
+					const float heightDst = caret.y - glyph.getBoundSrc().y;
 
 					return (heightDst < 0 || heightDst < glyph.getFullHeight()) && (heightDst < 0 || caret.x > glyph.src.x);
 				});
@@ -396,11 +434,6 @@ export namespace UI{
 					resetTime();
 				}
 			}
-
-			if(keyDown(Ctrl::KEY_ENTER, Ctrl::Act_Press, Ctrl::Mode_IGNORE) ||
-				keyDown(Ctrl::KEY_ENTER, Ctrl::Act_Repeat, Ctrl::Mode_IGNORE)){
-				informTextInput('\n', 0);
-			}
 		}
 
 		void layout() override{
@@ -411,7 +444,60 @@ export namespace UI{
 
 		void drawContent() const override{
 			Graphic::Draw::alpha();
-			glyphLayout->render();
+
+			if(!glyphLayout->empty()){
+				const Geom::Vec2 off = glyphLayout->getDrawOffset();
+
+				for (const auto & caret : carets){
+					unsigned curRow = caret.dataBegin ? caret.dataBegin->getRow() : std::numeric_limits<unsigned>::max();
+					Geom::Vec2 sectionBegin{caret.getDrawPos(false)};
+					Geom::Vec2 sectionEnd{};
+
+					for(auto data : std::span{caret.dataBegin, caret.dataEnd}){
+						if(sectionBegin.isNaN()){
+							sectionBegin = data.getBoundSrc();
+						}
+
+						sectionEnd = data.getBoundEnd();
+
+						if(curRow != data.getRow() || data.isEndRow()){
+							curRow = data.getRow();
+							Rect rect{};
+							if(data.isEndRow()){
+								curRow++;
+								sectionEnd.y = data.getBoundEnd().y;
+								sectionEnd.x = glyphLayout->bound.getWidth();
+							}
+							Graphic::Draw::color(caret.selectionColor, 0.65f);
+							Graphic::Draw::rectOrtho(Graphic::Draw::defaultTexture, rect.setVert(sectionBegin + off, sectionEnd + off));
+							sectionBegin.setNaN();
+						}
+					}
+
+					Rect rect{};
+					sectionEnd.x = caret.getDrawPos().x;
+					Graphic::Draw::color(caret.selectionColor, 0.65f);
+					Graphic::Draw::rectOrtho(Graphic::Draw::defaultTexture, rect.setVert(sectionBegin + off, sectionEnd + off));
+				}
+
+				for (auto& glyph : glyphLayout->getGlyphs()){
+					Graphic::Draw::color(glyph.fontColor);
+					Graphic::Draw::quad(
+						glyph.region,
+						glyph.v00() + off,
+						glyph.v10() + off,
+						glyph.v11() + off,
+						glyph.v01() + off
+					);
+
+					Graphic::Draw::color(Graphic::Colors::RED_DUSK);
+					Graphic::Draw::rectPoint(glyph.v10() + off, 4);
+					Graphic::Draw::tint(Graphic::Colors::YELLOW, .35f);
+					Graphic::Draw::Line::setLineStroke(1.25f);
+					Graphic::Draw::Line::rectOrtho(glyph.getBound().move(off));
+				}
+			}
+
 
 			Graphic::Draw::color();
 			Graphic::Draw::Line::setLineStroke(2.0f);
@@ -430,28 +516,38 @@ export namespace UI{
 		}
 
 		//TODO append buffer to insert range
-		void informTextInput(unsigned codepoint, int mods) override{
+		void informTextInput(const unsigned codepoint, int mods) override{
 			auto buffer = ext::convertTo<char>(codepoint);
 			int size = ext::getUnicodeLength<int>(buffer.front());
 
-			std::cout << ext::getUnicodeLength(buffer.front()) << buffer.data() << std::endl;
+			// std::cout << ext::getUnicodeLength(buffer.front()) << buffer.data() << std::endl;
 
-			if(size == 1){
+			if(size == 1){ //TODO non-ASCII support test when glyph is done
 				for (auto& caret : carets){
-					glyphLayout->lastText.insert_range(glyphLayout->lastText.begin() + caret.getStrIndex(), buffer | std::ranges::views::take(size));
-					caret.forceIncr();
+					auto [begin, end] = caret.getStrIndex();
+					if(begin != end){
+						glyphLayout->lastText.replace(glyphLayout->lastText.begin() + begin, glyphLayout->lastText.begin() + end, buffer.data(), buffer.data() + size);
+						caret.alignToSentinal(false);
+					}else{
+						glyphLayout->lastText.insert_range(glyphLayout->lastText.begin() + caret.getStrIndex().from, buffer | std::ranges::views::take(size));
+						caret.forceIncr();
+					}
 				}
 
 				textChanged = true;
 			}
 		}
 
-		void informBackSpace() override{
+		void informBackSpace(int mode) override{
 			for (auto& caret : carets){
-				int index = caret.getStrIndex();
-				if(index > 0){
-					index--;
-					auto cur = glyphLayout->lastText.begin() + index;
+				auto [begin, end] = caret.getStrIndex();
+				if(begin != end){
+					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + begin, glyphLayout->lastText.begin() + end);
+					textChanged = true;
+					caret.alignToSentinal(false);
+				}else if(begin > 0){
+					begin--;
+					auto cur = glyphLayout->lastText.begin() + begin;
 					auto src = ext::gotoUnicodeHead(cur++);
 
 					--caret;
@@ -462,17 +558,41 @@ export namespace UI{
 			}
 		}
 
-		void informDelete() override{
-
+		void informSelectAll() override{
+			if(glyphLayout->empty())return;
+			carets.resize(1);
+			carets.front().dataBegin = glyphLayout->getGlyphs().data();
+			carets.front().dataEnd = &glyphLayout->back();
+			carets.front().alignPos();
 		}
 
-		void snapBackTrace() override{
+		void informDelete(int mode) override{
+			for (auto& caret : carets){
+				auto [begin, end] = caret.getStrIndex();
+				if(begin != end){
+					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + begin, glyphLayout->lastText.begin() + end);
+					textChanged = true;
+					caret.alignToSentinal(false);
+				}else if(!caret.dataBegin->isEnd()){
+					auto cur = glyphLayout->lastText.begin() + begin;
+					const int length = ext::getUnicodeLength<int>(*cur);
+					glyphLayout->lastText.erase(cur, cur + length);
+					textChanged = true;
+				}
+			}
+		}
+
+		void informEnter(int mods) override{
+			informTextInput('\n', 0);
+		}
+
+		void informDo() override{
 			if(currentSnapshotIndex < snapshots.size() - 1){
 				gotoSnapShot(++currentSnapshotIndex);
 			}
 		}
 
-		void snapForwardTrace() override{
+		void informUndo() override{
 			if(currentSnapshotIndex > 0){
 				gotoSnapShot(--currentSnapshotIndex);
 			}

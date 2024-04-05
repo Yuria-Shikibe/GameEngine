@@ -9,7 +9,7 @@ import std;
 import Math;
 import Graphic.Draw;
 import Graphic.Color;
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 
 export namespace UI{
 	class SliderBar : public Elem{

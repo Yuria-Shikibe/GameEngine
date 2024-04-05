@@ -13,7 +13,7 @@ import Assets.Graphic;
 import Graphic.Color;
 import Graphic.Draw;
 
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import Math;
 
 import std;

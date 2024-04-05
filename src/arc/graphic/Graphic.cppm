@@ -7,7 +7,7 @@ export module Graphic;
 
 
 
-import Geom.Shape.Rect_Orthogonal;
+import Geom.Rect_Orthogonal;
 import RuntimeException;
 import std;
 
