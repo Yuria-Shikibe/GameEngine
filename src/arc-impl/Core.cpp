@@ -45,9 +45,7 @@ void Core::initFileSystem() {
 #if defined(_DEBUG) && defined(ASSETS_DIR)
 	rootFileTree = std::make_unique<OS::FileTree>(ASSETS_DIR);
 #else
-	const OS::File self{OS::args[0]};
-
-	const auto dir = self.getParent().subFile("resource");
+	const auto dir = Core::platform->getProcessFileDir().subFile("resource");
 
 	std::cout << "Targeted Resource Root:" << dir.absolutePath() << std::endl;
 
