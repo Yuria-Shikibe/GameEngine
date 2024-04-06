@@ -27,17 +27,21 @@ export namespace UI {
 			glyphLayout->setAlign(textAlignMode);
 			textChanged = false;
 			if(usingGlyphHeight){
-				setHeight(border.getHeight() + glyphLayout->bound.getHeight());
+				setHeight(border.getHeight() + glyphLayout->getDrawBound().getHeight());
 			}
 
 			if(usingGlyphWidth){
-				setWidth(border.getWidth() + glyphLayout->bound.getHeight());
+				setWidth(border.getWidth() + glyphLayout->getDrawBound().getHeight());
 			}
 		}
 
 	public:
 		bool usingGlyphHeight = false;
 		bool usingGlyphWidth = false;
+
+		[[nodiscard]] std::shared_ptr<Font::GlyphLayout>& getGlyphLayout(){
+			return glyphLayout;
+		}
 
 		[[nodiscard]] Font::TextView getLastText() const{
 			return glyphLayout->lastText;

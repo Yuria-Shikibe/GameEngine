@@ -15,7 +15,6 @@ import Core.Input;
 import OS;
 import OS.KeyBind;
 import OS.MouseBind;
-import Graphic;
 import Core;
 import std;
 
@@ -52,18 +51,18 @@ export namespace Ctrl{
 			}
 		}));
 
-		input->registerKeyBind(new OS::KeyBind(GLFW_KEY_F11, GLFW_PRESS, [] {
-			if(currentMonitor == mainMonitor) {
-				Graphic::windowize(mainWindow, currentMonitor, lastScreenBound, title);
-
-				glfwRestoreWindow(mainWindow);
-
-				renderer->resize(lastScreenBound.getWidth(), lastScreenBound.getHeight());
-			}else {
-				Graphic::fullScreen(mainWindow, currentMonitor, title);
-				renderer->resize(mainScreenMode->width, mainScreenMode->height);
-			}
-		}));
+		// input->registerKeyBind(new OS::KeyBind(GLFW_KEY_F11, GLFW_PRESS, [] {
+		// 	if(currentMonitor == mainMonitor) {
+		// 		Graphic::windowize(mainWindow, currentMonitor, lastScreenBound, title);
+		//
+		// 		glfwRestoreWindow(mainWindow);
+		//
+		// 		renderer->resize(lastScreenBound.getWidth(), lastScreenBound.getHeight());
+		// 	}else {
+		// 		Graphic::fullScreen(mainWindow, currentMonitor, title);
+		// 		renderer->resize(mainScreenMode->width, mainScreenMode->height);
+		// 	}
+		// }));
 
 		auto keys = std::array{OS::KeyBind(GLFW_KEY_LEFT_SHIFT, Act_Continuous), OS::KeyBind(GLFW_KEY_SPACE, GLFW_PRESS) };
 		input->registerKeyBindMulti(keys, []() {camera->setTargetScaleDef();});

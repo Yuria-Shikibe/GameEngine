@@ -65,7 +65,7 @@ export namespace Core{
 			}
 
 			// ReSharper disable once CppExpressionWithoutSideEffects
-			crash.createFile();
+			crash.createFileQuiet();
 			return crash;
 		}
 

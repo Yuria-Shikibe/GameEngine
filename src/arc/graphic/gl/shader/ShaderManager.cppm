@@ -49,6 +49,7 @@ export namespace GL { //TODO this isn't a good namespace, I thought
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
+			(void)Task::launch(policy);
 			return std::async(policy, std::bind(&ShaderManager::compileAll, this));
 		}
 

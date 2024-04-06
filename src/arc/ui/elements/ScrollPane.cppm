@@ -204,7 +204,7 @@ export namespace UI {
 		}
 
 		[[nodiscard]] bool isInbound(const Geom::Vec2 screenPos) override {
-			if(Elem::isInbound(screenPos)) {
+			if(Elem::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {
 				Elem::setFocusedScroll(true);
 				return inbound_scrollBars(screenPos);
 			}

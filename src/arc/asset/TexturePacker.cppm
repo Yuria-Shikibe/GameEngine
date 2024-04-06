@@ -15,6 +15,7 @@ import Async;
 import RuntimeException;
 import OS.File;
 import OS.FileTree;
+import OS.Handler;
 
 import Heterogeneous;
 
@@ -23,7 +24,7 @@ using namespace Graphic;
 
 export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
-	struct  TextureRegionPackData{
+	struct TextureRegionPackData{
 		OrthoRectUInt bound{};
 		GL::TextureRegionRect textureRegion{};
 		Graphic::Pixmap pixmap{};
@@ -184,6 +185,10 @@ export namespace Assets {
 			return packData;
 		}
 
+		[[nodiscard]] int getMargin() const{ return margin; }
+
+		void setMargin(const int margin){ this->margin = margin; }
+
 		[[nodiscard]] OS::File getCacheDir() const{
 			return cacheDir;
 		}
@@ -246,6 +251,7 @@ export namespace Assets {
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
+			(void)Task::launch(policy);
 			return std::async(policy, &TexturePackPage::load, this);
 		}
 
@@ -267,6 +273,16 @@ export namespace Assets {
 		void clearData() {
 			mergedMaps.clear();
 			toMerge.clear();
+		}
+
+		std::future<void> fallbackPost(std::function<void()>&& func) override{
+			if(handler){
+				return handler->operator()(std::forward<decltype(func)>(func));
+			}
+
+			constexpr OS::OSTaskHandler handler{};
+
+			return handler(std::forward<decltype(func)>(func));
 		}
 
 	protected:

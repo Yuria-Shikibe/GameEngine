@@ -19,8 +19,8 @@ export namespace OS{
 
 		virtual void informSelectAll(){}
 		virtual void informClipboardPaste(const std::string_view str){}
-		virtual std::string_view getClipboardCopy(){return {};}
-		virtual std::string_view getClipboardClip(){return {};}
+		virtual std::string getClipboardCopy(){return {};}
+		virtual std::string getClipboardClip(){return {};}
 		//virtual void passIMEContext(<?>){}
 
 		virtual void informDo(){}

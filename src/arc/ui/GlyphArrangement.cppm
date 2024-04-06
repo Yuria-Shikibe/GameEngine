@@ -43,10 +43,6 @@ export namespace Font {
 		parserableColors.insert_or_assign(name, color);
 	}
 
-	float normalizeLen(const long pos) {
-		return static_cast<float>(pos >> 6);
-	}
-
 	struct GlyphDrawData {
 		CharCode code{};
 		int index{};
@@ -137,16 +133,37 @@ export namespace Font {
 
 		//TODO uses pools!
 		std::vector<GlyphDrawData> glyphs{};
+		Geom::OrthoRectFloat rawBound{};
+		Geom::OrthoRectFloat drawBund{};
+		float scale = 1.0f;
+
+
 	public:
 		Geom::Vec2 offset{};
 		float maxWidth{std::numeric_limits<float>::max()};
 
-		Geom::OrthoRectFloat bound{};
 
 		TextString lastText{};
 
+		void updateDrawbound(){
+			drawBund = rawBound;
+			drawBund.sclSize(scale, scale);
+			drawBund.sclPos(scale, scale);
+		}
+
+		void setSCale(const float scale){
+			this->scale = scale;
+			updateDrawbound();
+		}
+
+		[[nodiscard]] float getScale() const{ return scale; }
+
+		[[nodiscard]] Geom::OrthoRectFloat& getRawBound(){ return rawBound; }
+
+		[[nodiscard]] const Geom::OrthoRectFloat& getDrawBound() const{ return drawBund; }
+
 		[[nodiscard]] Geom::Vec2 getDrawOffset() const{
-			return bound.getSrc() + offset;
+			return drawBund.getSrc() + offset;
 		}
 
 		[[nodiscard]] GlyphDrawData& front(){
@@ -165,11 +182,11 @@ export namespace Font {
 			return glyphs.empty();
 		}
 
-		[[nodiscard]] auto takeValid() {
+		[[nodiscard]] decltype(auto) takeValid() {
 			return glyphs | std::ranges::views::all;
 		}
 
-		[[nodiscard]] auto takeValid() const {
+		[[nodiscard]] decltype(auto) takeValid() const {
 			return glyphs | std::ranges::views::all;
 		}
 
@@ -178,13 +195,13 @@ export namespace Font {
 		void reset() {
 			lastText.clear();
 			maxWidth = std::numeric_limits<float>::max();
-			bound.set(0, 0, 0, 0);
+			rawBound.set(0, 0, 0, 0);
 			offset.setZero();
 		}
 
 		void clear() {
-			bound.setSize(0, 0);
-			bound.setSrc(0, 0);
+			rawBound.setSize(0, 0);
+			rawBound.setSrc(0, 0);
 			glyphs.clear();
 		}
 
@@ -198,20 +215,22 @@ export namespace Font {
 
 		void setAlign(const Align::Mode align) {
 			if(align & Align::Mode::top) {
-				bound.setSrcY(-bound.getHeight());
+				rawBound.setSrcY(-rawBound.getHeight());
 			}else if(align & Align::Mode::bottom){
-				bound.setSrcY(0.0f);
+				rawBound.setSrcY(0.0f);
 			}else { //centerY
-				bound.setSrcY(-bound.getHeight() * 0.5f);
+				rawBound.setSrcY(-rawBound.getHeight() * 0.5f);
 			}
 
 			if(align & Align::Mode::right) {
-				bound.setSrcX(-bound.getWidth());
+				rawBound.setSrcX(-rawBound.getWidth());
 			}else if(align & Align::Mode::left){
-				bound.setSrcX(0.0f);
+				rawBound.setSrcX(0.0f);
 			}else { //centerX
-				bound.setSrcX(-bound.getWidth() * 0.5f);
+				rawBound.setSrcX(-rawBound.getWidth() * 0.5f);
 			}
+
+			updateDrawbound();
 		}
 
 		void render() const;
@@ -322,15 +341,18 @@ namespace ParserFunctions {
 
 	class TokenParser {
 	public:
+		using ModifierFunc = std::function<void(unsigned, TextView, const ModifierableData& data)>;
 		virtual ~TokenParser() = default;
 
-		std::unordered_map<TextView, std::function<void(const TextView, const ModifierableData& data)>> modifier{};
+		bool reserveTokenSentinal = false;
+		std::unordered_map<TextView, ModifierFunc> modifier{};
+		ModifierFunc fallBackModifier{nullptr};
 
-		virtual void parse(TextView token, const ModifierableData& data) const;
-
-		void operator()(const TextView token, const ModifierableData& data) const {
-			parse(token, data);
+		explicit operator bool() const{
+			return static_cast<bool>(fallBackModifier) || !modifier.empty();
 		}
+
+		virtual void parse(unsigned curIndex, TextView token, const ModifierableData& data) const;
 	};
 
 	class CharParser{
@@ -362,6 +384,8 @@ namespace ParserFunctions {
 			modifier['\n'] = [](const ModifierableData& data) {
 				ParserFunctions::endLine(data);
 			};
+
+			modifier['\r'] = [](const ModifierableData& data) {};
 
 			shouldNotContinueSet.insert('\n');
 		}

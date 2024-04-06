@@ -1,7 +1,3 @@
-module;
-
-#include <GLFW/glfw3.h>
-
 export module Assets.Manager;
 
 import Core.Renderer;
@@ -64,7 +60,7 @@ namespace Assets{
 	public:
 		void pullRequest();
 
-		void load_Visible(unsigned int width, unsigned int height, GLFWwindow* window, Core::Renderer* renderer);
+		void load_Visible(unsigned int width, unsigned int height, Core::Renderer* renderer);
 
 		void load_Quiet(bool forceGet = true);
 
@@ -72,17 +68,37 @@ namespace Assets{
 
 		void loadEnd();
 
-		[[nodiscard]] GL::ShaderManager& getShaders();
+		[[nodiscard]] GL::ShaderManager& getShaders() {
+			return shaders;
+		}
 
-		[[nodiscard]] Graphic::TextureAtlas& getAtlas();
+		[[nodiscard]] Graphic::TextureAtlas& getAtlas() {
+			return atlas;
+		}
 
-		[[nodiscard]] Font::FontAtlas& getonts() const;
+		[[nodiscard]] Font::FontAtlas& getFonts() const{
+			return *fonts.atlas;
+		}
 
-		[[nodiscard]] Assets::AssetsLoader& getLoader();
+		[[nodiscard]] Font::FontManager& getFontsManager() {
+			return fonts;
+		}
 
-		[[nodiscard]] Event::EventManager& getEventTrigger();
+		[[nodiscard]] Font::FontManager& getFontsManager_Load() const{
+			return *this->tempFontLoader;
+		}
 
-		[[nodiscard]] Assets::SoundLoader& getSoundLoader();
+		[[nodiscard]] Assets::AssetsLoader& getLoader() {
+			return loader;
+		}
+
+		[[nodiscard]] Event::EventManager& getEventTrigger() {
+			return loadEvents;
+		}
+
+		[[nodiscard]] Assets::SoundLoader& getSoundLoader() {
+			return soundLoader;
+		}
 	};
 }
 

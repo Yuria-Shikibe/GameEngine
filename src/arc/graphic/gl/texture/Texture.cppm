@@ -91,7 +91,7 @@ export namespace GL{
 			glBindTexture(targetFlag, nameID);
 		}
 
-		virtual ~Texture() override = default;
+		~Texture() override = default;
 
 		virtual void active(unsigned offset) const = 0;
 		virtual void activeAll(unsigned offset) const = 0;

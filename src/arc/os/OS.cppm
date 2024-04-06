@@ -1,6 +1,5 @@
 module;
 
-#include <GLFW/glfw3.h>
 #include <csignal>
 
 export module OS;
@@ -12,30 +11,24 @@ import Event;
 import StackTrace;
 import Concepts;
 import OS.ApplicationListener;
+export import OS.GlobalTaskQueue;
+
+import Core.Platform;
 
 namespace OS{
-	bool loopBegin = false;
-
-	float deltaTime_internal = 0.0f;    //InTick
-	float deltaTick_internal = 0.0f;    //InTick
+	float deltaTime_internal = 0.0f;    //InTick | No Pause
+	float deltaTick_internal = 0.0f;    //InTick | NO Pause
 
 	float updateDeltaTime_internal = 0.0f;    //InTick
 	float updateDeltaTick_internal = 0.0f;    //InTick
 
-	float globalTime_internal = 0.0f;     //Sec    | No Pause
-	float globalTick_internal = 0.0f;     //Tick   | NO Pause
+	float globalTime_internal = 0.0f;     //Sec  | No Pause
+	float globalTick_internal = 0.0f;     //Tick | NO Pause
 
 	float updateTime_internal = 0.0f;     //Sec
 	float updateTick_internal = 0.0f;     //Tick
 
 	std::vector<::OS::ApplicationListener*> applicationListeners;
-
-	std::mutex lockTask{};
-	std::mutex lockAsyncTask{};
-	std::mutex lockAsyncPackTask{};
-	std::vector<std::function<void()>> postTasks;
-	std::vector<std::pair<std::function<void()>, std::promise<void>>> postAsyncTasks;
-	std::vector<std::packaged_task<void()>> postAsyncPackedTasks;
 
 	std::thread::id mainThreadID{};
 
@@ -47,28 +40,17 @@ namespace OS{
 }
 
 export namespace OS{
-	std::vector<std::string> args{};
-
 	void exitApplication(int s, std::string_view what);
 
 	void exitApplication(const int s) {exitApplication(s, "");}
 
 	Event::CycleSignalManager updateSignalManager{};
 
+	Core::PlatformHandle::DeltaSetter deltaSetter;
+	Core::PlatformHandle::TimerSetter timerSetter;
 
 	//Should Be Done In Application Launcher
-	//TODO isCallable good?
-	std::function<void(float&)> deltaSetter = nullptr;
-	std::function<void(float&)> globalTimeSetter = nullptr;
 	std::function<std::filesystem::path()> crashFileGetter = nullptr;
-
-
-	/**\brief READ ONLY*/
-	int refreshRate = 60;
-	/**\brief READ ONLY*/
-	int screenWidth = 60;
-	/**\brief READ ONLY*/
-	int screenHeight = 60;
 
 	constexpr float TicksPerSecond = 60.0f;
 
@@ -77,6 +59,10 @@ export namespace OS{
 	}
 
 	inline float delta(){return deltaTime_internal;}
+
+	[[nodiscard]] bool isMainThread(){
+		return std::this_thread::get_id() == mainThreadID;
+	}
 
 	unsigned int getFPS() {
 		FPS_reload += deltaTime_internal;
@@ -114,22 +100,6 @@ export namespace OS{
 	//TODO fire an event?
 	inline void setPause(const bool v) {paused = v;}
 
-	void post(Concepts::Invokable<void()> auto&& func) {
-		std::lock_guard guard{lockTask};
-		postTasks.push_back(std::forward<decltype(func)>(func));
-	}
-
-	void postAsync(Concepts::Invokable<void()> auto&& func, std::promise<void>&& promise) {
-		std::lock_guard guard{lockAsyncTask};
-		postAsyncTasks.emplace_back(std::forward<decltype(func)>(func), std::move(promise));
-	}
-
-	[[nodiscard]] std::future<void> postAsync(Concepts::Invokable<void()> auto&& func) {
-		lockAsyncPackTask.lock();
-		std::packaged_task<void()>& task = postAsyncPackedTasks.emplace_back(std::forward<decltype(func)>(func));
-		lockAsyncPackTask.unlock();
-		return task.get_future();
-	}
 
 	/**
 	 * \brief Register an application listener.
@@ -148,14 +118,6 @@ export namespace OS{
 		std::signal(SIGINT, exitApplication);
 		std::signal(SIGTERM, exitApplication);
 
-		deltaSetter = [](float& f){
-			f = static_cast<float>(glfwGetTime()) - globalTime_internal;
-		};
-
-		globalTimeSetter = [](float& f){
-			f = static_cast<float>(glfwGetTime());
-		};
-
 		mainThreadID = std::this_thread::get_id();
 	}
 
@@ -163,25 +125,14 @@ export namespace OS{
 
 	void killApplication(const std::string_view what) {exitApplication(SIGTERM, what);}
 
-	bool shouldContinueLoop(GLFWwindow* window){return !glfwWindowShouldClose(window);}
-
-	void setupMainLoop() {loopBegin = true;}
-
-	[[nodiscard]] bool mainLoopRunning() {return loopBegin;}
-
-	void terminateMainLoop() {loopBegin = false;}
-
-	void pollWindowEvent(GLFWwindow* window){
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-
-		deltaSetter(deltaTime_internal);
+	void pollWindowEvent(){
+		deltaTime_internal = deltaSetter(globalTime_internal);
 		deltaTick_internal = deltaTime_internal * TicksPerSecond;
 
 		updateDeltaTime_internal = paused ? 0.0f : deltaTime_internal;
 		updateDeltaTick_internal = paused ? 0.0f : deltaTick_internal;
 
-		globalTimeSetter(globalTime_internal);
+		globalTime_internal = timerSetter();
 		globalTick_internal = globalTime_internal * TicksPerSecond;
 
 		updateTime_internal += updateDeltaTime_internal;
@@ -191,40 +142,7 @@ export namespace OS{
 	void update(){
 		updateSignalManager.fire(Event::CycleSignalState::begin);
 
-		{
-			lockTask.lock();
-			const decltype(postTasks) tempTask = std::move(postTasks);
-			lockTask.unlock();
-
-			for(auto&& task : tempTask){
-				task();
-			}
-		}
-
-		{
-			lockAsyncPackTask.lock();
-			decltype(postAsyncPackedTasks) tempTask = std::move(postAsyncPackedTasks);
-			lockAsyncPackTask.unlock();
-
-			for(auto&& task : tempTask){
-				task();
-			}
-		}
-
-		{
-			lockAsyncTask.lock();
-			const decltype(postAsyncTasks) tempTask = std::move(postAsyncTasks);
-			lockAsyncTask.unlock();
-
-			for(auto& [task, promise] : postAsyncTasks){
-				try{
-					task();
-				}catch(...){
-					promise.set_exception(std::current_exception());
-				}
-				promise.set_value();
-			}
-		}
+		handleTasks();
 
 		for(const auto & listener : applicationListeners){
 			if(listener->pauseRestrictable) {

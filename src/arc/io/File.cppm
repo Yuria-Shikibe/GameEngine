@@ -13,7 +13,7 @@ import Heterogeneous;
 using namespace std::filesystem;
 
 export namespace OS{
-	class File {
+	class File{
 	protected:
 		std::filesystem::path rawPath{};
 
@@ -22,32 +22,22 @@ export namespace OS{
 
 		File() = default;
 
-		explicit File(const decltype(rawPath)::string_type& p) : rawPath{p}{
+		explicit File(const decltype(rawPath)::string_type& p) : rawPath{p}{}
 
-		}
+		explicit File(decltype(rawPath)::string_type&& p) : rawPath{std::move(p)}{}
 
-		explicit File(decltype(rawPath)::string_type&& p) : rawPath{std::move(p)}{
+		explicit File(const path& p) : rawPath{p}{}
 
-		}
+		explicit File(path&& p) : rawPath{std::move(p)}{}
 
-		explicit File(const path& p) : rawPath{p}{
+		explicit File(const directory_entry& p) : rawPath(p){}
 
-		}
-
-		explicit File(path&& p) : rawPath{std::move(p)}{
-
-		}
-
-		explicit File(const directory_entry& p) : rawPath(p){
-
-		}
-
-		File& operator=(const path& other) {
+		File& operator=(const path& other){
 			rawPath = other;
 			return *this;
 		}
 
-		File& operator=(path&& other) {
+		File& operator=(path&& other){
 			rawPath = std::move(other);
 			return *this;
 		}
@@ -69,86 +59,86 @@ export namespace OS{
 		}
 
 		[[nodiscard]] path absolutePath() const{
-			return absolute(this->getPath());
+			return absolute(getPath());
 		}
 
-		[[nodiscard]] std::string extension() const {
+		[[nodiscard]] std::string extension() const{
 			return rawPath.extension().string();
 		}
 
-		[[nodiscard]] std::string stem() const {
+		[[nodiscard]] std::string stem() const{
 			return rawPath.stem().string();
 		}
 
-		[[nodiscard]] std::string filename() const {
+		[[nodiscard]] std::string filename() const{
 			return rawPath.filename().string();
 		}
 
-		[[nodiscard]] std::string filename_full() const {
+		[[nodiscard]] std::string filename_full() const{
 			return (isDir() ? "<Dir> " : "<Fi> ") + rawPath.filename().string();
 		}
 
-		[[nodiscard]] path& getPath() {
+		[[nodiscard]] path& getPath(){
 			return rawPath;
 		}
 
-		[[nodiscard]] const std::filesystem::path& getPath() const {
+		[[nodiscard]] const std::filesystem::path& getPath() const{
 			return rawPath;
 		}
 
-		[[nodiscard]] bool exist() const {
+		[[nodiscard]] bool exist() const{
 			return std::filesystem::exists(rawPath);
 		}
 
-		[[maybe_unused]] bool deleteFile() const {  // NOLINT(*-use-nodiscard)
-			return exist() && (isDir() ? remove(getPath()) : std::filesystem::remove_all(getPath()));
+		[[nodiscard]] bool deleteFile() const{
+			return exist() && (isDir()
+				                   ? std::filesystem::remove(absolutePath())
+				                   : std::filesystem::remove_all(absolutePath()));
 		}
 
-		[[maybe_unused]] void deleteFileQuiet() const {  // NOLINT(*-use-nodiscard)
-			isDir() ? remove(getPath()) : std::filesystem::remove_all(getPath());
+		void deleteFileQuiet() const{
+			(void)deleteFile();
 		}
 
-		[[nodiscard]] bool copy(const std::filesystem::path& dest) const {
-			try {
+		[[nodiscard]] bool copy(const std::filesystem::path& dest) const{
+			try{
 				std::filesystem::copy(getPath(), dest);
 				return true;
-			}
-			catch ([[maybe_unused]] std::error_code& ignore) {
+			} catch([[maybe_unused]] std::error_code& ignore){
 				return false;
 			}
 		}
 
-		[[nodiscard]] bool copy(const File& dest) const {
+		[[nodiscard]] bool copy(const File& dest) const{
 			return copy(dest.getPath());
 		}
 
-		[[nodiscard]] bool isDir() const {
+		[[nodiscard]] bool isDir() const{
 			return is_directory(getPath());
 		}
 
-		[[nodiscard]] bool isRegular() const {
+		[[nodiscard]] bool isRegular() const{
 			return is_regular_file(getPath());
 		}
 
-		[[nodiscard]] bool isHidden() const {
+		[[nodiscard]] bool isHidden() const{
 			return stem().starts_with('.');
 		}
 
-		[[nodiscard]] bool emptyExtension() const {
+		[[nodiscard]] bool emptyExtension() const{
 			return extension().empty();
 		}
 
-		[[maybe_unused]] bool createDir(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
-			return  autoCreateParents ? create_directories(getPath()) : create_directory(getPath());
+		[[nodiscard]] bool createDir(const bool autoCreateParents = true) const{
+			return autoCreateParents ? create_directories(getPath()) : create_directory(getPath());
 		}
 
-		void createDirQuiet(const bool autoCreateParents = true) const { // NOLINT(*-use-nodiscard)
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			createDir(autoCreateParents);
+		void createDirQuiet(const bool autoCreateParents = true) const{
+			(void)createDir(autoCreateParents);
 		}
 
-		[[maybe_unused]] bool createFile(const bool autoCreateParents = false) const { // NOLINT(*-use-nodiscard)
-			if (exist())return false;
+		[[nodiscard]] bool createFile(const bool autoCreateParents = false) const{
+			if(exist()) return false;
 
 			if(autoCreateParents){
 				if(const File parent = File{getParent()}; !parent.exist()){
@@ -156,33 +146,30 @@ export namespace OS{
 				}
 			}
 
-			//TODO shit
-			std::ofstream ofStream(getPath());
+			const std::ofstream ofStream(getPath());
 			const bool valid = ofStream.is_open();
-			ofStream.close();
 
 			return valid;
 		}
 
-		void createFileQuiet(const bool autoCreateParents = false) const {
-			// ReSharper disable once CppExpressionWithoutSideEffects
-			createFile(autoCreateParents);
+		void createFileQuiet(const bool autoCreateParents = false) const{
+			(void)createFile(autoCreateParents);
 		}
 
-		[[nodiscard]] File getParent() const {
-			return File{ getPath().parent_path() };
+		[[nodiscard]] File getParent() const{
+			return File{getPath().parent_path()};
 		}
 
-		[[nodiscard]] File subFile(const std::string_view name) const {
-			if(!isDir())throw ext::RuntimeException{};
+		[[nodiscard]] File subFile(const std::string_view name) const{
+			if(!isDir()) throw ext::RuntimeException{};
 
-			return File{ absolutePath().append(name) };
+			return File{absolutePath().append(name)};
 		}
 
-		[[nodiscard]] File subFile(const char* name) const {
-			if(!isDir())throw ext::RuntimeException{};
+		[[nodiscard]] File subFile(const char* name) const{
+			if(!isDir()) throw ext::RuntimeException{};
 
-			return File{ absolutePath().append(name) };
+			return File{absolutePath().append(name)};
 		}
 
 		[[nodiscard]] File find(const std::string_view name) const{
@@ -196,20 +183,20 @@ export namespace OS{
 		/**
 		 * Warning: This does not do append but erase and write!
 		 * */
-		void writeString(const std::string& data, const bool autoFlush = true) const {
-			if (std::ofstream ofStream(getPath()); ofStream.is_open()) {
+		void writeString(const std::string& data, const bool autoFlush = true) const{
+			if(std::ofstream ofStream(getPath()); ofStream.is_open()){
 				ofStream << data;
 
-				if(autoFlush)ofStream.flush();
+				if(autoFlush) ofStream.flush();
 			}
 		}
 
 		[[nodiscard]] std::vector<File> subs(const bool careDirs = false) const{
 			std::vector<File> files;
-			for (const auto& item : directory_iterator(getPath())){
-				if(item.is_directory()) {
-					if(careDirs)files.emplace_back(item);
-				}else {
+			for(const auto& item : directory_iterator(getPath())){
+				if(item.is_directory()){
+					if(careDirs) files.emplace_back(item);
+				} else{
 					files.emplace_back(item);
 				}
 			}
@@ -218,18 +205,18 @@ export namespace OS{
 		}
 
 		void forSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
-			for (const auto& item : directory_iterator(getPath())){
+			for(const auto& item : directory_iterator(getPath())){
 				consumer(File{item});
 			}
 		}
 
 		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer, const bool careDirs = false) const{
-			for (const auto& item : directory_iterator(getPath())){
+			for(const auto& item : directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
-				}else{
+				} else{
 					f.forAllSubs(consumer, careDirs);
-					if(careDirs) {
+					if(careDirs){
 						consumer(std::move(f));
 					}
 				}
@@ -237,27 +224,27 @@ export namespace OS{
 		}
 
 		void allSubs(std::vector<File>& container, const bool careDirs = false) const{
-			for (const auto& item : directory_iterator(getPath())){
+			for(const auto& item : directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					container.emplace_back(std::move(f));
-				}else{
+				} else{
 					f.allSubs(container, careDirs);
-					if(careDirs) {
+					if(careDirs){
 						container.emplace_back(std::move(f));
 					}
 				}
 			}
 		}
 
-		[[nodiscard]] std::string readString(Concepts::Invokable<void(std::string&)> auto&& consumer = nullptr) const {
+		[[nodiscard]] std::string readString(Concepts::Invokable<void(std::string&)> auto&& consumer = nullptr) const{
 			std::ifstream file_stream(getPath());
 
-			if(!file_stream.is_open())return "";
+			if(!file_stream.is_open()) return "";
 
 			std::stringstream file_contents;
 			std::string line;
 
-			while (std::getline(file_stream, line)) {
+			while(std::getline(file_stream, line)){
 				consumer(line);
 				file_contents << line;
 				if(!file_stream.eof()){
@@ -268,13 +255,13 @@ export namespace OS{
 			return file_contents.str();
 		}
 
-		void writeByte(Concepts::Invokable<void(const std::ofstream&)> auto&& func) {
-			if(std::ofstream ofStream(absolutePath(), std::ios::binary); ofStream.is_open()) {
+		void writeByte(Concepts::Invokable<void(const std::ofstream&)> auto&& func){
+			if(std::ofstream ofStream(absolutePath(), std::ios::binary); ofStream.is_open()){
 				func(ofStream);
 			}
 		}
 
-		[[nodiscard]] std::string readString() const {
+		[[nodiscard]] std::string readString() const{
 			std::ifstream file_stream(getPath());
 
 			if(!file_stream.is_open()){
@@ -284,7 +271,7 @@ export namespace OS{
 			std::stringstream file_contents{};
 			std::string line{};
 
-			while (std::getline(file_stream, line)) {
+			while(std::getline(file_stream, line)){
 				file_contents << line;
 				if(!file_stream.eof()){
 					file_contents << '\n';
@@ -294,7 +281,7 @@ export namespace OS{
 			return file_contents.str();
 		}
 
-		friend std::ostream &operator<<(std::ostream &os, const File &file) {
+		friend std::ostream& operator<<(std::ostream& os, const File& file){
 			os << file.filename_full();
 			return os;
 		}
@@ -311,13 +298,14 @@ export namespace OS{
 			return map;
 		}
 
-		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards, const bool careDirs = false) const{
+		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards,
+		                                                           const bool careDirs = false) const{
 			ext::StringMap<std::vector<File>> map;
 
 			forAllSubs([&standards, &map](File&& file){
-				if (const auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
+				if(const auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
 					return pair.second(file);
-				}); it != standards.end()) {
+				}); it != standards.end()){
 					map[it->first].push_back(file);
 				}
 			}, careDirs);
@@ -325,16 +313,17 @@ export namespace OS{
 			return map;
 		}
 
-		static std::unordered_map<std::string, std::vector<File>> sortBy(const std::span<File>& files, const std::span<Filter>& standards){
+		static std::unordered_map<std::string, std::vector<File>> sortBy(
+			const std::span<File>& files, const std::span<Filter>& standards){
 			std::unordered_map<std::string, std::vector<File>> map;
 
-			for (const File& file : files) {
-				if (
+			for(const File& file : files){
+				if(
 					auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
 						return pair.second(file);
 					});
 					it != standards.end()
-				) {
+				){
 					map[it->first].push_back(file);
 				}
 			}

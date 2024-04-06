@@ -19,26 +19,15 @@ export import Core.BatchGroup;
 export import Core.Input;
 export import Core.Camera;
 export import Core.Renderer;
+export import Core.Platform;
+export import Core.Platform.Current;
 
 import OS.FileTree;
-
-namespace Core{
-	void setScreenBound(GLFWwindow* win);
-}
 
 export namespace Core {
 	const std::string title = APPLICATION_NAME;
 
-	inline GLFWwindow* mainWindow      = nullptr;
-	inline GLFWmonitor* mainMonitor    = nullptr;
-	inline GLFWmonitor* currentMonitor = nullptr;
-
-	inline Geom::OrthoRectInt lastScreenBound{};
-	inline bool maximizeWinOnInit = true;
-	inline bool maximized = true;
-	inline bool windowized = false;
-
-	inline const GLFWvidmode* mainScreenMode = nullptr;
+	bool maximizeWinOnInit = true;
 	//TODO using unique ptr?
 
 	/* Almost Done */
@@ -50,7 +39,7 @@ export namespace Core {
 	/* Basically Done */
 	inline Renderer* renderer = nullptr;
 	/* 88.00% */
-	inline OS::FileTree* rootFileTree = nullptr;
+	inline std::unique_ptr<OS::FileTree> rootFileTree{};
 
 	//TODO main components... maybe more
 
@@ -67,8 +56,14 @@ export namespace Core {
 	/* 30.00% */
 	inline Log* log = nullptr;
 
+	inline std::unique_ptr<PlatformHandle> platform{};
+
 	//TODO maybe some objects for task management, if necessary
 	//TODO Async Impl...
+
+	void initPlatform(const int argc = 0, char* argv[] = nullptr){
+		initCurrentPlatform(platform, APPLICATION_NAME, argc, argv);
+	}
 
 	void initMainWindow();
 

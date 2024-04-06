@@ -11,7 +11,7 @@ import Assets.LoaderRenderer;
 
 import UI.Align;
 
-import Platform;
+import Core.Platform;
 import OS.File;
 import Concepts;
 import Container.Pool;
@@ -119,7 +119,7 @@ using Geom::Vec2;
 
 std::stringstream sstream{};
 
-void setupUITest() {
+void setupUITest(){
 	const auto HUD = new UI::Table{};
 
 	Core::uiRoot->root->transferElem(HUD).fillParent().setAlign(Align::center);
@@ -129,26 +129,29 @@ void setupUITest() {
 	HUD->setDrawer(&UI::emptyDrawer);
 
 	HUD->add<UI::Table>([](UI::Table& label){
-			label.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-				pane.setItem<UI::Label>([](UI::Label& label){
-					label.setText([](){
-						sstream.str("");
-						sstream << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << Core::camera->getPosition().x << ", " <<
-							Core::camera->getPosition().y << ") | " << std::to_string(OS::getFPS());
-						sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
-						sstream << "\nDraw count: " << std::ranges::count_if(Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{}, &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
+		   label.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+			   pane.setItem<UI::Label>([](UI::Label& label){
+				   label.setText([](){
+					   sstream.str("");
+					   sstream << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << Core::camera->
+						   getPosition().x << ", " <<
+						   Core::camera->getPosition().y << ") | " << std::to_string(OS::getFPS());
+					   sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
+					   sstream << "\nDraw count: " << std::ranges::count_if(
+						   Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{},
+						   &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
 
-						return sstream.str();
-					});
+					   return sstream.str();
+				   });
 
-					label.setFillparentX();
-					label.usingGlyphHeight = true;
-				});
-				// pane.setItem<UI::Elem>([](UI::Elem& area){
-				// 	area.setWidth(1000);
-				// 	area.setFillparentY();
-				// });
-			});
+				   label.setFillparentX();
+				   label.usingGlyphHeight = true;
+			   });
+			   // pane.setItem<UI::Elem>([](UI::Elem& area){
+			   // 	area.setWidth(1000);
+			   // 	area.setFillparentY();
+			   // });
+		   });
 	   })
 	   .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
 	   .setMargin(0, 10, 0, 10);
@@ -235,7 +238,17 @@ void setupUITest() {
 		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
 	}
 
-	HUD->transferElem(new UI::Table{})
+	HUD->add<UI::Table>([](UI::Table& table){
+		table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+		   pane.setItem<UI::InputArea>([](UI::InputArea& area){
+			   area.usingGlyphWidth = area.usingGlyphHeight = true;
+			   area.setMaxTextLength(1000);
+
+			   area.getGlyphLayout()->setSCale(0.75f);
+			   area.setText("Test\n123123123\nsadaDSAda");
+		   });
+	   }).fillParent();
+	})
 	   .setAlign(Align::top_right)
 	   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
 	   .setMargin(10, 0, 10, 0);
@@ -246,24 +259,11 @@ void setupUITest() {
 	   .setMargin(10, 10, 10, 0);
 	//
 	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-		   	pane.setItem<UI::InputArea>([](UI::InputArea& area){
-					   area.usingGlyphWidth = area.usingGlyphHeight = true;
-					   area.setText("Test Test TTT\n123123 123@@vasdasd\nasdasdasdasd");
-				   });
-				   // paneT.setFillparentX();
 
-			   // pane.setItem<UI::Table>([](UI::Table& paneT){
-				  //
-			   // });
-			   //
-			   // pane.setFillparent();
-		   }).fillParent();
 	   })
 	   .setAlign(Align::Mode::bottom_right)
-	   .setSizeScale(0.3f, 0.25f)
+	   .setSizeScale(0.3f, 0.15f)
 	   .setMargin(10, 0, 10, 0);
-
 }
 
 void setupCtrl(){
@@ -273,7 +273,7 @@ void setupCtrl(){
 	// 	effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
 	// });
 
-	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Release, [] {
+	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Release, []{
 		static ext::Timer<> timer{};
 
 		timer.run(12, OS::updateDeltaTick(), []{
@@ -304,13 +304,15 @@ void setupCtrl(){
 	Core::input->registerMouseBind(
 		Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
 		Ctrl::Mode_Shift
-		, [] {
-		Game::EntityManage::realEntities.quadTree->intersectPoint(Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
-		[](decltype(Game::EntityManage::realEntities)::ValueType* entity) {
-			entity->controller->selected = !entity->controller->selected;
-			Game::core->overlayManager->registerSelected(std::dynamic_pointer_cast<Game::RealityEntity>(std::move(entity->obtainSharedSelf())));
+	  , []{
+			Game::EntityManage::realEntities.quadTree->intersectPoint(
+				Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
+				[](decltype(Game::EntityManage::realEntities)::ValueType* entity){
+					entity->controller->selected = !entity->controller->selected;
+					Game::core->overlayManager->registerSelected(
+						std::dynamic_pointer_cast<Game::RealityEntity>(std::move(entity->obtainSharedSelf())));
+				});
 		});
-	});
 }
 
 void genRandomEntities(){
@@ -346,7 +348,7 @@ void genRandomEntities(){
 	ptr->activate();
 }
 
-int main(const int argc, char* argv[]) {
+int main(const int argc, char* argv[]){
 	//Init
 	::Test::init(argc, argv);
 
@@ -357,7 +359,7 @@ int main(const int argc, char* argv[]) {
 	if(true){
 		Game::core->overlayManager->activate();
 		Game::core->hitBoxEditor->deactivate();
-	}else{
+	} else{
 		Game::core->hitBoxEditor->activate();
 		Game::core->overlayManager->deactivate();
 	}
@@ -392,16 +394,16 @@ int main(const int argc, char* argv[]) {
 
 	genRandomEntities();
 
-	GL::MultiSampleFrameBuffer multiSample{ Core::renderer->getWidth(), Core::renderer->getHeight() };
-	GL::FrameBuffer frameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight() };
+	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
+	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{ Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 3};
-	GL::FrameBuffer acceptBuffer1{ Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 3};
+	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
 
 	Game::CombinePostProcessor merger{
-		Assets::PostProcessors::blurX_Far.get(), Assets::PostProcessors::blurY_Far.get(),
-		Assets::Shaders::merge
-	};
+			Assets::PostProcessors::blurX_Far.get(), Assets::PostProcessors::blurY_Far.get(),
+			Assets::Shaders::merge
+		};
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
@@ -423,7 +425,7 @@ int main(const int argc, char* argv[]) {
 		depth--;
 	});
 
-	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event) {
+	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event){
 		Core::Renderer& renderer = *event.renderer;
 		renderer.frameBegin(&acceptBuffer1);
 
@@ -453,12 +455,12 @@ int main(const int argc, char* argv[]) {
 
 
 
-	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& event) {
+	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& event){
 		event.renderer->frameBegin(&frameBuffer);
 
 		Draw::Line::setLineStroke(5);
 		Draw::color(Colors::GRAY);
-		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t) {
+		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t){
 			Draw::Line::rectOrtho(t->getBoundary());
 		});
 
@@ -468,63 +470,64 @@ int main(const int argc, char* argv[]) {
 	});
 
 
-	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e) {
-			Graphic::Mesh::meshBegin(Assets::Meshes::coords);
-			Graphic::Mesh::meshEnd(true);
+	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
+		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
+		Graphic::Mesh::meshEnd(true);
 
-			e.renderer->frameBegin(&frameBuffer);
-			e.renderer->frameBegin(&multiSample);
+		e.renderer->frameBegin(&frameBuffer);
+		e.renderer->frameBegin(&multiSample);
 
-			Graphic::Batch::blend();
-			//
-			const auto cameraPos = Core::camera->screenCenter();
-			//
-			Graphic::Mesh::meshBegin(Core::batchGroup.batchOverlay->getMesh());
+		Graphic::Batch::blend();
+		//
+		const auto cameraPos = Core::camera->screenCenter();
+		//
+		Graphic::Mesh::meshBegin(Core::batchGroup.batchOverlay->getMesh());
+		Draw::color();
+
+		Draw::Line::setLineStroke(4);
+		// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+		// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
+		// );
+
+		Draw::color();
+
+		{
+			static Geom::Matrix3D mat{};
+
+			Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 			Draw::color();
 
-			Draw::Line::setLineStroke(4);
-			// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
-			// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
-			// );
+			// Font::glyphParser->parse(coordCenter, R"()");
+			//
+			// coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(45, 45);
+			// coordCenter->setAlign(Align::Mode::bottom_left);
+			// coordCenter->render();
 
-			Draw::color();
+			Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 
-			{
-				static Geom::Matrix3D mat{};
+			Graphic::Batch::endPorj();
+		}
 
-				Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
-				Draw::color();
+		Graphic::Batch::flush();
+		Graphic::Mesh::meshEnd(Core::batchGroup.batchOverlay->getMesh());
 
-				// Font::glyphParser->parse(coordCenter, R"()");
-				//
-				// coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(45, 45);
-				// coordCenter->setAlign(Align::Mode::bottom_left);
-				// coordCenter->render();
+		e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
+		e.renderer->frameEnd(Assets::PostProcessors::bloom.get());
+	});
 
-				Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
+	OS::activateHander();
 
-				Graphic::Batch::endPorj();
-			}
-
-			Graphic::Batch::flush();
-			Graphic::Mesh::meshEnd(Core::batchGroup.batchOverlay->getMesh());
-
-			e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
-			e.renderer->frameEnd(Assets::PostProcessors::bloom.get());
-		});
-
-	OS::setupMainLoop();
-
-	while(OS::shouldContinueLoop(Core::mainWindow)) {
+	while(!Core::platform->shouldExit()){
 		OS::update();
 
 		Core::renderer->draw();
 
-		OS::pollWindowEvent(Core::mainWindow);
+		Core::platform->pollEvents();
+		OS::pollWindowEvent();
 	}
 
 	//Application Exit
-	OS::terminateMainLoop();
+	OS::deactivateHander();
 
 	Game::EntityManage::clear();
 

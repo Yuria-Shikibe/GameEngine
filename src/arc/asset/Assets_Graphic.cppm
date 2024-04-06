@@ -6,6 +6,8 @@ import GL.Mesh.RenderableMesh;
 import GL.Buffer.DataBuffer;
 import GL.VertexArray;
 import Font;
+import Font.FrequentCharCode;
+import Font.UnicodeRefParser;
 import Font.GlyphArrangement;
 import OS.FileTree;
 import GL.Shader;
@@ -134,12 +136,17 @@ export namespace Assets{
 	namespace Fonts {
 		constexpr int DefFlag = 1L << 2;
 
+		OS::File unicodeRefDir;
 		OS::File cacheDir;
 		// Font::FontsManager
 
-		const std::vector<Math::Section<Font::CharCode>> targetChars {{' ' + 1, '~'}};
+		//const std::vector<Math::Section<Font::CharCode>> targetChars {{' ' + 1, '~'}};
+		const std::vector<Font::CharCode> targetChars = std::ranges::views::iota(' ' + 1, '~' + 1) | std::ranges::to<std::vector<Font::CharCode>>();// {{' ' + 1, '~'}};
+		std::vector<Font::CharCode> targetChars_withChinese = std::vector{targetChars};
 
-		const Font::FontFlags
+		Font::FontFlags
+			*sourceHan_SC_SB{nullptr},
+
 			*consola_Regular{nullptr},
 			*consola_Italic{nullptr},
 			*consola_Bold{nullptr},
@@ -161,11 +168,7 @@ export namespace Assets{
 
 		void loadPreivous(Font::FontManager* loader) { // NOLINT(*-non-const-parameter)
 			loader->quickInit = true;
-			cacheDir = fontDir.subFile("cache-load");
-			if(!cacheDir.exist())cacheDir.createDirQuiet();
-			
-			loader->rootCacheDir = cacheDir;
-			
+
 			telegrama =
 				 loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"),  targetChars, DefFlag, 120});
 
@@ -175,11 +178,11 @@ export namespace Assets{
 		}
 
 		void load(Font::FontManager* loader) { // NOLINT(*-non-const-parameter
+			targetChars_withChinese.append_range(Font::genRefTable(unicodeRefDir.find("zh_cn.txt")));
 
-			cacheDir = fontDir.subFile("cache");
-			if(!cacheDir.exist())cacheDir.createDirQuiet();
+			sourceHan_SC_SB =
+				loader->registerFont(new Font::FontFlags{fontDir.subFile("SourceHanSerifSC-SemiBold.otf" ),  targetChars_withChinese});
 
-			loader->rootCacheDir = cacheDir;
 			consola_Regular =
 				loader->registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ),  targetChars});
 			consola_Italic =
@@ -210,6 +213,8 @@ export namespace Assets{
 
 			telegrama =
 			 	loader->registerFont(new Font::FontFlags{fontDir.subFile("telegrama.otf"),  targetChars});
+
+			telegrama->fallback = sourceHan_SC_SB;
 
 
 			Font::registerParserableFont("tms-R" , times_Regular);

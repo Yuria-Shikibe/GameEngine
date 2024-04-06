@@ -100,6 +100,10 @@ export namespace Geom{
 			return width;
 		}
 
+		[[nodiscard]] constexpr Vector2D<T> getSize() const{
+			return {width, height};
+		}
+
 		[[nodiscard]] constexpr T getHeight() const{
 			return height;
 		}
@@ -367,9 +371,25 @@ export namespace Geom{
 		}
 
 		template <Concepts::Number T1, Concepts::Number T2>
-		constexpr Rect_Orthogonal& scl(const T1 xScl, const T2 yScl) {
+		constexpr Rect_Orthogonal& sclSize(const T1 xScl, const T2 yScl) {
 			width = static_cast<T>(static_cast<T1>(width) * xScl);
 			height = static_cast<T>(static_cast<T1>(height) * yScl);
+
+			return *this;
+		}
+
+		template <Concepts::Number T1, Concepts::Number T2>
+		constexpr Rect_Orthogonal& sclPos(const T1 xScl, const T2 yScl) {
+			srcX = static_cast<T>(static_cast<T1>(srcX) * xScl);
+			srcY = static_cast<T>(static_cast<T1>(srcY) * yScl);
+
+			return *this;
+		}
+
+		template <Concepts::Number T1, Concepts::Number T2>
+		constexpr Rect_Orthogonal& scl(const T1 xScl, const T2 yScl) {
+			(void)this->template sclPos<T1, T2>(xScl, yScl);
+			(void)this->template sclSize<T1, T2>(xScl, yScl);
 
 			return *this;
 		}

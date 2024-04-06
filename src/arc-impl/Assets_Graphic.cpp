@@ -120,6 +120,11 @@ void Assets::loadBasic() {
 		return file.stem();
 	});
 
+	Fonts::unicodeRefDir = assetsDir.subFile("unicode-ref");
+	if(!Fonts::unicodeRefDir.exist()){
+		Fonts::unicodeRefDir.createDirQuiet();
+	}
+
 	// auto vec = textureTree.getFlatView() | std::ranges::views::keys | std::ranges::to<std::vector<std::string>>();
 	// std::ranges::sort(vec);
 	//

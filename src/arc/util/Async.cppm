@@ -27,25 +27,36 @@ export namespace ext {
 	class Task {
 	protected:
 		Handler* handler{nullptr};
+		bool deferred{false};
 	public:
 		virtual ~Task() = default;
 
-		[[nodiscard]] virtual std::future<T> launch(std::launch policy) = 0;
+		[[nodiscard]] virtual std::future<T> launch(const std::launch policy){
+			if(policy == std::launch::deferred)deferred = true;
+			return {};
+		}
 
 		[[nodiscard]] virtual std::future<T> launch(){
 			return launch(std::launch::async);
 		}
+
+		[[nodiscard]] Handler* getHandler() const{ return handler; }
 
 		void setHandler(Handler* const handler) {
 			this->handler = handler;
 		}
 
 		[[nodiscard]] std::future<void> postToHandler(Concepts::Invokable<void()> auto&& func) {
-			if(*handler){
+			if(!deferred){
 				return handler->operator()(std::forward<decltype(func)>(func));
+			}else{
+				return this->fallbackPost(std::forward<decltype(func)>(func));
 			}
+		}
 
-			throw ext::RuntimeException{"Unable To Post Task!"};
+		virtual std::future<void> fallbackPost(std::function<void()>&& func){
+			constexpr TaskHandler handler{};
+			return handler(std::forward<decltype(func)>(func));
 		}
 	};
 

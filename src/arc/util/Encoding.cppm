@@ -17,10 +17,10 @@ export namespace ext{
 
 	using CharBuffer = std::array<char, 4>;
 
-	unsigned int convertTo(const CharBuffer charCodes){
+	unsigned int convertTo(const char* charCodes, const int size = 4){
 		unsigned int buffer{};
 #ifdef WIN_SYS
-		MultiByteToWideChar(CP_UTF8, 0, charCodes.data(), 4, reinterpret_cast<wchar_t*>(buffer), 1);
+		MultiByteToWideChar(CP_UTF8, 0, charCodes, size, reinterpret_cast<wchar_t*>(&buffer), sizeof(unsigned int) / sizeof(wchar_t));
 #endif
 		return buffer;
 	}
@@ -112,7 +112,15 @@ export namespace ext{
 	 * @brief Warning: this function assume that inItr is always derreferenceable
 	 * @param inItr Search Pos
 	 */
-	std::string::iterator gotoUnicodeHead(std::string::iterator inItr){
+	[[nodiscard]] std::string::iterator gotoUnicodeHead(std::string::iterator inItr){
+		while(!isUnicodeHead(inItr.operator*())){
+			--inItr;
+		}
+
+		return inItr;
+	}
+
+	[[nodiscard]] std::string_view::iterator gotoUnicodeHead(std::string_view::iterator inItr){
 		while(!isUnicodeHead(inItr.operator*())){
 			--inItr;
 		}
@@ -161,3 +169,18 @@ export std::ostream& operator<<(std::ostream& stream, const ext::CharBuffer buff
 	stream << std::string{buffer.data(), ext::getUnicodeLength(buffer.front())};
 	return stream;
 }
+
+export
+template <>
+struct std::formatter<ext::CharBuffer> {
+	static constexpr auto parse(auto& ctx){return ctx.begin();}
+
+	template<class FmtContext>
+	static typename FmtContext::iterator format(ext::CharBuffer buffer, FmtContext& ctx){
+		std::ostringstream out{};
+		out << std::string_view{buffer.data(), ext::getUnicodeLength(buffer.front())};
+
+		return std::ranges::copy(std::move(out).str(), ctx.out()).out;
+	}
+};
+

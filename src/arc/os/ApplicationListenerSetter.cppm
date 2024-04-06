@@ -51,90 +51,23 @@ export namespace OS{
 		disabled = GLFW_CURSOR_DISABLED
 	};
 
-	void setInputMode_Cursor(const CursorMode value, GLFWwindow* window) {
-		glfwSetInputMode(window, GLFW_CURSOR, static_cast<int>(value));
+	void setInputMode_Cursor(const CursorMode value, void* window) {
+		glfwSetInputMode(static_cast<GLFWwindow*>(window), GLFW_CURSOR, static_cast<int>(value));
 	}
 
-	void setInputMode_StickyKeys(const bool value, GLFWwindow* window) {
-		glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, value);
+	void setInputMode_StickyKeys(const bool value, void* window) {
+		glfwSetInputMode(static_cast<GLFWwindow*>(window), GLFW_STICKY_MOUSE_BUTTONS, value);
 	}
 
-	void setInputMode_StickyMouseButtons(const bool value, GLFWwindow* window) {
-		glfwSetInputMode(window, GLFW_STICKY_KEYS, value);
+	void setInputMode_StickyMouseButtons(const bool value, void* window) {
+		glfwSetInputMode(static_cast<GLFWwindow*>(window), GLFW_STICKY_KEYS, value);
 	}
 
-	void setInputMode_LockKeyMods(const bool value, GLFWwindow* window) {
-		glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, value);
+	void setInputMode_LockKeyMods(const bool value, void* window) {
+		glfwSetInputMode(static_cast<GLFWwindow*>(window), GLFW_LOCK_KEY_MODS, value);
 	}
 
 	void setInputMode_RawMouse(const bool value, GLFWwindow* window) {
 		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, value);
 	}
 }
-
-
-void windowRefreshCallback(GLFWwindow* window){
-
-}
-
-void dropCallback(GLFWwindow* window, int path_count, const char* paths[]) {
-
-}
-
-void charCallback(GLFWwindow* window, unsigned int codepoint);
-
-void charModCallback(GLFWwindow* window, unsigned int codepoint, int mods);
-
-void scaleCallback(GLFWwindow* window, const float xScale, const float yScale){
-	// cout << "Scale CallBack: " << xScale << " | " << yScale << endl;
-}
-
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-
-void mouseBottomCallBack(GLFWwindow* window, int button, int action, int mods);
-
-void cursorPosCallback(GLFWwindow* window, double xPos, double yPos);
-
-void cursorEnteredCallback(GLFWwindow* window, int entered);
-
-void scrollCallback(GLFWwindow* window, double xOffset, double yOffset);
-
-void keyCallback(GLFWwindow* window, int key, int scanCode, int action, int mods);
-
-void monitorCallback(GLFWmonitor* monitor, int event);
-
-void maximizeCallback(GLFWwindow* window, int maximized);
-
-void winPosCallBack(GLFWwindow* window, int xpos, int ypos);
-
-export namespace OS{
-	inline void setApplicationIcon(GLFWwindow* window, const GLFWimage* image) {
-		glfwSetWindowIcon(window, 1, image);
-	}
-
-	void loadListeners(GLFWwindow* window) {
-		glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-		glfwSetCursorPosCallback(window, cursorPosCallback);
-		glfwSetDropCallback(window, dropCallback);
-		glfwSetCursorEnterCallback(window, cursorEnteredCallback);
-		glfwSetCharCallback(window, charCallback);
-		glfwSetCharModsCallback(window, charModCallback);
-
-		glfwSetKeyCallback(window, keyCallback);
-		glfwSetMonitorCallback(monitorCallback);
-
-		glfwSetScrollCallback(window, scrollCallback);
-		glfwSetWindowContentScaleCallback(window, scaleCallback);
-
-		glfwSetWindowMaximizeCallback(window, maximizeCallback);
-		glfwSetWindowRefreshCallback(window, windowRefreshCallback);
-		glfwSetMouseButtonCallback(window, mouseBottomCallBack);
-		glfwSetWindowPosCallback(window, winPosCallBack);
-		// glfwSetWindowSizeCallback(window, framebufferSizeCallback);
-		// glfwMini
-		// setInputMode_Cursor(OS::CursorMode::hidden, window);
-		// OS::setInputMode_StickyKeys(true);
-		// OS::setInputMode_LockKeyMods(true);
-	}
-}
-

@@ -20,7 +20,6 @@ void Assets::Manager::pullRequest() {
 	loadEvents.fire(AssetsLoadInit{this});
 
 	Assets::Shaders::load(&shaders);
-
 	Assets::Fonts::loadPreivous(tempFontLoader.get());
 	Assets::Fonts::load(&fonts);
 
@@ -30,18 +29,21 @@ void Assets::Manager::pullRequest() {
 		loader.push(&page);
 	}
 
+
 	loader.push(&shaders);
 	loader.push(&fonts);
+	fonts.texturePage->setHandler(fonts.getHandler());
+
 	loader.push(&soundLoader);
 
 	loadEvents.fire(AssetsLoadPull{this});
 	loader.begin();
 }
 
-void Assets::Manager::load_Visible(const unsigned width, const unsigned height, GLFWwindow* window, Core::Renderer* renderer) {
+void Assets::Manager::load_Visible(const unsigned width, const unsigned height, Core::Renderer* renderer) {
 	auto loadRenderer = Assets::LoaderRenderer{width, height, &loader};
 	renderer->registerSynchronizedResizableObject(&loadRenderer);
-	while (OS::shouldContinueLoop(window)){
+	while (!Core::platform->shouldExit()){
 		if(loader.finished()) {
 			if(loadRenderer.lastProgress > 0.999f) {
 				break;
@@ -52,7 +54,8 @@ void Assets::Manager::load_Visible(const unsigned width, const unsigned height, 
 
 		loadRenderer.draw();
 
-		OS::pollWindowEvent(window);
+		Core::platform->pollEvents();
+		OS::pollWindowEvent();
 	}
 
 	Core::batchGroup.batchOverlay->reset();
@@ -76,7 +79,7 @@ void Assets::Manager::loadPost() {
 	Assets::loadAfter();
 
 	Font::defGlyphParser->context.defaultFont = Assets::Fonts::telegrama;
-	Font::defGlyphParser->fontLib = fonts.manager.get();
+	Font::defGlyphParser->fontLib = fonts.atlas.get();
 }
 
 void Assets::Manager::loadEnd() {
@@ -88,28 +91,4 @@ void Assets::Manager::loadEnd() {
 	}
 
 	std::cout << std::format("[Info]: Loading Cost Time: {}.sec", static_cast<float>(loader.getTimer().toMark().count()) / 1000.0f) << std::endl;
-}
-
-GL::ShaderManager& Assets::Manager::getShaders() {
-	return shaders;
-}
-
-Graphic::TextureAtlas& Assets::Manager::getAtlas() {
-	return atlas;
-}
-
-Font::FontAtlas& Assets::Manager::getonts() const{
-	return *fonts.manager;
-}
-
-Assets::AssetsLoader& Assets::Manager::getLoader() {
-	return loader;
-}
-
-Event::EventManager& Assets::Manager::getEventTrigger() {
-	return loadEvents;
-}
-
-Assets::SoundLoader& Assets::Manager::getSoundLoader() {
-	return soundLoader;
 }

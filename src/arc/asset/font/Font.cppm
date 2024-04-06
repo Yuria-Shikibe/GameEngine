@@ -48,15 +48,11 @@ namespace Font {
 	}
 
 	//Just use 'size', not EOF, just my preference...
-	void readCacheData(std::istream& stream, FT_UInt& width, FT_UInt& height, size_t& size) {
-		stream.read(reinterpret_cast<char*>(&width ), sizeof(width ));
-		stream.read(reinterpret_cast<char*>(&height), sizeof(height));
+	void readCacheDataSize(std::istream& stream, size_t& size) {
 		stream.read(reinterpret_cast<char*>(&size  ), sizeof(size  ));
 	}
 
-	void saveCacheData(std::ostream& stream, const FT_UInt width, const FT_UInt height, const size_t size) {
-		stream.write(reinterpret_cast<const char*>(&width ), sizeof(width ));
-		stream.write(reinterpret_cast<const char*>(&height), sizeof(height));
+	void saveCacheDataSize(std::ostream& stream, const size_t size) {
 		stream.write(reinterpret_cast<const char*>(&size  ), sizeof(size  ));
 	}
 
@@ -69,12 +65,15 @@ namespace Font {
 			data[size * 4 + 3] = map.buffer[size];
 		}
 	}
-
-	constexpr unsigned int TexturePackGap{1};
 }
 
-export namespace Font {
-	using CharCode = unsigned int;
+export namespace Font{
+	template <Concepts::Number T = float>
+	constexpr T normalizeLen(const long pos) {
+		return static_cast<T>(pos >> 6);
+	}
+
+	using CharCode = char32_t;
 	FT_Library GlobalFreeTypeLib{};
 
 	enum struct Style : unsigned char{
@@ -115,30 +114,83 @@ export namespace Font {
 	}
 
 	struct CharData {
-		GL::TextureRegionRect region{};
-		FT_Glyph_Metrics matrices{};
-		OrthoRectUInt charBox{};
+		FT_Glyph_Metrics glyphMatrices{};
+		GL::TextureRegionRect* region{};
 
-		[[nodiscard]] CharData(const FT_Glyph_Metrics& matrices, const OrthoRectUInt charBox)
-			: matrices(matrices),
-			  charBox(charBox) {
+		template <Concepts::Number T>
+		[[nodiscard]] constexpr Geom::Vector2D<T> getSize() const{
+			return {normalizeLen<T>(glyphMatrices.width), normalizeLen<T>(glyphMatrices.height)};
 		}
-
-		[[nodiscard]] CharData() = default;
 	};
 
+	struct FontData_Preload{
+		FT_Glyph_Metrics glyphMatrices{};
+		mutable GL::TextureRegionRect* region{};
+
+		CharCode charCode{0};
+		Graphic::Pixmap pixmap{};
+
+		[[nodiscard]] FontData_Preload() = default;
+
+		[[nodiscard]] FontData_Preload(const CharCode charCode, const FT_GlyphSlot glyph) : // NOLINT(*-misplaced-const)
+			charCode(charCode),
+			glyphMatrices(glyph->metrics),
+			pixmap(glyph->bitmap.width, glyph->bitmap.rows)
+		{
+			if(glyph->bitmap.buffer) {
+				writeIntoPixmap(glyph->bitmap, pixmap.data());
+			}
+		}
+
+		[[nodiscard]] Geom::Point2U getSize() const{
+			return {normalizeLen<unsigned>(glyphMatrices.width), normalizeLen<unsigned>(glyphMatrices.height)};
+		}
+
+		void write(std::ostream& ostream) const{
+			ostream.write(reinterpret_cast<const char*>(&charCode), sizeof(charCode));
+			ostream.write(reinterpret_cast<const char*>(&glyphMatrices), sizeof(glyphMatrices));
+		}
+
+		void read(std::istream& istream){
+			istream.read(reinterpret_cast<char*>(&charCode), sizeof(charCode));
+			istream.read(reinterpret_cast<char*>(&glyphMatrices), sizeof(glyphMatrices));
+		}
+
+		friend bool operator==(const FontData_Preload& lhs, const FontData_Preload& rhs){
+			return lhs.charCode == rhs.charCode;
+		}
+
+		friend bool operator!=(const FontData_Preload& lhs, const FontData_Preload& rhs){ return !(lhs == rhs); }
+	};
+}
+
+export
+template<>
+struct std::hash<Font::FontData_Preload>{
+	size_t operator()(const Font::FontData_Preload& d) const noexcept{
+		return d.charCode;
+	}
+};
+
+export namespace Font{
 	struct FontData {
-		OrthoRectUInt box{};
+		// OrthoRectUInt box{};
 		std::unordered_map<CharCode, CharData> charDatas{};
 		float lineSpacingMin{-1};
+		//
+		// std::unordered_map<CharCode, GL::TextureRegionRect*> fontRegions{};
 
-		std::unique_ptr<Pixmap> fontPixmap{nullptr};
+		// [[nodiscard]] FontData() = default;
 
-		[[nodiscard]] FontData() = default;
+		// [[nodiscard]] explicit FontData(OrthoRectUInt&& box, const size_t size, Pixmap&& pixmap) : box(std::move(box)){
+		// 	fontPixmap = std::make_unique<Pixmap>(std::forward<Pixmap>(pixmap));
+		// 	charDatas.reserve(size);
+		// }
 
-		[[nodiscard]] explicit FontData(OrthoRectUInt&& box, const size_t size, Pixmap&& pixmap) : box(std::move(box)){
-			fontPixmap = std::make_unique<Pixmap>(std::forward<Pixmap>(pixmap));
-			charDatas.reserve(size);
+		explicit FontData(const std::unordered_set<FontData_Preload>& datas){
+			for (auto&& data : datas){
+				charDatas.try_emplace(data.charCode, data.glyphMatrices, data.region);
+			}
 		}
 
 		void write(std::ostream& ostream) const{
@@ -147,8 +199,7 @@ export namespace Font {
 
 			for(const auto& [key, value]: charDatas) {
 				ostream.write(reinterpret_cast<const char*>(&key		   ), sizeof(key           ));
-				ostream.write(reinterpret_cast<const char*>(&value.matrices), sizeof(value.matrices));
-				ostream.write(reinterpret_cast<const char*>(&value.charBox ), sizeof(value.charBox ));
+				ostream.write(reinterpret_cast<const char*>(&value.glyphMatrices), sizeof(value.glyphMatrices));
 			}
 		}
 
@@ -158,13 +209,11 @@ export namespace Font {
 			charDatas.reserve(size);
 
 			for(size_t i = 0; i < size; ++i) {
-				CharData value{};
 				CharCode key;
 				istream.read(reinterpret_cast<char*>(&key		    ), sizeof(key           ));
-				istream.read(reinterpret_cast<char*>(&value.matrices), sizeof(value.matrices));
-				istream.read(reinterpret_cast<char*>(&value.charBox ), sizeof(value.charBox ));
+				auto [kv, success] = charDatas.try_emplace(key);
 
-				charDatas.insert(std::make_pair(std::move(key), std::move(value)));
+				istream.read(reinterpret_cast<char*>(&kv->second.glyphMatrices), sizeof(kv->second.glyphMatrices));
 			}
 		}
 	};
@@ -177,7 +226,7 @@ export namespace Font {
 		static constexpr auto fontOffset = 0;
 
 		OS::File fontFile{};
-		std::vector<Math::Section<CharCode>> segments{};
+		std::vector<CharCode> segments{};
 		FT_Int loadFlags = FT_LOAD_RENDER; //
 		FT_UInt size = 48;
 
@@ -211,7 +260,7 @@ export namespace Font {
 
 		[[nodiscard]] FontFlags(
 			const OS::File& fontFile,
-			const std::vector<Math::Section<CharCode>>& segments,
+			const std::vector<CharCode>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
 			const FT_UInt height = 48,
 			const std::function<bool(FT_Face)>& loader = nullptr
@@ -226,7 +275,7 @@ export namespace Font {
 
 		[[nodiscard]] FontFlags(
 			OS::File&& fontFile,
-			const std::vector<Math::Section<CharCode>>& segments,
+			const std::vector<CharCode>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
 			const FT_UInt height = 48,
 			const std::function<bool(FT_Face)>& loader = nullptr
@@ -282,6 +331,7 @@ export namespace Font {
 			}
 
 			if(fallback) {
+
 				return fallback->getCharData(charCode);
 			}
 
@@ -349,49 +399,35 @@ export namespace Font {
 	//this will contain all the fonts with a single texture, for fast batch process
 	struct FontAtlas {
 	protected:
-		std::unique_ptr<GL::Texture2D> fontTexture{nullptr};
-		std::unordered_map<FT_UInt, std::set<FT_UInt>> supportedFonts{};
+		std::unordered_map<CharCode, std::set<FT_UInt>> supportedFonts{};
 		std::unordered_map<FT_UInt, std::unique_ptr<FontFlags>> fonts{}; //Access it by FontFlags.internalID
 
 	public:
 		[[nodiscard]] FontAtlas() = default;
 
-		[[nodiscard]] explicit FontAtlas(Graphic::Pixmap& textureBitmap, std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
-			fontTexture.reset(new GL::Texture2D(textureBitmap.getWidth(), textureBitmap.getHeight(), std::move(textureBitmap).release()));
+		[[nodiscard]] explicit FontAtlas(std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
 
-			fontTexture->setScale(GL::TexParams::mipmap_linear_linear);
-
-			const OrthoRectUInt bound{fontTexture->getWidth(), fontTexture->getHeight()};
+			// fontTexture->setScale(GL::TexParams::mipmap_linear_linear);
 
 			fonts.reserve(fontsRaw.size());
 			for(auto& value: fontsRaw) {
 				//Register valid chars
-				for (const auto [from, to] : value->segments){
-					for(CharCode i = from; i <= to; ++i) {
-						supportedFonts[i].insert(value->internalID);
-					}
+				for (const auto i : value->segments){
+					supportedFonts[i].insert(value->internalID);
 				}
 
 				//Set font char texture region uv
 				for(auto& charData : value->data->charDatas | std::ranges::views::values) {
-					charData.region.setData(*fontTexture);
-
-					charData.region.fetchInto(charData.charBox, bound);
-					charData.region.flipY();
 					if(value->data->lineSpacingMin < 0) {
-						value->data->lineSpacingMin = std::max(static_cast<float>(charData.charBox.getHeight()), value->data->lineSpacingMin);
+						value->data->lineSpacingMin = Math::max(normalizeLen(charData.glyphMatrices.height), value->data->lineSpacingMin);
 					}
 				}
 
 				//The pixmap data for a single font wont be needed anymore in all cases, release it if possible;
-				if(value->data->fontPixmap)value->data->fontPixmap->free();
+				// if(value->data->fontPixmap)value->data->fontPixmap->free();
 
 				fonts[value->internalID] = std::move(value);
 			}
-		}
-
-		[[nodiscard]] const GL::Texture2D* getTexture() const {
-			return fontTexture.get();
 		}
 
 		[[nodiscard]] const FontFlags* obtain(const FontFlags* const flag) const {
@@ -415,55 +451,23 @@ export namespace Font {
 		}
 	};
 
-	struct FontData_Preload{
-		CharCode charCode{0};
-		FT_Glyph_Metrics matrices{};
-		OrthoRectUInt box{};
-		Graphic::Pixmap pixmap{};
-
-		[[nodiscard]] FontData_Preload() = default;
-
-		[[nodiscard]] FontData_Preload(const CharCode charCode, const FT_GlyphSlot glyph) : // NOLINT(*-misplaced-const)
-			charCode(charCode),
-			matrices(glyph->metrics),
-			box(glyph->bitmap.width, glyph->bitmap.rows),
-			pixmap(glyph->bitmap.width, glyph->bitmap.rows)
-		{
-			if(glyph->bitmap.buffer) {
-				writeIntoPixmap(glyph->bitmap, pixmap.getData());
-			}
-		}
-
-		void write(std::ostream& ostream) const{
-			ostream.write(reinterpret_cast<const char*>(&charCode), sizeof(charCode));
-			ostream.write(reinterpret_cast<const char*>(&box	 ), sizeof(box     ));
-			ostream.write(reinterpret_cast<const char*>(&matrices), sizeof(matrices));
-		}
-
-		void read(std::istream& istream){
-			istream.read(reinterpret_cast<char*>(&charCode), sizeof(charCode));
-			istream.read(reinterpret_cast<char*>(&box	  ), sizeof(box     ));
-			istream.read(reinterpret_cast<char*>(&matrices), sizeof(matrices));
-		}
-	};
-
 	class FontManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 	public:
 		bool quickInit = false;
 		std::vector<std::unique_ptr<FontFlags>> flags{};
 		Event::CycleSignalManager fontLoadListeners{};
 		OS::File rootCacheDir{};
-		std::unique_ptr<FontAtlas> manager{nullptr};
-		Assets::TexturePackPage* fontAtlas{nullptr};
+		std::unique_ptr<FontAtlas> atlas{nullptr};
+		Assets::TexturePackPage* texturePage{nullptr};
 
 		[[nodiscard]] FontManager() = default;
 
-		[[nodiscard]] explicit FontManager(OS::File&& root_cache_dir) :
-			rootCacheDir(std::move(root_cache_dir)) {
+		[[nodiscard]] FontManager(OS::File&& root_cache_dir, Assets::TexturePackPage* texturePage) :
+			rootCacheDir(std::move(root_cache_dir)), texturePage{texturePage}{
 		}
 
-		[[nodiscard]] explicit FontManager(const OS::File& root_cache_dir) :
-			rootCacheDir(root_cache_dir) {
+		[[nodiscard]] FontManager(const OS::File& root_cache_dir, Assets::TexturePackPage* texturePage) :
+			rootCacheDir(root_cache_dir), texturePage{texturePage}{
 		}
 
 		FontFlags* registerFont(FontFlags* fontFlags) {
@@ -472,11 +476,11 @@ export namespace Font {
 		}
 
 		[[nodiscard]] bool valid() const {
-			return manager != nullptr;
+			return atlas != nullptr;
 		}
 
 	protected:
-		void loadFont(FontFlags& params) const {
+		void loadFont(FontFlags& params){
 			const std::string fontFullName = params.fullname();
 
 			if(!params.face)exitLoad(fontFullName);
@@ -491,7 +495,7 @@ export namespace Font {
 			}
 
 			OS::File dataFile = params.dataFile(fontCacheDir);
-			OS::File texFile  = params.texFile (fontCacheDir);
+			//OS::File texFile  = params.texFile (fontCacheDir);
 
 			std::fstream fstream;
 
@@ -509,142 +513,103 @@ export namespace Font {
 				fstream = obtainStream(dataFile);
 			}
 
-			std::vector<FontData_Preload> fontDatas{};
-			FT_UInt width = 0;
-			FT_UInt height = 0;
-			size_t size = 0;
+			std::unordered_set<FontData_Preload> fontDatas{};
 
-			Graphic::Pixmap maxMap{};
+			// Graphic::Pixmap maxMap{};
 
 			if(needCache){
-				FT_UInt currentWidth = 0;
-				FT_UInt maxHeight = 0;
+				for (const CharCode i : params.segments){
+					const FontFlags& valid = *params.tryLoad(i);
 
-				for (const auto [from, to] : params.segments){
-					for(CharCode i = from; i <= to; ++i) {
-						const FontFlags& valid = * params.tryLoad(i);
+					if(!valid.face->glyph) {
+						exitLoad(fontFullName);
+					}
 
-						if(!valid.face->glyph) {
+					//TODO glyph effects
+					if (params.loader && valid.face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
+						if (params.loader(valid.face)) {
 							exitLoad(fontFullName);
 						}
-
-						if (params.loader && valid.face->glyph->format != FT_GLYPH_FORMAT_BITMAP) {
-							if (params.loader(valid.face)) {
-								exitLoad(fontFullName);
-							}
-						}
-
-						auto& cur = fontDatas.emplace_back(i, valid.face->glyph);
-						cur.box.move(currentWidth, 0);
-
-						//TODO font linefeed to support many glyphs
-						//TODO uses texture packer instead?
-						maxHeight = std::max(maxHeight, valid.face->glyph->bitmap.rows);
-						currentWidth += valid.face->glyph->bitmap.width + TexturePackGap;
 					}
+
+					fontDatas.emplace(i, valid.face->glyph);
 				}
 
 				//TODO customized glyph support
-				if(auto itr = std::ranges::find(fontDatas, '_', &FontData_Preload::charCode);
+				if(auto itr = std::ranges::find(fontDatas, U'_', &FontData_Preload::charCode);
 					itr != fontDatas.end()){
-					if(!std::ranges::contains(fontDatas, ' ', &FontData_Preload::charCode)){
+					if(!std::ranges::contains(fontDatas, U' ', &FontData_Preload::charCode)){
 						FontData_Preload spaceData{};
-						spaceData.box = itr->box;
-						spaceData.box.setSrcX(currentWidth);
-						spaceData.box.setWidth(itr->box.getWidth());
-						spaceData.matrices = itr->matrices;
+						spaceData.glyphMatrices = itr->glyphMatrices;
 						spaceData.charCode = ' ';
-						spaceData.pixmap.create(spaceData.box.getWidth(), spaceData.box.getHeight());
-						spaceData.pixmap.clear();
-
-						currentWidth += spaceData.box.getWidth() + TexturePackGap;
-
-						fontDatas.push_back(std::move(spaceData));
-
-						if(!std::ranges::contains(fontDatas, '\n', &FontData_Preload::charCode)){
-							FontData_Preload lineFeedData{};
-							lineFeedData.box = spaceData.box;
-							lineFeedData.box.setSrcX(TexturePackGap);
-							lineFeedData.box.setWidth(1);
-							lineFeedData.matrices = spaceData.matrices;
-							lineFeedData.matrices.width = TexturePackGap;
-							lineFeedData.matrices.horiBearingX = 0;
-							lineFeedData.matrices.horiAdvance = 0;
-
-							lineFeedData.charCode = '\n';
-							lineFeedData.pixmap.create(lineFeedData.box.getWidth(), lineFeedData.box.getHeight());
-							lineFeedData.pixmap.clear();
-
-							currentWidth += TexturePackGap;
-
-							fontDatas.push_back(std::move(lineFeedData));
+						{
+							auto [x, y] = spaceData.getSize();
+							spaceData.pixmap.create(x, y);
 						}
 
-						if(!std::ranges::contains(fontDatas, '\t', &FontData_Preload::charCode)){
+						fontDatas.insert(std::move(spaceData));
+
+						if(!std::ranges::contains(fontDatas, U'\n', &FontData_Preload::charCode)){
 							FontData_Preload lineFeedData{};
-							lineFeedData.box = spaceData.box;
-							lineFeedData.box.setSrcX(TexturePackGap);
-							lineFeedData.box.setWidth(1);
-							lineFeedData.matrices = spaceData.matrices;
-							lineFeedData.matrices.width *= 4;
-							lineFeedData.matrices.horiAdvance *= 4;
+							lineFeedData.glyphMatrices = itr->glyphMatrices;
+							lineFeedData.glyphMatrices.width /= 4;
+							lineFeedData.glyphMatrices.horiBearingX /= 4;
+							lineFeedData.glyphMatrices.horiAdvance /= 4;
 
-							lineFeedData.charCode = '\t';
-							lineFeedData.pixmap.create(lineFeedData.box.getWidth(), lineFeedData.box.getHeight());
-							lineFeedData.pixmap.clear();
+							lineFeedData.charCode = U'\n';
+							auto [x, y] = lineFeedData.getSize();
+							lineFeedData.pixmap.create(x, y);
 
-							currentWidth += TexturePackGap;
+							fontDatas.insert(std::move(lineFeedData));
+						}
 
-							fontDatas.push_back(std::move(lineFeedData));
+						if(!std::ranges::contains(fontDatas, U'\t', &FontData_Preload::charCode)){
+							FontData_Preload lineFeedData{};
+							lineFeedData.glyphMatrices = spaceData.glyphMatrices;
+							lineFeedData.glyphMatrices.width *= 4;
+							lineFeedData.glyphMatrices.horiAdvance *= 4;
+
+							lineFeedData.charCode = U'\t';
+							auto [x, y] = lineFeedData.getSize();
+							lineFeedData.pixmap.create(x, y);
+
+							fontDatas.insert(std::move(lineFeedData));
 						}
 					}
 				}
 
-
-				size = fontDatas.size();
-				width = currentWidth;
-				height = maxHeight;
+				for (auto & fontData : fontDatas){
+					fontData.region = texturePage->pushRequest(fontFullName + std::to_string(fontData.charCode), fontData.pixmap, [](const Graphic::Pixmap& pixmap){pixmap.flipY();});
+				}
 
 				saveCacheVersion(fstream, params.version);
-				saveCacheData(fstream, width, height, size);
+				saveCacheDataSize(fstream, fontDatas.size());
 
-				maxMap.create(width, height);
-
-				currentWidth = 0;
+				//maxMap.create(width, height);
 				for(const auto& data : fontDatas) {
 					data.write(fstream);
-
-					maxMap.set(data.pixmap, currentWidth, 0);
-					currentWidth += data.pixmap.getWidth() + TexturePackGap;
 				}
-
-				maxMap.write(texFile, true);
-			}else{ //Load from cache
+			}else{
+				size_t size = 0;
+				//Load from cache
 				//The version has been read during the check!
-				readCacheData(fstream, width, height, size);
+				readCacheDataSize(fstream, size);
+				// fontDatas.resize(size);
 
-				fontDatas.resize(size);
-
-				for(size_t i = 0; i < size; ++i) {
-					fontDatas[i].read(fstream);
+				for(int i = 0; i < size; ++i){
+					FontData_Preload data{};
+					data.read(fstream);
+					data.pixmap.create(1, 1);
+					data.region = texturePage->pushRequest(fontFullName + std::to_string(data.charCode), data.pixmap);
+					fontDatas.insert(std::move(data));
 				}
-
-				maxMap.loadFrom(texFile);
 			}
 
-			params.data.reset(new FontData{Geom::OrthoRectUInt{maxMap.getWidth(), maxMap.getHeight()}, size, std::move(maxMap)});
-
-			for(auto& data: fontDatas) {
-				params.data->charDatas.emplace(data.charCode, CharData{data.matrices, data.box});
-
-				//Dont init it right now, the regions should be set at last!
-			}
+			params.data.reset(new FontData{fontDatas});
 		}
 
-		[[nodiscard]] bool checkCahce() const {
-			bool requiresRecache = false;
-
-			for(const auto& params: flags) {
+		void loadAllFace() const {
+			for(const auto& params: flags){
 				if(!params->face) {
 					FT_Face face;
 
@@ -658,112 +623,7 @@ export namespace Font {
 					params->familyName = params->face->family_name;
 					params->styleName = params->face->style_name;
 				}
-
-				if(requiresRecache)continue;
-
-				const auto&& cacheDir = params->fontCacheDir(rootCacheDir);
-				cacheDir.createDirQuiet();
-				// ReSharper disable once CppTooWideScopeInitStatement
-				const auto&& dataFile = params->dataFile(cacheDir);
-
-				if(!dataFile.exist()) {
-					requiresRecache = true;
-				}else{
-					unsigned char version = 0;
-					readCacheVersion(obtainStream(dataFile), version);
-					if(version != params->expectedVersion) {
-						requiresRecache = true;
-					}
-				}
 			}
-
-			return requiresRecache;
-		}
-
-		[[nodiscard]] Graphic::Pixmap merge(bool requiresRecache) const {
-			Graphic::Pixmap mergedMap{};
-
-			const OS::File dataFile = rootCacheDir.subFile("merged.bin");
-			const OS::File texFile  = rootCacheDir.subFile("merged.png");
-
-			FT_UInt totalWidth = 0, totalHeight = 0;
-			size_t size = 0;
-			size_t totalCharCount = 0; //This is inaccurate!
-			if(!dataFile.exist())dataFile.createFileQuiet(true);
-			auto&& stream = obtainStream(dataFile);
-			constexpr std::hash<std::string> hasher{};
-
-			//If a font doesn't have cache, then cache it; or if the cache is too old, then recache;
-			cache:
-			if(requiresRecache) {
-				size = flags.size();
-				saveCacheData(stream, totalWidth, totalHeight, size);
-
-				//Generate FontDatas from loadTargets
-				for(const auto& params : flags) {
-					loadFont(*params);
-
-					totalWidth = std::max(params->data->box.getWidth(), totalWidth);
-					totalHeight += params->data->box.getHeight() + TexturePackGap;
-					const size_t hash = hasher(params->fullname());
-					stream.write(reinterpret_cast<const char*>(&hash), sizeof(hash));
-				}
-
-				//Resize the merge map
-				mergedMap.create(totalWidth, totalHeight);
-
-				FT_UInt currentHeightOffset = 0;
-				for(const auto& flag : flags) {
-					const auto& data = flag->data;
-
-					mergedMap.set(*data->fontPixmap, 0, currentHeightOffset);
-
-					data->box.setSrcY(currentHeightOffset);
-					for(auto& charData : data->charDatas | std::ranges::views::values) {
-						charData.charBox.move(0, currentHeightOffset);
-					}
-
-					currentHeightOffset += data->box.getHeight() + TexturePackGap;
-
-					totalCharCount = std::max(totalCharCount, data->charDatas.size());
-
-					data->write(stream);
-				}
-
-				mergedMap.write(texFile, true);
-			}else{
-				//
-				readCacheData(stream, totalWidth, totalHeight, size);
-
-				//Check cache is right
-				if(size != flags.size()) {
-					requiresRecache = true;
-					goto cache; //Recache if the size cannot match...
-				}
-
-				for(size_t i = 0; i < size; ++i) {
-					size_t hash = 0;
-					stream.read(reinterpret_cast<char*>(&hash), sizeof(hash));
-					if(hasher(flags[i]->fullname()) != hash) {
-						requiresRecache = true;
-						goto cache; //Recache if the font cannot match...
-					}
-				}
-				//End Chec
-
-				//Load font data from bin file
-				for(size_t i = 0; i < size; ++i) {
-					auto& data = flags[i]->data;
-					data.reset(new FontData);
-					data->read(stream);
-					totalCharCount = std::max(totalCharCount, data->charDatas.size());
-				}
-
-				//Load font tex from png file
-				mergedMap.loadFrom(texFile);
-			}
-
-			return mergedMap;
 		}
 
 		void assignID() const {
@@ -790,12 +650,17 @@ export namespace Font {
 			//User Customized fonts to load;
 			fontLoadListeners.fire(Event::begin);
 
+			loadAllFace();
 			//Init face data;
-			const bool requiresRecache = checkCahce();
 			setProgress(0.15f);
 
 			//Cache prepare
-			Graphic::Pixmap&& mergedMap = merge(requiresRecache);
+			for(const auto& params : flags) {
+				loadFont(*params);
+			}
+
+			texturePage->launch(std::launch::deferred).get();
+
 			setProgress(0.65f);
 
 			assignID();
@@ -809,10 +674,10 @@ export namespace Font {
 			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
 			//FontsManager obtain the texture from the total cache; before this no texture should be generated!
 			if(quickInit) {
-				manager = std::make_unique<FontAtlas>(mergedMap, flags);
+				atlas = std::make_unique<FontAtlas>(flags);
 			}else {
-				postToHandler([&mergedMap, this] {
-					manager = std::make_unique<FontAtlas>(mergedMap, flags);
+				postToHandler([this] {
+					atlas = std::make_unique<FontAtlas>(flags);
 				}).get();
 			}
 
@@ -836,10 +701,11 @@ export namespace Font {
 
 	public:
 		std::unique_ptr<FontAtlas> getManager() && {
-			return std::move(manager);
+			return std::move(atlas);
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override{
+			(void)Task::launch(policy);
 			return std::async(policy, &FontManager::load, this);
 		}
 
@@ -856,3 +722,4 @@ export namespace Font {
 		FontManager& operator=(FontManager&& other) noexcept = delete;
 	};
 }
+

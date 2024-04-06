@@ -4,7 +4,6 @@ module;
 
 module Core;
 
-import Graphic;
 import RuntimeException;
 import GL;
 import GL.Constants;
@@ -16,48 +15,35 @@ import std;
 
 using namespace Core;
 
-void Core::setScreenBound(GLFWwindow* win) {
-	glfwGetWindowSize(win, lastScreenBound.getWidthRaw(), lastScreenBound.getHeightRaw());
-	glfwGetWindowPos(win, lastScreenBound.getSrcXRaw(), lastScreenBound.getSrcYRaw());
-}
 
 void Core::initMainWindow() {
-	mainMonitor = glfwGetPrimaryMonitor();
-
-	mainScreenMode = Graphic::getVideoMode(mainMonitor);
-
-	OS::screenWidth = mainScreenMode->width;
-	OS::screenHeight = mainScreenMode->height;
-	OS::refreshRate = mainScreenMode->refreshRate;
-
 #ifdef __APPLE__
 		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	mainWindow = Graphic::initWindow(title, OS::screenWidth, OS::screenHeight, nullptr);
+	platform->window->initWindow(title);
 
 	if(maximizeWinOnInit) {
-		glfwSetWindowSizeCallback(mainWindow, [](GLFWwindow* win, const int width, const int height){
-			Core::lastScreenBound.setSize(width, height);
+		glfwSetWindowSizeCallback(platform->window->as<GLFWwindow>(), [](GLFWwindow* win, const int width, const int height){
+			platform->window->windowBound.setSize(width, height);
 		});
 
-		glfwMaximizeWindow(mainWindow);
-		setScreenBound(mainWindow);
+		glfwMaximizeWindow(platform->window->as<GLFWwindow>());
 
-		GL::viewport(0, 0, lastScreenBound.getWidth(), lastScreenBound.getHeight());
+		GL::viewport(0, 0, platform->window->windowBound.getWidth(), platform->window->windowBound.getHeight());
 		glfwSwapInterval(1);
 		GL::enable(GL_MULTISAMPLE);
 
-		lastScreenBound.set(100, 100, OS::screenWidth * 0.75f, OS::screenHeight * 0.75f);
+		platform->window->lastScreenBound.set(100, 100, platform->window->currentMonitor.width * 0.75f, platform->window->currentMonitor.height * 0.75f);
 
-		glfwSetWindowSizeCallback(mainWindow, nullptr);
+		glfwSetWindowSizeCallback(platform->window->as<GLFWwindow>(), nullptr);
 	}
 
 }
 
 void Core::initFileSystem() {
 #if defined(_DEBUG) && defined(ASSETS_DIR)
-	rootFileTree = new OS::FileTree{ASSETS_DIR};
+	rootFileTree = std::make_unique<OS::FileTree>(ASSETS_DIR);
 #else
 	const OS::File self{OS::args[0]};
 
@@ -65,15 +51,13 @@ void Core::initFileSystem() {
 
 	std::cout << "Targeted Resource Root:" << dir.absolutePath() << std::endl;
 
-	rootFileTree = new OS::FileTree{dir};
+	rootFileTree = std::make_unique<OS::FileTree>(dir);
 
 #endif
 	OS::crashFileGetter = std::bind(&Core::Log::generateCrashFilePath, log);
 }
 
 void Core::initCore(const std::function<void()>& initializer) {
-	Graphic::initOpenGL();
-
 	initMainWindow();
 
 	OS::launchApplication();
@@ -110,7 +94,7 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 void Core::loadAssets() {
 	assetsManager->getSoundLoader().setEngine(audio->engine);
 	assetsManager->pullRequest();
-	assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), mainWindow, renderer);
+	assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), renderer);
 	assetsManager->loadPost();
 	assetsManager->loadEnd();
 }
@@ -121,7 +105,6 @@ void Core::dispose() {
 	delete input;
 	delete camera;
 	delete renderer;
-	delete rootFileTree;
 
 	delete audio;
 	delete assetsManager;
@@ -130,5 +113,5 @@ void Core::dispose() {
 	delete bundle;
 	delete log;
 
-	glfwTerminate();
+	platform.reset();
 }

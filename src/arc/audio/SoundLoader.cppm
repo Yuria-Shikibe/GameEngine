@@ -62,6 +62,7 @@ export namespace Assets {
 		}
 
 		[[nodiscard]] std::future<void> launch(const std::launch policy) override {
+			(void)Task::launch(policy);
 			return std::async(policy, &SoundLoader::load, this);
 		}
 

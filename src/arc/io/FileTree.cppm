@@ -2,7 +2,6 @@ module ;
 
 export module OS.FileTree;
 
-import Platform;
 import OS.File;
 import RuntimeException;
 import std;

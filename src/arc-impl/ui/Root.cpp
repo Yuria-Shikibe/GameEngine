@@ -136,6 +136,62 @@ bool UI::Root::keyDown(const int code, const int action, const int mode) const{
 	return uiInput->keyGroup.get(code, action, mode);
 }
 
+void UI::Root::registerCtrl() const{
+	uiInput->registerKeyBind({{Ctrl::KEY_BACKSPACE, Ctrl::Act_Press}, {Ctrl::KEY_BACKSPACE, Ctrl::Act_Repeat}}, [this]{
+		if(textInputListener){
+			textInputListener->informBackSpace(0);
+		}
+	});
+
+	uiInput->registerKeyBind({{Ctrl::KEY_DELETE, Ctrl::Act_Press}, {Ctrl::KEY_DELETE, Ctrl::Act_Repeat}}, [this]{
+		if(textInputListener){
+			textInputListener->informDelete(0);
+		}
+	});
+
+	uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl}}, [this]{
+		if(textInputListener){
+			textInputListener->informDo();
+		}
+	});
+
+	uiInput->registerKeyBind({{Ctrl::KEY_ENTER, Ctrl::Act_Press}, {Ctrl::KEY_ENTER, Ctrl::Act_Repeat}}, [this]{
+		if(textInputListener){
+			textInputListener->informEnter(0);
+		}
+	});
+
+	uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl_Shift}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl_Shift}}, [this]{
+		if(textInputListener){
+			textInputListener->informUndo();
+		}
+	});
+
+	uiInput->registerKeyBind(Ctrl::KEY_A, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+		if(textInputListener){
+			textInputListener->informSelectAll();
+		}
+	});
+
+	uiInput->registerKeyBind(Ctrl::KEY_C, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+		if(textInputListener){
+			Core::platform->setClipboard(textInputListener->getClipboardCopy());
+		}
+	});
+
+	uiInput->registerKeyBind(Ctrl::KEY_V, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+		if(textInputListener){
+			textInputListener->informClipboardPaste(Core::platform->getClipboard());
+		}
+	});
+
+	uiInput->registerKeyBind(Ctrl::KEY_X, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+		if(textInputListener){
+			Core::platform->setClipboard(textInputListener->getClipboardClip());
+		}
+	});
+}
+
 void UI::Root::setEnter(const Elem* elem){
 	if(elem == currentCursorFocus) return;
 

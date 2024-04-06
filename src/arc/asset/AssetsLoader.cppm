@@ -1,8 +1,3 @@
-//
-// Created by Matrix on 2023/11/22.
-//
-module ;
-
 export module Assets.Loader;
 
 import Concepts;
@@ -10,6 +5,7 @@ import Async;
 import TimeMark;
 import RuntimeException;
 import std;
+import OS.GlobalTaskQueue;
 
 export namespace Assets{
 	class AssetsLoader;
@@ -64,6 +60,8 @@ export namespace Assets{
 		void begin() {
 			// std::cout << "Assets Load Begin" << std::endl;
 
+			OS::activateHander();
+
 			for(auto& [task, future] : tasks) {
 				future = task->launch();
 			}
@@ -85,6 +83,9 @@ export namespace Assets{
 		void setDone() {
 			done = true;
 			tasks.clear();
+			OS::deactivateHander();
+			std::println(std::cout, "Assets Loader Loop Terminated");
+			std::cout.flush();
 		}
 
 		[[nodiscard]] bool finished() const {
@@ -98,7 +99,7 @@ export namespace Assets{
 		/**
 		 * \brief Run This In Main Loop Until ProgressTask.finished()
 		 */
-		void processRequests() {
+		void processRequests(){
 			timer.mark(1);
 
 			size_t doneCount = 0;
@@ -125,6 +126,7 @@ export namespace Assets{
 					this->postHandler->lock.unlock();
 					break;
 				}
+
 				auto task = std::move(postedTasks.front());
 				postedTasks.pop();
 
@@ -141,15 +143,16 @@ export namespace Assets{
 			}
 		}
 
+
 		void forceGet() {
 			while(!finished()) {
 				processRequests();
 			}
 		}
 
-		void push(Task const task) {
+		void push(Task task, const bool asTask = true) {
 			task->setHandler(this->postHandler.get());
-			tasks.try_emplace(task, TaskFuture{});
+			if(asTask)tasks.try_emplace(task, TaskFuture{});
 		}
 
 		[[nodiscard]] std::string_view getTaskNames(const std::string_view prefix = "", const std::string_view linePrefix = "") const {
@@ -175,4 +178,5 @@ export namespace Assets{
 		std::packaged_task<void()>& t = target->postedTasks.emplace(std::forward<decltype(func)>(func));
 		return t.get_future();
 	}
+
 }

@@ -23,7 +23,7 @@ export namespace Graphic{
         //TODO is this necessay?
         //unsigned int bpp{ 4 };
 
-        std::unique_ptr<unsigned char[]> data{nullptr};
+        std::unique_ptr<unsigned char[]> bitmapData{nullptr};
 
     public:
         static constexpr unsigned int Channels = 4; //FOR RGBA
@@ -43,15 +43,15 @@ export namespace Graphic{
         // }
 
         [[nodiscard]] unsigned char* release() && {
-            return data.release();
+            return bitmapData.release();
         }
 
-        [[nodiscard]] unsigned char* getData() const & {
-            return data.get();
+        [[nodiscard]] unsigned char* data() const & {
+            return bitmapData.get();
         }
 
-        [[nodiscard]] std::unique_ptr<unsigned char[]> getData() && {
-            return std::move(data);
+        [[nodiscard]] std::unique_ptr<unsigned char[]> data() && {
+            return std::move(bitmapData);
         }
 
         [[nodiscard]] Pixmap(const unsigned int width, const unsigned int height)
@@ -74,7 +74,7 @@ export namespace Graphic{
         Pixmap(const unsigned int width, const unsigned int height, unsigned char* data)
                     : width(width),
                       height(height) {
-            this->data.reset(data);
+            this->bitmapData.reset(data);
         }
 
         Pixmap(const int width, const int height, unsigned char* data) : Pixmap(static_cast<unsigned int>(width), static_cast<unsigned int>(height) ,data) {
@@ -85,7 +85,7 @@ export namespace Graphic{
             : width(other.width),
               height(other.height),
               //bpp(other.bpp),
-              data(other.copyData()) {
+              bitmapData(other.copyData()) {
 
         }
 
@@ -93,7 +93,7 @@ export namespace Graphic{
             : width(other.width),
               height(other.height),
               //bpp(other.bpp),
-              data(std::move(other.data)) {
+              bitmapData(std::move(other.bitmapData)) {
         }
 
         Pixmap& operator=(const Pixmap& other) {
@@ -101,7 +101,7 @@ export namespace Graphic{
             width = other.width;
             height = other.height;
             //bpp = other.bpp;
-            data = other.copyData();
+            bitmapData = other.copyData();
             return *this;
         }
 
@@ -110,12 +110,12 @@ export namespace Graphic{
             width = other.width;
             height = other.height;
             //bpp = other.bpp;
-            data = std::move(other.data);
+            bitmapData = std::move(other.bitmapData);
             return *this;
         }
 
         [[nodiscard]] bool valid() const {
-            return data != nullptr && dataSize() > 0;
+            return bitmapData != nullptr && dataSize() > 0;
         }
 
         void create(const unsigned int width, const unsigned int height){
@@ -125,21 +125,21 @@ export namespace Graphic{
             auto size = this->size();
             if(!size)return;
 
-            data = std::make_unique<unsigned char[]>(size);
+            bitmapData = std::make_unique<unsigned char[]>(size);
         }
 
         void free() {
             width = height = 0;
-            if(data)data.reset(nullptr);
+            if(bitmapData)bitmapData.reset(nullptr);
         }
 
         void loadFrom(const OS::File& file) {
             unsigned b;
-            this->data = stbi::loadPng(file, width, height, b, Channels);
+            this->bitmapData = stbi::loadPng(file, width, height, b, Channels);
         }
 
         void loadFrom(const GL::Texture2D& texture2D) {
-            data = texture2D.copyData();
+            bitmapData = texture2D.copyData();
             width = texture2D.getWidth();
             height = texture2D.getHeight();
         }
@@ -157,14 +157,14 @@ export namespace Graphic{
             std::string&& ext = file.extension();
 
             if(ext == ".png") {
-                stbi::writePng(file, width, height, Channels, data.get());
+                stbi::writePng(file, width, height, Channels, bitmapData.get());
             }else if(ext == ".bmp") {
-                stbi::writeBmp(file, width, height, Channels, data.get());
+                stbi::writeBmp(file, width, height, Channels, bitmapData.get());
             }
         }
 
         void clear() const{
-            std::fill_n(this->data.get(), size(), 0);
+            std::fill_n(this->bitmapData.get(), size(), 0);
         }
 
         //TODO fix these two function!
@@ -173,7 +173,7 @@ export namespace Graphic{
         }
 
         [[nodiscard]] GL::Texture2D genTex_move() && {
-            GL::Texture2D tex{width, height, std::move(data)};
+            GL::Texture2D tex{width, height, std::move(bitmapData)};
             width = height = 0;
             return tex;
         }
@@ -186,7 +186,7 @@ export namespace Graphic{
         [[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
             const auto size = this->size();
             auto ptr = std::make_unique<unsigned char[]>(size);
-            std::memcpy(ptr.get(), data.get(), size);
+            std::memcpy(ptr.get(), bitmapData.get(), size);
 
             return std::move(ptr);
         }
@@ -200,7 +200,7 @@ export namespace Graphic{
         }
 
         void setRaw(const unsigned int x, const unsigned int y, const colorBits colorBit) const{
-            auto* index = reinterpret_cast<colorBits*>(data.get() + dataIndex(x, y));
+            auto* index = reinterpret_cast<colorBits*>(bitmapData.get() + dataIndex(x, y));
             *index = colorBit;
         }
 
@@ -209,12 +209,12 @@ export namespace Graphic{
         }
 
         [[nodiscard]] colorBits getRaw(const unsigned int x, const unsigned int y) const {
-            const auto* index = reinterpret_cast<colorBits*>(data.get() + dataIndex(x, y));
+            const auto* index = reinterpret_cast<colorBits*>(bitmapData.get() + dataIndex(x, y));
             return *index;
         }
 
         [[nodiscard]] Graphic::Color get(const unsigned int x, const unsigned int y) const {
-            const auto* index = data.get() + dataIndex(x, y);
+            const auto* index = bitmapData.get() + dataIndex(x, y);
             return Color{
                 static_cast<float>(index[0]) / 255.0f,
                 static_cast<float>(index[1]) / 255.0f,
@@ -224,7 +224,7 @@ export namespace Graphic{
         }
 
         [[nodiscard]] unsigned int getRaw(const size_t index) const {
-            const auto* i = reinterpret_cast<colorBits*>(data.get() + index);
+            const auto* i = reinterpret_cast<colorBits*>(bitmapData.get() + index);
             return *i;
         }
 
@@ -265,6 +265,15 @@ export namespace Graphic{
         }
 
     public:
+        void flipY() const{
+            const auto ptr = copyData();
+
+            const size_t rowDataCount = static_cast<size_t>(getWidth()) * Channels;
+
+            for(int y = 0; y < height; ++y){
+                std::memcpy(bitmapData.get() + rowDataCount * y, ptr.get() + (getHeight() - y - 1) * rowDataCount, rowDataCount);
+            }
+        }
         void blend(const unsigned int x, const unsigned int y, const Color& color) const {
             const colorBits raw = getRaw(x, y);
             setRaw(x, y, blend(raw, color.rgba8888()));
@@ -428,7 +437,7 @@ export namespace Graphic{
                 const auto indexDst =  this->dataIndex(dstx, dsty + y);
                 const auto indexSrc = pixmap.dataIndex(0   ,        y);
 
-                std::memcpy(data.get() + indexDst, pixmap.data.get() + indexSrc, rowDataCount);
+                std::memcpy(bitmapData.get() + indexDst, pixmap.bitmapData.get() + indexSrc, rowDataCount);
             }
         }
 
@@ -446,7 +455,7 @@ export namespace Graphic{
                 const auto indexDst = newMap.dataIndex(0   ,        y);
                 const auto indexSrc =  this->dataIndex(srcx, srcy + y);
 
-                std::memcpy(newMap.data.get() + indexDst, data.get() + indexSrc, rowDataCount);
+                std::memcpy(newMap.bitmapData.get() + indexDst, bitmapData.get() + indexSrc, rowDataCount);
             }
 
             return newMap;
