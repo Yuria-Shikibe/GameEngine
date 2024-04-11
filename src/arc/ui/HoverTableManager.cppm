@@ -77,6 +77,7 @@ export namespace UI{
 			currentFocus->maskOpacity = 0.0f;
 			currentFocus->pushAction<Actions::AlphaMaskAction>(10.0f, 1.0f);
 			currentFocus->layout();
+			updateCurrentPosition();
 
 			lastRequester = consumer;
 			this->followCursor = followCursor;
