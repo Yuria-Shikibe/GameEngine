@@ -121,6 +121,16 @@ export namespace UI {
 		childrenOnly = 2
 	};
 
+	enum class ChangeSignal : unsigned char{
+		notifyNone = 0b0000'0000,
+		notifySelf = 0b0000'0001,
+		notifyChildrenOnly = 0b0000'0010,
+		notifyParentOnly = 0b0000'0100,
+		notifyAll = notifySelf | notifyChildrenOnly | notifyParentOnly,
+		notifySubs = notifySelf | notifyChildrenOnly,
+		notifySupers = notifySelf | notifyParentOnly,
+	};
+
 	// typedef unsigned char TouchbilityState;
 	//
 	// enum ElemEventFlags : unsigned char{
@@ -185,4 +195,16 @@ export namespace UI {
 	//
 	// struct ParentChanged final : Changed{};
 	// struct ChildrenChanged final : Changed{};
+}
+
+export bool operator&(UI::ChangeSignal l, UI::ChangeSignal r){
+	return static_cast<unsigned>(l) & static_cast<unsigned>(r);
+}
+
+export UI::ChangeSignal operator+(UI::ChangeSignal l, UI::ChangeSignal r){
+	return static_cast<UI::ChangeSignal>(static_cast<unsigned>(l) | static_cast<unsigned>(r));
+}
+
+export UI::ChangeSignal operator-(const UI::ChangeSignal l, const UI::ChangeSignal r){
+	return static_cast<UI::ChangeSignal>(static_cast<unsigned>(l) & ~static_cast<unsigned>(r));
 }

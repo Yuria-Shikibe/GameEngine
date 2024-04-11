@@ -247,12 +247,12 @@ export namespace Game {
 
 		void activate() override{
 			OverlayInterface::activate();
-			OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::platform->window->handle);
+			OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::platform->window->implHandle);
 		}
 
 		void deactivate() override{
 			OverlayInterface::deactivate();
-			OS::setInputMode_Cursor(OS::CursorMode::normal, Core::platform->window->handle);
+			OS::setInputMode_Cursor(OS::CursorMode::normal, Core::platform->window->implHandle);
 		}
 	};
 

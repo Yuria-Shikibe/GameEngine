@@ -16,14 +16,14 @@ export namespace Graphic { //TODO this need lots of fix, currently it only works
 	class PipeProcessor final : public PostProcessor {
 		std::vector<PostProcessor*> processors{};
 
-		mutable FrameBuffer temp1{2, 2};
-		mutable FrameBuffer temp2{2, 2};
+		mutable FrameBuffer temp1{200, 200};
+		mutable FrameBuffer temp2{200, 200};
 
 		mutable bool flag = false;
 	public:
 		[[nodiscard]] PipeProcessor() = default;
 
-		[[nodiscard]] explicit PipeProcessor(const std::initializer_list<PostProcessor*> processors) : processors(processors) {
+		[[nodiscard]] PipeProcessor(const std::initializer_list<PostProcessor*> processors) : processors(processors) {
 
 		}
 

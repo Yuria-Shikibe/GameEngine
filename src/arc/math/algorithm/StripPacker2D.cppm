@@ -6,38 +6,46 @@ import std;
 import RuntimeException;
 import Concepts;
 import Geom.Rect_Orthogonal;
+import Math;
 
 export namespace Math {
-    template <typename Cont, Concepts::Number T, Concepts::Invokable<Geom::Rect_Orthogonal<T>&(Cont&)> auto trans>
+	/**
+     * @brief
+     * @tparam Tgt Should Avoid Copy When Tgt Type is provided
+     * @tparam N pack arithmetic type
+     * @tparam trans Trans the Tgt to a non-temp rect
+     */
+    template <typename Tgt, Concepts::Number N, auto trans>
+		requires Concepts::Invokable<decltype(trans), Geom::Rect_Orthogonal<N>&(Tgt)> && Concepts::InvokeNoexcept<decltype(trans)>
 	struct StripPacker2D {
     protected:
-		using Rect = Geom::Rect_Orthogonal<T>;
-    	using subRectArr = std::array<Rect, 3>;
+		using Rect = Geom::Rect_Orthogonal<N>;
+    	using SubRectArr = std::array<Rect, 3>;
 
-		static Rect& obtain(Cont& cont) {
-    		return trans(cont);
-    	}
+    	static Rect& obtain(Tgt cont) noexcept {
+			return trans(cont);
+		}
 
-    	[[nodiscard]] bool contains(Cont* const cont) const {return all.contains(cont);}
+    	[[nodiscard]] bool contains(Tgt cont) const noexcept {return all.contains(cont);}
 
-    	std::vector<Cont*> boxes_widthAscend{};
-    	std::vector<Cont*> boxes_heightAscend{};
-    	std::unordered_set<Cont*> all{};
+    	std::vector<Tgt> boxes_widthAscend{};
+    	std::vector<Tgt> boxes_heightAscend{};
+    	std::unordered_set<Tgt> all{};
 
     public:
-    	std::vector<Cont*> packed{};
+    	std::vector<Tgt> packed{};
 
-    	T rstWidth{0}, rstHeight{0};
-    	T maxWidth{2750}, maxHeight{2750};
+    	N rstWidth{0}, rstHeight{0};
+    	N maxWidth{2750}, maxHeight{2750};
 
-    	void setMaxSize(const T maxWidth, const T maxHeight) {
+    	void setMaxSize(const N maxWidth, const N maxHeight) noexcept {
     		this->maxHeight = maxHeight;
     		this->maxWidth = maxWidth;
     	}
 
-		[[nodiscard]] explicit StripPacker2D() = default;
+		[[nodiscard]] StripPacker2D() = default;
 
-    	void push(Concepts::Iterable auto& targets){
+    	void push(Concepts::Iterable<Tgt> auto& targets){
     		all.reserve(targets.size());
     		boxes_widthAscend.reserve(targets.size());
     		boxes_heightAscend.reserve(targets.size());
@@ -51,43 +59,44 @@ export namespace Math {
     	}
 
 		void sortDatas() {
-    		std::ranges::sort(boxes_widthAscend , [this](Cont* r1, Cont* r2) {
-    			return obtain(*r1).getWidth() > obtain(*r2).getWidth();
-    		});
+    		std::ranges::sort(boxes_widthAscend , [this](const Rect& r1, const Rect& r2) {
+    			return r1.getWidth() > r2.getWidth();
+    		}, &obtain);
 
-    		std::ranges::sort(boxes_heightAscend, [this](Cont* r1, Cont* r2) {
-				return obtain(*r1).getHeight() > obtain(*r2).getHeight();
-			});
+    		std::ranges::sort(boxes_heightAscend, [this](const Rect& r1, const Rect& r2) {
+				return r1.getHeight() > r2.getHeight();
+			}, &obtain);
     	}
 
-    	void process() {
-    		tryPlace({subRectArr{Rect{}, Rect{}, Rect{maxWidth, maxHeight}}});
+    	void process() noexcept {
+    		this->tryPlace({SubRectArr{Rect{}, Rect{}, Rect{maxWidth, maxHeight}}});
     	}
 
-    	Rect resultBound() const {return Rect{0, 0, rstWidth, rstHeight};}
+    	Rect getResultBound() const noexcept {return Rect{0, 0, rstWidth, rstHeight};}
 
-    	std::unordered_set<Cont*>& remains() {return all;}
+    	std::unordered_set<Tgt>& getRemains() noexcept {return all;}
 
     protected:
-    	[[nodiscard]] bool shouldStop() const {return all.empty();}
+    	[[nodiscard]] bool shouldStop() const noexcept {return all.empty();}
 
-    	Rect* tryPlace(const Rect& bound, std::vector<Cont*>& which) {
-    		for(auto itr = which.begin(); itr != which.end(); ++itr){
-    			if(!this->contains(*itr))continue;
-    			Rect& rect = obtain(**itr);
+    	Rect* tryPlace(const Rect& bound, std::vector<Tgt>& targets) noexcept {
+    		for(auto& cont : targets){
+    			if(!this->contains(cont))continue;
+    			Rect& rect = this->obtain(cont);
     			rect.setSrc(bound.getSrcX(), bound.getSrcY());
     			if(
-    				rect.getEndX() <= bound.getEndX() &&
-    				rect.getEndY() <= bound.getEndY()
-    			){
+					rect.getEndX() <= bound.getEndX() &&
+					rect.getEndY() <= bound.getEndY()
+				){
 
-    				all.erase(*itr);
-    				packed.push_back(*itr);
-    				rstWidth = std::max(rect.getEndX(), rstWidth);
-    				rstHeight = std::max(rect.getEndY(), rstHeight);
+    				all.erase(cont);
+    				packed.push_back(cont);
+    				rstWidth = Math::max(rect.getEndX(), rstWidth);
+    				rstHeight = Math::max(rect.getEndY(), rstHeight);
 
     				return &rect;
-    			}
+				}
+
     		}
 
     		return nullptr;
@@ -106,29 +115,29 @@ export namespace Math {
     	 *              |                                                                        
     	 * @endcode 
     	 */
-    	subRectArr splitQuad(const Rect& bound, const Rect& box) {
+    	constexpr SubRectArr splitQuad(const Rect& bound, const Rect& box) {
 #ifdef _DEBUG
     		if(bound.getSrcX() != box.getSrcX() || box.getSrcY() != box.getSrcY())throw ext::IllegalArguments{"The source of the box and the bound doesn't match"};
 #endif
-    		return subRectArr{
+    		return SubRectArr{
     			Rect{bound.getSrcX(),   box.getEndY(),   box.getWidth()                 , bound.getHeight() - box.getHeight()},
     			Rect{  box.getEndX(), bound.getSrcY(), bound.getWidth() - box.getWidth(),   box.getHeight()                  },
     			Rect{  box.getEndX(),   box.getEndY(), bound.getWidth() - box.getWidth(), bound.getHeight() - box.getHeight()}
     		};
     	}
 
-    	void tryPlace(std::vector<subRectArr>&& bounds) {
+    	void tryPlace(std::vector<SubRectArr>&& bounds) noexcept {
 			if(shouldStop())return;
 
-    		std::vector<subRectArr> next{};
+    		std::vector<SubRectArr> next{};
     		next.reserve(bounds.size() * 3);
 
-			for(const subRectArr& currentBound : bounds) {
+			for(const SubRectArr& currentBound : bounds) {
 				for(int i = 0; i < currentBound.size(); ++i) {
 					if(const Rect& bound = currentBound[i]; bound.area() > 0) {
-						if(const Rect* const result = tryPlace(bound, (i & 1) ? boxes_widthAscend : boxes_heightAscend)){
+						if(const Rect* const result = this->tryPlace(bound, (i & 1) ? boxes_widthAscend : boxes_heightAscend)){
 							//if(result != nullptr)
-							auto arr = splitQuad(bound, *result);
+							auto arr = this->splitQuad(bound, *result);
 							if(arr[0].area() == 0 && arr[1].area() == 0 && arr[2].area() == 0)continue;
 							next.push_back(std::move(arr));
 						}
@@ -136,7 +145,7 @@ export namespace Math {
 				}
 			}
 
-    		if(!next.empty())tryPlace(std::move(next));
+    		if(!next.empty())this->tryPlace(std::move(next));
     	}
     };
 }

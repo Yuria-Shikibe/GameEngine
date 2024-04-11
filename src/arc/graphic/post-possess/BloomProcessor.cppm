@@ -15,7 +15,7 @@ export namespace Graphic {
 	 */
 	class BloomProcessor : public PostProcessor {
 	protected:
-		mutable FrameBuffer temp1{2, 2};
+		mutable FrameBuffer temp1{200, 200};
 
 	public:
 		FramePort port{};
@@ -62,7 +62,7 @@ export namespace Graphic {
 			temp1.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
 			temp1.clearColor();
 
-			toProcess->getTextures().at(port.inPort)->active(0);
+			toProcess->getColorAttachments().at(port.inPort)->active(0);
 			Graphic::Frame::blit(&temp1, 0, thresHoldShader, [this](const Shader& shader) {
 				shader.setFloat("threshold", threshold);
 			});
@@ -73,7 +73,7 @@ export namespace Graphic {
 		}
 
 		void endProcess(FrameBuffer* target) const override {
-			toProcess->getTextures().at(port.inPort)->active(0);
+			toProcess->getColorAttachments().at(port.inPort)->active(0);
 
 			temp1.getTexture().active(1);
 

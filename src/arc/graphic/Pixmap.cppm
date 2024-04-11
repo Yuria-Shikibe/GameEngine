@@ -119,6 +119,7 @@ export namespace Graphic{
         }
 
         void create(const unsigned int width, const unsigned int height){
+            bitmapData.reset();
             this->width = width;
             this->height = height;
 

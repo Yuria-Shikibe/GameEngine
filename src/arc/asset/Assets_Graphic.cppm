@@ -19,6 +19,7 @@ import GL.Texture.TextureRegionRect;
 import Geom.Vector2D;
 
 import Graphic.Color;
+import Graphic.Pixmap;
 import Graphic.PostProcessor.MultiSampleBliter;
 import Graphic.PostProcessor.ShaderProcessor;
 import Graphic.PostProcessor.BloomProcessor;
@@ -71,6 +72,8 @@ export namespace Assets{
 		inline Shader* world = nullptr;
 		inline Shader* merge = nullptr;
 
+		inline Shader* mask = nullptr;
+
 		inline Shader* worldBloom = nullptr;
 
 		void loadPrevious();
@@ -86,45 +89,27 @@ export namespace Assets{
 			blurY{nullptr},
 			blurX_Far{nullptr},
 			blurY_Far{nullptr},
-			blend{nullptr};
+			blend{nullptr}
+		;
+
+		std::unique_ptr<Graphic::PingPongProcessor>
+			blur_Far
+		;
+
 
 		std::unique_ptr<Graphic::BloomProcessor> bloom{nullptr};
 
-		void load() {
-			multiToBasic.reset(new Graphic::MultiSampleBliter{});
-
-			blurX.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{1.2f, 0});
-			}});
-
-			blurY.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{0, 1.2f});
-			}});
-
-			blurX_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{2.0f, 0});
-			}});
-
-			blurY_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-				shader.setVec2("direction", Geom::Vec2{0, 2.f});
-			}});
-
-			bloom.reset(
-				new Graphic::BloomProcessor{blurX.get(), blurY.get(), Shaders::bloom, Shaders::threshold_light}
-			);
-
-			blend.reset(new Graphic::ShaderProcessor{Shaders::blit});
-			// Graphic::P4Processor processor{&blurX, &blurY};
-			blendMulti.reset(new Graphic::PipeProcessor{multiToBasic.get(), blend.get()});
-		}
+		void load();
 	}
 
 	namespace Textures {
 		inline const Texture2D* whiteTex = nullptr;
 		inline TextureRegionRect whiteRegion{};
+		Graphic::Pixmap error{};
 
 		void load() {
 			whiteTex = new Texture2D{textureDir.find("white.png")};
+			error = Graphic::Pixmap{textureDir.find("error.png")};
 			whiteRegion = TextureRegionRect{whiteTex};
 		}
 
@@ -182,6 +167,7 @@ export namespace Assets{
 
 			sourceHan_SC_SB =
 				loader->registerFont(new Font::FontFlags{fontDir.subFile("SourceHanSerifSC-SemiBold.otf" ),  targetChars_withChinese});
+			sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
 
 			consola_Regular =
 				loader->registerFont(new Font::FontFlags{fontDir.subFile("consola.ttf" ),  targetChars});
@@ -234,6 +220,14 @@ export namespace Assets{
 			Font::registerParserableFont("jfsL-R", josefinSans_Regular_Large);
 
 			Font::registerParserableFont("tele", telegrama);
+
+
+			telegrama->setDefErrorFallback(::Assets::Textures::error);
+			sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
+
+			josefinSans_Bold_Large->setDefErrorFallback(::Assets::Textures::error);
+			josefinSans_Regular_Large->setDefErrorFallback(::Assets::Textures::error);
+
 		}
 	}
 

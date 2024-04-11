@@ -27,8 +27,6 @@ export namespace Graphic {
 		}
 	}
 
-	using Assets::PixmapModifer;
-
 	class TextureAtlas {
 	protected:
 		std::unordered_map<std::string_view, Assets::TexturePackPage> pages{};
@@ -104,11 +102,11 @@ export namespace Graphic {
 			return textureGroups;
 		}
 
-		const GL::TextureRegionRect* load(const OS::File& file, const PixmapModifer& modifer = nullptr) const { // NOLINT(*-use-nodiscard)
+		const GL::TextureRegionRect* load(const OS::File& file, const Assets::PixmapModifer& modifer = nullptr) const { // NOLINT(*-use-nodiscard)
 			return contextPage->pushRequest(file, modifer);
 		}
 
-		const GL::TextureRegionRect* load(const std::string_view pageName, const OS::File& file, const PixmapModifer& modifer = nullptr){
+		const GL::TextureRegionRect* load(const std::string_view pageName, const OS::File& file, const Assets::PixmapModifer& modifer = nullptr){
 			if(const auto itr = pages.find(pageName); itr != pages.end()) {
 				return itr->second.pushRequest(file, modifer);
 			}

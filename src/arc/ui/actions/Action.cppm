@@ -20,25 +20,25 @@ export namespace UI{
 		virtual ~Action() = default;
 
 		Math::Timed scale{};
-		const Math::Interp::InterpFunc* interpFunc{&Math::Interp::linear};
+		const Math::Interp::InterpFunc interpFunc{Math::Interp::linear};
 
 		Action() = default;
 
-		Action(const float lifetime, const Math::Interp::InterpFunc* interpFunc)
+		Action(const float lifetime, const Math::Interp::InterpFunc& interpFunc)
 			: scale(0, lifetime),
 			  interpFunc(interpFunc){}
 
 		explicit Action(const float lifetime)
 			: scale(0, lifetime){}
 
-		[[nodiscard]] const Math::Interp::InterpFunc& getInterp() const {
+		[[nodiscard]] Math::Interp::InterpFunc getInterp() const{
 #ifdef _DEBUG
 			if(!interpFunc){
 				throw ext::NullPointerException{"Interp Func is null!"};
 			}
 #endif
 
-			return *interpFunc;
+			return interpFunc;
 		}
 
 		/**
@@ -47,7 +47,7 @@ export namespace UI{
 		virtual float update(const float delta, T* elem){
 			float ret = -1.0f;
 
-			if(scale.time >= scale.lifetime)return ret;
+			if(scale.time > scale.lifetime)return delta;
 
 			if(scale.time == 0.0f){
 				this->begin(elem);

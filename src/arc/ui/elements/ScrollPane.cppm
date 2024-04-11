@@ -14,7 +14,6 @@ import Concepts;
 export namespace UI {
 	struct ScrollBarDrawer;
 
-
 	class ScrollPane : public Group {
 
 	protected:
@@ -42,7 +41,7 @@ export namespace UI {
 
 		ScrollBarDrawer* scrollBarDrawer{nullptr};
 
-		Elem* getItem(){
+		Elem* getItem() const{
 			return children.front().get();
 		};
 
@@ -68,6 +67,7 @@ export namespace UI {
 		//TODO uses layout cell
 		Rect itemSize{};
 	public:
+		bool susutainRelativePostion{true};
 		Geom::Vec2 scrollSensitivity{90.0f, 60.0f};
 		ScrollPane(){
 			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
@@ -98,24 +98,45 @@ export namespace UI {
 		void update(const float delta) override {
 			scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta)) : 1.0f);
 
+			Group::update(delta);
+
 			if(scrollTempOffset != scrollOffset){
 				//TODO what...?
+				if(hasChildren()) {
+					itemSize = getItem()->getBound();
+					getItem()->layout_tryFillParent();
+				}
 			}else{
 				scrollOffset.add(scrollVelocity);
+				clamp(scrollOffset);
+
+				if(hasChildren()){
+					const float deltaH = getItem()->getHeight() - itemSize.getHeight();
+					const float deltaW = getItem()->getWidth() - itemSize.getWidth();
+
+					if(deltaH < getHeight())scrollOffset.y += deltaH;
+					if(deltaW < getWidth())scrollOffset.x += deltaW;
+
+					itemSize = getItem()->getBound();
+					getItem()->layout_tryFillParent();
+				}
+
 				clamp(scrollOffset);
 				resumeTemp();
 			}
 
-			scrollTargetVelocity.scl(scrollMarginCoefficient).toAbs();
+			const float ratioX = horiScrollRatio(-scrollOffset.x);
+			const float ratioY = vertScrollRatio(scrollOffset.y);
+			constexpr float triggerVal = 0.005f;
+			if(ratioX > 1.0f - triggerVal || ratioX < triggerVal){
+				scrollVelocity.x = 0;
+			}
+
+			if(ratioY > 1.0f - triggerVal || ratioY < triggerVal){
+				scrollVelocity.y = 0;
+			}
 
 			scrollTargetVelocity.setZero();
-
-			Group::update(delta);
-
-			if(hasChildren()) {
-				//TODO make this passive
-				itemSize = getItem()->getBound();
-			}
 
 			if(layoutChanged) {
 				layout();
@@ -144,10 +165,6 @@ export namespace UI {
 			}
 		}
 
-		void layout() override {
-			Group::layout();
-		}
-
 		template <Concepts::Derived<Elem> T>
 		void setItem(Concepts::Invokable<void(T&)> auto&& func, const int depth = std::numeric_limits<int>::max()) {
 			auto ptr = std::make_unique<T>();
@@ -156,7 +173,7 @@ export namespace UI {
 				func(*ptr);
 			}
 
-			getChildren()->clear();
+			children.clear();
 			this->addChildren(std::move(ptr), depth);
 		}
 
@@ -167,18 +184,13 @@ export namespace UI {
 
 			if(hoverScroller)return rect;
 
-			const bool enableX = elem->getWidth() > getValidWidth();
-			const bool enableY = elem->getHeight() > getValidHeight();
+			const bool enableX = elem->getWidth() > getValidWidth() && elem->isFillParentY();
+			const bool enableY = elem->getHeight() > getValidHeight() && elem->isFillParentX();
 
 			rect.addSize(
 				enableY ? -vertScrollerWidth : 0.0f,
 				enableX ? -hoirScrollerHeight : 0.0f
 			);
-
-			// rect.move(
-			// 	elem->isFillParentX() && enableY ? -border.left : 0.0f,
-			// 	elem->isFillParentY() && enableX ? -border.bottom : 0.0f
-			// );
 
 			return rect;
 		}
@@ -202,6 +214,7 @@ export namespace UI {
 			screenPos.x -= absoluteSrc.x + border.left;
 			return screenPos.x > getValidWidth() - vertScrollerWidth;
 		}
+
 
 		[[nodiscard]] bool isInbound(const Geom::Vec2 screenPos) override {
 			if(Elem::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {
@@ -263,6 +276,16 @@ export namespace UI {
 			return Math::clamp(pos / (itemSize.getHeight() - getContentHeight()));
 		}
 
+		[[nodiscard]] float getHoriScroll(float ratio) const {
+			ratio = Math::clamp(ratio);
+			return -ratio * (itemSize.getWidth() - getContentWidth());
+		}
+
+		[[nodiscard]] float getVertScroll(float ratio) const {
+			ratio = Math::clamp(ratio);
+			return ratio * (itemSize.getHeight() - getContentHeight());
+		}
+
 		[[nodiscard]] float getHoriBarSpacing() const {
 			return horiBarStroke() + border.bottom;
 		}
@@ -290,6 +313,8 @@ export namespace UI {
 		}
 
 		void applyDefDrawer() override;
+
+		void drawBase() const override;
 
 		void drawContent() const override;
 	};

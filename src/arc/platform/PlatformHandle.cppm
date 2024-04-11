@@ -2,6 +2,7 @@ module;
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <Windows.h>
+#include <dwmapi.h>
 #elif defined(__linux__)
 #include <unistd.h>
 #include <limits.h>
@@ -39,18 +40,19 @@ export namespace Core{
 	struct ApplicationWindow{
 		virtual ~ApplicationWindow() = default;
 
-		void* handle{nullptr};
+		void* implHandle{nullptr};
 
 		MonitorData currentMonitor{};
-		Geom::OrthoRectInt windowBound{};
 		Geom::OrthoRectInt lastScreenBound{};
 
 		bool maximumized{false};
 		bool fullScreen{false};
 
+		virtual void* getNativeHandle(){return nullptr;}
+
 		template <typename T>
 		[[nodiscard]] T* as() const{
-			return static_cast<T*>(handle);
+			return static_cast<T*>(implHandle);
 		}
 
 		[[nodiscard]] virtual Geom::Point2 equrySize() const {
@@ -60,6 +62,14 @@ export namespace Core{
 		[[nodiscard]] virtual Geom::Point2 equryPos() const {
 			return {};
 		}
+
+		[[nodiscard]] virtual Geom::Point2 equryFrameBufferSize() const {
+			return {};
+		}
+
+		virtual void setSize(const Geom::Point2 size) const {}
+
+		virtual void setSrc(const Geom::Point2 size) const {}
 
 		virtual void resetMonitor(void* handle){
 
@@ -89,6 +99,10 @@ export namespace Core{
 			maximumized = false;
 		}
 
+		virtual void setVerticalSync(){
+
+		}
+
 		virtual void setFullScreen_Windowed(){
 
 		}
@@ -114,6 +128,10 @@ export namespace Core{
 		}
 
 		virtual void setApplicationIcon(unsigned char* data, int w, int h, int bpp, int count){
+
+		}
+
+		virtual void runPlatformSpecial(){
 
 		}
 

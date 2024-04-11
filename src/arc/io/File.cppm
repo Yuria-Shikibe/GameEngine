@@ -177,7 +177,7 @@ export namespace OS{
 				return ret;
 			}
 
-			throw ext::RuntimeException{"Unable To Find File: " + subFile(name).absolutePath().string()};
+			throw ext::RuntimeException{std::format("Unable To Find File `{}` in Dir <{}>", name, absolutePath().string())};
 		}
 
 		/**

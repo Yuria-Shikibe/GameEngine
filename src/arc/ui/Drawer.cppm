@@ -10,10 +10,23 @@ import Geom.Vector2D;
 
 export import UI.Align;
 
-export namespace UI {
+export namespace UI { //TODO bullshit virtual
 	class Elem;
-
 	class ScrollPane;
+	class ProgressBar;
+	class SliderBar;
+
+	struct SliderBarDrawer{
+		virtual ~SliderBarDrawer() = default;
+
+		virtual void draw(const SliderBar* sliderBar) const;
+	};
+
+	struct ProgressBarDrawer{
+		virtual ~ProgressBarDrawer() = default;
+
+		virtual void draw(const ProgressBar* progressBar) const;
+	};
 
 	struct ScrollBarDrawer {
 		float margin = 1.0f;
@@ -72,6 +85,7 @@ export namespace UI {
 	};
 
 	struct UIStyle {
+		DrawPair background{};
 		DrawPair base{};
 		DrawPair edge{};
 		DrawPair inbound{};
@@ -81,6 +95,8 @@ export namespace UI {
 		Align::Spacing margin{};
 
 		void drawElem(const Elem* elem) const;
+
+		void drawBackground(const Elem* elem) const;
 	};
 
 	struct ElemDrawer {
@@ -88,7 +104,9 @@ export namespace UI {
 
 		[[nodiscard]] ElemDrawer() = default;
 
-		virtual void drawBackground(const UI::Elem* elem) const = 0;
+		virtual void drawStyle(const UI::Elem* elem) const = 0;
+
+		virtual void drawBackground(const UI::Elem* elem) const{}
 
 		virtual void applyToElem(Elem* elem) {
 		}
@@ -103,7 +121,11 @@ export namespace UI {
 			: style(style) {
 		}
 
-		void drawBackground(const UI::Elem* elem) const override {
+		void drawBackground(const UI::Elem* elem) const override{
+			if(style)style->drawBackground(elem);
+		}
+
+		void drawStyle(const UI::Elem* elem) const override {
 			if(style)style->drawElem(elem);
 		}
 
@@ -111,13 +133,11 @@ export namespace UI {
 	};
 
 	struct EdgeDrawer final : ElemDrawer{
-		void drawBackground(const UI::Elem* elem) const override;
+		void drawStyle(const UI::Elem* elem) const override;
 	};
 
 	struct EmptyDrawer final : ElemDrawer{
-		void drawBackground(const UI::Elem* elem) const override {
-
-		}
+		void drawStyle(const UI::Elem* elem) const override{}
 
 		void applyToElem(Elem* elem) override;
 	};
@@ -127,4 +147,6 @@ export namespace UI {
 	EmptyDrawer emptyDrawer{};
 
 	ScrollBarDrawer defScrollBarDrawer{};
+	ProgressBarDrawer defProgressBarDrawer{};
+	SliderBarDrawer defSlideBarDrawer{};
 }

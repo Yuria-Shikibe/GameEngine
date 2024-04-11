@@ -17,8 +17,8 @@ export namespace Graphic {
 	 **/
 	class PingPongProcessor : public PostProcessor{
 	protected:
-		mutable FrameBuffer ping{2, 2};
-		mutable FrameBuffer pong{2, 2};
+		mutable FrameBuffer ping{200, 200};
+		mutable FrameBuffer pong{200, 200};
 
 		unsigned int processTimes = 3;
 
@@ -78,7 +78,7 @@ export namespace Graphic {
 			ping.clear();
 			pong.clear();
 
-			toProcess->getTextures().at(port.inPort)->active(0);
+			toProcess->getColorAttachments().at(port.inPort)->active(0);
 
 			Graphic::Frame::blit(&ping);
 		}

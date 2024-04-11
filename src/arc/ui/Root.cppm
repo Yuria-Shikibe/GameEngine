@@ -9,6 +9,7 @@ import Container.Pool;
 import Geom.Matrix3D;
 
 export import UI.Flags;
+export import UI.HoverTableManager;
 
 import Ctrl.Constants;
 import Graphic.Resizeable;
@@ -38,6 +39,8 @@ export namespace UI{
 		Geom::Matrix3D projection{};
 
 	public:
+		HoverTableManager hoverTableManager{};
+
 		float width{ 0 };
 		float height{ 0 };
 
@@ -58,7 +61,7 @@ export namespace UI{
 
 		Elem* currentInputFocused{ nullptr };
 		Elem* currentScrollFocused{ nullptr };
-		const Elem* currentCursorFocus{ nullptr };
+		Elem* currentCursorFocus{ nullptr };
 		OS::TextInputListener* textInputListener{ nullptr };
 		// // //Focus
 		// //
@@ -68,6 +71,9 @@ export namespace UI{
 		std::unique_ptr<Table> cursorFloatRoot{ nullptr };
 
 		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
+
+		float cursorStrandedTime{0.0f};
+		float cursorInBoundTime{0.0f};
 
 		[[nodiscard]] bool mouseFocusFree() const {
 			return currentCursorFocus == nullptr;
@@ -104,7 +110,7 @@ export namespace UI{
 		}
 
 		//TODO shit named fucntion and logic!
-		void determinShiftFocus(const Elem* newFocus);
+		void determinShiftFocus(Elem* newFocus);
 
 		void setTextFocus(OS::TextInputListener* listener){
 			this->textInputListener = listener;
@@ -120,7 +126,14 @@ export namespace UI{
 
 		[[nodiscard]] float getHeight() const {return height;}
 
-		virtual void render() const;
+		//TODO uses layer things to optimize this
+		void render() const;
+
+		void renderBase() const;
+
+		void renderBaseAbove() const;
+
+		void renderAbove() const;
 
 		[[nodiscard]] Geom::Vec2 getCursorDst() const{
 			return cursorPos - cursorPressedBeginPos;
@@ -169,6 +182,6 @@ export namespace UI{
 		void inform(int keyCode, int action, int mods) override {
 		}
 
-		void setEnter(const Elem* elem);
+		void setEnter(Elem* elem);
 	};
 }

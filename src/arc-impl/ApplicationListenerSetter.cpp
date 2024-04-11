@@ -26,8 +26,10 @@ void GLFW::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	width  = std::max(200, width);
 	height = std::max(200, height);
 
-	Core::renderer->resize(width, height);
-	UI::setScreenSize(Core::renderer->getDrawWidth(), Core::renderer->getDrawHeight());
+	if(Core::renderer){
+		Core::renderer->resize(width, height);
+		UI::setScreenSize(Core::renderer->getDrawWidth(), Core::renderer->getDrawHeight());
+	}
 
 	if(Core::platform->window->isSmallWindowed()){
 		Core::platform->window->informResize(width, height);

@@ -3,6 +3,7 @@ export module Graphic.Effect.Manager;
 export import Graphic.Effect;
 
 import Container.Pool;
+import Heterogeneous;
 
 import std;
 
@@ -17,7 +18,7 @@ export namespace Graphic{
 		PoolType effectPool{};
 
 		//yes this is bad
-		std::unordered_map<Effect*, PoolType::UniquePtr> activatedEffects{MaxEffectBufferSize};
+		ext::UniquePtrSet<Effect, PoolType::Deleter> activatedEffects{MaxEffectBufferSize};
 
 		std::vector<Effect*> toRemove{};
 		std::stack<PoolType::UniquePtr> waiting{};
@@ -28,21 +29,21 @@ export namespace Graphic{
 		void update(const float delta){
 			toRemove.clear();
 
-			for(auto& effect : activatedEffects | std::ranges::views::values){
+			for(auto& effect : activatedEffects){
 				if(effect->update(delta)){
 					toRemove.push_back(effect.get());
 				}
 			}
 
 			for(const auto& effect : toRemove){
-				const auto itr = activatedEffects.find(effect);
-				waiting.push(std::move(itr->second));
-				activatedEffects.erase(itr);
+				if(const auto& itr = activatedEffects.extract(effect)){
+					waiting.push(std::move(itr.value()));
+				}
 			}
 		}
 
 		[[nodiscard]] Effect* suspend(){
-			Effect* out{nullptr};
+			Effect* out{};
 
 			{
 				PoolType::UniquePtr ptr;
@@ -54,8 +55,8 @@ export namespace Graphic{
 					waiting.pop();
 				}
 
-				auto [kv, success] = activatedEffects.try_emplace(ptr.get(), std::move(ptr));
-				out = kv->second.get();
+				auto [kv, success] = activatedEffects.insert(std::move(ptr));
+				out = kv->get();
 			}
 
 			out->progress.time = 0;
@@ -65,7 +66,7 @@ export namespace Graphic{
 		}
 
 		void render() const{
-			for(auto& effect : activatedEffects | std::ranges::views::values){
+			for(auto& effect : activatedEffects){
 				effect->render();
 			}
 		}

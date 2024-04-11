@@ -61,30 +61,82 @@ void Core::Renderer::frameEnd() {
 
 	Graphic::Batch::flush();
 
-	contextFrameBuffer->getTextures().front()->active(0);
+	contextFrameBuffer->getColorAttachments().front()->active(0);
 	contextFrameBuffer->bind(FrameBuffer::READ);
 	Graphic::Frame::blit(beneathFrameBuffer);
 
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
-void Core::Renderer::renderUI() {
+
+//TODO merge these two function
+void Core::Renderer::renderUIBelow() {
 	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
 
-	Renderer::frameBegin(&uiPostBuffer);
-	// Renderer::frameBegin(&uiBuffer);
 	Core::batchGroup.batchOverlay->setProjection(Core::uiRoot->getPorj());
 
-	Core::uiRoot->render();
+	uiBlurMask.bind();
+	uiBlurMask.clearColor();
+	Core::uiRoot->renderBase();
+	Graphic::Batch::flush();
+
+	Assets::PostProcessors::blur_Far->apply(contextFrameBuffer, &effectBuffer);
+
+	uiBlurMask.getMaskBuffer().getColorAttachments().front()->active(2);
+	contextFrameBuffer->getColorAttachments().front()->active(1);
+	effectBuffer.getColorAttachments().front()->active(0);
+
+	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
+		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.75f).setA(0.75f));
+		shader.setColor("srcColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.856f));
+	});
+
+	Renderer::frameBegin(&uiPostBuffer);
+
+	uiRoot->render();
 	Graphic::Batch::flush();
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
 
-	// frameEnd(Assets::PostProcessors::blendMulti);
 	frameEnd(Assets::PostProcessors::bloom.get());
 
-	Core::batchGroup.batchOverlay->setProjection(mat);
+	batchGroup.batchOverlay->setProjection(mat);
+	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
+}
+
+void Core::Renderer::renderUIAbove(){
+	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
+
+	batchGroup.batchOverlay->setProjection(uiRoot->getPorj());
+
+	uiBlurMask.bind();
+	uiBlurMask.clearColor();
+	uiRoot->renderBaseAbove();
+	Graphic::Batch::flush();
+
+	Assets::PostProcessors::blur_Far->apply(contextFrameBuffer, &effectBuffer);
+
+	uiBlurMask.getMaskBuffer().getColorAttachments().front()->active(2);
+	contextFrameBuffer->getColorAttachments().front()->active(1);
+	effectBuffer.getColorAttachments().front()->active(0);
+
+	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
+		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.75f).setA(0.75f));
+		shader.setColor("srcColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.856f));
+	});
+
+	Renderer::frameBegin(&uiPostBuffer);
+
+	uiRoot->renderAbove();
+	Graphic::Batch::flush();
+
+	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
+	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
+
+	frameEnd(Assets::PostProcessors::bloom.get());
+
+	batchGroup.batchOverlay->setProjection(mat);
 	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
 }
 
@@ -97,14 +149,44 @@ void Core::Renderer::resize(const unsigned w, const unsigned h) {
 	defaultFrameBuffer.resize(w, h);
 	// uiPostBuffer.resize(w + Core::uiRoot->marginX * 2, h + Core::uiRoot->marginY * 2);
 	uiPostBuffer.resize(w, h);
+	uiBlurMask.resize(w, h);
 	effectBuffer.resize(w, h);
 	// uiBuffer.resize(w, h);
 
 	contextFrameBuffer->resize(w, h);
 
-	GL::viewport(w, h);
+	GL::viewport(static_cast<int>(w), static_cast<int>(h));
 
 	for(const auto& resizeable : synchronizedSizedObjects) {
 		resizeable->resize(w, h);
 	}
+}
+
+void Core::Renderer::draw(){
+	defaultFrameBuffer.bind();
+	GL::viewport(static_cast<int>(width), static_cast<int>(height));
+
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	drawControlHook.fire(draw_prepare);
+
+	drawMain();
+
+	drawControlHook.fire(draw_post);
+
+	drawControlHook.fire(draw_after);
+
+	renderUIBelow();
+
+	renderUIAbove();
+
+	Graphic::Draw::color();
+	Graphic::Draw::mixColor();
+
+	drawControlHook.fire(draw_overlay);
+
+	glBlitNamedFramebuffer(defaultFrameBuffer.getID(), 0,
+	                       0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST
+	);
 }

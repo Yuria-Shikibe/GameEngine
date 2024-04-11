@@ -4,14 +4,15 @@ import UI.Drawer;
 import std;
 import Core;
 
-UI::Root::Root(): root(std::make_unique<UI::Table>()){
+UI::Root::Root(): root(std::make_unique<Table>()), hoverTableManager{this}{
 	// NOLINT(*-use-equals-default)
 	root->setSrc(0.0f, 0.0f);
 	root->setAbsSrc(Geom::ZERO);
 	root->relativeLayoutFormat = false;
-	root->setTouchbility(UI::TouchbilityFlags::childrenOnly);
+	root->setTouchbility(TouchbilityFlags::childrenOnly);
 	root->setRoot(this);
-	root->setDrawer(&UI::emptyDrawer);
+	root->PointCheck = 100;
+	root->setDrawer(&emptyDrawer);
 	root->setBorder({marginX, marginX, marginY, marginY});
 	root->name = "UI Root";
 	root->defaultCellLayout.setMargin(marginX, marginX, marginY, marginY);
@@ -36,10 +37,31 @@ void UI::Root::update(const float delta){
 
 	onDragUpdate();
 
+	root->postChanged();
 	root->update(delta);
+
+	hoverTableManager.cursorPos = cursorPos;
+
+	if(cursorVel.isZero(0.005f)){
+		cursorStrandedTime += delta;
+	}else{
+		cursorStrandedTime = 0.0f;
+	}
+
+	if(currentCursorFocus){
+		cursorInBoundTime += delta;
+	}else{
+		cursorInBoundTime = 0.0f;
+	}
+
+	if(currentCursorFocus && currentCursorFocus->getHoverTableBuilder()){
+		currentCursorFocus->updateHoverTableHandle(hoverTableManager.obtain(currentCursorFocus));
+	}
+
+	hoverTableManager.update(delta);
 }
 
-void UI::Root::determinShiftFocus(const Elem* newFocus){
+void UI::Root::determinShiftFocus(Elem* newFocus){
 	if(newFocus == nullptr){
 		if(currentCursorFocus != nullptr){
 			if(currentCursorFocus->needSetMouseUnfocusedAtCursorOutOfBound()){
@@ -67,10 +89,25 @@ void UI::Root::resize(const unsigned w, const unsigned h){
 	//TODO apply margin with FBO, not directly
 	// projection.setOrthogonal(-marginX, -marginY, static_cast<float>(w) + marginX * 2.0f, static_cast<float>(h) + marginY * 2.0f);
 	projection.setOrthogonal(0, 0, static_cast<float>(w), static_cast<float>(h));
+
+	hoverTableManager.clear();
 }
 
 void UI::Root::render() const{
 	root->draw();
+}
+
+void UI::Root::renderBase() const{
+	root->drawBase();
+
+}
+
+void UI::Root::renderBaseAbove() const{
+	hoverTableManager.renderBase();
+}
+
+void UI::Root::renderAbove() const{
+	hoverTableManager.render();
 }
 
 void UI::Root::onDoubleClick(const int id, int mode){
@@ -179,7 +216,7 @@ void UI::Root::registerCtrl() const{
 		}
 	});
 
-	uiInput->registerKeyBind(Ctrl::KEY_V, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+	uiInput->registerKeyBind({{Ctrl::KEY_V, Ctrl::Act_Press, Ctrl::Mode_Ctrl}, {Ctrl::KEY_V, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl}}, [this]{
 		if(textInputListener){
 			textInputListener->informClipboardPaste(Core::platform->getClipboard());
 		}
@@ -192,7 +229,7 @@ void UI::Root::registerCtrl() const{
 	});
 }
 
-void UI::Root::setEnter(const Elem* elem){
+void UI::Root::setEnter(Elem* elem){
 	if(elem == currentCursorFocus) return;
 
 	if(currentCursorFocus != nullptr){

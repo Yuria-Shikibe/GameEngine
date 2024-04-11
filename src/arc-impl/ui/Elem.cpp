@@ -9,8 +9,10 @@ import Core;
 bool UI::Elem::layout_tryFillParent() {
 	if(parent) {
 		if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
-			bound = rect;
-			changed();
+			setSrc(rect.getSrcX(), rect.getSrcY());
+			setSize(rect.getWidth(), rect.getHeight());
+			overrideChanged(false);
+			changed(ChangeSignal::notifySubs);
 			return true;
 		}
 	}
@@ -18,25 +20,33 @@ bool UI::Elem::layout_tryFillParent() {
 	return false;
 }
 
+void UI::Elem::drawBase() const{
+	if(!visiable)return;
+
+	if(parent) {
+		maskOpacity = parent->maskOpacity;
+	}
+
+	drawer->drawBackground(this);
+}
+
 void UI::Elem::draw() const {
 	if(!visiable)return;
 
 	if(parent) {
-		maskOpacity *= parent->maskOpacity;
+		maskOpacity = parent->maskOpacity;
 	}
 
-	drawBackground();
+	drawStyle();
 	drawContent();
-
-	maskOpacity = 1.0f;
 }
 
 void UI::Elem::applyDefDrawer(){
 	setDrawer(UI::defDrawer);
 }
 
-void UI::Elem::drawBackground() const {
-	drawer->drawBackground(this);
+void UI::Elem::drawStyle() const {
+	drawer->drawStyle(this);
 }
 
 UI::Group* UI::Elem::getParent() const {
@@ -63,13 +73,14 @@ UI::Group* UI::Elem::setParent(Group* const parent) {
 	return former;
 }
 
-UI::Elem& UI::Elem::prepareRemove() {
-	if(parent == nullptr) {
-		throw ext::NullPointerException{"Elem: [" + name + "] Doesn't Have A Parent!"};
+void UI::Elem::callRemove() {
+	if(parent != nullptr) {
+		parent->postRemove(this);
 	}
-	parent->postRemove(this);
 
-	return *this;
+	if(hoverTableHandle){
+		root->hoverTableManager.forceDrop(hoverTableHandle);
+	}
 }
 
 void UI::Elem::setFocusedKey(const bool focus) const {
@@ -82,9 +93,19 @@ void UI::Elem::setFocusedScroll(const bool focus){
 	this->root->currentScrollFocused = focus ? this : nullptr;
 }
 
-void UI::Elem::changed() const {
-	layoutChanged = true;
-	if(parent)parent->changed();
+void UI::Elem::postChanged(){
+	if(lastSignal & ChangeSignal::notifySelf){
+		layoutChanged = true;
+	}
+
+	if(lastSignal & ChangeSignal::notifyParentOnly){
+		if(parent){
+			parent->changed(lastSignal);
+			parent->postChanged();
+		}
+	}
+
+	lastSignal = ChangeSignal::notifyNone;
 }
 
 bool UI::Elem::isInbound(const Geom::Vec2 screenPos){

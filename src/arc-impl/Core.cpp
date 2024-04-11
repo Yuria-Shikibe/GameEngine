@@ -1,7 +1,3 @@
-module;
-
-#include <GLFW/glfw3.h>
-
 module Core;
 
 import RuntimeException;
@@ -17,28 +13,19 @@ using namespace Core;
 
 
 void Core::initMainWindow() {
-#ifdef __APPLE__
-		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
 	platform->window->initWindow(title);
+	platform->window->setVerticalSync();
+	platform->window->setWindowCallback();
 
 	if(maximizeWinOnInit) {
-		glfwSetWindowSizeCallback(platform->window->as<GLFWwindow>(), [](GLFWwindow* win, const int width, const int height){
-			platform->window->windowBound.setSize(width, height);
-		});
-
-		glfwMaximizeWindow(platform->window->as<GLFWwindow>());
-
-		GL::viewport(0, 0, platform->window->windowBound.getWidth(), platform->window->windowBound.getHeight());
-		glfwSwapInterval(1);
-		GL::enable(GL_MULTISAMPLE);
-
-		platform->window->lastScreenBound.set(100, 100, platform->window->currentMonitor.width * 0.75f, platform->window->currentMonitor.height * 0.75f);
-
-		glfwSetWindowSizeCallback(platform->window->as<GLFWwindow>(), nullptr);
+		platform->window->setMaximumizedWindow();
 	}
 
+	GL::init();
+	auto [x, y] = Core::platform->window->equrySize();
+	GL::viewport(x, y);
+	platform->window->lastScreenBound.set(0, 0, x, y);
+	GL::enable(GL_MULTISAMPLE);
 }
 
 void Core::initFileSystem() {
@@ -59,7 +46,6 @@ void Core::initCore(const std::function<void()>& initializer) {
 	initMainWindow();
 
 	OS::launchApplication();
-	GL::init();
 
 	initFileSystem();
 

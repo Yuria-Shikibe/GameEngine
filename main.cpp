@@ -88,6 +88,7 @@ import UI.Drawer;
 import UI.Styles;
 import UI.Button;
 import UI.SliderBar;
+import UI.ProgressBar;
 import UI.InputArea;
 
 
@@ -167,17 +168,33 @@ void setupUITest(){
 					   button.setCall([i](bool){
 						   std::cout << i << std::endl;
 					   });
+					   button.setHoverTableBuilder({
+							.builder = [i](UI::Table& hint){
+								hint.setMinimumSize({600, 300});
+								hint.setCellAlignMode(Align::Mode::top_left);
+								hint.add<UI::Label>([i](UI::Label& label){
+									label.usingGlyphHeight = label.usingGlyphWidth = true;
+									label.setText(std::format("Hint Hover Table\nButton{}", i));
+									label.getGlyphLayout()->setSCale(0.65f);
+								}).expand();
+								hint.PointCheck = 150;
+							}
+					   });
 				   });
 			   }
 		   }).fillParent();
 
 		   table.add<UI::Table>([](UI::Table& t){
 			   t.setEmptyDrawer();
-			   t.add<UI::SliderBar>([](UI::SliderBar& s){
+			   auto& slider = t.add<UI::SliderBar>([](UI::SliderBar& s){
 				   s.setClampedOnHori();
-			   }).fillParent().lineFeed();
-			   t.add<UI::SliderBar>();
-			   t.add<UI::SliderBar>().setSrcScale(0.5f, 0.0f, false).lineFeed();
+			   }).fillParent().lineFeed().as<UI::SliderBar>();
+
+			   t.add<UI::ProgressBar>([&slider](UI::ProgressBar& bar){
+				   bar.progressGetter = [&slider]{
+					   return slider.getProgress().x;
+				   };
+			   });
 		   }).fillParent().setPad({.left = 2.0f});
 	   })
 	   .setAlign(Align::Mode::top_left)
@@ -239,16 +256,16 @@ void setupUITest(){
 	}
 
 	HUD->add<UI::Table>([](UI::Table& table){
-		table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-		   pane.setItem<UI::InputArea>([](UI::InputArea& area){
-			   area.usingGlyphWidth = area.usingGlyphHeight = true;
-			   area.setMaxTextLength(1000);
+		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+			   pane.setItem<UI::InputArea>([](UI::InputArea& area){
+				   area.usingGlyphWidth = area.usingGlyphHeight = true;
+				   area.setMaxTextLength(1000);
 
-			   area.getGlyphLayout()->setSCale(0.75f);
-			   area.setText("Test\n123123123\nsadaDSAda");
-		   });
-	   }).fillParent();
-	})
+				   area.getGlyphLayout()->setSCale(0.75f);
+				   area.setText("Test\n123123123\nsadaDSAda");
+			   });
+		   }).fillParent();
+	   })
 	   .setAlign(Align::top_right)
 	   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
 	   .setMargin(10, 0, 10, 0);
@@ -258,9 +275,7 @@ void setupUITest(){
 	   .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
 	   .setMargin(10, 10, 10, 0);
 	//
-	HUD->add<UI::Table>([](UI::Table& table){
-
-	   })
+	HUD->add<UI::Table>([](UI::Table& table){})
 	   .setAlign(Align::Mode::bottom_right)
 	   .setSizeScale(0.3f, 0.15f)
 	   .setMargin(10, 0, 10, 0);
@@ -273,7 +288,7 @@ void setupCtrl(){
 	// 	effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
 	// });
 
-	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Release, []{
+	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, []{
 		static ext::Timer<> timer{};
 
 		timer.run(12, OS::updateDeltaTick(), []{
@@ -370,7 +385,7 @@ int main(const int argc, char* argv[]){
 	// }
 
 
-	::Core::renderer->getListener().on<Event::Draw_Overlay>([]([[maybe_unused]] const auto& e){
+	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
 		Game::core->drawAboveUI(e.renderer);
 		Graphic::Batch::flush();

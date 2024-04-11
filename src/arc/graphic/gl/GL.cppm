@@ -190,6 +190,8 @@ export namespace GL {
         enable(GL_STENCIL_TEST);
         disable(GL_STENCIL_TEST);
         disable(GL_DEPTH_TEST);
+
+        viewport_h = viewport_w = viewport_x = viewport_y = 0;
     }
 
     bool getState(const GLenum cap) {
@@ -232,6 +234,7 @@ export namespace GL {
 
     void viewport(const GLsizei x, const GLsizei y, const GLsizei width, const GLsizei height) {
         if(x == viewport_x && y == viewport_y && viewport_w == width && viewport_h == height)return;
+
         glViewport(x, y, width, height);
         viewport_x = x;
         viewport_y = y;
@@ -241,6 +244,10 @@ export namespace GL {
 
     void viewport(const GLsizei width, const GLsizei height) {
         viewport(0, 0, width, height);
+    }
+
+    [[nodiscard]] Geom::OrthoRectInt getViewPort(){
+        return {viewport_x, viewport_y, viewport_w, viewport_h};
     }
 
     void scissorShrinkBegin(){

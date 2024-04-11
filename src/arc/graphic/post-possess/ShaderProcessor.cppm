@@ -44,7 +44,7 @@ export namespace Graphic {
 
 		void endProcess(FrameBuffer* target) const override {
 			if(shader == nullptr || toProcess == nullptr || target == nullptr)throwException();
-			toProcess->getTextures().at(port.inPort)->active(0);
+			toProcess->getColorAttachments().at(port.inPort)->active(0);
 			toProcess->bind(GL::FrameBuffer::READ);
 			// toProcess->bindAllColorAttachments();
 

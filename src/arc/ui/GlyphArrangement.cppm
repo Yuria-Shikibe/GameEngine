@@ -233,9 +233,9 @@ export namespace Font {
 			updateDrawbound();
 		}
 
-		void render() const;
+		void render(const float alphaMask = 1.0f) const;
 
-		void render(float progress) const;
+		void render(const float alphaMask, float progress) const;
 	};
 
 	//TODO cache support. maybe?

@@ -286,8 +286,8 @@ export namespace Assets {
 		}
 
 	protected:
-		static OrthoRectUInt& transformBound(TextureRegionPackData& d) {
-			return d.bound;
+		static OrthoRectUInt& transformBound(TextureRegionPackData* d) noexcept {
+			return d->bound;
 		}
 
 
@@ -468,22 +468,22 @@ export namespace Assets {
 			packDone = true;
 		}
 
-		void loadRemains(Concepts::Iterable auto&& remains, const int currentID) {
+		void loadRemains(Concepts::Iterable<TextureRegionPackData*> auto&& remains, const int currentID) {
 			if(remains.empty())return;
 			setProgress(TotalProgressWeight, 2, 1, packData.size() - remains.size(), packData.size());
 
-			Math::StripPacker2D<TextureRegionPackData, unsigned int, TexturePackPage::transformBound> packer{};
+			Math::StripPacker2D<TextureRegionPackData*, unsigned int, TexturePackPage::transformBound> packer{};
 
 			packer.push(remains);
 
 			packer.setMaxSize(texMaxBound.getWidth(), texMaxBound.getHeight());
 			packer.sortDatas();
 			packer.process();
-			const OrthoRectUInt r = packer.resultBound();
+			const OrthoRectUInt r = packer.getResultBound();
 
 			//Move it
 			toMerge.emplace_back(std::move(packer.packed), r.getWidth(), r.getHeight(), currentID);
-			loadRemains(std::move(packer.remains()), currentID + 1);
+			loadRemains(std::move(packer.getRemains()), currentID + 1);
 		}
 
 		void mergeTexture() {

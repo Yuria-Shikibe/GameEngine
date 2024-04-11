@@ -53,8 +53,6 @@ export namespace Test{
 
 		Core::initCore();
 
-		Core::platform->window->setWindowCallback();
-
 		Assets::loadBasic();
 
 		{
@@ -78,12 +76,13 @@ export namespace Test{
 
 			{
 				// auto size = Core::platform
-				auto size = Core::platform->window->equrySize();
-				Core::uiRoot = new UI::Root{};
-				Core::renderer = new Core::Renderer{static_cast<unsigned>(size.x), static_cast<unsigned>(size.y)};
+				auto [x, y] = Core::platform->window->equrySize();
 
-				Core::uiRoot->resize(size.x, size.y);
-				Core::camera->resize(size.x, size.y);
+				Core::uiRoot = new UI::Root{};
+				Core::renderer = new Core::Renderer{static_cast<unsigned>(x), static_cast<unsigned>(y)};
+
+				Core::uiRoot->resize(x, y);
+				Core::camera->resize(x, y);
 			}
 
 			Core::renderer->registerSynchronizedResizableObject(Core::camera);

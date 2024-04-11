@@ -65,7 +65,7 @@ export namespace Graphic{
             return length;
         }
 
-        void resize(size_t length){
+        void resize(const size_t length){
             this->length = length;
         }
 

@@ -63,8 +63,8 @@ export namespace UI{
 			call = std::forward<decltype(func)>(func);
 		}
 
-		void drawBackground() const override{
-			Elem::drawBackground();
+		void drawStyle() const override{
+			Elem::drawStyle();
 		}
 	};
 

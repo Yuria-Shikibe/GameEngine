@@ -26,6 +26,10 @@ void UI::ScrollPane::applyDefDrawer(){
 	scrollBarDrawer = &UI::defScrollBarDrawer;
 }
 
+void UI::ScrollPane::drawBase() const{
+	Elem::drawBase();
+}
+
 void UI::ScrollPane::drawContent() const{
 	Graphic::Batch::flush();
 

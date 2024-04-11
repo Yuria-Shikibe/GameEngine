@@ -31,7 +31,7 @@ export namespace UI {
 			}
 
 			if(usingGlyphWidth){
-				setWidth(border.getWidth() + glyphLayout->getDrawBound().getHeight());
+				setWidth(border.getWidth() + glyphLayout->getDrawBound().getWidth());
 			}
 		}
 
@@ -106,6 +106,13 @@ export namespace UI {
 
 			Elem::update(delta);
 		}
+
+		void layout() override{
+			updateTextLayout();
+
+			Elem::layout();
+		}
+
 
 		[[nodiscard]] bool isDynamic() const {
 			return textSource != nullptr;

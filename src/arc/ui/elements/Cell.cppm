@@ -18,9 +18,9 @@ export namespace UI {
 	 */
 	struct LayoutCell {
 	protected:
-		void changed() const {
+		void changed(const ChangeSignal signal = ChangeSignal::notifyAll) const {
 			if(item) {
-				item->changed();
+				item->changed(signal);
 			}
 		}
 	public:
@@ -85,14 +85,14 @@ export namespace UI {
 		LayoutCell& wrapX() {
 			changed();
 			scaleRelativeToParentX = false;
-			modifyParentX = false;
+			modifyParentX = true;
 			return *this;
 		}
 
 		LayoutCell& wrapY() {
 			changed();
 			scaleRelativeToParentY = false;
-			modifyParentY = false;
+			modifyParentY = true;
 			return *this;
 		}
 
@@ -182,7 +182,7 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setAlign(const Align::Mode align = Align::Mode::center) {\
+		LayoutCell& setAlign(const Align::Mode align = Align::Mode::center) {
 			if(align == this->align)return *this;
 			changed();
 			this->align = align;
@@ -277,89 +277,41 @@ export namespace UI {
 		[[nodiscard]] float getPadVert() const {return pad.getHeight();}
 
 		void applySizeToItem(){ // NOLINT(*-make-member-function-const)
-			const float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getWidth());
-			const float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getHeight());
-
-			//Modify item size
-			item->setSize(width * getHoriScale(), height * getVertScale());
+			float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getWidth());
+			float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getHeight());
 
 			//Apply Expansion
 			if(modifyParentX) {
-				allocatedBound.setWidth(item->getWidth());
+				width = Math::max(allocatedBound.getWidth(), item->getWidth());
+				allocatedBound.setWidth(width * getHoriScale());
 			}else{
 				// allocatedBound.setShorterWidth(item->getWidth());
 			}
 
 			if(modifyParentY) {
-				allocatedBound.setHeight(item->getHeight());
+				height = Math::max(allocatedBound.getHeight(), item->getHeight());
+				allocatedBound.setHeight(height * getVertScale());
 			}else{
 				// allocatedBound.setShorterHeight(item->getHeight());
 			}
 
-			item->getBoundRef().addSize(-getMarginHori(), -getMarginVert());
-			item->changed();
+			item->setSize(width * getHoriScale() - getMarginHori(), height * getVertScale() - getMarginVert());
 
 			allocatedBound.addSize(getPadHori(), getPadVert());
 		}
 
-		void applyAlignToItem(const Rect bound) const {
-			Rect& itemBound = item->getBoundRef();
-			if(align & Align::Mode::top) {
-				itemBound.setSrcY(bound.getEndY() - itemBound.getHeight());
-			}else if(align & Align::Mode::bottom){
-				itemBound.setSrcY(bound.getSrcY());
-			}else { //centerY
-				itemBound.setSrcY(bound.getSrcY() + (bound.getHeight() - itemBound.getHeight()) * 0.5f);
-			}
-
-			if(align & Align::Mode::right) {
-				itemBound.setSrcX(bound.getEndX() - itemBound.getWidth());
-			}else if(align & Align::Mode::left){
-				itemBound.setSrcX(bound.getSrcX());
-			}else { //centerX
-				itemBound.setSrcX(bound.getSrcX() + (bound.getWidth() - itemBound.getWidth()) * 0.5f);
-			}
-		}
+		void applyAlignToItem(const Rect bound) const;
 
 		//Invoke this after all cell bound has been arranged.
-		void applyPosToItem(Elem* parent) const {
-			applyAlignToItem(allocatedBound);
-
-			float xSign = 0;
-			float ySign = 0;
-
-			if(align & Align::Mode::top) {
-				ySign = -1;
-			}else if(align & Align::Mode::bottom){
-				ySign = 1;
-			}
-
-			if(align & Align::Mode::right) {
-				xSign = -1;
-			}else if(align & Align::Mode::left){
-				xSign = 1;
-			}
-
-			const bool left   = xSign == 1;
-			const bool bottom = ySign == 1;
-
-			const float xMove = xSign * ((left   ? (pad.left + margin.left + parent->getBorder().left) : (pad.right + margin.right + parent->getBorder().right)) + getCellWidth() * scale.left);
-			const float yMove = ySign * ((bottom ? (pad.bottom + margin.bottom + parent->getBorder().bottom) : (pad.top + margin.top + parent->getBorder().top)) + getCellHeight() * scale.bottom);
-
-			item->getBoundRef().move(xMove, yMove);
-
-			//TODO align...
-
-			item->calAbsoluteSrc(parent);
-		}
+		void applyPosToItem(Elem* parent) const;
 
 		[[nodiscard]] bool isIgnoreLayout() const {
 			return item->isIgnoreLayout();
 		}
 
 		template <Concepts::Derived<Elem> T>
-		T& as() {//TODO static cast maybe??
-			return dynamic_cast<T&>(*item);
+		[[nodiscard]] T& as() {//TODO static cast maybe??
+			return static_cast<T&>(*item);
 		}
 	};
 }

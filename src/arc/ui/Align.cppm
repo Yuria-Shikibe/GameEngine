@@ -3,6 +3,9 @@ module;
 export module UI.Align;
 
 import Geom.Vector2D;
+import Geom.Rect_Orthogonal;
+
+import std;
 
 export namespace Align {
 	struct Spacing{
@@ -94,15 +97,15 @@ export namespace Align {
 		bottom_right  = bottom | right,
 	};
 
-	inline char codeOf(Mode align) {
+	constexpr char codeOf(Mode align) {
 		return static_cast<char>(align);
 	}
 
-	bool operator &(const Mode l, const Mode r) {
+	constexpr bool operator &(const Mode l, const Mode r) {
 		return codeOf(l) & codeOf(r);
 	}
 
-	Geom::Vec2 getOffsetOf(const Mode align, const Geom::Vec2 bottomLeft, const Geom::Vec2 topRight) {
+	constexpr Geom::Vec2 getOffsetOf(const Mode align, const Geom::Vec2 bottomLeft, const Geom::Vec2 topRight) {
 		float xSign = 0;
 		float ySign = 0;
 
@@ -124,7 +127,7 @@ export namespace Align {
 		return {xMove, yMove};
 	}
 
-	Geom::Vec2 getOffsetOf(const Mode align, const Spacing margin) {
+	constexpr Geom::Vec2 getOffsetOf(const Mode align, const Spacing margin) {
 		float xSign = 0;
 		float ySign = 0;
 
@@ -147,6 +150,29 @@ export namespace Align {
 	}
 
 
+	/**
+	 * @brief
+	 * @tparam T arithmetic type, does not accept unsigned type
+	 * @return
+	 */
+	template <Concepts::Signed T>
+	constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Rect_Orthogonal<T> bound) {
+		Geom::Vector2D<T> offset{};
+
+		if(align & Align::Mode::top) {
+			offset.y = -bound.getHeight();
+		}else if(align & Align::Mode::center_y){
+			offset.y = -bound.getHeight() / static_cast<T>(2);
+		}
+
+		if(align & Align::Mode::right) {
+			offset.x = -bound.getWidth();
+		}else if(align & Align::Mode::center_x){
+			offset.x = -bound.getWidth() / static_cast<T>(2);
+		}
+
+		return offset;
+	}
 
 	using enum Mode;
 }

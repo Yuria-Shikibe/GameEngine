@@ -99,6 +99,14 @@ link_libraries(
 #    irrKlang.exp
 )
 
+#macro(get_WIN32_WINNT version)
+#
+#message(STATUS "ON Windows")
+link_libraries(
+    dwmapi.lib
+)
+#endmacro()
+
 message(STATUS "Building...")
 
 # Build .exe
@@ -116,6 +124,7 @@ target_sources(${PROJECT_NAME}
         modules/std.compat.ixx
         modules/std.ixx
         ${FAST_MODULES}      #[[Modules]]
+        ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/target.rc
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")

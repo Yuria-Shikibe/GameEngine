@@ -221,7 +221,7 @@ export namespace Graphic{
 
 		void blitCopyAll(const GL::FrameBuffer* const read, const GL::FrameBuffer* const draw,
 		                 const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR){
-			const unsigned int max = std::min(read->getTextures().size(), draw->getTextures().size());
+			const unsigned int max = std::min(read->getColorAttachments().size(), draw->getColorAttachments().size());
 
 			read->bind(GL::FrameBuffer::READ);
 			draw->bind(GL::FrameBuffer::DRAW);

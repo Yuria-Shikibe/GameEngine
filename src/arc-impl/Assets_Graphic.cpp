@@ -70,7 +70,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
 		shader.setFloat("scale", Core::camera->getScale());
-		shader.setVec2("screenSize", Core::renderer->getWidth(), Core::renderer->getHeight());
+		shader.setVec2("screenSize", Core::renderer->getDrawWidth(), Core::renderer->getDrawHeight());
 		shader.setVec2("cameraPos", Core::camera->screenCenter());
 	});
 
@@ -91,6 +91,13 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	});
 
 	worldBloom = manager->registerShader(new Shader{shaderDir.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
+	mask = manager->registerShader(new Shader{shaderDir.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
+	mask->setUniformer([](const Shader& shader) {
+		shader.setTexture2D("texture0", 0);
+		shader.setTexture2D("texture1", 1);
+		shader.setTexture2D("texture2", 2);
+		shader.setFloat("clamp", 1.0f);
+	});
 
 	manager->registerShader(screenSpace);
 	manager->registerShader(threshold_light);
@@ -98,6 +105,40 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	manager->registerShader(bloom);
 	manager->registerShader(blit);
 	manager->registerShader(sildeLines);
+}
+
+void Assets::PostProcessors::load(){
+	multiToBasic.reset(new Graphic::MultiSampleBliter{});
+
+	blurX.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+		shader.setVec2("direction", Geom::Vec2{1.2f, 0});
+	}});
+
+	blurY.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+		shader.setVec2("direction", Geom::Vec2{0, 1.2f});
+	}});
+
+	blurX_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+		shader.setVec2("direction", Geom::Vec2{2.0f, 0});
+	}});
+
+	blurY_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+		shader.setVec2("direction", Geom::Vec2{0, 2.f});
+	}});
+
+	bloom.reset(
+		new Graphic::BloomProcessor{blurX.get(), blurY.get(), Shaders::bloom, Shaders::threshold_light}
+	);
+
+	blur_Far.reset(
+		new Graphic::PingPongProcessor{blurX.get(), blurY.get(), 4}
+	);
+
+	// blur_Far->setScale(0.75f);
+
+	blend.reset(new Graphic::ShaderProcessor{Shaders::blit});
+	// Graphic::P4Processor processor{&blurX, &blurY};
+	blendMulti.reset(new Graphic::PipeProcessor{multiToBasic.get(), blend.get()});
 }
 
 void Assets::loadBasic() {

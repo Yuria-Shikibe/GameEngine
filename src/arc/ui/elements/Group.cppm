@@ -84,7 +84,7 @@ export namespace UI {
 			});
 		}
 
-		std::vector<std::unique_ptr<Elem>>* getChildren() override {
+		const std::vector<std::unique_ptr<Elem>>* getChildren() const override {
 			return &children;
 		}
 
@@ -139,8 +139,27 @@ export namespace UI {
 			}
 		}
 
+		void drawBase() const override{
+			Elem::drawBase();
+
+			if(visiable)for(const auto& elem : children) {
+				elem->drawBase();
+			}
+		}
+
 		void drawContent() const override {
-			drawChildren();
+			if(visiable)drawChildren();
+		}
+
+		void postChanged() override{
+			Elem::postChanged();
+
+			if(lastSignal & ChangeSignal::notifyChildrenOnly){
+				for(auto& element : children){
+					element->changed(lastSignal, ChangeSignal::notifyParentOnly);
+					element->postChanged();
+				}
+			}
 		}
 
 		void childrenCheck(const Elem* ptr) override{

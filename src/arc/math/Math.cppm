@@ -539,7 +539,7 @@ export namespace Math {
 	 * @param b the second value.
 	 */
 	bool equal(const float a, const float b) noexcept {
-		return abs(a - b) <= FLOAT_ROUNDING_ERROR;
+		return std::abs(a - b) <= FLOAT_ROUNDING_ERROR;
 	}
 
 	/**

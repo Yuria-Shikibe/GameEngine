@@ -13,14 +13,14 @@ import UI.Align;
 import Concepts;
 import Geom.Vector2D;
 
-//TODO this is a temp import
-import Graphic.Draw;
-
 using Rect = Geom::OrthoRectFloat;
 
 //TODO Using Pool to avoid heap allocation
 export namespace UI {
 	class Table : public Group{
+	protected:
+		Align::Mode cellAlignMode = Align::Mode::bottom_left;
+
 	public:
 		std::vector<unsigned> elemLayoutCountData{};
 		Geom::Point2 elemLayoutMaxCount{};
@@ -35,6 +35,14 @@ export namespace UI {
 		std::vector<LayoutCell> cells{};
 
 		bool relativeLayoutFormat = true;
+
+		[[nodiscard]] Align::Mode getCellAlignMode() const{
+			return cellAlignMode;
+		}
+
+		void setCellAlignMode(const Align::Mode cellAlignMode){
+			this->cellAlignMode = cellAlignMode;
+		}
 
 		//TODO mess
 		void layoutRelative();
@@ -107,7 +115,7 @@ export namespace UI {
 
 			elemLayoutMaxCount.y++;
 			children.back()->setEndRow(true);
-			changed();
+			changed(ChangeSignal::notifyAll);
 		}
 
 		void update(const float delta) override {
@@ -156,20 +164,7 @@ export namespace UI {
 			}
 		}
 
-		void drawContent() const override{
-			for(auto& cell : this->cells){
-				Rect rect{};
-				rect.setSrc(this->absoluteSrc + cell.allocatedBound.getSrc() + this->border.bot_lft()).setSize(cell.allocatedBound);
-
-				using namespace Graphic;
-				Draw::color(Colors::YELLOW);
-				Draw::Line::setLineStroke(2.0f);
-				Draw::Line::rectOrtho(rect);
-			}
-
-			Group::drawContent();
-
-		}
+		void drawContent() const override;
 	};
 }
 

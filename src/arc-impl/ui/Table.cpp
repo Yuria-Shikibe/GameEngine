@@ -2,6 +2,10 @@ module UI.Table;
 
 import Math;
 
+
+//TODO this is a temp import
+import Graphic.Draw;
+
 void UI::Table::layoutRelative() {
 	if(cells.empty() || std::ranges::all_of(cells, std::identity{}, &LayoutCell::isIgnoreLayout))return;
 
@@ -77,8 +81,33 @@ void UI::Table::layoutRelative() {
 			maxSizeArr[x] = Math::max(maxSizeArr[x], spacingX);
 		}
 
+		const float cellWidth = std::accumulate(maxSizeArr.begin() + rows(), maxSizeArr.end(), 0.0f);
+		const float cellHeight = std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + rows(), 0.0f);
+
+		if(expandX){
+			setWidth(cellWidth + getBorderWidth());
+		}
+
+		if(expandY){
+			setHeight(cellHeight + getBorderHeight());
+		}
+
 		float currentSpacingX = 0;
 		float currentSpacingY = std::accumulate(maxSizeArr.begin() + 1, maxSizeArr.begin() + rows(), 0.0f);
+
+		Geom::Vec2 offset{};
+
+		if(cellAlignMode & Align::Mode::top) {
+			offset.y = getValidHeight() - cellHeight;
+		}else if(cellAlignMode & Align::Mode::center_y){
+			offset.y = (getValidHeight() - cellHeight) * 0.5f;
+		}
+
+		if(cellAlignMode & Align::Mode::right) {
+			offset.x = getValidWidth() - cellWidth;
+		}else if(cellAlignMode & Align::Mode::center_x){
+			offset.x = (getValidWidth() - cellWidth) * 0.5f;
+		}
 
 		for(auto& cell : cells) {
 			if(!cell.isIgnoreLayout()){
@@ -92,6 +121,7 @@ void UI::Table::layoutRelative() {
 				);
 
 				cell.applySizeToItem();
+				cell.allocatedBound.move(offset);
 				cell.applyPosToItem(this);
 
 				curPos.x++;
@@ -106,14 +136,8 @@ void UI::Table::layoutRelative() {
 				currentSpacingY -= maxSizeArr[curPos.y];
 			}
 		}
-	}
 
-	if(expandX){
-		setWidth(std::accumulate(maxSizeArr.begin() + rows(), maxSizeArr.end(), 0.0f) + getBorderWidth());
-	}
 
-	if(expandY){
-		setHeight(std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + rows(), 0.0f) + getBorderHeight());
 	}
 }
 
@@ -130,4 +154,19 @@ void UI::Table::layoutIrrelative() {
 		cell.applySizeToItem();
 		cell.applyPosToItem(this);
 	}
+}
+
+void UI::Table::drawContent() const{
+	for(auto& cell : this->cells){
+		Rect rect{};
+		rect.setSrc(this->absoluteSrc + cell.allocatedBound.getSrc() + this->border.bot_lft()).setSize(cell.allocatedBound);
+
+		// using namespace Graphic;
+		// Draw::color(Colors::YELLOW);
+		// Draw::Line::setLineStroke(2.0f);
+		// Draw::Line::rectOrtho(rect);
+	}
+
+	Group::drawContent();
+
 }

@@ -18,11 +18,11 @@ const Font::GlyphDrawData* Font::GlyphLayout::find(const Geom::Point2U layoutPos
 	return nullptr;
 }
 
-void Font::GlyphLayout::render() const {
+void Font::GlyphLayout::render(const float alphaMask) const {
 	if(empty()) return;
 	const Geom::Vec2 off = getDrawOffset();
 	for (auto& glyph : glyphs){
-		Graphic::Draw::color(glyph.fontColor);
+		Graphic::Draw::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
 		Graphic::Draw::quad(
 			glyph.region,
 			glyph.v00().scl(scale) + off,
@@ -39,13 +39,14 @@ void Font::GlyphLayout::render() const {
 	}
 }
 
-void Font::GlyphLayout::render(float progress) const {
+void Font::GlyphLayout::render(const float alphaMask, float progress) const {
 	if(empty()) return;
 	progress = Math::clamp(progress);
 
 	const Geom::Vec2 off = getDrawOffset();
 	for (auto& glyph : this->glyphs | std::ranges::views::take(static_cast<size_t>(progress * static_cast<float>(glyphs.size())))){
-		Graphic::Draw::color(glyph.fontColor);
+		Graphic::Draw::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
+
 		Graphic::Draw::quad(
 			glyph.region,
 			glyph.v00().scl(scale) + off,
@@ -109,6 +110,12 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 		if(tokenParser){
 			if(currentChar == TokenSignal){
 				if(tokenState){
+					if(tokenBegin != npos){
+						index = tokenBegin - 1;
+						tokenState = false;
+						continue;
+					}
+
 					tokenState = false;
 					goto process;
 				}else{

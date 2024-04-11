@@ -29,7 +29,6 @@ using namespace Graphic;
 export namespace Assets {
 	class LoaderRenderer final : public Core::Renderer{
 		Assets::AssetsLoader* loader{nullptr};
-		GL::FrameBuffer drawFBO{};
 		Geom::Matrix3D mat{};
 		const Geom::Matrix3D* defaultMat{nullptr};
 
@@ -43,12 +42,8 @@ export namespace Assets {
 		float lastThreshold = 0.0f;
 
 		[[nodiscard]] LoaderRenderer(const unsigned int w, const unsigned int h, Assets::AssetsLoader* const loader)
-			: Renderer(w, h), loader(loader), drawFBO(w, h) {
-
-			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h));
-
+			: Renderer(w, h), loader(loader) {
 			defaultMat = Graphic::Batch::getPorj();
-			Core::batchGroup.batchOverlay->setProjection(mat);
 
 			GL::setStencilOperation(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
 
@@ -78,8 +73,10 @@ export namespace Assets {
 			constexpr float slideLineSize = 12.0f;
 			constexpr float preBlockWidth = 32.0f;
 
-			Graphic::Batch::shader();
+			mat.setOrthogonal(0.0f, 0.0f, getDrawWidth(), getDrawHeight());
+			Core::batchGroup.batchOverlay->setProjection(mat);
 
+			Graphic::Batch::shader();
 			Draw::mixColor(Colors::DARK_GRAY);
 
 			if(!loader->finished()) {
@@ -192,29 +189,33 @@ export namespace Assets {
 		void draw() override {
 			defaultFrameBuffer.clearColor();
 
-			drawFBO.clearColor();
-			drawFBO.clearRenderData();
-			drawFBO.bind();
+			effectBuffer.clearColor();
+			effectBuffer.clearRenderData();
+			effectBuffer.bind();
 			glClear(GL_STENCIL_BUFFER_BIT);
 
+			GL::viewport(static_cast<int>(width), static_cast<int>(height));
 			drawMain();
 
 			const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 			Assets::PostProcessors::bloom->blur.setProcessTimes(4);
 			Assets::PostProcessors::bloom->setIntensity(1.0f);
 
-			Assets::PostProcessors::bloom->apply(&drawFBO, &defaultFrameBuffer);
+			Assets::PostProcessors::bloom->apply(&effectBuffer, &defaultFrameBuffer);
 
 			Assets::PostProcessors::bloom->blur.setProcessTimes(times);
 			Assets::PostProcessors::bloom->setIntensity(1.1f);
 
-			glBlitNamedFramebuffer(defaultFrameBuffer.getID(), 0, 0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer.getID());
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			glBlitFramebuffer(
+				0, 0, static_cast<GLint>(width), static_cast<GLint>(height),
+				0, 0, static_cast<GLint>(width), static_cast<GLint>(height),
+				GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 
 		void resize(const unsigned w, const unsigned h) override {
-			drawFBO.resize(w, h);
-
-			mat.setOrthogonal(0.0f, 0.0f, static_cast<float>(w), static_cast<float>(h));
+			Renderer::resize(w, h);
 		}
 	};
 }

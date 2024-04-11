@@ -554,6 +554,8 @@ export namespace UI{
 				view = text.substr(0, remainSize - (view.end() - charBegin));
 			}
 
+			const auto forwardSize = std::ranges::count_if(text, ext::isUnicodeHead);
+
 			for (auto& caret : carets){
 				auto [begin, end] = caret.getStrIndex();
 				if(begin != end){
@@ -563,7 +565,7 @@ export namespace UI{
 					glyphLayout->lastText.insert_range(glyphLayout->lastText.begin() + begin, view);
 				}
 
-				for(int i = 0; i < inputBuffer.size(); ++i){
+				for(int i = 0; i < forwardSize; ++i){
 					caret.forceIncr();
 				}
 			}

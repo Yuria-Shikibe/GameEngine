@@ -26,6 +26,7 @@ export namespace GL{
 		std::unique_ptr<RenderBuffer> renderBuffer{nullptr};
 
 	public:
+		static constexpr unsigned RecommendedMinSize = 200;
 		static constexpr std::array<GLenum, 32> ALL_COLOR_ATTACHMENTS {
 			[] {
 				std::array<GLenum, 32> arr{};
@@ -181,11 +182,11 @@ export namespace GL{
 			return readPixelsRaw(width, height, 0, 0);
 		}
 
-		[[nodiscard]] const std::vector<std::unique_ptr<Texture2D>>& getTextures() const{
+		[[nodiscard]] const std::vector<std::unique_ptr<Texture2D>>& getColorAttachments() const{
 			return attachmentsColor;
 		}
 
-		[[nodiscard]] std::vector<std::unique_ptr<Texture2D>>& getTextures(){
+		[[nodiscard]] std::vector<std::unique_ptr<Texture2D>>& getColorAttachments(){
 			return attachmentsColor;
 		}
 
@@ -198,7 +199,7 @@ export namespace GL{
 		}
 
 		void clearColor(const Graphic::Color& initColor = Graphic::Colors::CLEAR, const unsigned attachmentID = 0) const{
-			glClearNamedFramebufferfv(nameID, GL_COLOR, attachmentID, initColor.asRaw());
+			glClearNamedFramebufferfv(nameID, GL_COLOR, static_cast<GLint>(attachmentID), initColor.asRaw());
 		}
 
 		void clearColorAll(const Graphic::Color& initColor = Graphic::Colors::CLEAR) const{

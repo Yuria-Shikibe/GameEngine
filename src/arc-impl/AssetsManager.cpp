@@ -41,8 +41,11 @@ void Assets::Manager::pullRequest() {
 }
 
 void Assets::Manager::load_Visible(const unsigned width, const unsigned height, Core::Renderer* renderer) {
+
 	auto loadRenderer = Assets::LoaderRenderer{width, height, &loader};
 	renderer->registerSynchronizedResizableObject(&loadRenderer);
+	Core::platform->pollEvents();
+
 	while (!Core::platform->shouldExit()){
 		if(loader.finished()) {
 			if(loadRenderer.lastProgress > 0.999f) {
