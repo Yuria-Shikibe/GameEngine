@@ -10,7 +10,7 @@ import Graphic.Color;
 import std;
 
 export namespace UI::Styles {
-	constexpr Graphic::Color uiGeneralColor = Graphic::Colors::AQUA_SKY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.256f);
+	constexpr Graphic::Color uiGeneralColor = Graphic::Colors::AQUA_SKY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.276f).setA(0.875f);
 	
 	GL::TextureNineRegion
 	tex_elem1_egde,
@@ -68,7 +68,7 @@ export namespace UI::Styles {
 		style_elem_s1{std::make_unique<UI::UIStyle>()}
 	;
 
-	std::unique_ptr<UI::ElemDrawer>
+	std::unique_ptr<UI::WidgetDrawer>
 		drawer_elem1{nullptr},
 		drawer_elem2{nullptr},
 		drawer_elem3{nullptr},

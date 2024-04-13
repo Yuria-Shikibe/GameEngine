@@ -12,7 +12,7 @@ export namespace GL {
 	class MultiSampleFrameBuffer final : public FrameBuffer {
 	public:
 		int samples{4};
-		MultiSampleFrameBuffer(const unsigned int w, const unsigned int h, const int samples = 4, const int colorAttachments = 1)
+		MultiSampleFrameBuffer(const int w, const int h, const int samples = 4, const int colorAttachments = 1)
 				: FrameBuffer(), samples(samples) {
 			width = w;
 			height = h;
@@ -24,7 +24,7 @@ export namespace GL {
 
 		[[nodiscard]] MultiSampleFrameBuffer() = default;
 
-		void resize(const unsigned int w, const unsigned int h) override{
+		void resize(const int w, const int h) override{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;

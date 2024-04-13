@@ -20,7 +20,7 @@ export namespace GL{
 			glNamedRenderbufferStorageMultisample(nameID, samples, GL_DEPTH32F_STENCIL8, w, h);
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override{
+		void resize(const int w, const int h) override{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;

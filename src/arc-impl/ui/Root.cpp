@@ -4,69 +4,64 @@ import UI.Drawer;
 import std;
 import Core;
 
-UI::Root::Root(): root(std::make_unique<Table>()), hoverTableManager{this}{
+UI::Root::Root(): hoverTableManager{this}{
+	currentScene = scenes.try_emplace("default", std::make_unique<Scene>()).first->second.get();
 	// NOLINT(*-use-equals-default)
-	root->setSrc(0.0f, 0.0f);
-	root->setAbsSrc(Geom::ZERO);
-	root->relativeLayoutFormat = false;
-	root->setTouchbility(TouchbilityFlags::childrenOnly);
-	root->setRoot(this);
-	root->PointCheck = 100;
-	root->setDrawer(&emptyDrawer);
-	root->setBorder({marginX, marginX, marginY, marginY});
-	root->name = "UI Root";
-	root->defaultCellLayout.setMargin(marginX, marginX, marginY, marginY);
+	currentScene->setSrc(0.0f, 0.0f);
+	currentScene->setAbsSrc(Geom::ZERO);
+	currentScene->relativeLayoutFormat = false;
+	currentScene->setTouchbility(TouchbilityFlags::childrenOnly);
+	currentScene->setRoot(this);
+	currentScene->PointCheck = 100;
+	currentScene->setDrawer(&emptyDrawer);
+	currentScene->setBorder(8);
+	currentScene->name = "UI Root";
 
 	registerCtrl();
+
+	rootDialog.content.setRoot(this);
 }
 
 void UI::Root::update(const float delta){
-	bool stop = false;
+	if(currentScene == nullptr)return;
 
-	Elem* last = nullptr;
-
-	iterateAll_DFS(root.get(), stop, [this, &last](Elem* elem) mutable{
-		if(elem->isInteractable() && elem->isInbound(cursorPos)){
-			last = elem;
-		}
-
-		return !elem->touchDisabled();
-	});
-
-	determinShiftFocus(last);
+	updateCurrentFocus();
 
 	onDragUpdate();
 
-	root->postChanged();
-	root->update(delta);
+	currentScene->postChanged();
+	currentScene->update(delta);
 
 	hoverTableManager.cursorPos = cursorPos;
 
-	if(cursorVel.isZero(0.005f)){
-		cursorStrandedTime += delta;
+	if(hoverTableManager.isOccupied(currentCursorFocus)){
+		cursorStrandedTime = cursorInBoundTime = 0.0f;
 	}else{
-		cursorStrandedTime = 0.0f;
-	}
+		if(cursorVel.isZero(0.005f)){
+			cursorStrandedTime += delta;
+		}else{
+			cursorStrandedTime = 0.0f;
+		}
 
-	if(currentCursorFocus){
-		cursorInBoundTime += delta;
-	}else{
-		cursorInBoundTime = 0.0f;
+		if(currentCursorFocus){
+			cursorInBoundTime += delta;
+		}else{
+			cursorInBoundTime = 0.0f;
+		}
 	}
 
 	if(currentCursorFocus && currentCursorFocus->getHoverTableBuilder()){
 		currentCursorFocus->updateHoverTableHandle(hoverTableManager.obtain(currentCursorFocus));
 	}
 
+	rootDialog.update(delta);
 	hoverTableManager.update(delta);
 }
 
-void UI::Root::determinShiftFocus(Elem* newFocus){
+void UI::Root::determinShiftFocus(Widget* newFocus){
 	if(newFocus == nullptr){
 		if(currentCursorFocus != nullptr){
-			if(currentCursorFocus->needSetMouseUnfocusedAtCursorOutOfBound()){
-				setEnter(nullptr);
-			} else if(pressedMouseButtons.none()){
+			if(currentCursorFocus->shouldDropFocusAtCursorQuitBound() || pressedMouseButtons.none()){
 				setEnter(nullptr);
 			}
 		}
@@ -81,32 +76,36 @@ void UI::Root::determinShiftFocus(Elem* newFocus){
 	}
 }
 
-void UI::Root::resize(const unsigned w, const unsigned h){
+void UI::Root::resize(const int w, const int h){
 	width = static_cast<float>(w);
 	height = static_cast<float>(h);
-	root->setSize(static_cast<float>(w), static_cast<float>(h));
+	if(currentScene)currentScene->setSize(width, height);
+
+	determinShiftFocus(nullptr);
 
 	//TODO apply margin with FBO, not directly
 	// projection.setOrthogonal(-marginX, -marginY, static_cast<float>(w) + marginX * 2.0f, static_cast<float>(h) + marginY * 2.0f);
-	projection.setOrthogonal(0, 0, static_cast<float>(w), static_cast<float>(h));
+	projection.setOrthogonal(0, 0, width, height);
 
 	hoverTableManager.clear();
+	rootDialog.resize();
 }
 
 void UI::Root::render() const{
-	root->draw();
+	if(currentScene == nullptr)return;
+	currentScene->draw();
 }
 
 void UI::Root::renderBase() const{
-	root->drawBase();
-
+	if(currentScene == nullptr)return;
+	currentScene->drawBase();
 }
 
-void UI::Root::renderBaseAbove() const{
+void UI::Root::renderBase_HoverTable() const{
 	hoverTableManager.renderBase();
 }
 
-void UI::Root::renderAbove() const{
+void UI::Root::render_HoverTable() const{
 	hoverTableManager.render();
 }
 
@@ -141,15 +140,11 @@ void UI::Root::onScroll() const{
 }
 
 void UI::Root::disable(){
-	root->setVisible(false);
-	root->setTouchbility(TouchbilityFlags::disabled);
-	allHidden = true;
+	isHidden = true;
 }
 
 void UI::Root::enable(){
-	root->setVisible(true);
-	root->setTouchbility(TouchbilityFlags::childrenOnly);
-	allHidden = false;
+	isHidden = false;
 }
 
 bool UI::Root::onDrag(const int id, int mode) const{
@@ -229,7 +224,7 @@ void UI::Root::registerCtrl() const{
 	});
 }
 
-void UI::Root::setEnter(Elem* elem){
+void UI::Root::setEnter(Widget* elem){
 	if(elem == currentCursorFocus) return;
 
 	if(currentCursorFocus != nullptr){

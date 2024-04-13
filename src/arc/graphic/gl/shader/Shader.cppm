@@ -330,45 +330,45 @@ export namespace GL {
 			drawer = run;
 		}
 
-		void setColor(const std::string& name, const Graphic::Color& color) const {
+		void setColor(const std::string_view name, const Graphic::Color& color) const {
 			uniformColor(getLocation(name), color);
 		}
 
-		void setBool(const std::string& name, const bool value) const {
+		void setBool(const std::string_view name, const bool value) const {
 			glUniform1i(getLocation(name), static_cast<int>(value));
 		}
 
 		// ------------------------------------------------------------------------
-		void setInt(const std::string& name, const int value) const {
+		void setInt(const std::string_view name, const int value) const {
 			glUniform1i(getLocation(name), value);
 		}
 
 		// ------------------------------------------------------------------------
-		void setFloat(const std::string& name, const float value) const {
+		void setFloat(const std::string_view name, const float value) const {
 			glUniform1f(getLocation(name), value);
 		}
 
 		// ------------------------------------------------------------------------
-		void setVec2(const std::string& name, const float x, const float y) const {
+		void setVec2(const std::string_view name, const float x, const float y) const {
 			glUniform2f(getLocation(name), x, y);
 		}
 
-		void setVec2(const std::string& name, const Geom::Vec2 &vector) const {
+		void setVec2(const std::string_view name, const Geom::Vec2 &vector) const {
 			setVec2(name, vector.getX(), vector.getY());
 		}
 
 		// ------------------------------------------------------------------------
-		void setMat3(const std::string& name, const Geom::Matrix3D &mat) const {
+		void setMat3(const std::string_view name, const Geom::Matrix3D &mat) const {
 			glUniformMatrix3fv(getLocation(name), 1, GL_FALSE, mat.getRawVal());
 		}
 
-		void setTexture2D(const std::string& name, const Texture* texture, const int offset = 0) const {
+		void setTexture2D(const std::string_view name, const Texture* texture, const int offset = 0) const {
 			texture->active(offset);
 
 			uniformTexture(getLocation(name), offset);
 		}
 
-		void setTexture2D(const std::string &name, const int offset = 0) const {
+		void setTexture2D(const std::string_view name, const int offset = 0) const {
 			uniformTexture(getLocation(name), offset);
 		}
 
@@ -376,8 +376,7 @@ export namespace GL {
 			drawer(*this);
 		}
 
-		template <Concepts::Invokable<void(const Shader&)> func>
-		void applyDynamic(const func& f) const {
+		void applyDynamic(Concepts::Invokable<void(const Shader&)> auto&& f) const {
 			drawer(*this);
 			f(*this);
 		}

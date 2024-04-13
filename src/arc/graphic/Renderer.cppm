@@ -14,6 +14,11 @@ import Graphic.PostProcessor;
 import Geom.Vector2D;
 
 
+namespace UI{
+	struct SeperateDrawable;
+}
+
+
 using namespace GL;
 using namespace Graphic;
 
@@ -55,11 +60,11 @@ export namespace Event{
 }
 
 export namespace Core{
-	class Renderer : virtual public ResizeableUInt{
+	class Renderer : virtual public ResizeableInt{
 	protected:
-		std::vector<ResizeableUInt*> synchronizedSizedObjects{};
+		std::vector<ResizeableInt*> synchronizedSizedObjects{};
 
-		unsigned int width{200}, height{200};
+		int width{200}, height{200};
 		Event::EventManager drawControlHook{
 				Event::indexOf<Event::Draw_After>(),
 				Event::indexOf<Event::Draw_Post>(),
@@ -83,7 +88,7 @@ export namespace Core{
 
 		std::stack<FrameBuffer*> frameStack{};
 
-		[[nodiscard]] Renderer(const unsigned int w, const unsigned int h):
+		[[nodiscard]] Renderer(const int w, const int h):
 			defaultFrameBuffer{w, h}, uiPostBuffer{w, h}, effectBuffer{w, h}{
 			contextFrameBuffer = &defaultFrameBuffer;
 
@@ -102,11 +107,11 @@ export namespace Core{
 
 		Renderer& operator=(const Renderer& other) = delete;
 
-		[[nodiscard]] unsigned int getWidth() const{
+		[[nodiscard]] int getWidth() const{
 			return width;
 		}
 
-		[[nodiscard]] unsigned int getHeight() const{
+		[[nodiscard]] int getHeight() const{
 			return height;
 		}
 
@@ -148,15 +153,15 @@ export namespace Core{
 
 		virtual void frameEnd();
 
-		virtual void renderUIBelow();
+		virtual void renderUI();
 
-		virtual void renderUIAbove();
+		virtual void processUISperateDraw(const UI::SeperateDrawable* drawable);
 
 		[[nodiscard]] bool sustainSize(const unsigned int w, const unsigned int h) const{
 			return w == width && h == height;
 		}
 
-		void resize(unsigned int w, unsigned int h) override;
+		void resize(int w, int h) override;
 
 		virtual void draw();
 

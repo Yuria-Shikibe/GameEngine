@@ -9,6 +9,7 @@ import Assets.Graphic;
 import RuntimeException;
 import Core;
 import Geom.Matrix3D;
+import UI.SeperateDrawable;
 
 void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask) {
 	if (frameStack.top() == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
@@ -31,7 +32,6 @@ void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Col
 
 	contextFrameBuffer->clearColorAll(initColor);
 	contextFrameBuffer->clearDepth();
-	glClearColor(initColor.r, initColor.g, initColor.b, initColor.a);
 	glClearDepth(0.0f); //TODO why?????????
 	glClear(mask);
 }
@@ -69,15 +69,38 @@ void Core::Renderer::frameEnd() {
 }
 
 
-//TODO merge these two function
-void Core::Renderer::renderUIBelow() {
-	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
 
+
+//TODO merge these two function
+void Core::Renderer::renderUI() {
+	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
 	Core::batchGroup.batchOverlay->setProjection(Core::uiRoot->getPorj());
 
+	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
+	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
+
+	processUISperateDraw(Core::uiRoot->currentScene);
+	processUISperateDraw(&Core::uiRoot->rootDialog);
+
+
+	const auto [dropped, focused] = Core::uiRoot->hoverTableManager.getDrawSeq();
+
+	for (auto&& toDraw : focused){
+		processUISperateDraw(toDraw);
+	}
+
+	for (auto&& toDraw : dropped){
+		processUISperateDraw(toDraw);
+	}
+
+	batchGroup.batchOverlay->setProjection(mat);
+	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
+}
+
+void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 	uiBlurMask.bind();
 	uiBlurMask.clearColor();
-	Core::uiRoot->renderBase();
+	drawable->drawBase();
 	Graphic::Batch::flush();
 
 	Assets::PostProcessors::blur_Far->apply(contextFrameBuffer, &effectBuffer);
@@ -86,61 +109,22 @@ void Core::Renderer::renderUIBelow() {
 	contextFrameBuffer->getColorAttachments().front()->active(1);
 	effectBuffer.getColorAttachments().front()->active(0);
 
-	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
-		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.75f).setA(0.75f));
-		shader.setColor("srcColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.856f));
-	});
-
-	Renderer::frameBegin(&uiPostBuffer);
-
-	uiRoot->render();
-	Graphic::Batch::flush();
-
-	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
-	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
-
-	frameEnd(Assets::PostProcessors::bloom.get());
-
-	batchGroup.batchOverlay->setProjection(mat);
-	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
-}
-
-void Core::Renderer::renderUIAbove(){
-	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
-
-	batchGroup.batchOverlay->setProjection(uiRoot->getPorj());
-
-	uiBlurMask.bind();
-	uiBlurMask.clearColor();
-	uiRoot->renderBaseAbove();
-	Graphic::Batch::flush();
-
-	Assets::PostProcessors::blur_Far->apply(contextFrameBuffer, &effectBuffer);
-
-	uiBlurMask.getMaskBuffer().getColorAttachments().front()->active(2);
-	contextFrameBuffer->getColorAttachments().front()->active(1);
-	effectBuffer.getColorAttachments().front()->active(0);
 
 	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
-		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.75f).setA(0.75f));
-		shader.setColor("srcColor", Colors::AQUA_SKY.createLerp(Colors::LIGHT_GRAY, 0.856f));
+		shader.setColor("mixColor", Colors::GRAY);
+		// shader.setColor("mixColor", AQUA_SKY.createLerp(Colors::GRAY, 0.95f).setA(0.25f));
+		// shader.setColor("mixColor", Colors::GRAY);
+		shader.setColor("srcColor", Colors::GRAY);
 	});
+	Graphic::Blendings::Normal.apply();
 
 	Renderer::frameBegin(&uiPostBuffer);
-
-	uiRoot->renderAbove();
+	drawable->draw();
 	Graphic::Batch::flush();
-
-	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
-	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
-
 	frameEnd(Assets::PostProcessors::bloom.get());
-
-	batchGroup.batchOverlay->setProjection(mat);
-	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
 }
 
-void Core::Renderer::resize(const unsigned w, const unsigned h) {
+void Core::Renderer::resize(const int w, const int h) {
 	if(sustainSize(w, h)) return;
 
 	width  = w;
@@ -177,9 +161,7 @@ void Core::Renderer::draw(){
 
 	drawControlHook.fire(draw_after);
 
-	renderUIBelow();
-
-	renderUIAbove();
+	renderUI();
 
 	Graphic::Draw::color();
 	Graphic::Draw::mixColor();

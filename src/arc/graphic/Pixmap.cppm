@@ -17,24 +17,26 @@ using colorBits = Graphic::Color::ColorBits;
 
 export namespace Graphic{
     class Pixmap{
+    public:
+        using DataType = unsigned char;
     protected:
-        unsigned int width{ 1 };
-        unsigned int height{ 1 };
+        int width{ 1 };
+        int height{ 1 };
         //TODO is this necessay?
         //unsigned int bpp{ 4 };
 
-        std::unique_ptr<unsigned char[]> bitmapData{nullptr};
+        std::unique_ptr<DataType[]> bitmapData{nullptr};
 
     public:
-        static constexpr unsigned int Channels = 4; //FOR RGBA
+        static constexpr int Channels = 4; //FOR RGBA
 
         [[nodiscard]] Pixmap() = default;
 
-        [[nodiscard]] unsigned getWidth() const {
+        [[nodiscard]] int getWidth() const {
             return width;
         }
 
-        [[nodiscard]] unsigned getHeight() const {
+        [[nodiscard]] int getHeight() const {
             return height;
         }
 
@@ -42,19 +44,19 @@ export namespace Graphic{
         //     return bpp;
         // }
 
-        [[nodiscard]] unsigned char* release() && {
+        [[nodiscard]] DataType* release() && {
             return bitmapData.release();
         }
 
-        [[nodiscard]] unsigned char* data() const & {
+        [[nodiscard]] DataType* data() const & {
             return bitmapData.get();
         }
 
-        [[nodiscard]] std::unique_ptr<unsigned char[]> data() && {
+        [[nodiscard]] std::unique_ptr<DataType[]> data() && {
             return std::move(bitmapData);
         }
 
-        [[nodiscard]] Pixmap(const unsigned int width, const unsigned int height)
+        [[nodiscard]] Pixmap(const int width, const int height)
             : width(width),
               height(height) {
 
@@ -71,14 +73,10 @@ export namespace Graphic{
             loadFrom(texture2D);
         }
 
-        Pixmap(const unsigned int width, const unsigned int height, unsigned char* data)
+        Pixmap(const int width, const int height, DataType* data)
                     : width(width),
                       height(height) {
             this->bitmapData.reset(data);
-        }
-
-        Pixmap(const int width, const int height, unsigned char* data) : Pixmap(static_cast<unsigned int>(width), static_cast<unsigned int>(height) ,data) {
-
         }
 
         Pixmap(const Pixmap& other)
@@ -118,7 +116,7 @@ export namespace Graphic{
             return bitmapData != nullptr && dataSize() > 0;
         }
 
-        void create(const unsigned int width, const unsigned int height){
+        void create(const int width, const int height){
             bitmapData.reset();
             this->width = width;
             this->height = height;
@@ -126,7 +124,7 @@ export namespace Graphic{
             auto size = this->size();
             if(!size)return;
 
-            bitmapData = std::make_unique<unsigned char[]>(size);
+            bitmapData = std::make_unique<DataType[]>(size);
         }
 
         void free() {
@@ -135,7 +133,7 @@ export namespace Graphic{
         }
 
         void loadFrom(const OS::File& file) {
-            unsigned b;
+            int b;
             this->bitmapData = stbi::loadPng(file, width, height, b, Channels);
         }
 
@@ -179,14 +177,14 @@ export namespace Graphic{
             return tex;
         }
 
-        [[nodiscard]] constexpr auto dataIndex(const unsigned int x, const unsigned int y) const {
+        [[nodiscard]] constexpr auto dataIndex(const int x, const int y) const {
             if(x > width || y > height)throw ext::RuntimeException{"Array Index Out Of Bound!"};
             return (y * width + x) * Channels;
         }
 
-        [[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const {
+        [[nodiscard]] std::unique_ptr<DataType[]> copyData() const {
             const auto size = this->size();
-            auto ptr = std::make_unique<unsigned char[]>(size);
+            auto ptr = std::make_unique<DataType[]>(size);
             std::memcpy(ptr.get(), bitmapData.get(), size);
 
             return std::move(ptr);
@@ -200,21 +198,21 @@ export namespace Graphic{
             return width * height * Channels;
         }
 
-        void setRaw(const unsigned int x, const unsigned int y, const colorBits colorBit) const{
+        void setRaw(const int x, const int y, const colorBits colorBit) const{
             auto* index = reinterpret_cast<colorBits*>(bitmapData.get() + dataIndex(x, y));
             *index = colorBit;
         }
 
-        void set(const unsigned int x, const unsigned int y, const Graphic::Color& color) const{
+        void set(const int x, const int y, const Graphic::Color& color) const{
             setRaw(x, y, color.argb8888());
         }
 
-        [[nodiscard]] colorBits getRaw(const unsigned int x, const unsigned int y) const {
+        [[nodiscard]] colorBits getRaw(const int x, const int y) const {
             const auto* index = reinterpret_cast<colorBits*>(bitmapData.get() + dataIndex(x, y));
             return *index;
         }
 
-        [[nodiscard]] Graphic::Color get(const unsigned int x, const unsigned int y) const {
+        [[nodiscard]] Graphic::Color get(const int x, const int y) const {
             const auto* index = bitmapData.get() + dataIndex(x, y);
             return Color{
                 static_cast<float>(index[0]) / 255.0f,
@@ -224,7 +222,7 @@ export namespace Graphic{
             };
         }
 
-        [[nodiscard]] unsigned int getRaw(const size_t index) const {
+        [[nodiscard]] int getRaw(const size_t index) const {
             const auto* i = reinterpret_cast<colorBits*>(bitmapData.get() + index);
             return *i;
         }
@@ -275,12 +273,12 @@ export namespace Graphic{
                 std::memcpy(bitmapData.get() + rowDataCount * y, ptr.get() + (getHeight() - y - 1) * rowDataCount, rowDataCount);
             }
         }
-        void blend(const unsigned int x, const unsigned int y, const Color& color) const {
+        void blend(const int x, const int y, const Color& color) const {
             const colorBits raw = getRaw(x, y);
             setRaw(x, y, blend(raw, color.rgba8888()));
         }
 
-        [[nodiscard]] Pixmap crop(const unsigned int srcX, const unsigned int srcY, const unsigned int tWidth, const unsigned int tHeight) const {
+        [[nodiscard]] Pixmap crop(const int srcX, const int srcY, const int tWidth, const int tHeight) const {
             if(!valid())throw ext::RuntimeException{"Resource Released!"};
             Pixmap pixmap{tWidth, tHeight};
             pixmap.draw(*this, 0, 0, srcX, srcY, width, height);
@@ -295,23 +293,23 @@ export namespace Graphic{
             draw(pixmap, 0, 0);
         }
 
-        void draw(const Pixmap& pixmap, const unsigned int x, const unsigned int y, const bool blending = true) const {
+        void draw(const Pixmap& pixmap, const int x, const int y, const bool blending = true) const {
             draw(pixmap, 0, 0, pixmap.width, pixmap.height, x, y, pixmap.width, pixmap.height, false, blending);
         }
 
      /** Draws an area from another Pixmap to this Pixmap. */
-        void draw(const Pixmap& pixmap, const unsigned int x, const unsigned int y, const unsigned int width, const unsigned int height, const bool filtering = true, const bool blending = true) const {
+        void draw(const Pixmap& pixmap, const int x, const int y, const int width, const int height, const bool filtering = true, const bool blending = true) const {
             draw(pixmap, 0, 0, pixmap.width, pixmap.height, x, y, width, height, filtering, blending);
         }
 
      /** Draws an area from another Pixmap to this Pixmap. */
-        void draw(const Pixmap& pixmap, const unsigned int x, const unsigned int y, const unsigned int srcx, const unsigned int srcy, const unsigned int srcWidth, const unsigned int srcHeight) const {
+        void draw(const Pixmap& pixmap, const int x, const int y, const int srcx, const int srcy, const int srcWidth, const int srcHeight) const {
             draw(pixmap, srcx, srcy, srcWidth, srcHeight, x, y, srcWidth, srcHeight);
         }
 
-        void draw(const Pixmap& pixmap, const unsigned int srcx, const unsigned int srcy, const unsigned int srcWidth, const unsigned int srcHeight, const unsigned int dstx, const unsigned int dsty, const unsigned int dstWidth, const unsigned int dstHeight, const bool filtering = false, const bool blending = true) const {
-            const unsigned int owidth = pixmap.width;
-            const unsigned int oheight = pixmap.height;
+        void draw(const Pixmap& pixmap, const int srcx, const int srcy, const int srcWidth, const int srcHeight, const int dstx, const int dsty, const int dstWidth, const int dstHeight, const bool filtering = false, const bool blending = true) const {
+            const int owidth = pixmap.width;
+            const int oheight = pixmap.height;
 
             //don't bother drawing invalid regions
             if(srcWidth == 0 || srcHeight == 0 || dstWidth == 0 || dstHeight == 0){
@@ -319,10 +317,10 @@ export namespace Graphic{
             }
 
             if(srcWidth == dstWidth && srcHeight == dstHeight){
-                unsigned int sx;
-                unsigned int dx;
-                unsigned int sy = srcy;
-                unsigned int dy = dsty;
+                int sx;
+                int dx;
+                int sy = srcy;
+                int dy = dsty;
 
                 if(blending){
                     for(; sy < srcy + srcHeight; sy++, dy++){
@@ -349,20 +347,20 @@ export namespace Graphic{
                     //blit with bilinear filtering
                     const float x_ratio = (static_cast<float>(srcWidth) - 1) / static_cast<float>(dstWidth);
                     const float y_ratio = (static_cast<float>(srcHeight) - 1) / static_cast<float>(dstHeight);
-                    const unsigned int rX = std::max(Math::round<unsigned>(x_ratio), 1u);
-                    const unsigned int rY = std::max(Math::round<unsigned>(y_ratio), 1u);
-                    const unsigned int spitch = Pixmap::Channels * owidth;
+                    const int rX = Math::max(Math::round<int>(x_ratio), 1);
+                    const int rY = Math::max(Math::round<int>(y_ratio), 1);
+                    const int spitch = Pixmap::Channels * owidth;
 
-                    for(unsigned int i = 0; i < dstHeight; i++){
-                        const unsigned int sy = static_cast<unsigned int>(static_cast<float>(i) * y_ratio) + srcy;
-                        const unsigned int dy = i + dsty;
+                    for(int i = 0; i < dstHeight; i++){
+                        const int sy = static_cast<int>(static_cast<float>(i) * y_ratio) + srcy;
+                        const int dy = i + dsty;
                         const float ydiff = y_ratio * static_cast<float>(i) + static_cast<float>(srcy - sy);
 
                         if(sy >= oheight || dy >= height) break;
 
-                        for(unsigned int j = 0; j < dstWidth; j++){
-                            const unsigned int sx = static_cast<unsigned int>(static_cast<float>(j) * x_ratio) + srcx;
-                            const unsigned int dx = j + dstx;
+                        for(int j = 0; j < dstWidth; j++){
+                            const int sx = static_cast<int>(static_cast<float>(j) * x_ratio) + srcx;
+                            const int dx = j + dstx;
                             const float xdiff = x_ratio * static_cast<float>(j) + static_cast<float>(srcx - sx);
                             if(sx >= owidth || dx >= width) break;
 
@@ -403,24 +401,24 @@ export namespace Graphic{
                                 static_cast<float>((c4 & Color::a_Mask) >> Color::a_Offset) * td
                             );
 
-                            const unsigned int srccol = r << Color::r_Offset | g << Color::g_Offset | b << Color::b_Offset | a << Color::a_Offset;
+                            const int srccol = r << Color::r_Offset | g << Color::g_Offset | b << Color::b_Offset | a << Color::a_Offset;
 
                             setRaw(dx, dy, !blending ? srccol : blend(srccol, getRaw(dx, dy)));
                         }
                     }
                 }else{
                     //blit with nearest neighbor filtering
-                    const unsigned int xratio = (srcWidth << 16) / dstWidth + 1;
-                    const unsigned int yratio = (srcHeight << 16) / dstHeight + 1;
+                    const int xratio = (srcWidth << 16) / dstWidth + 1;
+                    const int yratio = (srcHeight << 16) / dstHeight + 1;
 
-                    for(unsigned int i = 0; i < dstHeight; i++){
-                        const unsigned int sy = (i * yratio >> 16) + srcy;
-                        const unsigned int dy = i + dsty;
+                    for(int i = 0; i < dstHeight; i++){
+                        const int sy = (i * yratio >> 16) + srcy;
+                        const int dy = i + dsty;
                         if(sy >= oheight || dy >= height) break;
 
-                        for(unsigned int j = 0; j < dstWidth; j++){
-                            const unsigned int sx = (j * xratio >> 16) + srcx;
-                            const unsigned int dx = j + dstx;
+                        for(int j = 0; j < dstWidth; j++){
+                            const int sx = (j * xratio >> 16) + srcx;
+                            const int dx = j + dstx;
                             if(sx >= owidth || dx >= width) break;
 
                             setRaw(dx, dy, !blending ? pixmap.getRaw(sx, sy) : blend(pixmap.getRaw(sx, sy), getRaw(dx, dy)));
@@ -431,10 +429,10 @@ export namespace Graphic{
         }
 
         //If the area of the pixmaps are the same, the longer one row it be, the faster the function works.
-        void set(const Pixmap& pixmap, const unsigned int dstx, const unsigned int dsty) const {
-            const unsigned int rowDataCount = pixmap.getWidth() * Channels;
+        void set(const Pixmap& pixmap, const int dstx, const int dsty) const {
+            const int rowDataCount = pixmap.getWidth() * Channels;
 
-            for(unsigned int y = 0; y < pixmap.getHeight(); ++y) {
+            for(int y = 0; y < pixmap.getHeight(); ++y) {
                 const auto indexDst =  this->dataIndex(dstx, dsty + y);
                 const auto indexSrc = pixmap.dataIndex(0   ,        y);
 
@@ -442,17 +440,17 @@ export namespace Graphic{
             }
         }
 
-        [[nodiscard]] Pixmap subMap(const unsigned int srcx, const unsigned int srcy, const unsigned int width, const unsigned int height) const{
+        [[nodiscard]] Pixmap subMap(const int srcx, const int srcy, const int width, const int height) const{
             if(!valid())throw ext::RuntimeException{"Resource Released!"};
             if(srcx + width > this->width || srcy + height > this->height) {
                 throw ext::IllegalArguments{"Sub Region Larger Than Source Pixmap!"};
             }
 
-            const unsigned int rowDataCount = width * Channels;
+            const int rowDataCount = width * Channels;
 
             Pixmap newMap{width, height};
 
-            for(unsigned int y = 0; y < height; ++y) {
+            for(int y = 0; y < height; ++y) {
                 const auto indexDst = newMap.dataIndex(0   ,        y);
                 const auto indexSrc =  this->dataIndex(srcx, srcy + y);
 

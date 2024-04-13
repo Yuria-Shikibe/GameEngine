@@ -123,7 +123,7 @@ std::stringstream sstream{};
 void setupUITest(){
 	const auto HUD = new UI::Table{};
 
-	Core::uiRoot->root->transferElem(HUD).fillParent().setAlign(Align::center);
+	Core::uiRoot->currentScene->transferElem(HUD).fillParent().setAlign(Align::center);
 
 	HUD->relativeLayoutFormat = false;
 	HUD->setBorderZero();
@@ -134,7 +134,7 @@ void setupUITest(){
 			   pane.setItem<UI::Label>([](UI::Label& label){
 				   label.setText([](){
 					   sstream.str("");
-					   sstream << "${font#tele}${scl#[0.55]}(" << std::fixed << std::setprecision(2) << Core::camera->
+					   sstream << "$<scl#[0.55]>(" << std::fixed << std::setprecision(2) << Core::camera->
 						   getPosition().x << ", " <<
 						   Core::camera->getPosition().y << ") | " << std::to_string(OS::getFPS());
 					   sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
@@ -167,19 +167,51 @@ void setupUITest(){
 				   t.add<UI::Button>([i](UI::Button& button){
 					   button.setCall([i](bool){
 						   std::cout << i << std::endl;
+
+						   Core::uiRoot->showDialog(true, [i](UI::Table& hint){
+							   hint.add<UI::Button>([i](UI::Button& buttonDialog){
+								   buttonDialog.setCall([](bool){
+									   Core::uiRoot->showDialog(true, [](UI::Table& inner){
+										   inner.add<UI::Label>([](UI::Label& l){
+											   l.setWrap();
+											   l.setText("Label$<c#PALE_GREEN>$<sub>Test");
+										   }).fillParent().setAlign(Align::center);
+									   });
+								   });
+							   }).setSize(600.0f, 600.0f, true).setAlign(Align::center);
+						   });
 					   });
+
 					   button.setHoverTableBuilder({
-							.builder = [i](UI::Table& hint){
-								hint.setMinimumSize({600, 300});
-								hint.setCellAlignMode(Align::Mode::top_left);
-								hint.add<UI::Label>([i](UI::Label& label){
-									label.usingGlyphHeight = label.usingGlyphWidth = true;
-									label.setText(std::format("Hint Hover Table\nButton{}", i));
-									label.getGlyphLayout()->setSCale(0.65f);
-								}).expand();
-								hint.PointCheck = 150;
-							}
-					   });
+							   .builder = [i](UI::Table& hint){
+								   // hint.setMinimumSize({600, 300});
+								   hint.setCellAlignMode(Align::Mode::top_left);
+								   hint.add<UI::Label>([i](UI::Label& label){
+									   label.usingGlyphHeight = label.usingGlyphWidth = true;
+									   label.setText(
+										   std::format("<Hint Hover Table>\nButton$<sub>$<c#PALE_GREEN>{}$<\\sub>", i));
+									   label.getGlyphLayout()->setSCale(0.65f);
+									   label.setEmptyDrawer();
+									   label.getBorder().expand(4.0f);
+								   }).expand().endLine();
+								   hint.add<UI::Button>([i](UI::Button& button){
+									   button.setHoverTableBuilder({
+											   .builder = [](UI::Table& hintInner){
+												   hintInner.setCellAlignMode(Align::Mode::top_left);
+												   hintInner.add<UI::Label>([](UI::Label& label){
+													   label.usingGlyphHeight = label.usingGlyphWidth = true;
+													   label.setText(std::format(
+														   "<Hover Table>$<sub>$<c#PALE_GREEN>{}$<\\sub>", "Nesting"));
+													   label.getGlyphLayout()->setSCale(0.65f);
+													   label.setEmptyDrawer();
+													   label.getBorder().expand(4.0f);
+												   }).expand().endLine();
+											   }
+										   });
+								   }).setHeight(120.0f).expandY().fillParentX();
+								   hint.PointCheck = 150;
+							   }
+						   });
 				   });
 			   }
 		   }).fillParent();
@@ -188,7 +220,7 @@ void setupUITest(){
 			   t.setEmptyDrawer();
 			   auto& slider = t.add<UI::SliderBar>([](UI::SliderBar& s){
 				   s.setClampedOnHori();
-			   }).fillParent().lineFeed().as<UI::SliderBar>();
+			   }).fillParent().endLine().as<UI::SliderBar>();
 
 			   t.add<UI::ProgressBar>([&slider](UI::ProgressBar& bar){
 				   bar.progressGetter = [&slider]{
@@ -211,10 +243,10 @@ void setupUITest(){
 
 
 	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::Elem>();
+		   table.add<UI::Widget>();
 		   table.lineFeed();
-		   table.add<UI::Elem>();
-		   table.add<UI::Elem>();
+		   table.add<UI::Widget>();
+		   table.add<UI::Widget>();
 	   })
 	   .setAlign(Align::Mode::bottom_left)
 	   .setSizeScale(0.25f, 0.2f)
@@ -240,16 +272,16 @@ void setupUITest(){
 					paneT.setHeight(600);
 					paneT.setFillparentX();
 
-					paneT.add<UI::Elem>();
+					paneT.add<UI::Widget>();
 					paneT.lineFeed();
-					paneT.add<UI::Elem>();
-					paneT.add<UI::Elem>();
+					paneT.add<UI::Widget>();
+					paneT.add<UI::Widget>();
 				});
 			});
 			// rt->add(new UI::Elem);
 			rt.lineFeed();
-			rt.transferElem(new UI::Elem{});
-			rt.transferElem(new UI::Elem{});
+			rt.transferElem(new UI::Widget{});
+			rt.transferElem(new UI::Widget{});
 		});
 
 		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
@@ -356,7 +388,7 @@ void genRandomEntities(){
 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
 	ptr->trans.vec.set(0, 0);
 	Game::EntityManage::add(ptr);
-	Game::read(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox)"}, ptr->hitBox);
+	Game::read(OS::File{Assets::assetsDir.subFile(R"(hitbox\pester.hitbox)")}, ptr->hitBox);
 	ptr->velo.vec.set(0, 0);
 	ptr->setHealth(10000);
 	ptr->init(Game::Content::Builtin::test);
@@ -392,7 +424,7 @@ int main(const int argc, char* argv[]){
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
-		/*Game::core->effectManager->render();*/
+		Game::core->effectManager->render();
 		Graphic::Batch::flush();
 	});
 
@@ -424,8 +456,6 @@ int main(const int argc, char* argv[]){
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
-
-	const auto coordCenter = Font::obtainLayoutPtr();
 
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
@@ -468,10 +498,38 @@ int main(const int argc, char* argv[]){
 		renderer.frameEnd(merger);
 	});
 
+	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
+		Core::Renderer& renderer = *event.renderer;
+		renderer.frameBegin(&acceptBuffer1);
+
+		acceptBuffer1.clearColor(Graphic::Colors::BLACK);
+
+		GL::enable(GL::Test::DEPTH);
+		GL::setDepthFunc(GL::Func::GEQUAL);
+		GL::setDepthMask(true);
+
+		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
+		Game::EntityManage::render();
+
+		Game::core->effectManager->render();
+
+		// auto* region = Core::assetsManager->getAtlas().find("base-pester");
+		// //auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
+
+		Graphic::Batch::flush<BatchWorld>();
+
+		GL::setDepthMask(false);
+		GL::disable(GL::Test::DEPTH);
+		// GL::setDepthMask(false);
+
+		GL::Blendings::Normal.apply();
+		renderer.frameEnd(merger);
+	});
 
 
-	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& event){
-		event.renderer->frameBegin(&frameBuffer);
+
+	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
+		event.renderer->frameBegin(&event.renderer->effectBuffer);
 
 		Draw::Line::setLineStroke(5);
 		Draw::color(Colors::GRAY);
@@ -511,12 +569,6 @@ int main(const int argc, char* argv[]){
 
 			Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 			Draw::color();
-
-			// Font::glyphParser->parse(coordCenter, R"()");
-			//
-			// coordCenter->offset.set(Core::renderer->getCenterX(), Core::renderer->getCenterY()).add(45, 45);
-			// coordCenter->setAlign(Align::Mode::bottom_left);
-			// coordCenter->render();
 
 			Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
 

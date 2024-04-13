@@ -40,7 +40,7 @@ void Assets::Manager::pullRequest() {
 	loader.begin();
 }
 
-void Assets::Manager::load_Visible(const unsigned width, const unsigned height, Core::Renderer* renderer) {
+void Assets::Manager::load_Visible(const int width, const int height, Core::Renderer* renderer) {
 
 	auto loadRenderer = Assets::LoaderRenderer{width, height, &loader};
 	renderer->registerSynchronizedResizableObject(&loadRenderer);

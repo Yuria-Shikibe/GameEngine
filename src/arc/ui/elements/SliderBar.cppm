@@ -14,7 +14,7 @@ import Geom.Rect_Orthogonal;
 export namespace UI{
 	struct SliderBarDrawer;
 
-	class SliderBar : public Elem{
+	class SliderBar : public Widget{
 	protected:
 		SliderBarDrawer* barDrawer{nullptr};
 		Geom::Vec2 barLastSize{10.0f, 10.0f};
@@ -101,11 +101,11 @@ export namespace UI{
 			inputListener.on<UI::CurosrExbound>([this](const auto& event) {
 				pressed = false;
 				resumeLast();
-				Elem::setFocusedScroll(false);
+				Widget::setFocusedScroll(false);
 			});
 
 			inputListener.on<UI::CurosrInbound>([this](const auto& event) {
-				Elem::setFocusedScroll(true);
+				Widget::setFocusedScroll(true);
 			});
 
 			quitInboundFocus = false;
@@ -177,7 +177,7 @@ export namespace UI{
 				barLastSize.y = barBaseSize.y;
 			}
 
-			Elem::update(delta);
+			Widget::update(delta);
 		}
 
 		void applyDefDrawer() override;

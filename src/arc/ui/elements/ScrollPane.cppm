@@ -41,7 +41,7 @@ export namespace UI {
 
 		ScrollBarDrawer* scrollBarDrawer{nullptr};
 
-		Elem* getItem() const{
+		Widget* getItem() const{
 			return children.front().get();
 		};
 
@@ -145,7 +145,7 @@ export namespace UI {
 			calAbsoluteSrc(parent);
 		}
 
-		void calAbsoluteSrc(Elem* parent) override{
+		void calAbsoluteSrc(Widget* parent) override{
 			Geom::Vec2 vec{parent->getAbsSrc()};
 			vec.add(bound.getSrcX(), bound.getSrcY());
 			//TODO scroll offset check
@@ -165,7 +165,7 @@ export namespace UI {
 			}
 		}
 
-		template <Concepts::Derived<Elem> T>
+		template <Concepts::Derived<Widget> T>
 		void setItem(Concepts::Invokable<void(T&)> auto&& func, const int depth = std::numeric_limits<int>::max()) {
 			auto ptr = std::make_unique<T>();
 
@@ -179,8 +179,8 @@ export namespace UI {
 
 		//TODO this has bug when resized !
 		//If layouted multible times, this will shrink itemsize!
-		Rect getFilledChildrenBound(Elem* elem) const override {
-			Rect rect = Elem::getFilledChildrenBound(elem);
+		Rect getFilledChildrenBound(Widget* elem) const override {
+			Rect rect = Widget::getFilledChildrenBound(elem);
 
 			if(hoverScroller)return rect;
 
@@ -196,7 +196,7 @@ export namespace UI {
 		}
 
 		[[nodiscard]] bool hintInbound_validToParent(const Geom::Vec2 screenPos) override {
-			return Elem::isInbound(screenPos) && !inbound_scrollBars(screenPos);
+			return Widget::isInbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
 		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2 screenPos) const {
@@ -217,12 +217,12 @@ export namespace UI {
 
 
 		[[nodiscard]] bool isInbound(const Geom::Vec2 screenPos) override {
-			if(Elem::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {
-				Elem::setFocusedScroll(true);
+			if(Widget::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {
+				Widget::setFocusedScroll(true);
 				return inbound_scrollBars(screenPos);
 			}
 
-			Elem::setFocusedScroll(false);
+			Widget::setFocusedScroll(false);
 			return false;
 		}
 

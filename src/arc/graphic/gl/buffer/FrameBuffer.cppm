@@ -15,10 +15,10 @@ import RuntimeException;
 import std;
 
 export namespace GL{
-	class FrameBuffer : public GLObject, public Graphic::ResizeableUInt
+	class FrameBuffer : public GLObject, public Graphic::ResizeableInt
 	{
 	protected:
-		unsigned int width = 0, height = 0;
+		int width = 0, height = 0;
 		std::vector<std::unique_ptr<Texture2D>> attachmentsColor{};
 		std::unique_ptr<DepthBuffer> attachmentsDepth{nullptr};
 		std::unique_ptr<Texture2D> attachmentsStencil{nullptr};
@@ -26,7 +26,7 @@ export namespace GL{
 		std::unique_ptr<RenderBuffer> renderBuffer{nullptr};
 
 	public:
-		static constexpr unsigned RecommendedMinSize = 200;
+		static constexpr int RecommendedMinSize = 200;
 		static constexpr std::array<GLenum, 32> ALL_COLOR_ATTACHMENTS {
 			[] {
 				std::array<GLenum, 32> arr{};
@@ -45,7 +45,7 @@ export namespace GL{
 
 		FrameBuffer() : GLObject{GL_FRAMEBUFFER}{}
 
-		FrameBuffer(const unsigned int w, const unsigned int h, const int colorAttachments = 1) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
+		FrameBuffer(const int w, const int h, const int colorAttachments = 1) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
 			glCreateFramebuffers(1, &nameID);
 
 			setColorAttachments<Texture2D>(colorAttachments);
@@ -56,7 +56,7 @@ export namespace GL{
 			}
 		}
 
-		FrameBuffer(const unsigned int w, const unsigned int h, Concepts::Invokable<void(FrameBuffer&)> auto&& init) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
+		FrameBuffer(const int w, const int h, Concepts::Invokable<void(FrameBuffer&)> auto&& init) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
 			glCreateFramebuffers(1, &nameID);
 
 			init(*this);
@@ -115,33 +115,33 @@ export namespace GL{
 			glDrawBuffers(getColorAttachmentsCount(), ALL_COLOR_ATTACHMENTS.data());
 		}
 
-		void enableDraw(const unsigned count = 1) const {
+		void enableDraw(const int count = 1) const {
 			glDrawBuffers(count, ALL_COLOR_ATTACHMENTS.data());
 		}
 
-		void enableDrawAt(const unsigned id = 1) const {
+		void enableDrawAt(const int id = 1) const {
 			glDrawBuffer(id + GL_COLOR_ATTACHMENT0);
 		}
 
-		void enableRead(const unsigned id = 0) const {
+		void enableRead(const int id = 0) const {
 			glReadBuffer(id + GL_COLOR_ATTACHMENT0);
 		}
 
-		static void enableDrawAll(const std::initializer_list<unsigned> list){
-			std::vector<unsigned> indices(list.size());
+		static void enableDrawAll(const std::initializer_list<GLenum> list){
+			std::vector<GLenum> indices(list.size());
 
-			std::ranges::transform(list, std::back_inserter(indices), [](const unsigned i){
+			std::ranges::transform(list, indices.begin(), [](const int i){
 				return i + GL_COLOR_ATTACHMENT0;
 			});
 
-			glDrawBuffers(list.size(), list.begin());
+			glDrawBuffers(static_cast<GLsizei>(indices.size()), indices.data());
 		}
 
 		[[nodiscard]] int getColorAttachmentsCount() const {
 			return static_cast<int>(attachmentsColor.size());
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override{
+		void resize(const int w, const int h) override{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;
@@ -171,7 +171,7 @@ export namespace GL{
 			GL::bindFrameBuffer(targetFlag, 0);
 		}
 
-		[[nodiscard]] std::unique_ptr<unsigned char[]> readPixelsRaw(const unsigned int width, const unsigned int height, const int srcX = 0, const int srcY = 0) const {
+		[[nodiscard]] std::unique_ptr<unsigned char[]> readPixelsRaw(const int width, const int height, const int srcX = 0, const int srcY = 0) const {
 			bind();
 			auto pixels = std::make_unique<unsigned char[]>(static_cast<size_t>(width) * height * 4);
 			glReadPixels(srcX, srcY, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
@@ -232,8 +232,8 @@ export namespace GL{
 			}
 		}
 
-		[[nodiscard]] unsigned int getWidth() const { return width; }
-		[[nodiscard]] unsigned int getHeight() const { return height; }
+		[[nodiscard]] int getWidth() const { return width; }
+		[[nodiscard]] int getHeight() const { return height; }
 
 	};
 }

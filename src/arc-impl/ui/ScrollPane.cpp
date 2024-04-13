@@ -27,7 +27,7 @@ void UI::ScrollPane::applyDefDrawer(){
 }
 
 void UI::ScrollPane::drawBase() const{
-	Elem::drawBase();
+	Widget::drawBase();
 }
 
 void UI::ScrollPane::drawContent() const{

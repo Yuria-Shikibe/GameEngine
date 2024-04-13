@@ -397,8 +397,8 @@ namespace ParserFunctions {
 
 		const char TokenSignal = '$'; //$$for$
 		//TODO switch this to '< >' to make this compatible with std::format
-		const char TokenBeginCode = '{';
-		const char TokenEndCode = '}';
+		const char TokenBeginCode = '<';
+		const char TokenEndCode = '>';
 
 		Font::FontAtlas* fontLib{nullptr};
 

@@ -64,7 +64,7 @@ export namespace UI{
 		}
 
 		void drawStyle() const override{
-			Elem::drawStyle();
+			Widget::drawStyle();
 		}
 	};
 

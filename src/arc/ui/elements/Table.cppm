@@ -19,7 +19,7 @@ using Rect = Geom::OrthoRectFloat;
 export namespace UI {
 	class Table : public Group{
 	protected:
-		Align::Mode cellAlignMode = Align::Mode::bottom_left;
+		Align::Mode cellAlignMode = Align::Mode::center;
 
 	public:
 		std::vector<unsigned> elemLayoutCountData{};
@@ -27,7 +27,6 @@ export namespace UI {
 
 		[[nodiscard]] Table() {
 			touchbility = TouchbilityFlags::childrenOnly;
-			color.a = 0.5f;
 		}
 
 		LayoutCell defaultCellLayout{};
@@ -71,7 +70,7 @@ export namespace UI {
 			return elemLayoutMaxCount.x;
 		}
 
-		template <Concepts::Derived<Elem> T>
+		template <Concepts::Derived<Widget> T>
 		LayoutCell& add(const int depth = std::numeric_limits<int>::max()) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
@@ -79,7 +78,7 @@ export namespace UI {
 			return cell;
 		}
 
-		template <Concepts::Derived<Elem> T>
+		template <Concepts::Derived<Widget> T>
 		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func, const int depth = std::numeric_limits<int>::max()) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
@@ -91,7 +90,7 @@ export namespace UI {
 			return cell;
 		}
 
-		LayoutCell& transferElem(Elem* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
+		LayoutCell& transferElem(Widget* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
 			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
 		}
@@ -120,14 +119,14 @@ export namespace UI {
 
 		void update(const float delta) override {
 			//TODO move this into listener
-			if(layoutChanged) {
+			if(visiable && layoutChanged) {
 				layout();
 			}
 
 			Group::update(delta);
 		}
 
-		Rect getFilledChildrenBound(Elem* elem) const override{
+		Rect getFilledChildrenBound(Widget* elem) const override{
 			return elem->getBound();
 		}
 

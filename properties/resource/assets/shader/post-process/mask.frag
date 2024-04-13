@@ -7,6 +7,7 @@ uniform sampler2D texture2;
 uniform float clamp;
 uniform vec4 mixColor;
 uniform vec4 srcColor;
+//uniform vec4 baseColor;
 
 in vec2 texCoord;
 
@@ -19,8 +20,9 @@ void main(){
 
     src *= mix(src, vec4(mixColor.rgb, 1.0f), mixColor.a);
     src *= srcColor;
+    src.a = 1.0f;
 
     mask.a = min(mask.a, clamp);
 
-    FragColor = mix(dst, src, mask.a);
+    FragColor = vec4(mix(dst.rgb, src.rgb, mask.a), mask.a);
 }

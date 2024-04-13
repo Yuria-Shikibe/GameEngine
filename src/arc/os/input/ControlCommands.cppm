@@ -77,7 +77,7 @@ export namespace Ctrl{
 		});
 
 		input->registerKeyBind(KEY_H, Act_Press, [] {
-			if(Core::uiRoot->allHidden) {
+			if(Core::uiRoot->isHidden) {
 				Core::uiRoot->enable();
 			}else {
 				Core::uiRoot->disable();

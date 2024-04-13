@@ -25,7 +25,7 @@ export namespace UI {
 		}
 	public:
 		//Weak Reference Object
-		Elem* item{nullptr};
+		Widget* item{nullptr};
 
 		Rect allocatedBound{};
 
@@ -34,8 +34,7 @@ export namespace UI {
 		Align::Spacing pad{};
 
 		//scales are done after margin, so it calculates the size shrunk after margin
-		Align::Spacing scale{0, 1.0, 0, 1.0};
-
+		UI::Rect scale{0, 0.0f, 1.0f, 1.0f};
 
 		Align::Mode align = Align::Mode::bottom_left;
 
@@ -45,6 +44,9 @@ export namespace UI {
 		bool modifyParentX{false};
 		bool modifyParentY{false};
 
+		bool modifyParentX_ifLarger{false};
+		bool modifyParentY_ifLarger{false};
+
 		bool scaleRelativeToParentX{true};
 		bool scaleRelativeToParentY{true};
 
@@ -52,32 +54,35 @@ export namespace UI {
 			return item->isEndingRow();
 		}
 
-		LayoutCell& lineFeed(){
+		LayoutCell& endLine(){
 			item->setEndRow(true);
 
 			return *this;
 		}
 
-		LayoutCell& setSize(const float w, const float h){
-			item->setSize(w, h);
+		LayoutCell& setSize(const float w, const float h, const bool usesExpand = false){
+			setWidth(w, usesExpand);
+			setHeight(h, usesExpand);
 
 			return *this;
 		}
 
-		LayoutCell& setSize(const float s){
-			item->setSize(s);
+		// LayoutCell& setSize(const float s, const int) = delete;
 
-			return *this;
+		LayoutCell& setSize(const float s, const bool usesExpand = false){
+			return setSize(s, s, usesExpand);
 		}
 
-		LayoutCell& setHeight(float h){
-			item->setHeight(h);
-
-			return *this;
-		}
-
-		LayoutCell& setWidth(const float w){
+		LayoutCell& setWidth(const float w, const bool usesExpand = false){
 			item->setWidth(w);
+			usesExpand ? expandX(true) : wrapX();
+
+			return *this;
+		}
+
+		LayoutCell& setHeight(const float h, const bool usesExpand = false){
+			item->setHeight(h);
+			usesExpand ? expandY(true) : wrapY();
 
 			return *this;
 		}
@@ -86,6 +91,7 @@ export namespace UI {
 			changed();
 			scaleRelativeToParentX = false;
 			modifyParentX = true;
+			modifyParentX_ifLarger = false;
 			return *this;
 		}
 
@@ -93,13 +99,14 @@ export namespace UI {
 			changed();
 			scaleRelativeToParentY = false;
 			modifyParentY = true;
+			modifyParentY_ifLarger = false;
+
 			return *this;
 		}
 
 		LayoutCell& wrap() {
-			changed();
-			scaleRelativeToParentX = false;
-			scaleRelativeToParentY = false;
+			wrapX();
+			wrapY();
 			return *this;
 		}
 
@@ -157,13 +164,13 @@ export namespace UI {
 
 		LayoutCell& expandX(const bool val = true) {
 			val ? wrapX() : fillParentX();
-			modifyParentX = val;
+			modifyParentX_ifLarger = modifyParentX = val;
 			return *this;
 		}
 
 		LayoutCell& expandY(const bool val = true) {
 			val ? wrapY() : fillParentY();
-			modifyParentY = val;
+			modifyParentY_ifLarger = modifyParentY = val;
 			return *this;
 		}
 
@@ -194,17 +201,9 @@ export namespace UI {
 			changed();
 
 			if(move) {
-				const float dstX = getHoriScale();
-				const float dstY = getVertScale();
-
-				scale.left = xScl;
-				scale.bottom = yScl;
-
-				scale.right = xScl + dstX;
-				scale.top = yScl + dstY;
+				scale.setSrc(xScl, yScl);
 			}else {
-				scale.left = xScl;
-				scale.bottom = yScl;
+				scale.setVert({xScl, yScl}, scale.getEnd());
 			}
 
 			return *this;
@@ -212,31 +211,36 @@ export namespace UI {
 
 		LayoutCell& setEndScale(const float xScl, const float yScl) {
 			changed();
-			scale.right = xScl;
-			scale.top = yScl;
+
+			scale.setVert(scale.getSrc(), {xScl, yScl});
 
 			return *this;
 		}
 
 		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center, const bool needClearRelaMove = true) {
 			changed();
+
+			Align::Spacing tempScale{scale.getSrcX(), scale.getEndX(), scale.getSrcY(), scale.getEndY()};
+			
 			if(align & Align::Mode::top) {
-				scale.bottom = scale.top - yScl;
+				tempScale.bottom = tempScale.top - yScl;
 			}else if(align & Align::Mode::bottom){
-				scale.top = scale.bottom + yScl;
+				tempScale.top = tempScale.bottom + yScl;
 			}else { //centerY
-				scale.top = 0.5f + yScl * 0.5f;
-				scale.bottom = 0.5f - yScl * 0.5f;
+				tempScale.top = 0.5f + yScl * 0.5f;
+				tempScale.bottom = 0.5f - yScl * 0.5f;
 			}
 
 			if(align & Align::Mode::right) {
-				scale.left = scale.right - xScl;
+				tempScale.left = tempScale.right - xScl;
 			}else if(align & Align::Mode::left){
-				scale.right = scale.left + xScl;
+				tempScale.right = tempScale.left + xScl;
 			}else { //centerX
-				scale.right = 0.5f + xScl * 0.5f;
-				scale.left = 0.5f - xScl * 0.5f;
+				tempScale.right = 0.5f + xScl * 0.5f;
+				tempScale.left = 0.5f - xScl * 0.5f;
 			}
+
+			scale.setVert(tempScale.bot_lft(), tempScale.top_rit());
 
 			changed();
 			if(needClearRelaMove)this->clearRelativeMove();
@@ -246,10 +250,7 @@ export namespace UI {
 
 		LayoutCell& clearRelativeMove() {
 			changed();
-			scale.right -= scale.left;
-			scale.top -= scale.bottom;
-
-			scale.left = scale.bottom = 0;
+			scale.setSrc(0, 0);
 
 			return *this;
 		}
@@ -267,8 +268,8 @@ export namespace UI {
 		}
 
 
-		[[nodiscard]] float getHoriScale() const {return scale.right - scale.left;}
-		[[nodiscard]] float getVertScale() const {return scale.top - scale.bottom;}
+		[[nodiscard]] float getHoriScale() const {return scale.getWidth();}
+		[[nodiscard]] float getVertScale() const {return scale.getHeight();}
 
 		[[nodiscard]] float getMarginHori() const {return margin.getWidth();}
 		[[nodiscard]] float getMarginVert() const {return margin.getHeight();}
@@ -276,40 +277,21 @@ export namespace UI {
 		[[nodiscard]] float getPadHori() const {return pad.getWidth();}
 		[[nodiscard]] float getPadVert() const {return pad.getHeight();}
 
-		void applySizeToItem(){ // NOLINT(*-make-member-function-const)
-			float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getWidth());
-			float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getHeight());
-
-			//Apply Expansion
-			if(modifyParentX) {
-				width = Math::max(allocatedBound.getWidth(), item->getWidth());
-				allocatedBound.setWidth(width * getHoriScale());
-			}else{
-				// allocatedBound.setShorterWidth(item->getWidth());
-			}
-
-			if(modifyParentY) {
-				height = Math::max(allocatedBound.getHeight(), item->getHeight());
-				allocatedBound.setHeight(height * getVertScale());
-			}else{
-				// allocatedBound.setShorterHeight(item->getHeight());
-			}
-
-			item->setSize(width * getHoriScale() - getMarginHori(), height * getVertScale() - getMarginVert());
-
-			allocatedBound.addSize(getPadHori(), getPadVert());
-		}
+		/**
+		 * @return True if the cell size has changed
+		 */
+		bool applySizeToItem();
 
 		void applyAlignToItem(const Rect bound) const;
 
 		//Invoke this after all cell bound has been arranged.
-		void applyPosToItem(Elem* parent) const;
+		void applyPosToItem(Widget* parent) const;
 
 		[[nodiscard]] bool isIgnoreLayout() const {
 			return item->isIgnoreLayout();
 		}
 
-		template <Concepts::Derived<Elem> T>
+		template <Concepts::Derived<Widget> T>
 		[[nodiscard]] T& as() {//TODO static cast maybe??
 			return static_cast<T&>(*item);
 		}

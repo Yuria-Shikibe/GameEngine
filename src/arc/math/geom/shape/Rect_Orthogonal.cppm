@@ -316,6 +316,13 @@ export namespace Geom{
 			return *this;
 		}
 
+		constexpr Rect_Orthogonal& setEnd(const T x, const T y){
+			this->setWidth(x - srcX);
+			this->setHeight(y - srcY);
+
+			return *this;
+		}
+
 		constexpr Rect_Orthogonal& setSrc(const Vec2 v) {
 			srcX = v.x;
 			srcY = v.y;

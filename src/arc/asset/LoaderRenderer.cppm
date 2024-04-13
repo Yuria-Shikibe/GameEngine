@@ -41,7 +41,7 @@ export namespace Assets {
 		float lastProgress = 0.0f;
 		float lastThreshold = 0.0f;
 
-		[[nodiscard]] LoaderRenderer(const unsigned int w, const unsigned int h, Assets::AssetsLoader* const loader)
+		[[nodiscard]] LoaderRenderer(const int w, const int h, Assets::AssetsLoader* const loader)
 			: Renderer(w, h), loader(loader) {
 			defaultMat = Graphic::Batch::getPorj();
 
@@ -80,10 +80,10 @@ export namespace Assets {
 			Draw::mixColor(Colors::DARK_GRAY);
 
 			if(!loader->finished()) {
-				Font::defGlyphParser->parseWith(loadTasks, loader->getTaskNames("${alp#[0.3]}${scl#[1.5]}", ">> "));
+				Font::defGlyphParser->parseWith(loadTasks, loader->getTaskNames("$<alp#[0.3]>$<scl#[1.5]>", ">> "));
 				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
 			}else {
-				Font::defGlyphParser->parseWith(loadTasks, "${alp#[0.3]}${scl#[1.8]}LOAD DONE");
+				Font::defGlyphParser->parseWith(loadTasks, "$<alp#[0.3]>$<scl#[1.8]>LOAD DONE");
 				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.15f);
 			}
 
@@ -175,9 +175,9 @@ export namespace Assets {
 			Graphic::Batch::shader();
 
 			ss.str("");
-			ss << "${scl#[0.4]}Loading${scl#[0.3]}: (${color#[" << end << "]}";
-			ss << std::fixed << std::setprecision(1) << lastProgress * 100.0f << "${scl#[0.25]}%${color#[]}${scl#[0.3]})";
-			ss << "\n${scl#[0.3]}${color#[" << end << "]}" << static_cast<float>(loader->getTimer().toMark().count()) / 1000.0f << "${color#[]}sec.";
+			ss << "$<scl#[0.4]>Loading$<scl#[0.3]>: ($<color#[" << end << "]>";
+			ss << std::fixed << std::setprecision(1) << lastProgress * 100.0f << "$<scl#[0.25]>%$<color#[]>$<scl#[0.3]>)";
+			ss << "\n$<scl#[0.3]>$<color#[" << end << "]>" << static_cast<float>(loader->getTimer().toMark().count()) / 1000.0f << "$<color#[]>sec.";
 
 			Font::defGlyphParser->parseWith(loadStatus, ss.str());
 			loadStatus->offset.set(x, y - stroke - slideLineSize * 2.0f);
@@ -214,7 +214,7 @@ export namespace Assets {
 				GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 
-		void resize(const unsigned w, const unsigned h) override {
+		void resize(const int w, const int h) override {
 			Renderer::resize(w, h);
 		}
 	};

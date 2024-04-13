@@ -53,12 +53,12 @@ void UI::TextureNineRegionDrawable::draw(const Geom::OrthoRectFloat rect) const 
 	texRegion->render_RelativeExter(rect);
 }
 
-void UI::DrawPair::draw(const UI::Elem* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {
+void UI::DrawPair::draw(const UI::Widget* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {
 	Draw::color(color, alphaScl * color.a);
 	region->draw(rect);
 }
 
-void UI::UIStyle::drawElem(const UI::Elem* elem) const {
+void UI::UIStyle::drawElem(const UI::Widget* elem) const {
 	elem->tempColor = elem->color;
 	elem->tempColor.a *= elem->maskOpacity;
 
@@ -76,20 +76,20 @@ void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 	// if(elem->touchDisabled())disabled.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 }
 
-void UI::UIStyle::drawBackground(const Elem* elem) const{
+void UI::UIStyle::drawBackground(const Widget* elem) const{
 	elem->tempColor = elem->color;
 	elem->tempColor.a *= elem->maskOpacity;
 
 	background.draw(elem, elem->selfMaskOpacity * elem->maskOpacity, elem->getBound().setSrc(elem->getAbsSrc()));
 }
 
-void UI::StyleDrawer::applyToElem(Elem* elem) {
+void UI::StyleDrawer::applyToElem(Widget* elem) {
 	elem->setBorder(style->margin);
 
 	elem->changed(ChangeSignal::notifyAll);
 }
 
-void UI::EdgeDrawer::drawStyle(const UI::Elem* elem) const {
+void UI::EdgeDrawer::drawStyle(const UI::Widget* elem) const {
 	elem->tempColor = elem->color;
 	Color& color = elem->tempColor;
 	elem->tempColor.a *= elem->maskOpacity;
@@ -111,6 +111,6 @@ void UI::EdgeDrawer::drawStyle(const UI::Elem* elem) const {
 	Draw::reset();
 }
 
-void UI::EmptyDrawer::applyToElem(Elem* elem){
+void UI::EmptyDrawer::applyToElem(Widget* elem){
 	elem->setBorder(0.0f);
 }

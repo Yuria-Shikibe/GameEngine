@@ -18,8 +18,8 @@ export namespace GL{
 	class Texture2D : public GL::Texture
 	{
 	public:
-		static constexpr GLuint MipMapGeneralLevel = 4;
-		static constexpr GLuint StandardBPP = 4;
+		static constexpr auto MipMapGeneralLevel = 4;
+		static constexpr auto StandardBPP = 4;
 
 	protected:
 		Texture2D* next{nullptr};
@@ -39,14 +39,14 @@ export namespace GL{
 		 * \param h
 		 * \param data
 		 */
-		Texture2D(const unsigned int w, const unsigned int h, unsigned char*&& data) : Texture(GL_TEXTURE_2D, w, h){
+		Texture2D(const int w, const int h, unsigned char*&& data) : Texture(GL_TEXTURE_2D, w, h){
 			init(std::forward<unsigned char*>(data));
 		}
 
-		Texture2D(const unsigned int w, const unsigned int h, std::unique_ptr<unsigned char[]>&& data) :
+		Texture2D(const int w, const int h, std::unique_ptr<unsigned char[]>&& data) :
 		Texture2D(w, h, data.release()) {}
 
-		Texture2D(const unsigned int w, const unsigned int h) : Texture2D(w, h, nullptr) {
+		Texture2D(const int w, const int h) : Texture2D(w, h, nullptr) {
 
 		}
 
@@ -91,7 +91,7 @@ export namespace GL{
 			}
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override{
+		void resize(const int w, const int h) override{
 			if(w == width && h == height)return;
 
 			free();
@@ -110,7 +110,7 @@ export namespace GL{
 
 		auto loadFromFile(const OS::File& file){
 			//TODO File Support
-			unsigned bpp{};
+			int bpp{};
 			return stbi::loadPng(file, width, height, bpp);
 		}
 
@@ -154,7 +154,7 @@ export namespace GL{
 			return next;
 		}
 
-		[[nodiscard]] unsigned dataSize() const { //How many bytes!
+		[[nodiscard]] int dataSize() const { //How many bytes!
 			return width * height * StandardBPP;
 		}
 
@@ -173,7 +173,7 @@ export namespace GL{
 
 
 		[[nodiscard]] std::unique_ptr<unsigned char[]> loadGPUData() const { // NOLINT(*-make-member-function-const)
-			const unsigned int size = dataSize();
+			const int size = dataSize();
 
 			auto ptr = std::make_unique<unsigned char[]>(size);
 

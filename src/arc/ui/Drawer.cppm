@@ -11,7 +11,7 @@ import Geom.Vector2D;
 export import UI.Align;
 
 export namespace UI { //TODO bullshit virtual
-	class Elem;
+	class Widget;
 	class ScrollPane;
 	class ProgressBar;
 	class SliderBar;
@@ -81,7 +81,7 @@ export namespace UI { //TODO bullshit virtual
 
 		[[nodiscard]] DrawPair() = default;
 
-		void draw(const UI::Elem* elem, float alphaScl, Geom::OrthoRectFloat rect) const;
+		void draw(const UI::Widget* elem, float alphaScl, Geom::OrthoRectFloat rect) const;
 	};
 
 	struct UIStyle {
@@ -94,25 +94,25 @@ export namespace UI { //TODO bullshit virtual
 
 		Align::Spacing margin{};
 
-		void drawElem(const Elem* elem) const;
+		void drawElem(const Widget* elem) const;
 
-		void drawBackground(const Elem* elem) const;
+		void drawBackground(const Widget* elem) const;
 	};
 
-	struct ElemDrawer {
-		virtual ~ElemDrawer() = default;
+	struct WidgetDrawer {
+		virtual ~WidgetDrawer() = default;
 
-		[[nodiscard]] ElemDrawer() = default;
+		[[nodiscard]] WidgetDrawer() = default;
 
-		virtual void drawStyle(const UI::Elem* elem) const = 0;
+		virtual void drawStyle(const UI::Widget* elem) const = 0;
 
-		virtual void drawBackground(const UI::Elem* elem) const{}
+		virtual void drawBackground(const UI::Widget* elem) const{}
 
-		virtual void applyToElem(Elem* elem) {
+		virtual void applyToElem(Widget* elem) {
 		}
 	};
 
-	struct StyleDrawer : ElemDrawer{
+	struct StyleDrawer : WidgetDrawer{
 		const UIStyle* style{nullptr};
 
 		[[nodiscard]] StyleDrawer() = default;
@@ -121,29 +121,29 @@ export namespace UI { //TODO bullshit virtual
 			: style(style) {
 		}
 
-		void drawBackground(const UI::Elem* elem) const override{
+		void drawBackground(const UI::Widget* elem) const override{
 			if(style)style->drawBackground(elem);
 		}
 
-		void drawStyle(const UI::Elem* elem) const override {
+		void drawStyle(const UI::Widget* elem) const override {
 			if(style)style->drawElem(elem);
 		}
 
-		void applyToElem(Elem* elem) override;
+		void applyToElem(Widget* elem) override;
 	};
 
-	struct EdgeDrawer final : ElemDrawer{
-		void drawStyle(const UI::Elem* elem) const override;
+	struct EdgeDrawer final : WidgetDrawer{
+		void drawStyle(const UI::Widget* elem) const override;
 	};
 
-	struct EmptyDrawer final : ElemDrawer{
-		void drawStyle(const UI::Elem* elem) const override{}
+	struct EmptyDrawer final : WidgetDrawer{
+		void drawStyle(const UI::Widget* elem) const override{}
 
-		void applyToElem(Elem* elem) override;
+		void applyToElem(Widget* elem) override;
 	};
 
 	// std::unique_ptr<ElemDrawer> defDrawer{std::make_unique<EdgeDrawer>()};
-	ElemDrawer* defDrawer{nullptr};
+	WidgetDrawer* defDrawer{nullptr};
 	EmptyDrawer emptyDrawer{};
 
 	ScrollBarDrawer defScrollBarDrawer{};

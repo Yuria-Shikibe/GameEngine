@@ -21,6 +21,9 @@ void UI::Table::layoutRelative() {
 	bool expandX{false};
 	bool expandY{false};
 
+	bool expandX_ifLarger{true};
+	bool expandY_ifLarger{true};
+
 	{ //Register Self Adapted Row Max width & height
 		for(const auto& cell : cells) {
 			if(!cell.isIgnoreLayout()){
@@ -37,6 +40,9 @@ void UI::Table::layoutRelative() {
 				expandX |= cell.modifyParentX;
 				expandY |= cell.modifyParentY;
 
+				expandX_ifLarger &= cell.modifyParentX_ifLarger;
+				expandY_ifLarger &= cell.modifyParentY_ifLarger;
+
 				curPos.x++;
 			}
 
@@ -49,7 +55,8 @@ void UI::Table::layoutRelative() {
 		curPos.setZero();
 	}
 
-	{ //Assign Cell Position
+	{
+		//Assign Cell Position
 		float capturedW{0};
 		float capturedH{0};
 
@@ -85,29 +92,31 @@ void UI::Table::layoutRelative() {
 		const float cellHeight = std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + rows(), 0.0f);
 
 		if(expandX){
-			setWidth(cellWidth + getBorderWidth());
+			if(expandX_ifLarger){
+				setWidth(Math::max(cellWidth + getBorderWidth(), getWidth()));
+			}else{
+				setWidth(cellWidth + getBorderWidth());
+			}
 		}
 
 		if(expandY){
-			setHeight(cellHeight + getBorderHeight());
+			if(expandY_ifLarger){
+				setHeight(Math::max(cellHeight + getBorderHeight(), getHeight()));
+			}else{
+				setHeight(cellHeight + getBorderHeight());
+			}
 		}
 
 		float currentSpacingX = 0;
 		float currentSpacingY = std::accumulate(maxSizeArr.begin() + 1, maxSizeArr.begin() + rows(), 0.0f);
 
-		Geom::Vec2 offset{};
+		Geom::Vec2 offset = Align::getOffsetOf(cellAlignMode, Geom::Vec2{cellWidth, cellHeight}, getValidBound());
 
-		if(cellAlignMode & Align::Mode::top) {
-			offset.y = getValidHeight() - cellHeight;
-		}else if(cellAlignMode & Align::Mode::center_y){
-			offset.y = (getValidHeight() - cellHeight) * 0.5f;
-		}
+		//TODO cells may expand during this process
+		//Need another re-layout to handle this
 
-		if(cellAlignMode & Align::Mode::right) {
-			offset.x = getValidWidth() - cellWidth;
-		}else if(cellAlignMode & Align::Mode::center_x){
-			offset.x = (getValidWidth() - cellWidth) * 0.5f;
-		}
+		bool cellExpandedX{false};
+		bool cellExpandedY{false};
 
 		for(auto& cell : cells) {
 			if(!cell.isIgnoreLayout()){
@@ -145,11 +154,7 @@ void UI::Table::layoutIrrelative() {
 	for(auto& cell : cells) {
 		if(cell.isIgnoreLayout())continue;
 
-		cell.allocatedBound = bound;
-
-		// cell.allocatedBound.setSrc(0, 0);
-		cell.allocatedBound.setSrc(border.bot_lft());
-		cell.allocatedBound.addSize(-getBorderWidth(), -getBorderHeight());
+		cell.allocatedBound = getValidBound();
 
 		cell.applySizeToItem();
 		cell.applyPosToItem(this);
@@ -157,14 +162,14 @@ void UI::Table::layoutIrrelative() {
 }
 
 void UI::Table::drawContent() const{
-	for(auto& cell : this->cells){
-		Rect rect{};
-		rect.setSrc(this->absoluteSrc + cell.allocatedBound.getSrc() + this->border.bot_lft()).setSize(cell.allocatedBound);
+	for(auto& cell : cells){
+		Rect rect{cell.allocatedBound};
+		rect.move(absoluteSrc);
 
-		// using namespace Graphic;
-		// Draw::color(Colors::YELLOW);
-		// Draw::Line::setLineStroke(2.0f);
-		// Draw::Line::rectOrtho(rect);
+		using namespace Graphic;
+		Draw::color(Colors::YELLOW);
+		Draw::Line::setLineStroke(2.0f);
+		Draw::Line::rectOrtho(rect);
 	}
 
 	Group::drawContent();

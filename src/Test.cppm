@@ -79,7 +79,7 @@ export namespace Test{
 				auto [x, y] = Core::platform->window->equrySize();
 
 				Core::uiRoot = new UI::Root{};
-				Core::renderer = new Core::Renderer{static_cast<unsigned>(x), static_cast<unsigned>(y)};
+				Core::renderer = new Core::Renderer{x, y};
 
 				Core::uiRoot->resize(x, y);
 				Core::camera->resize(x, y);

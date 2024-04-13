@@ -18,60 +18,74 @@ export namespace Align {
 		/**@brief Top Spacing*/
 		float top{};
 
-		[[nodiscard]] Geom::Vec2 bot_lft() const {
+		[[nodiscard]] Geom::Vec2 bot_lft() const noexcept{
 			return {left, bottom};
 		}
 
-		[[nodiscard]] Geom::Vec2 top_rit() const {
+		[[nodiscard]] Geom::Vec2 top_rit() const noexcept{
 			return {right, top};
 		}
 
-		friend bool operator==(const Spacing& lhs, const Spacing& rhs){
+		friend bool operator==(const Spacing& lhs, const Spacing& rhs) noexcept{
 			return lhs.left == rhs.left
 				&& lhs.right == rhs.right
 				&& lhs.top == rhs.top
 				&& lhs.bottom == rhs.bottom;
 		}
 
-		friend bool operator!=(const Spacing& lhs, const Spacing& rhs){ return !(lhs == rhs); }
+		friend bool operator!=(const Spacing& lhs, const Spacing& rhs) noexcept{ return !(lhs == rhs); }
 
-		friend bool operator==(const Spacing& lhs, const float val){
+		friend bool operator==(const Spacing& lhs, const float val) noexcept{
 			return lhs.left == val
 				&& lhs.right == val
 				&& lhs.top == val
 				&& lhs.bottom == val;
 		}
 
-		friend bool operator!=(const Spacing& lhs, const float rhs){ return !(lhs == rhs); }
+		friend bool operator!=(const Spacing& lhs, const float rhs) noexcept{ return !(lhs == rhs); }
 
-		[[nodiscard]] constexpr float getWidth() const{
+		constexpr void expand(float x, float y) noexcept{
+			x *= 0.5f;
+			y *= 0.5f;
+
+			left += x;
+			right += x;
+			top += y;
+			bottom += y;
+		}
+
+		constexpr void expand(const float val) noexcept{
+			expand(val, val);
+		}
+
+		[[nodiscard]] constexpr float getWidth() const noexcept{
 			return left + right;
 		}
 
-		[[nodiscard]] constexpr float getHeight() const{
+		[[nodiscard]] constexpr float getHeight() const noexcept{
 			return bottom + top;
 		}
 
-		[[nodiscard]] constexpr float getRemainWidth(const float total = 1.0f) const{
+		[[nodiscard]] constexpr float getRemainWidth(const float total = 1.0f) const noexcept{
 			return total - getWidth();
 		}
 
-		[[nodiscard]] constexpr float getRemainHeight(float total = 1.0f) const{
+		[[nodiscard]] constexpr float getRemainHeight(float total = 1.0f) const noexcept{
 			return total - getHeight();
 		}
 
-		constexpr void set(const float val){
+		constexpr void set(const float val) noexcept{
 			bottom = top = left = right = val;
 		}
 
-		constexpr void set(const float l, const float r, const float b, const float t){
+		constexpr void set(const float l, const float r, const float b, const float t) noexcept{
 			left = l;
 			right = r;
 			bottom = b;
 			top = t;
 		}
 
-		constexpr void setZero(){
+		constexpr void setZero() noexcept{
 			set(0);
 		}
 	};
@@ -106,45 +120,39 @@ export namespace Align {
 	}
 
 	constexpr Geom::Vec2 getOffsetOf(const Mode align, const Geom::Vec2 bottomLeft, const Geom::Vec2 topRight) {
-		float xSign = 0;
-		float ySign = 0;
+		float xMove = 0;
+		float yMove = 0;
 
 		if(align & Align::Mode::top) {
-			ySign = -1;
+			yMove = -topRight.y;
 		}else if(align & Align::Mode::bottom){
-			ySign = 1;
+			yMove = bottomLeft.y;
 		}
 
 		if(align & Align::Mode::right) {
-			xSign = -1;
+			xMove = -topRight.x;
 		}else if(align & Align::Mode::left){
-			xSign = 1;
+			xMove = bottomLeft.x;
 		}
-
-		const float xMove = xSign * (xSign == 1 ? bottomLeft.x : topRight.x);
-		const float yMove = ySign * (ySign == 1 ? (bottomLeft.y) : topRight.y);
 
 		return {xMove, yMove};
 	}
 
 	constexpr Geom::Vec2 getOffsetOf(const Mode align, const Spacing margin) {
-		float xSign = 0;
-		float ySign = 0;
+		float xMove = 0;
+		float yMove = 0;
 
 		if(align & Align::Mode::top) {
-			ySign = -1;
+			yMove = -margin.top;
 		}else if(align & Align::Mode::bottom){
-			ySign = 1;
+			yMove = margin.bottom;
 		}
 
 		if(align & Align::Mode::right) {
-			xSign = -1;
+			xMove = -margin.right;
 		}else if(align & Align::Mode::left){
-			xSign = 1;
+			xMove = margin.left;
 		}
-
-		const float xMove = xSign * (xSign == 1 ? margin.left : margin.right);
-		const float yMove = ySign * (ySign == 1 ? margin.bottom : margin.top);
 
 		return {xMove, yMove};
 	}
@@ -156,7 +164,7 @@ export namespace Align {
 	 * @return
 	 */
 	template <Concepts::Signed T>
-	constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Rect_Orthogonal<T> bound) {
+	constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Rect_Orthogonal<T>& bound) {
 		Geom::Vector2D<T> offset{};
 
 		if(align & Align::Mode::top) {
@@ -172,6 +180,45 @@ export namespace Align {
 		}
 
 		return offset;
+	}
+
+
+	/**
+	 * @brief
+	 * @tparam T arithmetic type, does not accept unsigned type
+	 * @return
+	 */
+	template <Concepts::Signed T>
+	constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Vector2D<T>& internal_toAlignSize, const Geom::Rect_Orthogonal<T>& external) {
+		Geom::Vector2D<T> offset{};
+
+		if(align & Align::Mode::top) {
+			offset.y = external.getEndY() - internal_toAlignSize.y;
+		}else if(align & Align::Mode::bottom){
+			offset.y = external.getSrcY();
+		}else { //centerY
+			offset.y = external.getSrcY() + (external.getHeight() - internal_toAlignSize.y) / static_cast<T>(2);
+		}
+
+		if(align & Align::Mode::right) {
+			offset.x = external.getEndX() - internal_toAlignSize.x;
+		}else if(align & Align::Mode::left){
+			offset.x = external.getSrcX();
+		}else { //centerX
+			offset.x = external.getSrcX() + (external.getWidth() - internal_toAlignSize.x) / static_cast<T>(2);
+		}
+
+		return offset;
+	}
+
+	/**
+	 * @brief
+	 * @tparam T arithmetic type, does not accept unsigned type
+	 * @return
+	 */
+	template <Concepts::Signed T>
+	constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Rect_Orthogonal<T>& internal_toAlign, const Geom::Rect_Orthogonal<T>& external) {
+		return ::Align::getOffsetOf(align, internal_toAlign.getSize(), external);
 	}
 
 	using enum Mode;

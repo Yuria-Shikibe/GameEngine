@@ -60,7 +60,7 @@ namespace Assets{
 	public:
 		void pullRequest();
 
-		void load_Visible(unsigned int width, unsigned int height, Core::Renderer* renderer);
+		void load_Visible(const int width, const int height, Core::Renderer* renderer);
 
 		void load_Quiet(bool forceGet = true);
 

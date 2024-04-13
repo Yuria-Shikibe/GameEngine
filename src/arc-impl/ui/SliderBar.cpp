@@ -3,7 +3,7 @@ module UI.SliderBar;
 import UI.Drawer;
 
 void UI::SliderBar::applyDefDrawer(){
-	Elem::applyDefDrawer();
+	Widget::applyDefDrawer();
 	barDrawer = &defSlideBarDrawer;
 }
 

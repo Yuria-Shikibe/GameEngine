@@ -40,7 +40,7 @@ export namespace stbi{
 	//byte per pixel
 	//RGBA ~ 4 ~ 32 [0 ~ 255]
 	//RGB ~ 3
-	std::unique_ptr<unsigned char[]> loadPng(const OS::File& file, unsigned int& width, unsigned int& height, unsigned int& bpp, const int requiredBpp = 4) {
+	std::unique_ptr<unsigned char[]> loadPng(const OS::File& file, int& width, int& height, int& bpp, const int requiredBpp = 4) {
 		int w, h, b;
 
 		const auto data = stbi_load(file.absolutePath().string().data(), &w, &h, &b, requiredBpp);

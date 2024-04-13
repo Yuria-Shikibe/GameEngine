@@ -8,9 +8,10 @@ export import GL.Object;
 export import Graphic.Resizeable;
 
 export namespace GL{
-class RenderBuffer : public GLObject, public Graphic::ResizeableUInt{
+class RenderBuffer : public GLObject, public Graphic::ResizeableInt{
 	protected:
-		unsigned int width, height;
+		int width, height;
+
 	public:
 		RenderBuffer() : GLObject{GL_RENDERBUFFER}, width(2), height(2){}
 
@@ -31,7 +32,7 @@ class RenderBuffer : public GLObject, public Graphic::ResizeableUInt{
 			glBindRenderbuffer(targetFlag, 0);
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override{
+		void resize(const int w, const int h) override{
 			if(w == width && h == height)return;
 			width = w;
 			height = h;

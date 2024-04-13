@@ -19,7 +19,7 @@ import std;
 using namespace Geom;
 
 export namespace Core{
-	class Camera2D final : public OS::ApplicationListener, public Graphic::Resizeable<unsigned int> {
+	class Camera2D final : public OS::ApplicationListener, public Graphic::ResizeableInt {
 	protected:
 		Matrix3D worldToScreen{};
 		Matrix3D screenToWorld{};
@@ -40,7 +40,7 @@ export namespace Core{
 
 		~Camera2D() override = default;
 
-		void resize(const unsigned w, const unsigned h) override { // NOLINT(*-make-member-function-const)
+		void resize(const int w, const int h) override { // NOLINT(*-make-member-function-const)
 			screenSize.setSize(w, h);
 		}
 

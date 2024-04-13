@@ -5,6 +5,7 @@ export module UI.Elem;
 export import UI.Flags;
 export import UI.Align;
 export import UI.Action;
+import UI.SeperateDrawable;
 import Event;
 import Math;
 import Geom.Vector2D;
@@ -15,7 +16,7 @@ import RuntimeException;
 import std;
 
 export namespace UI {
-	struct ElemDrawer;
+	struct WidgetDrawer;
 	class Group;
 	class Table;
 	class Root;
@@ -38,15 +39,16 @@ export namespace UI {
 
 	using Rect = Geom::OrthoRectFloat;
 
-	class Elem {
+	class Widget : public SeperateDrawable{
 	public:
 		int PointCheck{0};
-		virtual ~Elem(){
-			setUnfocused();
+
+		~Widget() override{
+			releaseAllFocus();
 		}
 
-		[[nodiscard]] Elem(){
-			Elem::applyDefDrawer();
+		[[nodiscard]] Widget(){
+			Widget::applyDefDrawer();
 		}
 	protected:
 		/**
@@ -59,7 +61,7 @@ export namespace UI {
 		mutable ::UI::Root* root{nullptr};
 
 		//TODO is this necessary?
-		std::unordered_set<Elem*> focusTarget{};
+		std::unordered_set<Widget*> focusTarget{};
 
 		Event::EventManager inputListener{
 			Event::indexOf<UI::MouseActionPress>(),
@@ -72,9 +74,6 @@ export namespace UI {
 		};
 
 		TouchbilityFlags touchbility = TouchbilityFlags::enabled;
-
-		std::function<bool()> visibilityChecker{nullptr};
-		std::function<bool()> disableChecker{nullptr};
 
 		mutable bool layoutChanged{false};
 
@@ -90,21 +89,22 @@ export namespace UI {
 
 		Geom::Vec2 absoluteSrc{};
 		Geom::Vec2 minimumSize{};
+		//TODO should here be a maximum size
 
-		ElemDrawer* drawer{nullptr};
+		WidgetDrawer* drawer{nullptr};
 
 		Align::Spacing border{};
 
-		std::queue<std::unique_ptr<Action<Elem>>> actions{};
+		std::queue<std::unique_ptr<Action<Widget>>> actions{};
 
 		ChangeSignal lastSignal{ChangeSignal::notifyNone};
 
-		void clampTargetWidth(float& w) const{
-			w = Math::max(w, minimumSize.x);
+		[[nodiscard]] float clampTargetWidth(const float w) const{
+			return  Math::max(w, minimumSize.x);
 		}
 
-		void clampTargetHeight(float& h) const{
-			h = Math::max(h, minimumSize.y);
+		[[nodiscard]] float clampTargetHeight(const float h) const{
+			return  Math::max(h, minimumSize.y);
 		}
 
 		Table* hoverTableHandle{nullptr};
@@ -112,6 +112,9 @@ export namespace UI {
 
 	public:
 		std::string name{"undefind"};
+
+		std::function<bool()> visibilityChecker{nullptr};
+		std::function<bool()> disableChecker{nullptr};
 
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
 
@@ -132,7 +135,11 @@ export namespace UI {
 		[[nodiscard]] virtual bool isVisiable() const {return visiable;}
 
 		//TODO rename this shit
-		[[nodiscard]] constexpr bool needSetMouseUnfocusedAtCursorOutOfBound() const {return quitInboundFocus;}
+		[[nodiscard]] constexpr bool shouldDropFocusAtCursorQuitBound() const{
+			return quitInboundFocus;
+		}
+
+		constexpr void setDropFocusAtCursorQuitBound(const bool quitInboundFocus){ this->quitInboundFocus = quitInboundFocus; }
 
 		[[nodiscard]] constexpr bool isPressed() const {return pressed;}
 
@@ -140,7 +147,7 @@ export namespace UI {
 		 * @param elem Element To Fill This(it's parent)
 		 * @return Expected Bound Of This Child Element
 		 */
-		virtual Rect getFilledChildrenBound(Elem* elem) const {
+		virtual Rect getFilledChildrenBound(Widget* elem) const {
 			Rect bound = elem->bound;
 
 			bound.setSrc(border.bot_lft());
@@ -181,9 +188,9 @@ export namespace UI {
 		/**
 		 * @brief Used to create blur effect, this is draw as a mask
 		 */
-		virtual void drawBase() const;
+		void drawBase() const override;
 
-		virtual void draw() const;
+		void draw() const override;
 
 		virtual void drawContent() const {}
 
@@ -194,6 +201,8 @@ export namespace UI {
 		virtual void setRoot(Root* const root) {
 			this->root = root;
 		}
+
+		[[nodiscard]] UI::Root* getRoot() const{ return root; }
 
 		virtual void applyDefDrawer();
 
@@ -248,9 +257,9 @@ export namespace UI {
 
 		[[nodiscard]] Group* getParent() const;
 
-		void setDrawer(ElemDrawer* drawer);
+		void setDrawer(WidgetDrawer* drawer);
 
-		void setEmptyDrawer();
+		virtual void setEmptyDrawer();
 
 		/**
 		 * @return The former parent group
@@ -263,15 +272,15 @@ export namespace UI {
 
 		constexpr void setEndRow(const bool end) {endRow = end;}
 
-		[[nodiscard]] const std::unordered_set<Elem*>& getFocus() const {return focusTarget;}
+		[[nodiscard]] const std::unordered_set<Widget*>& getFocus() const {return focusTarget;}
 
-		[[nodiscard]] std::unordered_set<Elem*>& getFocus() {return focusTarget;}
+		[[nodiscard]] std::unordered_set<Widget*>& getFocus() {return focusTarget;}
 
-		virtual void addFocusTarget(Elem* const target) {
+		virtual void addFocusTarget(Widget* const target) {
 			focusTarget.insert(target);
 		}
 
-		virtual void removeFocusTarget(Elem* const target) {
+		virtual void removeFocusTarget(Widget* const target) {
 			focusTarget.erase(target);
 		}
 
@@ -286,22 +295,20 @@ export namespace UI {
 		}
 
 		virtual void setWidth(float w) {
-			clampTargetWidth(w);
+			w = clampTargetWidth(w);
 			if(Math::equal(bound.getWidth(), w))return;
 			bound.setWidth(w);
 			changed(UI::ChangeSignal::notifyAll);
 		}
 
 		virtual void setHeight(float h) {
-			clampTargetHeight(h);
+			h = clampTargetHeight(h);
 			if(Math::equal(bound.getHeight(), h))return;
 			bound.setHeight(h);
 			changed(UI::ChangeSignal::notifyAll);
 		}
 
-		void setSize(float w, float h) {
-			clampTargetWidth(w);
-			clampTargetHeight(h);
+		void setSize(const float w, const float h) {
 			setWidth(w);
 			setHeight(h);
 			changed(UI::ChangeSignal::notifyAll);
@@ -319,7 +326,7 @@ export namespace UI {
 
 		[[nodiscard]] constexpr Rect getValidBound() const noexcept {return {border.left, border.bottom, getValidWidth(), getValidHeight()};}
 
-		virtual void calAbsoluteSrc(Elem* parent) {
+		virtual void calAbsoluteSrc(Widget* parent) {
 			Geom::Vec2 vec = parent ? parent->absoluteSrc : Geom::ZERO;
 
 			vec.add(bound.getSrc());
@@ -396,18 +403,18 @@ export namespace UI {
 
 		[[nodiscard]] auto& getActions() const{ return actions; }
 
-		template <Concepts::Derived<Action<Elem>> ActionType, typename ...T>
+		template <Concepts::Derived<Action<Widget>> ActionType, typename ...T>
 		void pushAction(T... args){
 			actions.push(std::make_unique<ActionType>(args...));
 		}
 
-		template<Concepts::Derived<Action<Elem>> ...ActionType>
+		template<Concepts::Derived<Action<Widget>> ...ActionType>
 		void pushActions(std::unique_ptr<ActionType>&& ...actionArgs){
-			std::array<Action<Elem>, sizeof...(actionArgs)> arr = {actionArgs...};
+			std::array<Action<Widget>, sizeof...(actionArgs)> arr = {actionArgs...};
 			actions.push_range(arr);
 		}
 
-		virtual const std::vector<std::unique_ptr<Elem>>* getChildren() const {return nullptr;}
+		virtual const std::vector<std::unique_ptr<Widget>>* getChildren() const {return nullptr;}
 
 		virtual bool hasChildren() const {return false;}
 
@@ -429,7 +436,7 @@ export namespace UI {
 
 		void setFocusedScroll(bool focus);
 
-		void setUnfocused() const;
+		void releaseAllFocus() const;
 
 		[[nodiscard]] constexpr float drawSrcX() const {return absoluteSrc.x;}
 
@@ -439,7 +446,9 @@ export namespace UI {
 
 		[[nodiscard]] constexpr float getHeight() const {return bound.getHeight();}
 
-		[[nodiscard]] Align::Spacing getBorder() const{ return border; }
+		[[nodiscard]] const Align::Spacing& getBorder() const{ return border; }
+
+		[[nodiscard]] Align::Spacing& getBorder() { return border; }
 
 		void setBorderZero() {setBorder(0.0f);}
 
@@ -460,7 +469,7 @@ export namespace UI {
 		bool keyDown(const int code, const int action, const int mode) const;
 
 	protected:
-		virtual void childrenCheck(const Elem* ptr) {
+		virtual void childrenCheck(const Widget* ptr) {
 			throw ext::IllegalArguments{"Labels shouldn't have children!"};
 		}
 	};

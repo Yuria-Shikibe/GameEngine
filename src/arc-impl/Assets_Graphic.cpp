@@ -24,9 +24,17 @@ void Assets::Shaders::loadPrevious() {
 	});
 
 	gaussian = new Shader(shaderDir, "gaussian-blur");
+
+	//TODO dynamic apply
 	gaussian->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("u_texture");
-		shader.setVec2("size", Core::renderer->getSize().div(Core::camera->getScale()));
+
+		if(Core::batchGroup.batchOverlay->getProjection() == &Core::camera->getWorldToScreen()){
+			shader.setVec2("size", Core::renderer->getSize().div(Core::camera->getScale()));
+		}else{
+			shader.setVec2("size", Core::renderer->getSize());
+		}
+
 	});
 
 	bloom = new Shader(shaderDir, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});
@@ -69,7 +77,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	coordAxis->setUniformer([]([[maybe_unused]] const Shader& shader) {
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
-		shader.setFloat("scale", Core::camera->getScale());
+		shader.setFloat("scale",  Core::camera->getScale());
 		shader.setVec2("screenSize", Core::renderer->getDrawWidth(), Core::renderer->getDrawHeight());
 		shader.setVec2("cameraPos", Core::camera->screenCenter());
 	});
@@ -111,11 +119,11 @@ void Assets::PostProcessors::load(){
 	multiToBasic.reset(new Graphic::MultiSampleBliter{});
 
 	blurX.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", Geom::Vec2{1.2f, 0});
+		shader.setVec2("direction", Geom::Vec2{1.15f, 0});
 	}});
 
 	blurY.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
-		shader.setVec2("direction", Geom::Vec2{0, 1.2f});
+		shader.setVec2("direction", Geom::Vec2{0, 1.15f});
 	}});
 
 	blurX_Far.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {

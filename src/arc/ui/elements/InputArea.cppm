@@ -228,7 +228,7 @@ export namespace UI{
 	 * TODO bound checks
 	 * TODO token highlight parser
 	 */
-	class InputArea : public UI::Elem, public OS::TextInputListener{
+	class InputArea : public UI::Widget, public OS::TextInputListener{
 	public:
 		struct BacktrackingData{ //TODO this is really a violent way to do/undo
 			std::string text{};
@@ -333,10 +333,15 @@ export namespace UI{
 			glyphLayout->lastText.reserve(400);
 
 			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
-				auto begin = getLayoutPos(event.begin);
-				auto end = getLayoutPos(event.end);
+				const auto begin = getLayoutPos(event.begin);
+				const auto end = getLayoutPos(event.end);
 				genTextSection(begin, end);
 			});
+		}
+
+		void setWrap(const bool wrapX = true, const bool wrapY = true){
+			usingGlyphHeight = wrapY;
+			usingGlyphWidth = wrapX;
 		}
 
 		[[nodiscard]] std::shared_ptr<Font::GlyphLayout>& getGlyphLayout(){
@@ -417,7 +422,7 @@ export namespace UI{
 				caret.refreshDataPtr(glyphLayout.get());
 			}
 
-			Elem::update(delta);
+			Widget::update(delta);
 		}
 
 		void updateOperatrion(){
@@ -458,7 +463,7 @@ export namespace UI{
 		}
 
 		void layout() override{
-			Elem::layout();
+			Widget::layout();
 
 			updateTextLayout();
 		}
@@ -704,8 +709,8 @@ export namespace UI{
 			return snapshots.front();
 		}
 
-		void calAbsoluteSrc(Elem* parent) override {
-			Elem::calAbsoluteSrc(parent);
+		void calAbsoluteSrc(Widget* parent) override {
+			Widget::calAbsoluteSrc(parent);
 			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::getOffsetOf(textAlignMode, border));
 			// glyphLayout->offset.set(0, 300);
 		}

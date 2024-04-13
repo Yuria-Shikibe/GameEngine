@@ -3,6 +3,7 @@ module;
 module Font.GlyphArrangement;
 
 import Graphic.Draw;
+import Graphic.Color;
 import RuntimeException;
 import Math;
 
@@ -240,6 +241,8 @@ void Font::initParser(const FontFlags* const defFont) {
 		}
 	};
 
+	defGlyphParser->tokenParser->modifier["c"] = defGlyphParser->tokenParser->modifier.at("color");
+
 	defGlyphParser->tokenParser->modifier["font"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const Font::TextView sub = command.substr(1, command.size() - 2); sub.empty()) {
@@ -346,29 +349,30 @@ void Font::initParser(const FontFlags* const defFont) {
 	};
 
 	//SuperScript Begin
-	defGlyphParser->tokenParser->modifier["sut"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["sup"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::setScl(data, 0.5f);
 		data.context.offset.set(-normalizeLen(data.charData->glyphMatrices.horiAdvance) * 0.05f,
 		                        normalizeLen(data.charData->glyphMatrices.horiBearingY + 45));
 	};
 
 	//SuperScript End
-	defGlyphParser->tokenParser->modifier["\\sut"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
+	defGlyphParser->tokenParser->modifier["\\sup"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
 		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 
 	//SubScript Begin
-	defGlyphParser->tokenParser->modifier["sbt"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
-		ParserFunctions::setScl(data, 0.5f);
-		data.context.offset.set(-normalizeLen(data.charData->glyphMatrices.horiAdvance) * 0.05f,
-		                        -normalizeLen(
-			                        -data.charData->glyphMatrices.horiBearingY + data.charData->glyphMatrices.height + 65));
+	defGlyphParser->tokenParser->modifier["sub"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
+		ParserFunctions::setScl(data, data.context.currentScale * 0.65f);
+
+		data.context.offset.set(
+			-normalizeLen(data.charData->glyphMatrices.horiAdvance) * 0.05f,
+		    normalizeLen(data.charData->glyphMatrices.horiBearingY) - normalizeLen(data.charData->glyphMatrices.height) * 1.45f);
 	};
 
 	//SubScript End
-	defGlyphParser->tokenParser->modifier["\\sbt"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
-		ParserFunctions::resetScl(data);
+	defGlyphParser->tokenParser->modifier["\\sub"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
+		ParserFunctions::setScl(data, data.context.currentScale * 0.65f);
 		data.context.offset.setZero();
 	};
 
@@ -383,6 +387,16 @@ void Font::initParser(const FontFlags* const defFont) {
 
 		ParserFunctions::resetScl(data);
 	};
+
+	using namespace Graphic::Colors;
+	parserableColors.insert_or_assign("AQUA", AQUA);
+	parserableColors.insert_or_assign("AQUA_SKY", AQUA_SKY);
+	parserableColors.insert_or_assign("SKY", SKY);
+	parserableColors.insert_or_assign("GRAY", GRAY);
+	parserableColors.insert_or_assign("LIGHT_GRAY", LIGHT_GRAY);
+	parserableColors.insert_or_assign("WHITE", WHITE);
+	parserableColors.insert_or_assign("RED_DUST", RED_DUSK);
+	parserableColors.insert_or_assign("PALE_GREEN", PALE_GREEN);
 }
 
 void Font::ParserFunctions::setScl(const ModifierableData& data, const float target) {

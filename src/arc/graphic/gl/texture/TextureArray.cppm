@@ -46,8 +46,8 @@ export namespace GL{
 			glGenerateTextureMipmap(nameID);
 		}
 
-		void resize(unsigned w, unsigned h) override{
-
+		void resize(int w, int h) override{
+			//TODO throw maybe?
 		}
 
 		void active(const unsigned offset) const override{

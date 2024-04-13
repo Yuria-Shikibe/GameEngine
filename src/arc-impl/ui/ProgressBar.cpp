@@ -12,6 +12,6 @@ void UI::ProgressBar::drawContent() const{
 }
 
 void UI::ProgressBar::applyDefDrawer(){
-	Elem::applyDefDrawer();
+	Widget::applyDefDrawer();
 	barDrawer = &defProgressBarDrawer;
 }

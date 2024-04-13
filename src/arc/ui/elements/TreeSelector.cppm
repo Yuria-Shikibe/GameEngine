@@ -3,3 +3,7 @@
 //
 
 export module UI.TreeSelector;
+
+export namespace UI{
+
+}

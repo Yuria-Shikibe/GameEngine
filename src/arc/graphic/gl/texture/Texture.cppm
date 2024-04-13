@@ -23,16 +23,16 @@ export namespace GL{
 		//...
 	};
 
-	struct Texture : GLObject, Graphic::ResizeableUInt{
+	struct Texture : GLObject, Graphic::ResizeableInt{
 	protected:
-		unsigned int width = 0, height = 0;
+		int width = 0, height = 0;
 
 	public:
-		[[nodiscard]] unsigned getWidth() const {
+		[[nodiscard]] int getWidth() const {
 			return width;
 		}
 
-		[[nodiscard]] unsigned getHeight() const {
+		[[nodiscard]] int getHeight() const {
 			return height;
 		}
 
@@ -60,7 +60,7 @@ export namespace GL{
 			: GLObject(targetFlag){
 		}
 
-		Texture(const GLenum targetFlag, const unsigned int width, const unsigned int height)
+		Texture(const GLenum targetFlag, const int width, const int height)
 			: GLObject(targetFlag),
 			  width(width),
 			  height(height){
@@ -95,6 +95,6 @@ export namespace GL{
 
 		virtual void active(unsigned offset) const = 0;
 		virtual void activeAll(unsigned offset) const = 0;
-		void resize(unsigned w, unsigned h) override = 0;
+		void resize(int w, int h) override = 0;
 	};
 }

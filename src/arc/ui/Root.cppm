@@ -10,6 +10,8 @@ import Geom.Matrix3D;
 
 export import UI.Flags;
 export import UI.HoverTableManager;
+export import UI.Dialog;
+import UI.SeperateDrawable;
 
 import Ctrl.Constants;
 import Graphic.Resizeable;
@@ -18,13 +20,14 @@ import OS.TextInputListener;
 import OS.InputListener;
 
 import UI.Elem;
-import UI.Table;
+import UI.Scene;
 import Core.Input;
+import Heterogeneous;
 
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{
-	class Root : public Graphic::Resizeable<unsigned int>, public OS::ApplicationListener,
-	             public OS::InputListener {
+	class Root : public Graphic::ResizeableInt, public OS::ApplicationListener,
+	             public OS::InputListener{
 	protected:
 		mutable MouseActionPress pressAction{};
 		mutable MouseActionRelease releaseAction{};
@@ -39,15 +42,18 @@ export namespace UI{
 		Geom::Matrix3D projection{};
 
 	public:
+		// struct DrawSeq{
+		// 	const SeperateDrawable* scene{};
+		// 	const SeperateDrawable* dialog{};
+		// 	decltype(HoverTableManager::getDrawSeq()) hoverTable;
+		// } drawSeq{};
 		HoverTableManager hoverTableManager{};
+		Dialog rootDialog{};
 
-		float width{ 0 };
-		float height{ 0 };
+		float width{0};
+		float height{0};
 
-		float marginX = 8.0f;
-		float marginY = 8.0f;
-
-		bool allHidden = false;
+		bool isHidden = false;
 
 		[[nodiscard]] Root();
 
@@ -56,84 +62,193 @@ export namespace UI{
 		Geom::Vec2 cursorVel{};
 		Geom::Vec2 mouseScroll{};
 
-		//TODO use bitmap or array???
+		//TODO use bitmap or array??? this is a byte long seroulsy
 		std::bitset<Ctrl::MOUSE_BUTTON_COUNT> pressedMouseButtons{};
 
-		Elem* currentInputFocused{ nullptr };
-		Elem* currentScrollFocused{ nullptr };
-		Elem* currentCursorFocus{ nullptr };
-		OS::TextInputListener* textInputListener{ nullptr };
-		// // //Focus
-		// //
-		// // //Input Listeners
-		std::unique_ptr<Table> root{ nullptr };
+		//TODO is this necessary?
+		Widget* currentInputFocused{nullptr};
+		Widget* currentScrollFocused{nullptr};
+		Widget* currentCursorFocus{nullptr};
 
-		std::unique_ptr<Table> cursorFloatRoot{ nullptr };
+		//TODO directly use InputArea instead?
+		//redundant virtual
+		OS::TextInputListener* textInputListener{nullptr};
+
+		ext::StringMap<std::unique_ptr<Scene>> scenes{};
+
+		Scene* currentScene{nullptr};
 
 		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
 
 		float cursorStrandedTime{0.0f};
 		float cursorInBoundTime{0.0f};
 
-		[[nodiscard]] bool mouseFocusFree() const {
+		void showDialog(std::shared_ptr<Dialog>&& dialog){
+			releaseFocus();
+			rootDialog.findFirstShowingDialogNode()->appendDialog(std::move(dialog));
+		}
+
+		template <Concepts::Invokable<void(UI::Table&)> Builder>
+		void showDialog(const bool fillScreen, Builder&& func){
+			this->showDialog(std::make_shared<Dialog>(fillScreen, std::forward<Builder>(func)));
+		}
+
+		template <Concepts::Invokable<void(UI::Table&)> Builder>
+		void showDialog(Builder&& func){
+			this->showDialog<Builder>(true, std::forward<Builder>(func));
+		}
+
+		template <Concepts::Invokable<void(UI::Dialog&)> InitFunc>
+		void showDialog(InitFunc&& func){
+			this->showDialog(std::make_shared<Dialog>(std::forward<InitFunc>(func)));
+		}
+
+		void switchScene(const std::string_view sceneName){
+			if(const auto nextItr = scenes.find(sceneName); nextItr != scenes.end()){
+				currentScene->setVisible(false);
+				currentScene = nextItr->second.get();
+				if(currentScene)currentScene->setSize(width, height);
+			}else{
+				//TODO throw maybe
+			}
+		}
+
+		[[nodiscard]] bool mouseFocusFree() const{
 			return currentCursorFocus == nullptr;
 		}
 
-		[[nodiscard]] bool focusScroll() const {
+		[[nodiscard]] bool focusScroll() const{
 			return currentScrollFocused != nullptr;
 		}
 
-		[[nodiscard]] bool focusKeyInput() const {
+		[[nodiscard]] bool focusKeyInput() const{
 			return currentInputFocused != nullptr;
 		}
 
-		[[nodiscard]] bool cursorCaptured() const {
+		[[nodiscard]] bool cursorCaptured() const{
 			return currentCursorFocus != nullptr;
 		}
 
-		void iterateAll_DFS(Elem* current, bool& shouldStop, Concepts::Invokable<bool(Elem*)> auto&& func){
-			if (shouldStop)return;
+		void releaseFocus(){
+			setEnter(nullptr);
+			currentCursorFocus = nullptr;
+			currentScrollFocused = nullptr;
+			currentInputFocused = nullptr;
+			textInputListener = nullptr;
+		}
 
-			if (!func(current) || shouldStop)return;
+		void iterateAll_DFS(Widget* current, Concepts::Invokable<bool(Widget*)> auto&& func){
+			if(!func(current)) return;
 
-			if(!current->hasChildren())return;
+			if(!current->hasChildren()) return;
 
-			for (auto& child : *current->getChildren()) {
-				this->iterateAll_DFS(child.get(), shouldStop, std::forward<decltype(func)>(func));
+			for(auto& child : *current->getChildren()){
+				this->iterateAll_DFS(child.get(), std::forward<decltype(func)>(func));
 			}
+		}
+
+
+		void updateCurrentFocus(){
+			Widget* last = nullptr;
+
+			Widget* toIterate = currentScene;
+
+
+			if(hoverTableManager.isCursorInbound()){
+				toIterate = hoverTableManager.getCurrentFocus();
+			}else if(auto* lastDialog = rootDialog.findFirstShowingDialogNode(); lastDialog != &rootDialog){
+				toIterate = &lastDialog->content;
+			}else{
+				toIterate = currentScene;
+			}
+
+
+			iterateAll_DFS(toIterate, [this, &last](Widget* elem) mutable{
+				if(elem->isInteractable() && elem->isInbound(cursorPos)){
+					last = elem;
+				}
+
+				return !elem->touchDisabled();
+			});
+
+			determinShiftFocus(last);
 		}
 
 		void update(float delta) override;
 
-		[[nodiscard]] Geom::Matrix3D& getPorj() {
+		[[nodiscard]] Geom::Matrix3D& getPorj(){
 			return projection;
 		}
 
 		//TODO shit named fucntion and logic!
-		void determinShiftFocus(Elem* newFocus);
+		void determinShiftFocus(Widget* newFocus);
 
 		void setTextFocus(OS::TextInputListener* listener){
 			this->textInputListener = listener;
 		}
 
-		void resize(unsigned w, unsigned h) override;
+		void resize(int w, int h) override;
 
-		[[nodiscard]] float getMarginX() const {return marginX;}
+		[[nodiscard]] float getWidth() const{ return width; }
 
-		[[nodiscard]] float getMarginY() const {return marginY;}
+		[[nodiscard]] float getHeight() const{ return height; }
+		//
+		// DrawSeq& getDrawSeq(){
+		// 	drawSeq.scene = currentScene;
+		// 	drawSeq.dialog = currentScene;
+		// 	drawSeq.hoverTable = hoverTableManager.getDrawSeq();
+		//
+		// 	return drawSeq;
+		// }
 
-		[[nodiscard]] float getWidth() const {return width;}
+		constexpr int getRenderLayers() const{
+			return 2;
+		}
 
-		[[nodiscard]] float getHeight() const {return height;}
+		void renderLayer(const int layer) const{
+			switch(layer){
+				case 0 : render();
+					break;
+				case 1 : render_Dialog();
+					break;
+				case 2 : render_HoverTable();
+					break;
+				default : break;
+			}
+		}
+
+		void renderBaseLayer(const int layer) const{
+			switch(layer){
+				case 0 : renderBase();
+					break;
+				case 1 : renderBase_Dialog();
+					break;
+				case 2 : renderBase_HoverTable();
+					break;
+				default : break;
+			}
+		}
 
 		//TODO uses layer things to optimize this
+		void render_Dialog() const{
+			rootDialog.draw();
+		}
+
+		void renderBase_Dialog() const{
+			rootDialog.drawBase();
+		}
+
 		void render() const;
 
 		void renderBase() const;
 
-		void renderBaseAbove() const;
+		void renderBase_HoverTable() const;
 
-		void renderAbove() const;
+		void render_HoverTable() const;
+
+		bool hasDialog() const{
+			return rootDialog.findFirstShowingDialogNode() != &rootDialog;
+		}
 
 		[[nodiscard]] Geom::Vec2 getCursorDst() const{
 			return cursorPos - cursorPressedBeginPos;
@@ -146,6 +261,10 @@ export namespace UI{
 			if(this->textInputListener){
 				this->setTextFocus(nullptr);
 				return false;
+			}
+
+			if(auto* last = rootDialog.findFirstShowingDialogNode(); last != &rootDialog){
+				last->destroy();
 			}
 
 			return true;
@@ -179,9 +298,9 @@ export namespace UI{
 		void registerCtrl() const;
 
 	protected:
-		void inform(int keyCode, int action, int mods) override {
-		}
+		void inform(int keyCode, int action, int mods) override{}
 
-		void setEnter(Elem* elem);
+		void setEnter(Widget* elem);
+
 	};
 }

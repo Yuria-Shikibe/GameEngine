@@ -182,8 +182,8 @@ export namespace Game {
 			using namespace Graphic;
 
 			GL::setDepthMask(false);
-			Font::defGlyphParser->parseWith(coordText, std::format("${{scl#[0.85]}}${{color#[eeeeeeff]}}Health: {:.1f}", this->health));
-			coordText->offset.set(this->trans.vec).add(this->maxBound.getWidth() * 0.55f, this->maxBound.getHeight() * 0.55f);
+			Font::defGlyphParser->parseWith(coordText, std::format("$<scl#[0.85]>$<color#[eeeeeeff]>Health: {:.1f}", this->health));
+			coordText->offset.set(this->trans.vec).add(maxBound.getWidth() * 0.55f, maxBound.getHeight() * 0.55f);
 			coordText->setAlign(Align::Mode::bottom_left);
 			coordText->render();
 			// Graphic::Batch::flush();
@@ -198,7 +198,7 @@ export namespace Game {
 
 			Draw::Line::setLineStroke(1.0f);
 			Draw::color(Colors::MAGENTA);
-			Draw::Line::lineAngle<BatchWorld>(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
+			Draw::Line::lineAngle(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
 			Draw::Line::setLineStroke(2.0f);
 
@@ -207,7 +207,7 @@ export namespace Game {
 				auto& cur = boxData.original;
 				for(int i = 0; i < 4; ++i) {
 					Draw::color(colors[i]);
-					Draw::rectOrtho<BatchWorld>(cur[i].x - 2, cur[i].y - 2, 4, 4);
+					Draw::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);
 
 					const Vec2 begin = cur[i];
 					const Vec2 end = cur[(i + 1) % 4];
@@ -231,7 +231,7 @@ export namespace Game {
 
 
 			Draw::color(Colors::PURPLE);
-			Draw::rectOrtho<BatchWorld>(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
+			Draw::rectOrtho(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->drawDebug();

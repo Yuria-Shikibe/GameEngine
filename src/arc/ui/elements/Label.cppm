@@ -9,7 +9,7 @@ import Font.GlyphArrangement;
 import std;
 
 export namespace UI {
-	class Label : public Elem {
+	class Label : public Widget {
 	protected:
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{Font::obtainLayoutPtr()};
 
@@ -35,6 +35,11 @@ export namespace UI {
 			}
 		}
 
+		void updateGlyphPosition() const{
+			const auto offset = Align::getOffsetOf(textAlignMode, glyphLayout->getDrawBound(), getValidBound());
+			glyphLayout->offset.set(offset).add(absoluteSrc.x, absoluteSrc.y + getValidHeight());
+		}
+
 	public:
 		bool usingGlyphHeight = false;
 		bool usingGlyphWidth = false;
@@ -50,6 +55,8 @@ export namespace UI {
 		void setTextAlign(const Align::Mode align){
 			textAlignMode = align;
 			glyphLayout->setAlign(textAlignMode);
+
+			updateGlyphPosition();
 		}
 
 		[[nodiscard]] Label() {
@@ -81,9 +88,14 @@ export namespace UI {
 
 		void drawContent() const override;
 
-		void calAbsoluteSrc(Elem* parent) override {
-			Elem::calAbsoluteSrc(parent);
-			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::getOffsetOf(textAlignMode, border));
+		void calAbsoluteSrc(Widget* parent) override {
+			Widget::calAbsoluteSrc(parent);
+			updateGlyphPosition();
+		}
+
+		void setWrap(const bool wrapX = true, const bool wrapY = true){
+			usingGlyphHeight = wrapY;
+			usingGlyphWidth = wrapX;
 		}
 
 		void update(float delta) override {
@@ -104,13 +116,15 @@ export namespace UI {
 				layout();
 			}
 
-			Elem::update(delta);
+			Widget::update(delta);
 		}
 
 		void layout() override{
 			updateTextLayout();
 
-			Elem::layout();
+			updateGlyphPosition();
+
+			Widget::layout();
 		}
 
 

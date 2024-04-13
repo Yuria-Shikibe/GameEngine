@@ -12,7 +12,7 @@ export namespace GL{
 	public:
 		int samples = 4;
 
-		MultiSampleTexture2D(const unsigned int w, const unsigned int h, const int samples) : Texture2D(), samples{samples} {
+		MultiSampleTexture2D(const int w, const int h, const int samples) : Texture2D(), samples{samples} {
 			width = w;
 			height = h;
 			targetFlag = GL_TEXTURE_2D_MULTISAMPLE;
@@ -21,11 +21,11 @@ export namespace GL{
 			glTextureStorage2DMultisample(nameID, samples, GL_RGBA8, width, height, GL_TRUE);
 		}
 
-		MultiSampleTexture2D(const unsigned int w, const unsigned int h) : MultiSampleTexture2D(w, h, 4) {
+		MultiSampleTexture2D(const int w, const int h) : MultiSampleTexture2D(w, h, 4) {
 
 		}
 
-		void resize(const unsigned int w, const unsigned int h) override {
+		void resize(const int w, const int h) override {
 			if(width == w || height == h)return;
 			width = w;
 			height = h;

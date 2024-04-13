@@ -12,7 +12,7 @@ import std;
 export namespace UI{
 	struct ProgressBarDrawer;
 
-	class ProgressBar : public Elem{
+	class ProgressBar : public Widget{
 	public:
 		enum struct ApproachScope : bool{
 			drawing = false,
@@ -49,7 +49,7 @@ export namespace UI{
 
 
 		void update(const float delta) override{
-			Elem::update(delta);
+			Widget::update(delta);
 
 			if(approachScope == ApproachScope::updating){
 				updateProgress(delta);
