@@ -1,0 +1,3 @@
+[submodule "include/lunasvg/lunasvg"]
+	path = include/lunasvg/lunasvg
+	url = https://github.com/Yuria-Shikibe/lunasvg.git
