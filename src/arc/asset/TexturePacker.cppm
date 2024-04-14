@@ -17,6 +17,7 @@ import OS.File;
 import OS.FileTree;
 import OS.Handler;
 
+import Image.Svg;
 import Heterogeneous;
 
 using Geom::OrthoRectUInt;
@@ -79,7 +80,12 @@ export namespace Assets {
 		[[nodiscard]] bool loadPixmap(const int margin){
 			if(!hasPixelData()){
 				if(hasFile()) {
-					pixmap.loadFrom(sourceFile);
+					if(sourceFile.extension() == ".svg"){
+						pixmap = ext::svgToBitmap(sourceFile);
+					}else{
+						pixmap.loadFrom(sourceFile);
+					}
+
 				}
 
 				//TODO global search

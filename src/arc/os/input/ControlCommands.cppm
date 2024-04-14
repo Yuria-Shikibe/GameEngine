@@ -98,7 +98,7 @@ export namespace Ctrl{
 			});
 		}
 
-		input->registerKeyBind(Ctrl::KEY_ESCAPE, Act_Press, [] {
+		input->registerKeyBind({{Ctrl::KEY_ESCAPE, Act_Press}, {Ctrl::KEY_ESCAPE, Act_Repeat}}, [] {
 			if(Core::uiRoot->onEsc()){
 				//TODO...
 			}

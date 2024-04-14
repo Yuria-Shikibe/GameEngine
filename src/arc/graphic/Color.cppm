@@ -471,6 +471,13 @@ export namespace Graphic{
 			return clamp();
 		}
 
+		constexpr Color& lerpRGB(const Color& target, const float t) noexcept{
+			this->r += t * (target.r - this->r);
+			this->g += t * (target.g - this->g);
+			this->b += t * (target.b - this->b);
+			return clamp();
+		}
+
 		[[nodiscard]] constexpr Color createLerp(const Color& target, const float t) const noexcept{
 			Color newColor{
 				r + t * (target.r - r),

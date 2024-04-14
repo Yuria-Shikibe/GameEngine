@@ -20,6 +20,7 @@ export namespace UI {
 	class Table : public Group{
 	protected:
 		Align::Mode cellAlignMode = Align::Mode::center;
+		bool relativeLayoutFormat = true;
 
 	public:
 		std::vector<unsigned> elemLayoutCountData{};
@@ -33,14 +34,18 @@ export namespace UI {
 
 		std::vector<LayoutCell> cells{};
 
-		bool relativeLayoutFormat = true;
-
 		[[nodiscard]] Align::Mode getCellAlignMode() const{
 			return cellAlignMode;
 		}
 
 		void setCellAlignMode(const Align::Mode cellAlignMode){
 			this->cellAlignMode = cellAlignMode;
+		}
+
+		[[nodiscard]] bool isRelativeLayoutFormat() const{ return relativeLayoutFormat; }
+
+		void setRelativeLayoutFormat(const bool relativeLayoutFormat){
+			this->relativeLayoutFormat = relativeLayoutFormat;
 		}
 
 		//TODO mess

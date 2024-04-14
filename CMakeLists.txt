@@ -31,7 +31,7 @@ file(COPY ${MSVC_MODULE_DIR} DESTINATION
 
 set(SRC_DIR src)
 set(RES_DIR properties)
-set(REF_DIR include)
+set(INCLUDES include)
 set(LIB_DIR lib)
 set(BUILD_DIR build)
 
@@ -83,32 +83,14 @@ file(GLOB_RECURSE FAST_MODULES
 
 message(STATUS "Linking...")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${REF_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDES})
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 
-# Static link
-link_libraries(
-        freetype.lib
-        glfw3.lib
-        irrKlang.lib
-        #    opengl32.lib
-        #    gdi32.lib
-        #    shell32.lib
-        #    shell32.lib
-        #    User32.lib
-        #    irrKlang.exp
-)
 
-#macro(get_WIN32_WINNT version)
-#
-#message(STATUS "ON Windows")
-link_libraries(
-        dwmapi.lib
-        shell32.lib
-        gdiplus.lib
-)
-#endmacro()
+set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules)
+
+add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 
 message(STATUS "Building...")
 
@@ -124,11 +106,37 @@ add_executable(
 
 target_sources(${PROJECT_NAME}
         PUBLIC
-        modules/std.compat.ixx
-        modules/std.ixx
+        ${MODULE_DIR}/std.compat.ixx
+        ${MODULE_DIR}/std.ixx
         ${FAST_MODULES}      #[[Modules]]
         ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/target.rc
 )
+
+# Static link
+target_link_libraries(${PROJECT_NAME}
+        freetype.lib
+        glfw3.lib
+        irrKlang.lib
+        #    opengl32.lib
+        #    gdi32.lib
+        #    shell32.lib
+        #    shell32.lib
+        #    User32.lib
+        #    irrKlang.exp
+)
+
+#macro(get_WIN32_WINNT version)
+#
+#message(STATUS "ON Windows")
+target_link_libraries(${PROJECT_NAME}
+        dwmapi.lib
+        shell32.lib
+        gdiplus.lib
+        #        D:/projects/GameEngine/cmake-build-msvc-debug/include/lunasvg/lunasvg/Debug/lunasvg.lib
+)
+#endmacro()
+
+target_link_libraries(${PROJECT_NAME} lunasvg)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 #target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")

@@ -9,7 +9,7 @@ UI::Root::Root(): hoverTableManager{this}{
 	// NOLINT(*-use-equals-default)
 	currentScene->setSrc(0.0f, 0.0f);
 	currentScene->setAbsSrc(Geom::ZERO);
-	currentScene->relativeLayoutFormat = false;
+	currentScene->setRelativeLayoutFormat(false);
 	currentScene->setTouchbility(TouchbilityFlags::childrenOnly);
 	currentScene->setRoot(this);
 	currentScene->PointCheck = 100;

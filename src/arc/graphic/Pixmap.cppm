@@ -12,8 +12,8 @@ import Graphic.Color;
 import Math;
 import std;
 
-using Graphic::Color;
-using colorBits = Graphic::Color::ColorBits;
+using Color = Graphic::Color;
+using ColorBits = Graphic::Color::ColorBits;
 
 export namespace Graphic{
     class Pixmap{
@@ -54,6 +54,13 @@ export namespace Graphic{
 
         [[nodiscard]] std::unique_ptr<DataType[]> data() && {
             return std::move(bitmapData);
+        }
+
+        static Pixmap createEmpty(const int width, const int height){
+            Pixmap map{};
+            map.width = width;
+            map.height = height;
+            return map;
         }
 
         [[nodiscard]] Pixmap(const int width, const int height)
@@ -136,9 +143,22 @@ export namespace Graphic{
             return bitmapData[index];
         }
 
+        void mix(const Color color, const float t) const{
+            for(int i = 0; i < pixelSize(); ++i){
+                Color src = get(i);
+                set(i, src.lerpRGB(color, t));
+            }
+        }
+
+        void mulWhite() const{
+            for(int i = 0; i < pixelSize(); ++i){
+                setRaw(i, getRaw(i) | 0x00'ff'ff'ff);
+            }
+        }
+
         void loadFrom(const OS::File& file) {
             int b;
-            this->bitmapData = stbi::loadPng(file, width, height, b, Channels);
+            this->bitmapData = ext::loadPng(file, width, height, b, Channels);
         }
 
         void loadFrom(const GL::Texture2D& texture2D) {
@@ -160,9 +180,9 @@ export namespace Graphic{
             std::string&& ext = file.extension();
 
             if(ext == ".png") {
-                stbi::writePng(file, width, height, Channels, bitmapData.get());
+                ext::writePng(file, width, height, Channels, bitmapData.get());
             }else if(ext == ".bmp") {
-                stbi::writeBmp(file, width, height, Channels, bitmapData.get());
+                ext::writeBmp(file, width, height, Channels, bitmapData.get());
             }
         }
 
@@ -183,7 +203,7 @@ export namespace Graphic{
 
         [[nodiscard]] constexpr auto dataIndex(const int x, const int y) const {
             if(x > width || y > height)throw ext::RuntimeException{"Array Index Out Of Bound!"};
-            return (y * width + x) * Channels;
+            return (y * width + x);
         }
 
         [[nodiscard]] std::unique_ptr<DataType[]> copyData() const {
@@ -215,64 +235,69 @@ export namespace Graphic{
             return width * height * Channels;
         }
 
-        void setRaw(const int x, const int y, const colorBits colorBit) const{
-            auto* index = reinterpret_cast<colorBits*>(bitmapData.get() + dataIndex(x, y));
-            *index = colorBit;
+        void setRaw(const int index, const ColorBits colorBit) const{
+            auto* ptr = reinterpret_cast<ColorBits*>(bitmapData.get() + index * Channels) ;
+            *ptr = colorBit;
+        }
+
+        void setRaw(const int x, const int y, const ColorBits colorBit) const{
+            setRaw(dataIndex(x, y), colorBit);
+        }
+
+        void set(const int index, const Graphic::Color& color) const{
+            setRaw(index, color.argb8888());
         }
 
         void set(const int x, const int y, const Graphic::Color& color) const{
             setRaw(x, y, color.argb8888());
         }
 
-        [[nodiscard]] colorBits getRaw(const int x, const int y) const {
-            const auto* index = reinterpret_cast<colorBits*>(bitmapData.get() + dataIndex(x, y));
-            return *index;
+        [[nodiscard]] ColorBits getRaw(const int index) const {
+            const auto* ptr = reinterpret_cast<ColorBits*>(bitmapData.get() + index * Channels);
+            return *ptr;
+        }
+
+        [[nodiscard]] ColorBits getRaw(const int x, const int y) const {
+            return getRaw(dataIndex(x, y));
+        }
+
+        [[nodiscard]] Graphic::Color get(const int index) const {
+            Color color{};
+            return color.argb8888(getRaw(index));
         }
 
         [[nodiscard]] Graphic::Color get(const int x, const int y) const {
-            const auto* index = bitmapData.get() + dataIndex(x, y);
-            return Color{
-                static_cast<float>(index[0]) / 255.0f,
-                static_cast<float>(index[1]) / 255.0f,
-                static_cast<float>(index[2]) / 255.0f,
-                static_cast<float>(index[3]) / 255.0f
-            };
+            return get(dataIndex(x, y));
         }
 
-        [[nodiscard]] int getRaw(const size_t index) const {
-            const auto* i = reinterpret_cast<colorBits*>(bitmapData.get() + index);
-            return *i;
-        }
-
-        template<Concepts::Invokable<void(int, int)> T>
-        void each(const T& func) {
+        void each(Concepts::Invokable<void(Pixmap&, int, int)> auto&& func) {
             for(int x = 0; x < width; x++) {
                 for(int y = 0; y < height; ++y) {
-                    func(x, y);
+                    func(*this, x, y);
                 }
             }
         }
 
     protected:
-        static bool empty(const colorBits i){
+        static bool empty(const ColorBits i){
             return (i & 0x000000ff) == 0;
         }
 
-        static colorBits blend(const colorBits src, const colorBits dst){
-            const colorBits src_a = src & Color::a_Mask;
+        static ColorBits blend(const ColorBits src, const ColorBits dst){
+            const ColorBits src_a = src & Color::a_Mask;
             if(src_a == 0) return dst;
 
-            colorBits dst_a = dst & Color::a_Mask;
+            ColorBits dst_a = dst & Color::a_Mask;
             if(dst_a == 0) return src;
-            colorBits dst_r = dst >> Color::r_Offset & Color::a_Mask;
-            colorBits dst_g = dst >> Color::g_Offset & Color::a_Mask;
-            colorBits dst_b = dst >> Color::b_Offset & Color::a_Mask;
+            ColorBits dst_r = dst >> Color::r_Offset & Color::a_Mask;
+            ColorBits dst_g = dst >> Color::g_Offset & Color::a_Mask;
+            ColorBits dst_b = dst >> Color::b_Offset & Color::a_Mask;
 
-            dst_a -=  static_cast<colorBits>(static_cast<float>(dst_a) * (static_cast<float>(src_a) / Color::maxValF));
-            const colorBits a = dst_a + src_a;
-            dst_r = static_cast<colorBits>(static_cast<float>(dst_r * dst_a + (src >> Color::r_Offset & Color::a_Mask) * src_a) / static_cast<colorBits>(a));
-            dst_g = static_cast<colorBits>(static_cast<float>(dst_g * dst_a + (src >> Color::g_Offset & Color::a_Mask) * src_a) / static_cast<colorBits>(a));
-            dst_b = static_cast<colorBits>(static_cast<float>(dst_b * dst_a + (src >> Color::b_Offset & Color::a_Mask) * src_a) / static_cast<colorBits>(a));
+            dst_a -=  static_cast<ColorBits>(static_cast<float>(dst_a) * (static_cast<float>(src_a) / Color::maxValF));
+            const ColorBits a = dst_a + src_a;
+            dst_r = static_cast<ColorBits>(static_cast<float>(dst_r * dst_a + (src >> Color::r_Offset & Color::a_Mask) * src_a) / static_cast<ColorBits>(a));
+            dst_g = static_cast<ColorBits>(static_cast<float>(dst_g * dst_a + (src >> Color::g_Offset & Color::a_Mask) * src_a) / static_cast<ColorBits>(a));
+            dst_b = static_cast<ColorBits>(static_cast<float>(dst_b * dst_a + (src >> Color::b_Offset & Color::a_Mask) * src_a) / static_cast<ColorBits>(a));
             return
                 dst_r << Color::r_Offset |
                 dst_g << Color::g_Offset |
@@ -291,7 +316,7 @@ export namespace Graphic{
             }
         }
         void blend(const int x, const int y, const Color& color) const {
-            const colorBits raw = getRaw(x, y);
+            const ColorBits raw = getRaw(x, y);
             setRaw(x, y, blend(raw, color.rgba8888()));
         }
 
@@ -381,8 +406,10 @@ export namespace Graphic{
                             const float xdiff = x_ratio * static_cast<float>(j) + static_cast<float>(srcx - sx);
                             if(sx >= owidth || dx >= width) break;
 
-                            const colorBits
-                                srcp = (sx + sy * owidth) * Pixmap::Channels,
+                            const int
+                                srcp = (sx + sy * owidth) * Pixmap::Channels;
+
+                            const ColorBits
                                 c1 = pixmap.getRaw(srcp),
                                 c2 = sx + rX < srcWidth  ? pixmap.getRaw(srcp + Pixmap::Channels *rX) : c1,
                                 c3 = sy + rY < srcHeight ? pixmap.getRaw(srcp + spitch * rY) : c1,
@@ -393,25 +420,25 @@ export namespace Graphic{
                             const float tc = (1 - xdiff) *      ydiff ;
                             const float td =      xdiff  *      ydiff ;
 
-                            const colorBits r = Color::a_Mask & static_cast<colorBits>(
+                            const ColorBits r = Color::a_Mask & static_cast<ColorBits>(
                                 static_cast<float>((c1 & Color::r_Mask) >> Color::r_Offset) * ta +
                                 static_cast<float>((c2 & Color::r_Mask) >> Color::r_Offset) * tb +
                                 static_cast<float>((c3 & Color::r_Mask) >> Color::r_Offset) * tc +
                                 static_cast<float>((c4 & Color::r_Mask) >> Color::r_Offset) * td
                             );
-                            const colorBits g = Color::a_Mask & static_cast<colorBits>(
+                            const ColorBits g = Color::a_Mask & static_cast<ColorBits>(
                                 static_cast<float>((c1 & Color::g_Mask) >> Color::g_Offset) * ta +
                                 static_cast<float>((c2 & Color::g_Mask) >> Color::g_Offset) * tb +
                                 static_cast<float>((c3 & Color::g_Mask) >> Color::g_Offset) * tc +
                                 static_cast<float>((c4 & Color::g_Mask) >> Color::g_Offset) * td
                             );
-                            const colorBits b = Color::a_Mask & static_cast<colorBits>(
+                            const ColorBits b = Color::a_Mask & static_cast<ColorBits>(
                                 static_cast<float>((c1 & Color::b_Mask) >> Color::b_Offset) * ta +
                                 static_cast<float>((c2 & Color::b_Mask) >> Color::b_Offset) * tb +
                                 static_cast<float>((c3 & Color::b_Mask) >> Color::b_Offset) * tc +
                                 static_cast<float>((c4 & Color::b_Mask) >> Color::b_Offset) * td
                             );
-                            const colorBits a = Color::a_Mask & static_cast<colorBits>(
+                            const ColorBits a = Color::a_Mask & static_cast<ColorBits>(
                                 static_cast<float>((c1 & Color::a_Mask) >> Color::a_Offset) * ta +
                                 static_cast<float>((c2 & Color::a_Mask) >> Color::a_Offset) * tb +
                                 static_cast<float>((c3 & Color::a_Mask) >> Color::a_Offset) * tc +
@@ -450,8 +477,8 @@ export namespace Graphic{
             const int rowDataCount = pixmap.getWidth() * Channels;
 
             for(int y = 0; y < pixmap.getHeight(); ++y) {
-                const auto indexDst =  this->dataIndex(dstx, dsty + y);
-                const auto indexSrc = pixmap.dataIndex(0   ,        y);
+                const auto indexDst =  this->dataIndex(dstx, dsty + y) * Channels;
+                const auto indexSrc = pixmap.dataIndex(0   ,        y) * Channels;
 
                 std::memcpy(bitmapData.get() + indexDst, pixmap.bitmapData.get() + indexSrc, rowDataCount);
             }
@@ -468,8 +495,8 @@ export namespace Graphic{
             Pixmap newMap{width, height};
 
             for(int y = 0; y < height; ++y) {
-                const auto indexDst = newMap.dataIndex(0   ,        y);
-                const auto indexSrc =  this->dataIndex(srcx, srcy + y);
+                const auto indexDst = newMap.dataIndex(0   ,        y) * Channels;
+                const auto indexSrc =  this->dataIndex(srcx, srcy + y) * Channels;
 
                 std::memcpy(newMap.bitmapData.get() + indexDst, bitmapData.get() + indexSrc, rowDataCount);
             }

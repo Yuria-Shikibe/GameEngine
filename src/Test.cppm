@@ -38,6 +38,7 @@ import Game.Core;
 import Game.Content.Builtin.SpaceCrafts;
 
 import ext.Encoding;
+import Image.Svg;
 
 export namespace Test{
 	constexpr std::string_view MainPageName = "base";
@@ -48,8 +49,8 @@ export namespace Test{
 		OS::timerSetter = Core::platform->getGlobalTimeSetter();
 		OS::deltaSetter = Core::platform->getGlobalDeltaSetter();
 
-		stbi::setFlipVertically_load(true);
-		stbi::setFlipVertically_write(true);
+		ext::setFlipVertically_load(true);
+		ext::setFlipVertically_write(true);
 
 		Core::initCore();
 
@@ -127,6 +128,12 @@ export namespace Test{
 				uiPage->forcePack = true;
 				Assets::textureDir.subFile("ui").forAllSubs([uiPage](OS::File&& file){
 					uiPage->pushRequest(file);
+				});
+
+				Assets::assetsDir.subFile("svg\\icons").forAllSubs([uiPage](OS::File&& file){
+					auto pixmap = ext::svgToBitmap(file, 48);
+					pixmap.mulWhite();
+					uiPage->pushRequest(file.stem(), std::move(pixmap));
 				});
 
 				Assets::TexturePackPage* cursorPage = event.manager->getAtlas().registerPage(

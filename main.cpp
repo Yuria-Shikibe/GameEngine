@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 import std;
+import std.compat;
 
 import Assets.LoaderRenderer;
 
@@ -127,7 +128,7 @@ void setupUITest(){
 
 	Core::uiRoot->currentScene->transferElem(HUD).fillParent().setAlign(Align::center);
 
-	HUD->relativeLayoutFormat = false;
+	HUD->setRelativeLayoutFormat(false);
 	HUD->setBorderZero();
 	HUD->setDrawer(&UI::emptyDrawer);
 
@@ -393,6 +394,21 @@ void genRandomEntities(){
 	ptr->activate();
 }
 
+// int main(){
+// 	// Gra
+//
+// 	auto bitmap = ext::svgToBitmap(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\svg\icons\api-app.svg)"}, 96);
+// 	//
+// 	bitmap.each([](Graphic::Pixmap& pixmap, int x, int y){
+// 		pixmap.setRaw(x, y, pixmap.getRaw(x, y) | 0x00'ff'ff'ff);
+// 	});
+// 	bitmap.write(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\svg\icons\api-app.png)"}, true);
+// 	bitmap.mix(Graphic::Colors::ACID, 1.0f);
+// 	bitmap.write(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\svg\icons\api-app-1.png)"}, true);
+//
+// 	return 0;
+// }
+
 int main(const int argc, char* argv[]){
 	// return 0;
 	//Init
@@ -599,4 +615,6 @@ int main(const int argc, char* argv[]){
 
 	Assets::dispose();
 	Core::dispose();
+
+	return 0;
 }

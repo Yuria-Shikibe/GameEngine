@@ -111,7 +111,7 @@ export namespace GL{
 		auto loadFromFile(const OS::File& file){
 			//TODO File Support
 			int bpp{};
-			return stbi::loadPng(file, width, height, bpp);
+			return ext::loadPng(file, width, height, bpp);
 		}
 
 
