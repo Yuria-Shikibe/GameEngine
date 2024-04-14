@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(GameEngine
-    VERSION 0.0.1
+        VERSION 0.0.1
 )
 
 message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
@@ -40,7 +40,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
 set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
     set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:library)
     add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
@@ -52,7 +52,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     file(COPY ${BIN} DESTINATION
             ${EXE_DIR}
     )
-else()
+else ()
     message(STATUS "CXX Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
 endif ()
@@ -77,8 +77,8 @@ file(GLOB_RECURSE CURRENT_HEADERS
 # Modules...
 #
 file(GLOB_RECURSE FAST_MODULES
-    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
-    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
+        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
+        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
 )
 
 message(STATUS "Linking...")
@@ -89,21 +89,24 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 
 # Static link
 link_libraries(
-    freetype.lib
-    glfw3.lib
-    irrKlang.lib
-#    opengl32.lib
-#    gdi32.lib
-#    shell32.lib
-#    User32.lib
-#    irrKlang.exp
+        freetype.lib
+        glfw3.lib
+        irrKlang.lib
+        #    opengl32.lib
+        #    gdi32.lib
+        #    shell32.lib
+        #    shell32.lib
+        #    User32.lib
+        #    irrKlang.exp
 )
 
 #macro(get_WIN32_WINNT version)
 #
 #message(STATUS "ON Windows")
 link_libraries(
-    dwmapi.lib
+        dwmapi.lib
+        shell32.lib
+        gdiplus.lib
 )
 #endmacro()
 
@@ -116,7 +119,7 @@ add_executable(
         ${CURRENT_HEADERS}   #[[.h]]
         glad.c               #[[Glad Attachment]]
         main.cpp
-#        test.cpp
+        #        test.cpp
 )
 
 target_sources(${PROJECT_NAME}
@@ -130,11 +133,11 @@ target_sources(${PROJECT_NAME}
 set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 #target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     set(FILE_TO_DELETE "${EXE_DIR}/${PROJECT_NAME}.pdb")
     add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E remove ${FILE_TO_DELETE}
-        COMMENT "Deleting ${FILE_TO_DELETE}"
+            COMMAND ${CMAKE_COMMAND} -E remove ${FILE_TO_DELETE}
+            COMMENT "Deleting ${FILE_TO_DELETE}"
     )
 elseif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
     message(STATUS "Copy Properties Setup")

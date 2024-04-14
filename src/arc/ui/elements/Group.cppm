@@ -2,9 +2,9 @@ module;
 
 export module UI.Group;
 
-export import UI.Elem;
+export import UI.Widget;
 export import UI.Flags;
-import RuntimeException;
+import ext.RuntimeException;
 
 import Concepts;
 
@@ -118,7 +118,19 @@ export namespace UI {
 
 		virtual void updateChildren(const float delta) {
 			for (auto& child : children){
-				child->update(delta);
+				if(!child->isSleep())child->update(delta);
+			}
+		}
+
+		void clearChildrenInstantly(){
+			children.clear();
+		}
+
+		void clearChildrenSafely() const{
+			for(auto& element : children){
+				element->callRemove();
+				element->setSleep(true);
+				element->setVisible(false);
 			}
 		}
 
@@ -160,6 +172,20 @@ export namespace UI {
 					element->postChanged();
 				}
 			}
+		}
+
+		bool onEsc() override{
+			bool rst = true;
+			for(const auto& child : children){
+				if(child->onEsc()){
+					continue;
+				}
+
+				rst = false;
+				break;
+			}
+
+			return rst;
 		}
 
 		void childrenCheck(const Widget* ptr) override{

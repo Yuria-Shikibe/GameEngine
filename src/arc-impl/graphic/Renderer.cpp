@@ -6,7 +6,7 @@ module Core.Renderer;
 
 import Graphic.Draw;
 import Assets.Graphic;
-import RuntimeException;
+import ext.RuntimeException;
 import Core;
 import Geom.Matrix3D;
 import UI.SeperateDrawable;

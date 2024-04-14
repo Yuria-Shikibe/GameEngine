@@ -16,47 +16,27 @@ export namespace UI{
 			if(call)call(ON_OFF);
 		}
 
-		bool mousePressed{false};
-
-
-		[[nodiscard]] bool getPressedCheckState() const {
-			if(pressedCheck){
-				return pressedCheck();
-			}
-
-			return false;
-		}
-
 	public:
 		std::function<void(bool)> call{};
-		std::function<bool()> pressedCheck{};
 
 		Button(){
 			touchbility = TouchbilityFlags::enabled;
 
 			inputListener.on<MouseActionPress>([this](const auto& event) {
-				mousePressed = true;
-				trigger(mousePressed);
+				pressed = true;
+				trigger(pressed);
 			});
 
 			inputListener.on<MouseActionRelease>([this](const auto& event) {
-				mousePressed = false;
+				pressed = false;
 				if(this->isInbound(event)){
-					trigger(mousePressed);
+					trigger(pressed);
 				}
 			});
 
 			inputListener.on<CurosrExbound>([this](const auto& event) {
-				mousePressed = false;
+				pressed = false;
 			});
-		}
-
-		void update(const float delta) override{
-			if(this->pressedCheck){
-				pressed = pressedCheck();
-			}else{
-				pressed = mousePressed;
-			}
 		}
 
 		void setCall(Concepts::Invokable<void(bool)> auto&& func){

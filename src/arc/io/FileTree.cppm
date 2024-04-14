@@ -3,7 +3,7 @@ module ;
 export module OS.FileTree;
 
 import OS.File;
-import RuntimeException;
+import ext.RuntimeException;
 import std;
 import Heterogeneous;
 
@@ -124,9 +124,9 @@ export namespace OS{
 			if(clearLegacy)files.clear();
 
 			if(concentrateAll()){
-				files = std::move(root.sortSubs(true));
+				files = std::move(root.sortSubs<true>());
 			}else{
-				files = std::move(root.sortSubsBy(concentration, true));
+				files = std::move(root.sortSubsBy<true>(concentration));
 			}
 
 			for (const auto noExtensions = files[static_cast<std::string>(File::EMPTY_EXTENSION)]; const auto& file : noExtensions) {

@@ -34,6 +34,11 @@ namespace Concepts {
 		static constexpr bool invocableAs_v() {
 			return std::is_invocable_r_v<Ret, Func, Args...>;
 		}
+
+		template <typename Func>
+		static constexpr bool invocableVoidAs_v() {
+			return std::is_invocable_v<Func, Args...>;
+		}
 	};
 
 	#define TraitContent \
@@ -45,6 +50,10 @@ namespace Concepts {
 	template <typename Func>\
 	static constexpr bool invocableAs_v() {\
 	return std::is_invocable_r_v<Ret, Func, Args...>;\
+	}\
+	template <typename Func>\
+	static constexpr bool invocableVoidAs_v() {\
+		return std::is_invocable_v<Func, Args...>;\
 	}\
 
 #define Variant(ext) export template<typename Ret, typename... Args> struct FunctionTraits<Ret(Args...) ext>{TraitContent};
@@ -99,6 +108,9 @@ export namespace Concepts {
 	concept Invokable = FunctionTraits<functype>::template invocableAs_v<T>();
 
 	template <typename T, typename functype>
+	concept InvokableVoid = FunctionTraits<functype>::template invocableVoidAs_v<T>();
+
+	template <typename T, typename functype>
 	concept InvokeNullable = std::same_as<std::nullptr_t, T> || Invokable<T, functype>;
 
 	template <typename T, typename functype>
@@ -126,5 +138,11 @@ export namespace Concepts {
 	concept Pos = requires(T t){
 		std::is_base_of_v<decltype(t.getX()), NumberType>;
 		std::is_base_of_v<decltype(t.getY()), NumberType>;
+	};
+
+	template <typename T, typename Type>
+	concept Iterator = requires(T t){
+		{ t.operator++() } -> std::convertible_to<T>;
+		{ t.operator*() } -> std::convertible_to<Type>;
 	};
 }

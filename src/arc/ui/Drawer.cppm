@@ -4,9 +4,8 @@ import std;
 import Graphic.Color;
 import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
-import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
-
+import UI.RegionDrawable;
 
 export import UI.Align;
 
@@ -38,15 +37,7 @@ export namespace UI { //TODO bullshit virtual
 		virtual void operator()(const ScrollPane* pane) const;
 	};
 
-	struct Drawable {
-		virtual ~Drawable() = default;
-
-		virtual void draw(Geom::OrthoRectFloat rect) const{
-
-		}
-	};
-
-	struct TextureRegionRectDrawable : Drawable{
+	struct TextureRegionRectDrawable : RegionDrawable{
 		GL::TextureRegion* texRegion{nullptr};
 
 		[[nodiscard]] explicit TextureRegionRectDrawable(GL::TextureRegion* const rect)
@@ -56,26 +47,16 @@ export namespace UI { //TODO bullshit virtual
 		void draw(Geom::OrthoRectFloat rect) const override;
 	};
 
-	struct TextureNineRegionDrawable : Drawable{
-		GL::TextureNineRegion* texRegion{nullptr};
-
-		[[nodiscard]] explicit TextureNineRegionDrawable(GL::TextureNineRegion* const rect)
-			: texRegion(rect) {
-		}
-
-		void draw(Geom::OrthoRectFloat rect) const override;
-	};
-
 	struct DrawPair {
-		const Drawable* region{};
+		const RegionDrawable* region{};
 		Graphic::Color color{};
 
-		[[nodiscard]] DrawPair(const Drawable* region, const Graphic::Color& color)
+		[[nodiscard]] DrawPair(const RegionDrawable* region, const Graphic::Color& color)
 			: region(region),
 			color(color) {
 		}
 
-		[[nodiscard]] explicit DrawPair(const Drawable* region)
+		[[nodiscard]] explicit DrawPair(const RegionDrawable* region)
 			: DrawPair(region, Graphic::Colors::WHITE) {
 		}
 
@@ -85,12 +66,13 @@ export namespace UI { //TODO bullshit virtual
 	};
 
 	struct UIStyle {
-		DrawPair background{};
+		DrawPair baseMask{};
 		DrawPair base{};
 		DrawPair edge{};
 		DrawPair inbound{};
 		DrawPair pressed{};
 		DrawPair disabled{};
+		DrawPair activated{};
 
 		Align::Spacing margin{};
 

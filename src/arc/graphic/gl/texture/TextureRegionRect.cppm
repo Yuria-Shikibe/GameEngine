@@ -6,6 +6,7 @@ export import GL.Texture.Texture2D;
 export import GL.Texture.TextureRegion;
 
 import std;
+import Math;
 
 export namespace GL{
 	/**
@@ -22,24 +23,23 @@ export namespace GL{
 	 * +-------------------------------> x (Normally)
 	 * @endcode
 	 */
-	class TextureRegionRect final : public TextureRegion
-	{
+	class TextureRegionRect final : public TextureRegion{
 	public:
 		~TextureRegionRect() override = default;
 
 		float u0 = 0.0f, v0 = 0.0f, u1 = 1.0f, v1 = 1.0f;
 
-		TextureRegionRect() = default;
+		constexpr TextureRegionRect() = default;
 
 
-		[[nodiscard]] TextureRegionRect(const float u0, const float v0, const float u1, const float v1) // NOLINT(*-easily-swappable-parameters)
+		[[nodiscard]] constexpr TextureRegionRect(const float u0, const float v0, const float u1, const float v1) // NOLINT(*-easily-swappable-parameters)
 			: u0(u0),
 			  v0(v0),
 			  u1(u1),
 			  v1(v1) {
 		}
 
-		[[nodiscard]] TextureRegionRect(const GL::Texture2D* const data, const float u0, const float v0, const float u1, const float v1)
+		[[nodiscard]] constexpr TextureRegionRect(const GL::Texture2D* const data, const float u0, const float v0, const float u1, const float v1)
 			: TextureRegion(data),
 			  u0(u0),
 			  v0(v0),
@@ -77,11 +77,11 @@ export namespace GL{
 		}
 
 		[[nodiscard]] float getWidth() const {
-			return std::abs(u1 - u0) * data->getWidth();
+			return Math::abs(u1 - u0) * static_cast<float>(data->getWidth());
 		}
 
 		[[nodiscard]] float getHeight() const {
-			return std::abs(v1 - v0) * data->getHeight();
+			return Math::abs(v1 - v0) * static_cast<float>(data->getHeight());
 		}
 
 		void shrinkEdgeX(const float marginX) {

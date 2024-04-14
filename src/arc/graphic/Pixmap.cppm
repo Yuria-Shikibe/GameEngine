@@ -2,7 +2,7 @@ module;
 
 export module Graphic.Pixmap;
 
-import RuntimeException;
+import ext.RuntimeException;
 import GL.Texture.Texture2D;
 import GL.Buffer.FrameBuffer;
 import OS.File;
@@ -73,10 +73,10 @@ export namespace Graphic{
             loadFrom(texture2D);
         }
 
-        Pixmap(const int width, const int height, DataType* data)
+        Pixmap(const int width, const int height, std::unique_ptr<DataType[]>&& data)
                     : width(width),
                       height(height) {
-            this->bitmapData.reset(data);
+            this->bitmapData = std::move(data);
         }
 
         Pixmap(const Pixmap& other)
@@ -113,7 +113,7 @@ export namespace Graphic{
         }
 
         [[nodiscard]] bool valid() const {
-            return bitmapData != nullptr && dataSize() > 0;
+            return bitmapData != nullptr && pixelSize() > 0;
         }
 
         void create(const int width, const int height){
@@ -130,6 +130,10 @@ export namespace Graphic{
         void free() {
             width = height = 0;
             if(bitmapData)bitmapData.reset(nullptr);
+        }
+
+        DataType& operator [](const size_t index){
+            return bitmapData[index];
         }
 
         void loadFrom(const OS::File& file) {
@@ -183,6 +187,7 @@ export namespace Graphic{
         }
 
         [[nodiscard]] std::unique_ptr<DataType[]> copyData() const {
+
             const auto size = this->size();
             auto ptr = std::make_unique<DataType[]>(size);
             std::memcpy(ptr.get(), bitmapData.get(), size);
@@ -190,7 +195,19 @@ export namespace Graphic{
             return std::move(ptr);
         }
 
-        [[nodiscard]] constexpr auto dataSize() const {
+        void copyFrom(const DataType* data, const bool flipY = false) const {
+            if(flipY){
+                const size_t rowDataCount = static_cast<size_t>(getWidth()) * Channels;
+
+                for(int y = 0; y < height; ++y){
+                    std::memcpy(bitmapData.get() + rowDataCount * y, data + (getHeight() - y - 1) * rowDataCount, rowDataCount);
+                }
+            }else{
+                std::memcpy(bitmapData.get(), data, size());
+            }
+        }
+
+        [[nodiscard]] constexpr auto pixelSize() const {
             return width * height;
         }
 

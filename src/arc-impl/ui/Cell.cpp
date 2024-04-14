@@ -29,11 +29,20 @@ bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 		item->bound.setHeight(height * getVertScale());
 	}
 
-	item->bound.addSize(-getMarginHori(), -getMarginVert());
+
+	//TODO uses validsize instead
+	item->bound.setSize(
+		Math::clampPositive(item->getWidth() - getMarginHori()),
+		Math::clampPositive(item->getHeight() - getMarginVert())
+	);
+
+	Geom::Vec2 currentSize = item->bound.getSize();
+	if(currentSize == Geom::Vec2{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}){
+		item->setMaximumSize(currentSize);
+	}
+
 	item->changed(ChangeSignal::notifySubs);
 	item->layout();
-
-	allocatedBound.addSize(getPadHori(), getPadVert());
 
 	return allocatedBound.getSize() != originalSize;
 }
@@ -49,15 +58,15 @@ void UI::LayoutCell::applyPosToItem(Widget* parent) const{
 	float yMove{};
 
 	if(align & Align::Mode::top) {
-		yMove = -(pad.top + margin.top + getCellHeight() * scale.getSrcY());
+		yMove = -(margin.top + getCellHeight() * scale.getSrcY());
 	}else if(align & Align::Mode::bottom){
-		yMove = pad.bottom + margin.bottom + getCellHeight() * scale.getSrcY();
+		yMove = margin.bottom + getCellHeight() * scale.getSrcY();
 	}
 
 	if(align & Align::Mode::right) {
-		xMove = -(pad.right + margin.right + getCellWidth() * scale.getSrcX());
+		xMove = -(margin.right + getCellWidth() * scale.getSrcX());
 	}else if(align & Align::Mode::left){
-		xMove = pad.left + margin.left + getCellWidth() * scale.getSrcX();
+		xMove = margin.left + getCellWidth() * scale.getSrcX();
 	}
 
 

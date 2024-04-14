@@ -17,7 +17,7 @@ import Geom.Matrix3D;
 import Geom.Vector2D;
 import Geom;
 
-import RuntimeException;
+import ext.RuntimeException;
 
 import Math;
 

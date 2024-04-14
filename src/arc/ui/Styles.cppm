@@ -1,6 +1,7 @@
 export module UI.Styles;
 
-import UI.Drawer;
+export import UI.Drawer;
+import UI.RegionDrawable;
 
 import Geom.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
@@ -26,8 +27,8 @@ export namespace UI::Styles {
 	tex_elem_s1_back
 	;
 
-	std::unique_ptr<UI::Drawable>
-		emptyDrawable{std::make_unique<UI::Drawable>()},
+	std::unique_ptr<UI::RegionDrawable>
+		emptyDrawable{std::make_unique<UI::RegionDrawable>()},
 		drawable_elem1_egde{nullptr},
 		drawable_elem1_back{nullptr},
 		drawable_elem2_egde{nullptr},
@@ -56,6 +57,7 @@ export namespace UI::Styles {
 	UI::DrawPair drawpair_elem3_back_sky;
 
 	UI::DrawPair drawpair_elem_s1_egde_white;
+	UI::DrawPair drawpair_elem_s1_egde_light_gray;
 	UI::DrawPair drawpair_elem_s1_egde_sky;
 	UI::DrawPair drawpair_elem_s1_back_white;
 	UI::DrawPair drawpair_elem_s1_back_white_solid;
@@ -65,14 +67,16 @@ export namespace UI::Styles {
 		style_elem1{std::make_unique<UI::UIStyle>()},
 		style_elem2{std::make_unique<UI::UIStyle>()},
 		style_elem3{std::make_unique<UI::UIStyle>()},
-		style_elem_s1{std::make_unique<UI::UIStyle>()}
+		style_elem_s1{std::make_unique<UI::UIStyle>()},
+		style_elem_s1_light_gray{std::make_unique<UI::UIStyle>()}
 	;
 
 	std::unique_ptr<UI::WidgetDrawer>
 		drawer_elem1{nullptr},
 		drawer_elem2{nullptr},
 		drawer_elem3{nullptr},
-		drawer_elem_s1{nullptr}
+		drawer_elem_s1{nullptr},
+		drawer_elem_s1_light_gray{nullptr}
 	;
 
 	std::unique_ptr<UI::ScrollBarDrawer>
@@ -168,22 +172,32 @@ export namespace UI::Styles {
 			drawable_elem_s1_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem_s1_back);
 
 			drawpair_elem_s1_egde_white = {drawable_elem_s1_egde.get(), Graphic::Colors::WHITE};
+			drawpair_elem_s1_egde_light_gray = {drawable_elem_s1_egde.get(), Graphic::Colors::LIGHT_GRAY};
 			drawpair_elem_s1_egde_sky = {drawable_elem_s1_egde.get(), uiGeneralColor};
 
 			drawpair_elem_s1_back_white = {drawable_elem_s1_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.13f)};
 			drawpair_elem_s1_back_white_solid = {drawable_elem_s1_back.get(), Graphic::Colors::WHITE};
 			drawpair_elem_s1_back_sky = {drawable_elem_s1_back.get(), Graphic::Color{uiGeneralColor}.setA(0.13f)};
 
-			style_elem_s1->background = drawpair_elem_s1_back_white_solid;
+			style_elem_s1->baseMask = drawpair_elem_s1_back_white_solid;
 			style_elem_s1->base = emptyPair;
 			style_elem_s1->edge = drawpair_elem_s1_egde_sky;
 			style_elem_s1->inbound = drawpair_elem_s1_egde_white;
 			style_elem_s1->pressed = drawpair_elem_s1_back_sky;
+
+			style_elem_s1->activated = drawpair_elem_s1_egde_white;
+
 			style_elem_s1->disabled = emptyPair;
 
 			applyMargin_8(style_elem_s1);
 
 			drawer_elem_s1 = std::make_unique<UI::StyleDrawer>(style_elem_s1.get());;
+		}
+
+		{
+			style_elem_s1_light_gray.operator*() = style_elem_s1.operator*();
+			style_elem_s1_light_gray->edge = drawpair_elem_s1_egde_light_gray;
+			drawer_elem_s1_light_gray= std::make_unique<UI::StyleDrawer>(style_elem_s1_light_gray.get());;
 		}
 
 		UI::defDrawer = drawer_elem_s1.get();

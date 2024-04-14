@@ -6,11 +6,11 @@ module;
 
 export module Font.GlyphArrangement;
 
-import Container.Pool;
+import ext.Container.ObjectPool;
 export import Font;
 
 import Graphic.Color;
-import Container.Pool;
+import ext.Container.ObjectPool;
 import Geom.Rect_Orthogonal;
 import GL.Texture.TextureRegionRect;
 import Geom.Vector2D;
@@ -18,7 +18,7 @@ import Geom.Vector2D;
 export import UI.Align;
 
 import Math;
-import Encoding;
+import ext.Encoding;
 import std;
 
 export namespace Font {
@@ -247,7 +247,7 @@ export namespace Font {
 	//
 	// std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);
 
-	Containers::Pool<GlyphLayout> layoutPool{250, [](GlyphLayout* item) {
+	ext::ObjectPool<GlyphLayout> layoutPool{250, [](GlyphLayout* item) {
 		item->reset();
 	}};
 

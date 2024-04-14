@@ -2,9 +2,9 @@ module;
 
 export module UI.Label;
 
-import RuntimeException;
+import ext.RuntimeException;
 import UI.Align;
-import UI.Elem;
+import UI.Widget;
 import Font.GlyphArrangement;
 import std;
 
@@ -23,8 +23,13 @@ export namespace UI {
 		}
 
 		void updateTextLayout() {
-			Font::defGlyphParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : getValidWidth(), textChanged);
-			glyphLayout->setAlign(textAlignMode);
+			float expectedWidth = getValidWidth();
+			if(Math::zero(expectedWidth)){
+				expectedWidth = std::numeric_limits<float>::max();
+			}
+
+			Font::defGlyphParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : expectedWidth, textChanged);
+			glyphLayout->setAlign(Align::Mode::bottom_left);
 			textChanged = false;
 			if(usingGlyphHeight){
 				setHeight(border.getHeight() + glyphLayout->getDrawBound().getHeight());
@@ -36,13 +41,18 @@ export namespace UI {
 		}
 
 		void updateGlyphPosition() const{
-			const auto offset = Align::getOffsetOf(textAlignMode, glyphLayout->getDrawBound(), getValidBound());
-			glyphLayout->offset.set(offset).add(absoluteSrc.x, absoluteSrc.y + getValidHeight());
+			const Rect drawBound = glyphLayout->getDrawBound();
+			const auto offset = Align::getOffsetOf(textAlignMode, drawBound.getSize(), getValidBound());
+			glyphLayout->offset.set(offset).add(absoluteSrc);
 		}
 
 	public:
 		bool usingGlyphHeight = false;
 		bool usingGlyphWidth = false;
+
+		Label(){
+			touchbility = TouchbilityFlags::disabled;
+		}
 
 		[[nodiscard]] std::shared_ptr<Font::GlyphLayout>& getGlyphLayout(){
 			return glyphLayout;
@@ -54,13 +64,8 @@ export namespace UI {
 
 		void setTextAlign(const Align::Mode align){
 			textAlignMode = align;
-			glyphLayout->setAlign(textAlignMode);
 
 			updateGlyphPosition();
-		}
-
-		[[nodiscard]] Label() {
-			setBorder(12.0f);
 		}
 
 		void setLayoutDataPtr(const std::shared_ptr<Font::GlyphLayout>& layoutPtr) {
@@ -69,6 +74,12 @@ export namespace UI {
 
 		void setText(const Font::TextView text) {
 			glyphLayout->lastText = text;
+			textSource = nullptr;
+			textUpdated();
+		}
+
+		void setText(Font::TextString&& text) {
+			glyphLayout->lastText = std::move(text);
 			textSource = nullptr;
 			textUpdated();
 		}
@@ -120,6 +131,7 @@ export namespace UI {
 		}
 
 		void layout() override{
+			textChanged = true;
 			updateTextLayout();
 
 			updateGlyphPosition();

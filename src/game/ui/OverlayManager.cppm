@@ -17,8 +17,8 @@ import Assets.Graphic;
 
 import Ctrl.Constants;
 
-import Timer;
-import Encoding;
+import ext.Timer;
+import ext.Encoding;
 
 import std;
 

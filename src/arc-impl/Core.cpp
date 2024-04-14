@@ -1,6 +1,6 @@
 module Core;
 
-import RuntimeException;
+import ext.RuntimeException;
 import GL;
 import GL.Constants;
 import OS.KeyBind;

@@ -7,7 +7,7 @@ export module Font;
 
 import std;
 
-import Async;
+import ext.Async;
 import Assets.Loader;
 
 import GL.Texture.Texture2D;
@@ -17,7 +17,7 @@ import Assets.TexturePacker;
 import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
 import Graphic.Pixmap;
-import RuntimeException;
+import ext.RuntimeException;
 import OS.File;
 import Image;
 import Event;

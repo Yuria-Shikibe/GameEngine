@@ -5,7 +5,7 @@
 export module UI.HoverTableManager;
 
 export import UI.Table;
-export import UI.Elem;
+export import UI.Widget;
 import UI.Action.Actions;
 import UI.SeperateDrawable;
 import Concepts;
@@ -54,6 +54,9 @@ export namespace UI{
 
 		} deleter{*this};
 
+
+		[[nodiscard]] const Widget* getLastRequester() const{ return lastRequester; }
+
 		void dropCurrentAt(const Widget* where, const bool instantDrop = false);
 
 		/**
@@ -88,22 +91,7 @@ export namespace UI{
 			return ptr.get();
 		}
 
-		Table* obtain(const Widget* consumer){
-			if(consumer && consumer->getHoverTableBuilder() &&
-				obtainValid(
-					consumer,
-					consumer->getHoverTableBuilder().minHoverTime,
-					consumer->getHoverTableBuilder().useStaticTime)
-			){
-				return obtain(
-					consumer,
-					consumer->getHoverTableBuilder().builder,
-					consumer->getHoverTableBuilder().followCursor,
-					consumer->getHoverTableBuilder().offset);
-			}
-
-			return nullptr;
-		}
+		Table* obtain(const Widget* consumer);
 
 		[[nodiscard]] bool obtainValid(const Widget* lastRequester, const float minHoverTime = 45.0f, const bool useStaticTime = true) const;
 
@@ -128,7 +116,7 @@ export namespace UI{
 
 		void updateCurrentPosition(UI::Table* table) const{
 			const auto offset = Align::getOffsetOf(align, table->getBound());
-			table->setSrc(offset + cursorPos + Geom::Vec2{-4.0f, 4.0f});
+			table->setSrc(offset + cursorPos + Geom::Vec2{-6.0f, 6.0f}.scl(followCursor ? -1 : 1));
 
 			table->calAbsoluteSrc(nullptr);
 		}

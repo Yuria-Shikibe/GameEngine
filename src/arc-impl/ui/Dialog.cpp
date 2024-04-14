@@ -15,6 +15,7 @@ void UI::Dialog::resizeContent(){
 		const auto* root = content.getRoot();
 
 		content.setSize(root->width - margin.getWidth(), root->height - margin.getHeight());
+		content.changed(ChangeSignal::notifyAll);
 
 		content.setSrc(margin.bot_lft());
 	}

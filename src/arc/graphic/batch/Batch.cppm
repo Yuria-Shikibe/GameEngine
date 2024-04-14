@@ -12,7 +12,7 @@ import GL.Constants;
 export import GL.Mesh;
 export import GL.Shader;
 export import GL.Texture;
-import RuntimeException;
+import ext.RuntimeException;
 
 import Geom.Matrix3D;
 

@@ -13,10 +13,10 @@ import Geom;
 
 import Font.GlyphArrangement;
 
-import RuntimeException;
+import ext.RuntimeException;
 
 import std;
-import Encoding;
+import ext.Encoding;
 
 export namespace Game {
 	class SpaceCraft;
@@ -44,7 +44,7 @@ export namespace Game {
 
 		std::shared_ptr<Font::GlyphLayout> coordText = Font::obtainLayoutPtr();
 
-		std::vector<Containers::Pool<TurretEntity>::UniquePtr> turretEntities{};
+		std::vector<ext::ObjectPool<TurretEntity>::UniquePtr> turretEntities{};
 
 		[[nodiscard]] SpaceCraft() = default;
 

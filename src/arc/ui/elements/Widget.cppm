@@ -1,6 +1,6 @@
 module;
 
-export module UI.Elem;
+export module UI.Widget;
 
 export import UI.Flags;
 export import UI.Align;
@@ -11,7 +11,7 @@ import Math;
 import Geom.Vector2D;
 import Graphic.Color;
 import Geom.Rect_Orthogonal;
-import RuntimeException;
+import ext.RuntimeException;
 
 import std;
 
@@ -84,11 +84,14 @@ export namespace UI {
 		bool requiresLayout{false};
 		bool pressed{false};
 		bool disabled{false};
+		bool activated{false};
+		bool sleep{false};
 
 		bool quitInboundFocus = true;
 
 		Geom::Vec2 absoluteSrc{};
 		Geom::Vec2 minimumSize{};
+		Geom::Vec2 maximumSize{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
 		//TODO should here be a maximum size
 
 		WidgetDrawer* drawer{nullptr};
@@ -100,11 +103,11 @@ export namespace UI {
 		ChangeSignal lastSignal{ChangeSignal::notifyNone};
 
 		[[nodiscard]] float clampTargetWidth(const float w) const{
-			return  Math::max(w, minimumSize.x);
+			return  Math::clamp(w, minimumSize.x, maximumSize.x);
 		}
 
 		[[nodiscard]] float clampTargetHeight(const float h) const{
-			return  Math::max(h, minimumSize.y);
+			return  Math::clamp(h, minimumSize.y, maximumSize.y);
 		}
 
 		Table* hoverTableHandle{nullptr};
@@ -115,6 +118,7 @@ export namespace UI {
 
 		std::function<bool()> visibilityChecker{nullptr};
 		std::function<bool()> disableChecker{nullptr};
+		std::function<bool()> activatedChecker{nullptr};
 
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
 
@@ -132,6 +136,15 @@ export namespace UI {
 			setHeight(Math::max(minimumSize.y, getHeight()));
 		}
 
+
+		[[nodiscard]] Geom::Vec2 getMaximumSize() const{ return maximumSize; }
+
+		void setMaximumSize(const Geom::Vec2 maximumSize){
+			this->maximumSize = maximumSize;
+			setWidth(Math::min(maximumSize.x, getWidth()));
+			setHeight(Math::min(maximumSize.y, getHeight()));
+		}
+
 		[[nodiscard]] virtual bool isVisiable() const {return visiable;}
 
 		//TODO rename this shit
@@ -142,6 +155,10 @@ export namespace UI {
 		constexpr void setDropFocusAtCursorQuitBound(const bool quitInboundFocus){ this->quitInboundFocus = quitInboundFocus; }
 
 		[[nodiscard]] constexpr bool isPressed() const {return pressed;}
+
+		[[nodiscard]] bool isSleep() const{ return sleep; }
+
+		void setSleep(const bool sleep){ this->sleep = sleep; }
 
 		/**
 		 * @param elem Element To Fill This(it's parent)
@@ -382,9 +399,22 @@ export namespace UI {
 			this->disabled = disabled;
 		}
 
+		[[nodiscard]] std::function<bool()>& getActivatedChecker(){ return activatedChecker; }
+
+		void setActivatedChecker(const std::function<bool()>& activatedChecker){
+			this->activatedChecker = activatedChecker;
+		}
+
+		virtual void setActivated(const bool activated){
+			this->activated = activated;
+		}
+
+		[[nodiscard]] bool isActivated() const{ return activated; }
+
 		virtual void update(const float delta){
-			if(visibilityChecker)visiable = visibilityChecker();
+			if(visibilityChecker)setVisible(visibilityChecker());
 			if(disableChecker)setDisabled(disableChecker());
+			if(activatedChecker)setActivated(activatedChecker());
 
 			float actionDelta = delta;
 
@@ -467,6 +497,13 @@ export namespace UI {
 		}
 
 		bool keyDown(const int code, const int action, const int mode) const;
+
+		/**
+		 * @return True if there is nothing can do, then transfer the control
+		 */
+		virtual bool onEsc(){
+			return true;
+		}
 
 	protected:
 		virtual void childrenCheck(const Widget* ptr) {

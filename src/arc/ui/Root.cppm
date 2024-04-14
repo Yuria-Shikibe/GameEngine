@@ -4,7 +4,7 @@ export module UI.Root;
 
 import std;
 import Concepts;
-import Container.Pool;
+import ext.Container.ObjectPool;
 
 import Geom.Matrix3D;
 
@@ -19,7 +19,7 @@ import OS.ApplicationListener;
 import OS.TextInputListener;
 import OS.InputListener;
 
-import UI.Elem;
+import UI.Widget;
 import UI.Scene;
 import Core.Input;
 import Heterogeneous;
@@ -264,7 +264,11 @@ export namespace UI{
 			}
 
 			if(auto* last = rootDialog.findFirstShowingDialogNode(); last != &rootDialog){
-				last->destroy();
+				if(last->content.onEsc()){
+					last->destroy();
+				}
+
+				return false;
 			}
 
 			return true;

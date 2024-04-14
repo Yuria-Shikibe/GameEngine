@@ -2,7 +2,7 @@ module;
 
 
 
-module RuntimeException;
+module ext.RuntimeException;
 
 import std;
 import Core;

@@ -7,7 +7,7 @@ export import Geom.Rect_Orthogonal;
 export import Geom.Vector2D;
 
 import Concepts;
-import RuntimeException;
+import ext.RuntimeException;
 import std;
 
 using Geom::Rect_Orthogonal;

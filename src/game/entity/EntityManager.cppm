@@ -72,20 +72,20 @@ export namespace Game::EntityManage{
 
 	template<Concepts::Derived<Entity> T>
 	[[nodiscard]] std::shared_ptr<T> obtain() {
-		auto ptr = Pools::obtainRaw<T>();
+		auto ptr = Pools::entityPoolGroup.obtainRaw<T>();
 		new (ptr) T{};
 
 		ptr->setID(allocateID());
-		return std::shared_ptr<T>{ptr, std::move(Pools::getPool<T>()->getDeleter())};
+		return std::shared_ptr<T>{ptr, Pools::entityPoolGroup.getPool<T>().getDeleter()};
 	}
 
 	template<Concepts::Derived<Entity> T>
-	[[nodiscard]] std::unique_ptr<T, typename Containers::Pool<T>::Deleter> obtainUnique() {
-		auto ptr = Pools::obtainRaw<T>();
+	[[nodiscard]] std::unique_ptr<T, typename ext::ObjectPool<T>::Deleter> obtainUnique() {
+		auto ptr = Pools::entityPoolGroup.obtainRaw<T>();
 		new (ptr) T{};
 
 		ptr->setID(allocateID());
-		return std::unique_ptr<T, typename Containers::Pool<T>::Deleter>{ptr, std::move(Pools::getPool<T>()->getDeleter())};
+		return std::unique_ptr<T, typename ext::ObjectPool<T>::Deleter>{ptr, Pools::entityPoolGroup.getPool<T>().getDeleter()};
 	}
 
 	template<Concepts::Derived<Entity> T>

@@ -8,7 +8,7 @@ export module GL.Mesh.RenderableMesh;
 
 export import GL.Mesh;
 import GL.Shader;
-import RuntimeException;
+import ext.RuntimeException;
 import GL.Constants;
 
 export namespace GL {

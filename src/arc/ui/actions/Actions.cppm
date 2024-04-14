@@ -4,7 +4,7 @@
 
 export module UI.Action.Actions;
 
-export import UI.Elem;
+export import UI.Widget;
 export import UI.Action;
 
 import Graphic.Color;

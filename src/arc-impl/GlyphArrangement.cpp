@@ -4,7 +4,7 @@ module Font.GlyphArrangement;
 
 import Graphic.Draw;
 import Graphic.Color;
-import RuntimeException;
+import ext.RuntimeException;
 import Math;
 
 
@@ -391,6 +391,7 @@ void Font::initParser(const FontFlags* const defFont) {
 	using namespace Graphic::Colors;
 	parserableColors.insert_or_assign("AQUA", AQUA);
 	parserableColors.insert_or_assign("AQUA_SKY", AQUA_SKY);
+	parserableColors.insert_or_assign("SKY_AQUA", AQUA_SKY);
 	parserableColors.insert_or_assign("SKY", SKY);
 	parserableColors.insert_or_assign("GRAY", GRAY);
 	parserableColors.insert_or_assign("LIGHT_GRAY", LIGHT_GRAY);

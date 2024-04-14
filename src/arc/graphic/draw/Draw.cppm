@@ -25,7 +25,7 @@ export import Graphic.Color;
 //
 import Math;
 import std;
-import RuntimeException;
+import ext.RuntimeException;
 //
 import Core.BatchGroup;
 

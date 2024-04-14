@@ -2,7 +2,7 @@ export module Graphic.Effect.Manager;
 
 export import Graphic.Effect;
 
-import Container.Pool;
+import ext.Container.ObjectPool;
 import Heterogeneous;
 
 import std;
@@ -14,7 +14,7 @@ export namespace Graphic{
 	class EffectManager {
 		static constexpr size_t MaxEffectBufferSize = 4096;
 
-		using PoolType = Containers::Pool<Effect>;
+		using PoolType = ext::ObjectPool<Effect>;
 		PoolType effectPool{};
 
 		//yes this is bad

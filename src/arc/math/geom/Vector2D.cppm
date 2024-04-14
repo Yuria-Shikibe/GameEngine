@@ -642,15 +642,24 @@ export
 		}
 	};
 
-export
-template<>
-struct std::formatter<Geom::Vec2> {
-	constexpr auto parse(std::format_parse_context& context) const {
-		return context.begin();
-	}
 
-	auto format(const Geom::Vec2& p, auto& context) const {
-		return std::format_to(context.out(), "({}, {})", p.x, p.y);
-	}
-};
+// template <template <typename T> typename V, typename T>
+// 	requires std::convertible_to<V<T>, Geom::Vector2D<T>>
+// struct formatter_base{
+// 	constexpr auto parse(std::format_parse_context& context) const{
+// 		return context.begin();
+// 	}
+//
+// 	auto format(const V<T>& p, auto& context) const{
+// 		return std::format_to(context.out(), "({}, {})", p.x, p.y);
+// 	}
+// };
+//
+//
+// export template <>
+// struct std::formatter<Geom::Vec2> : formatter_base<Geom::Vector2D, float>{
+// 	using formatter_base::parse;
+// 	using formatter_base::format;
+// };
+
 

@@ -5,7 +5,7 @@ module;
 export module GL.Texture.Texture2D;
 
 import Graphic.Resizeable;
-import RuntimeException;
+import ext.RuntimeException;
 import Image;
 import OS.File;
 import GL.Object;

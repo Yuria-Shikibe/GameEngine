@@ -2,7 +2,7 @@ module;
 
 export module UI.Table;
 export import UI.Group;
-export import UI.Elem;
+export import UI.Widget;
 export import UI.Flags;
 export import UI.Cell;
 
@@ -48,19 +48,7 @@ export namespace UI {
 
 		void layoutIrrelative();
 
-		void layout() override {
-			layout_tryFillParent();
-
-			layoutChildren();
-
-			if(relativeLayoutFormat) {
-				layoutRelative();
-			}else {
-				layoutIrrelative();
-			}
-
-			Group::layout();
-		}
+		void layout() override;
 
 		[[nodiscard]] int rows() const {
 			return elemLayoutMaxCount.y;

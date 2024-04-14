@@ -7,7 +7,7 @@ module ;
 export module Core.Audio;
 
 import <irrKlang.h>;
-import RuntimeException;
+import ext.RuntimeException;
 import Concepts;
 import OS.File;
 import std;

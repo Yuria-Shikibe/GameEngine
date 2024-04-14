@@ -2,10 +2,10 @@ module;
 
 export module Assets.SoundLoader;
 
-import Async;
+import ext.Async;
 import OS.File;
 import Assets.Loader;
-import RuntimeException;
+import ext.RuntimeException;
 import <irrKlang.h>;
 import std;
 

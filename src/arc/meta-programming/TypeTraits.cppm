@@ -1,7 +1,7 @@
 export module TypeTraits;
 
 import std;
-import RuntimeException;
+import ext.RuntimeException;
 
 export namespace ext{
 	template <typename MemberPtr>

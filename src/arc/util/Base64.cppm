@@ -1,6 +1,6 @@
 module;
 
-export module Base64;
+export module ext.Base64;
 
 import std;
 

@@ -14,7 +14,7 @@ import UI.Align;
 import Core.Platform;
 import OS.File;
 import Concepts;
-import Container.Pool;
+import ext.Container.ObjectPool;
 import Event;
 import StackTrace;
 
@@ -72,14 +72,14 @@ import GL.Texture.TextureNineRegion;
 import GL.Blending;
 import Event;
 import Font.GlyphArrangement;
-import Timer;
+import ext.Timer;
 
 import Assets.TexturePacker;
 import Assets.Loader;
 import Assets.Manager;
 
 //TODO 模块分区
-import UI.Elem;
+import UI.Widget;
 import UI.Root;
 import UI.Table;
 import UI.Label;
@@ -90,6 +90,7 @@ import UI.Button;
 import UI.SliderBar;
 import UI.ProgressBar;
 import UI.InputArea;
+import UI.FileTreeSelector;
 
 
 import Geom.Shape.RectBox;
@@ -111,7 +112,8 @@ import Game.Content.Builtin.SpaceCrafts;
 
 import Game.Graphic.CombinePostProcessor;
 
-import Encoding;
+import ext.Encoding;
+import ext.TreeStructure;
 
 using namespace std;
 using namespace Graphic;
@@ -165,21 +167,17 @@ void setupUITest(){
 			   t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
 			   for(int i = 0; i < 8; ++i){
 				   t.add<UI::Button>([i](UI::Button& button){
-					   button.setCall([i](bool){
-						   std::cout << i << std::endl;
+					   button.setCall([i](bool isPressed){
+					   		if(!isPressed){
+					   			std::cout << i << std::endl;
 
-						   Core::uiRoot->showDialog(true, [i](UI::Table& hint){
-							   hint.add<UI::Button>([i](UI::Button& buttonDialog){
-								   buttonDialog.setCall([](bool){
-									   Core::uiRoot->showDialog(true, [](UI::Table& inner){
-										   inner.add<UI::Label>([](UI::Label& l){
-											   l.setWrap();
-											   l.setText("Label$<c#PALE_GREEN>$<sub>Test");
-										   }).fillParent().setAlign(Align::center);
-									   });
-								   });
-							   }).setSize(600.0f, 600.0f, true).setAlign(Align::center);
-						   });
+							   Core::uiRoot->showDialog(true, [i](UI::Table& hint){
+								   hint.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
+									   const OS::File src{R"(D:\projects\GameEngine\properties\resource\assets)"};
+									   selector.gotoFile(src, false);
+								   }).fillParent().setAlign(Align::Mode::top_center);
+							   });
+					   		}
 					   });
 
 					   button.setHoverTableBuilder({
@@ -209,7 +207,7 @@ void setupUITest(){
 											   }
 										   });
 								   }).setHeight(120.0f).expandY().fillParentX();
-								   hint.PointCheck = 150;
+								   hint.PointCheck = 180;
 							   }
 						   });
 				   });
@@ -396,6 +394,7 @@ void genRandomEntities(){
 }
 
 int main(const int argc, char* argv[]){
+	// return 0;
 	//Init
 	::Test::init(argc, argv);
 

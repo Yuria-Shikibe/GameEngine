@@ -4,7 +4,7 @@ export module UI.Cell;
 
 import UI.Align;
 import Concepts;
-import UI.Elem;
+import UI.Widget;
 import std;
 
 export namespace UI {

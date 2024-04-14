@@ -8,7 +8,7 @@ export import Game.Content.ContentType;
 
 import std;
 import Concepts;
-import RuntimeException;
+import ext.RuntimeException;
 
 import Heterogeneous;
 

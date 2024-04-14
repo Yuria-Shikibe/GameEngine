@@ -1,5 +1,5 @@
 //
-export module RuntimeException;
+export module ext.RuntimeException;
 
 import StackTrace;
 import std;

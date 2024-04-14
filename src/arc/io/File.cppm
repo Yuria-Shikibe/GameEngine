@@ -4,7 +4,7 @@ export module OS.File;
 
 import Concepts;
 
-import RuntimeException;
+import ext.RuntimeException;
 
 import std;
 
@@ -74,8 +74,20 @@ export namespace OS{
 			return rawPath.filename().string();
 		}
 
-		[[nodiscard]] std::string filename_full() const{
-			return (isDir() ? "<Dir> " : "<Fi> ") + rawPath.filename().string();
+		[[nodiscard]] std::string filenameFull() const{
+			std::string name = rawPath.filename().string();
+			if(filename().empty()){
+				name = absolutePath().string();
+			}
+			return (isDir() ? "<Dir> " : "<Fi> ") + name;
+		}
+
+		[[nodiscard]] std::string filenameFullPure() const{
+			std::string name = rawPath.filename().string();
+			if(filename().empty()){
+				name = absolutePath().string();
+			}
+			return name;
 		}
 
 		[[nodiscard]] path& getPath(){
@@ -157,7 +169,25 @@ export namespace OS{
 		}
 
 		[[nodiscard]] File getParent() const{
-			return File{getPath().parent_path()};
+			return File{rawPath.parent_path()};
+		}
+
+		[[nodiscard]] File getRoot() const{
+			return File{rawPath.root_path()};
+		}
+
+		[[nodiscard]] bool hasParent() const{
+			return rawPath.has_parent_path();
+		}
+
+		[[nodiscard]] bool hasExtension() const{
+			return rawPath.has_extension();
+		}
+
+		File& gotoParent(){
+			rawPath = rawPath.parent_path();
+
+			return *this;
 		}
 
 		[[nodiscard]] File subFile(const std::string_view name) const{
@@ -191,13 +221,16 @@ export namespace OS{
 			}
 		}
 
-		[[nodiscard]] std::vector<File> subs(const bool careDirs = false) const{
+		template <bool careDirs = false>
+		[[nodiscard]] std::vector<File> subs() const{
 			std::vector<File> files;
 			for(const auto& item : directory_iterator(getPath())){
-				if(item.is_directory()){
-					if(careDirs) files.emplace_back(item);
-				} else{
+				if constexpr (careDirs){
 					files.emplace_back(item);
+				}else{
+					if(!item.is_directory()){
+						files.emplace_back(item);
+					}
 				}
 			}
 
@@ -210,26 +243,28 @@ export namespace OS{
 			}
 		}
 
-		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer, const bool careDirs = false) const{
+		template <bool careDirs = false>
+		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
 			for(const auto& item : directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
 				} else{
-					f.forAllSubs(consumer, careDirs);
-					if(careDirs){
+					f.forAllSubs<careDirs>(consumer);
+					if constexpr (careDirs){
 						consumer(std::move(f));
 					}
 				}
 			}
 		}
 
-		void allSubs(std::vector<File>& container, const bool careDirs = false) const{
+		template <bool careDirs = false>
+		void allSubs(std::vector<File>& container) const{
 			for(const auto& item : directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					container.emplace_back(std::move(f));
 				} else{
-					f.allSubs(container, careDirs);
-					if(careDirs){
+					f.allSubs<careDirs>(container);
+					if constexpr(careDirs){
 						container.emplace_back(std::move(f));
 					}
 				}
@@ -282,33 +317,34 @@ export namespace OS{
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const File& file){
-			os << file.filename_full();
+			os << file.filenameFull();
 			return os;
 		}
 
 		using Filter = std::pair<std::string, std::function<bool(const File&)>>;
 
-		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubs(const bool careDirs = false) const{
+		template <bool careDirs = false>
+		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubs() const{
 			ext::StringMap<std::vector<File>> map;
-			forAllSubs([&map](File&& file){
+			this->forAllSubs<careDirs>([&map](File&& file){
 				const std::string& extension = file.extension();
 				map[extension.empty() ? static_cast<std::string>(EMPTY_EXTENSION) : extension].push_back(file);
-			}, careDirs);
+			});
 
 			return map;
 		}
 
-		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards,
-		                                                           const bool careDirs = false) const{
+		template <bool careDirs = false>
+		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards) const{
 			ext::StringMap<std::vector<File>> map;
 
-			forAllSubs([&standards, &map](File&& file){
+			this->forAllSubs<careDirs>([&standards, &map](File&& file){
 				if(const auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
 					return pair.second(file);
 				}); it != standards.end()){
 					map[it->first].push_back(file);
 				}
-			}, careDirs);
+			});
 
 			return map;
 		}
@@ -330,5 +366,38 @@ export namespace OS{
 
 			return map;
 		}
+
+		friend bool operator<(const File& lhs, const File& rhs){
+			if(lhs.isDir()){
+				if(rhs.isDir()){
+					return lhs.rawPath < rhs.rawPath;
+				}
+				return true;
+			}
+
+			if(rhs.isDir()){
+				return false;
+			}
+
+			return lhs.rawPath < rhs.rawPath;
+		}
+
+		friend bool operator<=(const File& lhs, const File& rhs){ return rhs >= lhs; }
+
+		friend bool operator>(const File& lhs, const File& rhs){ return rhs < lhs; }
+
+		friend bool operator>=(const File& lhs, const File& rhs){ return !(lhs < rhs); }
 	};
 }
+
+export
+template <>
+struct std::formatter<OS::File>{
+	constexpr auto parse(std::format_parse_context& context) const{
+		return context.begin();
+	}
+
+	auto format(const OS::File& p, auto& context) const{
+		return std::format_to(context.out(), "{}", p.filenameFull());
+	}
+};

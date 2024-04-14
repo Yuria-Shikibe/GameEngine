@@ -7,7 +7,7 @@ export module GL.Shader;
 import GL;
 import OS.File;
 
-import RuntimeException;
+import ext.RuntimeException;
 
 import Geom.Vector2D;
 import Geom.Matrix3D;

@@ -37,7 +37,7 @@ import Font.GlyphArrangement;
 import Game.Core;
 import Game.Content.Builtin.SpaceCrafts;
 
-import Encoding;
+import ext.Encoding;
 
 export namespace Test{
 	constexpr std::string_view MainPageName = "base";

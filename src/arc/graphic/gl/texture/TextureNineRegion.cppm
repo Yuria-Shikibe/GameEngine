@@ -5,7 +5,7 @@ import Math;
 import GL.Texture.TextureRegionRect;
 import GL.Texture;
 import Geom.Rect_Orthogonal;
-import RuntimeException;
+import ext.RuntimeException;
 import Geom.Vector2D;
 import UI.Align;
 

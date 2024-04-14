@@ -2,7 +2,7 @@ module;
 
 export module UI.SliderBar;
 
-export import UI.Elem;
+export import UI.Widget;
 export import UI.Root;
 
 import std;

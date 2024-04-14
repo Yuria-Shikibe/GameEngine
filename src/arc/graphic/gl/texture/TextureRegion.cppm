@@ -14,9 +14,9 @@ export namespace GL{
 	public:
 		virtual ~TextureRegion() = default;
 
-		TextureRegion() = default;
+		constexpr TextureRegion() = default;
 
-		[[nodiscard]] explicit TextureRegion(const Texture* const data)
+		[[nodiscard]] explicit constexpr TextureRegion(const Texture* const data)
 			: data(data) {
 		}
 

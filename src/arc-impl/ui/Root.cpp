@@ -79,7 +79,12 @@ void UI::Root::determinShiftFocus(Widget* newFocus){
 void UI::Root::resize(const int w, const int h){
 	width = static_cast<float>(w);
 	height = static_cast<float>(h);
-	if(currentScene)currentScene->setSize(width, height);
+	if(currentScene){
+		currentScene->setSize(width, height);
+		currentScene->changed(ChangeSignal::notifyAll);
+		currentScene->postChanged();
+		currentScene->layout();
+	}
 
 	determinShiftFocus(nullptr);
 

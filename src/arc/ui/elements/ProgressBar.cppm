@@ -4,7 +4,7 @@
 
 export module UI.ProgressBar;
 
-export import UI.Elem;
+export import UI.Widget;
 export import Math.Interpolation;
 
 import std;

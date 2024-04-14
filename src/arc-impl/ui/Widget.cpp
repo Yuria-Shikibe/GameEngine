@@ -1,9 +1,10 @@
-module UI.Elem;
+module UI.Widget;
 
 import UI.Group;
 import UI.Drawer;
 import UI.Root;
-import RuntimeException;
+import Graphic.Draw;
+import ext.RuntimeException;
 import Core;
 
 bool UI::Widget::layout_tryFillParent() {
@@ -37,8 +38,13 @@ void UI::Widget::draw() const {
 		maskOpacity = parent->maskOpacity;
 	}
 
+
 	drawStyle();
+	Graphic::Draw::mixColor();
+	Graphic::Draw::color(color, color.a * maskOpacity * selfMaskOpacity);
+
 	drawContent();
+	Graphic::Draw::color();
 }
 
 void UI::Widget::applyDefDrawer(){
@@ -128,6 +134,9 @@ bool UI::Widget::isCursorInbound() const {
 
 void UI::Widget::releaseAllFocus() const {
 	if(!root)return;
+	if(root->hoverTableManager.getLastRequester() == this){
+		root->hoverTableManager.dropCurrentAt(nullptr);
+	}
 	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
 	if(isCursorInbound())root->currentCursorFocus = nullptr;

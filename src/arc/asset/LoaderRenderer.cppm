@@ -22,7 +22,7 @@ import Font.GlyphArrangement;
 
 import std;
 import GL;
-import Encoding;
+import ext.Encoding;
 
 using namespace Graphic;
 

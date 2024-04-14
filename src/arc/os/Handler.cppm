@@ -2,7 +2,7 @@ module;
 
 export module OS.Handler;
 
-import Async;
+import ext.Async;
 import OS;
 import std;
 

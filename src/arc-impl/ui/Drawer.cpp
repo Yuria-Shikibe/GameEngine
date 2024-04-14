@@ -1,9 +1,9 @@
 module UI.Drawer;
 
-import UI.Elem;
+import UI.Widget;
 import Graphic.Color;
 import Graphic.Draw;
-import RuntimeException;
+import ext.RuntimeException;
 import UI.ProgressBar;
 import UI.SliderBar;
 
@@ -46,13 +46,6 @@ void UI::TextureRegionRectDrawable::draw(const Geom::OrthoRectFloat rect) const 
 	Draw::rectOrtho(texRegion, rect);
 }
 
-void UI::TextureNineRegionDrawable::draw(const Geom::OrthoRectFloat rect) const {
-#ifdef _DEBUG
-	if(!texRegion)throw ext::NullPointerException{"Null Tex On Draw Call!"};
-#endif
-	texRegion->render_RelativeExter(rect);
-}
-
 void UI::DrawPair::draw(const UI::Widget* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {
 	Draw::color(color, alphaScl * color.a);
 	region->draw(rect);
@@ -68,10 +61,14 @@ void UI::UIStyle::drawElem(const UI::Widget* elem) const {
 	const Rect rect = elem->getBound().setSrc(elem->getAbsSrc());
 	base.draw(elem, alphaScl, rect);
 	edge.draw(elem, alphaScl, rect);
+
 	if(elem->isCursorInbound())inbound.draw(elem, alphaScl, rect);
+	if(elem->isActivated()){
+
+		activated.draw(elem, alphaScl, rect);
+	}
 	if(elem->isPressed())pressed.draw(elem, alphaScl, rect);
 
-	Draw::mixColor();
 	//TODO disabled
 	// if(elem->touchDisabled())disabled.draw(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 }
@@ -80,7 +77,7 @@ void UI::UIStyle::drawBackground(const Widget* elem) const{
 	elem->tempColor = elem->color;
 	elem->tempColor.a *= elem->maskOpacity;
 
-	background.draw(elem, elem->selfMaskOpacity * elem->maskOpacity, elem->getBound().setSrc(elem->getAbsSrc()));
+	baseMask.draw(elem, elem->selfMaskOpacity * elem->maskOpacity, elem->getBound().setSrc(elem->getAbsSrc()));
 }
 
 void UI::StyleDrawer::applyToElem(Widget* elem) {

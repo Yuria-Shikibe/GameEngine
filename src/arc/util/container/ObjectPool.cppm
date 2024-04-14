@@ -1,20 +1,20 @@
-export module Container.Pool;
+export module ext.Container.ObjectPool;
 
 import std;
 
 import Concepts;
-import RuntimeException;
+import ext.RuntimeException;
 
 
-export namespace Containers{
+export namespace ext{
     //TODO this class is a totoally failure
     template <class T>
         requires Concepts::DefConstructable<T>
-    class Pool{
+    class ObjectPool{
     public:
         using ItemRef = T*;
         struct Deleter {
-            Pool* src{ nullptr };
+            ObjectPool* src{ nullptr };
             std::function<void(ItemRef)> reset{ nullptr };
 
             ~Deleter() = default;
@@ -47,11 +47,11 @@ export namespace Containers{
                 return *this;
             }
 
-            explicit Deleter(Pool* src)
+            explicit Deleter(ObjectPool* src)
                     : src(src) {
             }
 
-            Deleter(Pool* src, std::function<void(ItemRef)>&& reset)
+            Deleter(ObjectPool* src, std::function<void(ItemRef)>&& reset)
                     : src(src),
                       reset(reset){
             }
@@ -66,7 +66,7 @@ export namespace Containers{
         };
 
         struct Allocator_Raw : ::std::allocator<ItemRef> {
-            Pool* const src{ nullptr };
+            ObjectPool* const src{ nullptr };
 
             ItemRef* allocate(const size_t count) {
                 return &src->obtainRaw();
@@ -78,7 +78,7 @@ export namespace Containers{
         };
 
         struct Allocator_Shared : ::std::allocator<std::shared_ptr<T>> {
-            Pool* const src{ nullptr };
+            ObjectPool* const src{ nullptr };
 
             std::shared_ptr<T>* allocate(const size_t count) {
                 return &src->obtainShared();
@@ -90,7 +90,7 @@ export namespace Containers{
         };
 
         struct Allocator_Unique : ::std::allocator<std::unique_ptr<T>> {
-            Pool* const src{ nullptr };
+            ObjectPool* const src{ nullptr };
 
             std::unique_ptr<T>* allocate(const size_t count) {
                 return &src->obtainUnique();
@@ -113,34 +113,35 @@ export namespace Containers{
         Deleter getDeleter(){
             return deleter;
         }
+
         using UniquePtr = std::unique_ptr<T, Deleter>;
-        [[nodiscard]] Pool(const size_t maxSize, std::function<void(ItemRef)>&& func)
+        [[nodiscard]] ObjectPool(const size_t maxSize, std::function<void(ItemRef)>&& func)
             : maxSize(maxSize),
             vault(vault), deleter(Deleter{this, std::forward<std::function<void(ItemRef)>>(func)})  {
             vault.reserve(maxSize);
         }
 
-        explicit Pool(std::function<void(ItemRef)>&& func) : deleter(Deleter{this, std::forward<decltype(func)>(func)}) {
+        explicit ObjectPool(std::function<void(ItemRef)>&& func) : deleter(Deleter{this, std::forward<decltype(func)>(func)}) {
             vault.reserve(maxSize);
         }
 
-        explicit Pool(const size_t maxSize) : maxSize(maxSize), deleter(Deleter{this}){
+        explicit ObjectPool(const size_t maxSize) : maxSize(maxSize), deleter(Deleter{this}){
             vault.reserve(maxSize);
         }
 
-        Pool(const Pool& other) = delete;
+        ObjectPool(const ObjectPool& other) = delete;
 
-        Pool& operator=(const Pool& other) = delete;
+        ObjectPool& operator=(const ObjectPool& other) = delete;
 
-        Pool(Pool&& other) noexcept = default;
+        ObjectPool(ObjectPool&& other) noexcept = default;
 
-        Pool& operator=(Pool&& other) noexcept = default;
+        ObjectPool& operator=(ObjectPool&& other) noexcept = default;
 
-        Pool() : deleter(Deleter{this}){
+        ObjectPool() : deleter(Deleter{this}){
             vault.reserve(maxSize);
         }
 
-        ~Pool() {
+        ~ObjectPool() {
             while(!vault.empty()) {
                 delete vault.back();
                 vault.pop_back();

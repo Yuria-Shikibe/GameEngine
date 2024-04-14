@@ -2,7 +2,7 @@ module;
 
 export module Game.Delay;
 
-import Container.Pool;
+import ext.Container.ObjectPool;
 import Concepts;
 
 import std;
@@ -59,7 +59,7 @@ export namespace Game {
 
 	class DelayActionManager {
 		std::mutex lock{};
-		Containers::Pool<DelayAction> actionPools{2000};
+		ext::ObjectPool<DelayAction> actionPools{2000};
 
 		std::vector<std::unique_ptr<DelayAction, decltype(actionPools)::Deleter>> delayedTasks{};
 		decltype(delayedTasks) toAdd{};

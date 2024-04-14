@@ -4,7 +4,7 @@ import std;
 
 import SinTable;
 import Concepts;
-import RuntimeException;
+import ext.RuntimeException;
 
 export namespace Math {
 	constexpr int SIGNS[2]     = { -1, 1 };

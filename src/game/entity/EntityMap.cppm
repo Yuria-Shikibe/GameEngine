@@ -4,7 +4,7 @@ module;
 export module Game.Entity.EntityMap;
 
 export import Game.Entity;
-import Container.Pool;
+import ext.Container.ObjectPool;
 import Event;
 import Concepts;
 import Geom.QuadTree;

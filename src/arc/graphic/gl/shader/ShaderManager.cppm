@@ -3,7 +3,7 @@ module;
 export module GL.Shader.Manager;
 
 export import GL.Shader;
-import Async;
+import ext.Async;
 import Assets.Loader;
 import std;
 

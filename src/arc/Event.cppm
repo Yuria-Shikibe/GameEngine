@@ -1,7 +1,7 @@
 export module Event;
 
 import std;
-import RuntimeException;
+import ext.RuntimeException;
 import Concepts;
 
 export namespace Event {

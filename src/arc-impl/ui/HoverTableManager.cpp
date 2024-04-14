@@ -45,6 +45,25 @@ void UI::HoverTableManager::dropCurrentAt(const Widget* where, const bool instan
 	lastRequester = getCurrentConsumer();
 }
 
+UI::Table* UI::HoverTableManager::obtain(const Widget* consumer){
+	if(consumer && consumer->getHoverTableBuilder() &&
+		obtainValid(
+			consumer,
+			consumer->getHoverTableBuilder().minHoverTime,
+			consumer->getHoverTableBuilder().useStaticTime)
+	){
+		root->cursorStrandedTime = root->cursorInBoundTime = 0;
+
+		return obtain(
+			consumer,
+			consumer->getHoverTableBuilder().builder,
+			consumer->getHoverTableBuilder().followCursor,
+			consumer->getHoverTableBuilder().offset);
+	}
+
+	return nullptr;
+}
+
 bool UI::HoverTableManager::obtainValid(const Widget* lastRequester, const float minHoverTime, const bool useStaticTime) const{
 	if(lastRequester == this->lastRequester)return false;
 

@@ -11,7 +11,7 @@ import GL.DepthBuffer;
 import GL.Buffer.RenderBuffer;
 import Graphic.Resizeable;
 import Graphic.Color;
-import RuntimeException;
+import ext.RuntimeException;
 import std;
 
 export namespace GL{

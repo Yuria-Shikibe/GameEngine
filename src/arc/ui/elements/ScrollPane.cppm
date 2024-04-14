@@ -2,7 +2,7 @@ module;
 
 export module UI.ScrollPane;
 
-import UI.Elem;
+import UI.Widget;
 import UI.Group;
 
 import Geom.Vector2D;
@@ -143,6 +143,23 @@ export namespace UI {
 			}
 
 			calAbsoluteSrc(parent);
+		}
+
+		void layout() override{
+			Widget::layout();
+
+			getItem()->layout_tryFillParent();
+
+			layoutChildren();
+
+			itemSize = getItem()->getBound();
+
+
+			scrollTempOffset.setZero();
+			applyTemp();
+
+			calAbsoluteSrc(parent);
+
 		}
 
 		void calAbsoluteSrc(Widget* parent) override{

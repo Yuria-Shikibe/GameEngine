@@ -10,7 +10,7 @@ export import GL;
 
 import Concepts;
 
-export import RuntimeException;
+export import ext.RuntimeException;
 
 import std;
 

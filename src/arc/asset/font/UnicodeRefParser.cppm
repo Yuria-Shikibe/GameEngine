@@ -5,7 +5,7 @@
 export module Font.UnicodeRefParser;
 
 import std;
-import Encoding;
+import ext.Encoding;
 import OS.File;
 
 export namespace Font{

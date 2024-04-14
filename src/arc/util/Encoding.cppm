@@ -7,7 +7,7 @@ module;
 
 #endif
 
-export module Encoding;
+export module ext.Encoding;
 
 import std;
 

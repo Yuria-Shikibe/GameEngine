@@ -5,7 +5,7 @@ export module Graphic.PostProcessor.P4Processor;
 import Graphic.PostProcessor;
 import GL;
 import GL.Shader;
-import RuntimeException;
+import ext.RuntimeException;
 import Graphic.Draw;
 import Concepts;
 

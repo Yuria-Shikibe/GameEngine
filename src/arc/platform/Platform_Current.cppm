@@ -7,6 +7,8 @@ module;
 #undef APIENTRY
 #include <Windows.h>
 #include <dwmapi.h>
+#include <gdiplus.h>
+
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
@@ -16,7 +18,7 @@ module;
 export module Core.Platform.Current;
 
 export import Core.Platform;
-export import RuntimeException;
+export import ext.RuntimeException;
 import Geom.Vector2D;
 
 import std;
@@ -86,6 +88,22 @@ namespace Platform_Windows{
 	BOOL USE_DARK_MODE = true;
 	bool setStyleDark(HWND handle){
 		return SUCCEEDED(DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
+	}
+
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+
+	void init(){
+		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+		if(const auto result = CoInitialize(nullptr);
+			FAILED(result)){
+			std::cout << "WIN API FAIL: " << result << std::endl;
+		}
+	}
+
+	void terminate(){
+		Gdiplus::GdiplusShutdown(gdiplusToken);
+		CoUninitialize();
 	}
 }
 
@@ -248,10 +266,12 @@ export namespace Core{
 		explicit WindowsPlatformHandle(const std::string_view applicationName)
 			: PlatformHandle{applicationName}{
 			window = std::make_unique<WindowGLFW>();
+			Platform_Windows::init();
 		}
 
 		~WindowsPlatformHandle() override{
 			glfwTerminate();
+			Platform_Windows::terminate();
 		}
 
 		[[nodiscard]] bool shouldExit() const override{

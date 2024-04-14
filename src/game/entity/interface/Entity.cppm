@@ -1,7 +1,7 @@
 export module Game.Entity;
 
 import std;
-import RuntimeException;
+import ext.RuntimeException;
 import Geom.Rect_Orthogonal;
 import Event;
 

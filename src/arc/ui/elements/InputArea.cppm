@@ -4,7 +4,7 @@
 
 export module UI.InputArea;
 
-export import UI.Elem;
+export import UI.Widget;
 export import UI.Flags;
 
 import std;
@@ -19,7 +19,7 @@ import Ctrl.Constants;
 
 import Graphic.Draw;
 
-import Encoding;
+import ext.Encoding;
 
 export namespace UI{
 	struct TextCursorDrawer;
