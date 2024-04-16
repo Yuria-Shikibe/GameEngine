@@ -26,7 +26,7 @@ export namespace ext{
 
 		Graphic::Pixmap pixmap{static_cast<int>(bitmap.width()), static_cast<int>(bitmap.height())};
 
-		pixmap.copyFrom(bitmap.data());
+		pixmap.copyFrom(bitmap.data(), true);
 
 		return pixmap;
 	}

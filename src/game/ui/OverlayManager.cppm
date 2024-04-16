@@ -9,7 +9,7 @@ import Game.Entity;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 
-import Assets.Cursor;
+import UI.Cursor;
 import Graphic.Draw;
 import Graphic.Trail;
 import Font.GlyphArrangement;
@@ -30,7 +30,7 @@ export namespace Game {
 	public:
 		std::vector<std::shared_ptr<RealityEntity>> selected{};
 
-		Trail cursorTrail{50};
+		// Trail cursorTrail{50};
 
 		bool assigningRoute = false;
 
@@ -83,36 +83,36 @@ export namespace Game {
 
 		ext::Timer<count> timer{};
 
-		[[nodiscard]] Assets::Cursor& getCursor() const{
+		[[nodiscard]] UI::CursorDrawabe& getCursor() const{
 			if(Core::input->isPressedKey(Ctrl::KEY_LEFT_SHIFT)){
-				return Assets::getCursor(Assets::CursorType::select);
+				return UI::getCursor(UI::CursorType::select);
 			}
 
-			return Assets::getCursor(Assets::CursorType::regular);
+			return UI::getCursor(UI::CursorType::regular);
 		}
 
-		void drawAboveUI(Core::Renderer* renderer) const override{
-			const auto& cursor = getCursor();
-
-			if(Core::input->cursorInbound()){
-				Draw::color(Colors::WHITE);
-				Batch::beginPorj(Geom::MAT3_IDT);
-				Batch::blend(GL::Blendings::Inverse);
-				cursor.draw(mousePosNormalized.x, mousePosNormalized.y, Core::renderer->getSize(), 2);
-
-				cursorTrail.each(0.0025f, [](
-					const Geom::Vec2 v1, const Geom::Vec2 v2, const Geom::Vec2 v3, const Geom::Vec2 v4,
-					const float p1, const float p2
-				){
-					const Color c1 = Color::createLerp(p1, Colors::CLEAR, Colors::WHITE);
-					const Color c2 = Color::createLerp(p2, Colors::CLEAR, Colors::WHITE);
-					Draw::quad(Draw::defaultTexture, v1, c1, v2, c1, v3, c2, v4, c2);
-				});
-
-				Batch::endPorj();
-				Batch::blend();
-			}
-		}
+		// void drawAboveUI(Core::Renderer* renderer) const override{
+		// 	const auto& cursor = getCursor();
+		//
+		// 	if(Core::input->cursorInbound()){
+		// 		Draw::color(Colors::WHITE);
+		// 		Batch::beginPorj(Geom::MAT3_IDT);
+		// 		Batch::blend(GL::Blendings::Inverse);
+		// 		cursor.draw(mousePosNormalized.x, mousePosNormalized.y, Core::renderer->getSize(), 2);
+		//
+		// 		cursorTrail.each(0.0025f, [](
+		// 			const Geom::Vec2 v1, const Geom::Vec2 v2, const Geom::Vec2 v3, const Geom::Vec2 v4,
+		// 			const float p1, const float p2
+		// 		){
+		// 			const Color c1 = Color::createLerp(p1, Colors::CLEAR, Colors::WHITE);
+		// 			const Color c2 = Color::createLerp(p2, Colors::CLEAR, Colors::WHITE);
+		// 			Draw::quad(Draw::defaultTexture, v1, c1, v2, c1, v3, c2, v4, c2);
+		// 		});
+		//
+		// 		Batch::endPorj();
+		// 		Batch::blend();
+		// 	}
+		// }
 
 		void drawBeneathUI(Core::Renderer* renderer) const override{
 			static auto coordText = Font::obtainLayoutPtr();
@@ -215,7 +215,7 @@ export namespace Game {
 		void updateGlobal(float delta) override{
 			OverlayInterface::updateGlobal(delta);
 
-			cursorTrail.update(mousePosNormalized.x, mousePosNormalized.y);
+			// cursorTrail.update(mousePosNormalized.x, mousePosNormalized.y);
 
 
 			//TODO optimize this
@@ -247,12 +247,10 @@ export namespace Game {
 
 		void activate() override{
 			OverlayInterface::activate();
-			OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::platform->window->implHandle);
 		}
 
 		void deactivate() override{
 			OverlayInterface::deactivate();
-			OS::setInputMode_Cursor(OS::CursorMode::normal, Core::platform->window->implHandle);
 		}
 	};
 

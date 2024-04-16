@@ -58,10 +58,8 @@ export namespace UI{
 
 			if(current.exist()){
 				add<Button>([this](Button& button){
-					button.setCall([this](const bool isPressed){
-						if(!isPressed){
-							returnToParentDirectory(current == current.getRoot());
-						}
+					button.setCall([this](auto&, auto){
+						returnToParentDirectory(current == current.getRoot());
 					});
 
 					button.Table::add<Label>([this](Label& label){
@@ -99,19 +97,18 @@ export namespace UI{
 
 		void buildSingle(Table& table, const OS::File& file, int index){
 			table.add<Button>([this, &file, index](Button& inner){
-				inner.setCall([this, fileCopy = file, index](const bool isPressed){
-					if(!isPressed){
-						gotoFile(fileCopy);
+				inner.setCall([this, fileCopy = file, index](auto&, auto){
+					gotoFile(fileCopy);
 
-						if(lastSelectedIndex == index){
-							lastSelectedIndex = -1;
-						}else{
-							lastSelectedIndex = index;
-						}
+					if(lastSelectedIndex == index){
+						lastSelectedIndex = -1;
+					}else{
+						lastSelectedIndex = index;
 					}
 				});
 
-				inner.setHoverTableBuilder({
+				inner.setTooltipBuilder({
+					.followTarget = TooltipBuilder::FollowTarget::cursor,
 					.builder = [file](Table& hint){
 						auto pixmap = ext::platform::getThumbnail(file);
 
@@ -132,7 +129,6 @@ export namespace UI{
 							hint.setEmptyDrawer();
 						}
 					},
-					.followCursor = true
 				});
 
 				if(!file.isDir()){

@@ -132,7 +132,6 @@ target_link_libraries(${PROJECT_NAME}
         dwmapi.lib
         shell32.lib
         gdiplus.lib
-        #        D:/projects/GameEngine/cmake-build-msvc-debug/include/lunasvg/lunasvg/Debug/lunasvg.lib
 )
 #endmacro()
 

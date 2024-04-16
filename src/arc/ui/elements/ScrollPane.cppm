@@ -329,6 +329,8 @@ export namespace UI {
 			};
 		}
 
+		CursorType getCursorType() const override;
+
 		void applyDefDrawer() override;
 
 		void drawBase() const override;

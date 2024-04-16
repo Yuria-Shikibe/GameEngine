@@ -63,7 +63,7 @@ export namespace Assets{
 			OS::activateHander();
 
 			for(auto& [task, future] : tasks) {
-				future = task->launch();
+				future = task->launch(std::launch::async);
 			}
 		}
 

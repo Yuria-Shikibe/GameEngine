@@ -85,7 +85,7 @@ void UI::Widget::callRemove() {
 	}
 
 	if(hoverTableHandle){
-		root->hoverTableManager.forceDrop(hoverTableHandle);
+		root->tooltipManager.forceDrop(hoverTableHandle);
 	}
 }
 
@@ -115,7 +115,7 @@ void UI::Widget::postChanged(){
 }
 
 bool UI::Widget::isInbound(const Geom::Vec2 screenPos){
-	if(touchbility == TouchbilityFlags::disabled)return false;
+	if(touchbility == TouchbilityFlags::disabled && !tooltipbuilder)return false;
 	if(parent != nullptr && !parent->hintInbound_validToParent(screenPos))return false;
 	return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
 }
@@ -134,8 +134,8 @@ bool UI::Widget::isCursorInbound() const {
 
 void UI::Widget::releaseAllFocus() const {
 	if(!root)return;
-	if(root->hoverTableManager.getLastRequester() == this){
-		root->hoverTableManager.dropCurrentAt(nullptr);
+	if(root->tooltipManager.getLastRequester() == this){
+		root->tooltipManager.dropCurrentAt(nullptr, true);
 	}
 	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
@@ -144,4 +144,9 @@ void UI::Widget::releaseAllFocus() const {
 
 bool UI::Widget::keyDown(const int code, const int action, const int mode) const{
 	return root->keyDown(code, action, mode);
+}
+
+void UI::Widget::buildTooltip(){
+	if(!root)return;
+	updateHoverTableHandle(root->tooltipManager.tryObtain(this));
 }

@@ -1,8 +1,8 @@
-module UI.HoverTableManager;
+module UI.TooltipManager;
 
 import UI.Root;
 
-void UI::HoverTableManager::drop(std::unique_ptr<Table>&& element, const bool instantDrop){
+void UI::TooltipManager::drop(std::unique_ptr<Table>&& element, const bool instantDrop){
 	if(instantDrop){
 		element.reset(nullptr);
 	}else{
@@ -17,7 +17,7 @@ void UI::HoverTableManager::drop(std::unique_ptr<Table>&& element, const bool in
 	}
 }
 
-void UI::HoverTableManager::dropCurrentAt(const Widget* where, const bool instantDrop){
+void UI::TooltipManager::dropCurrentAt(const Widget* where, const bool instantDrop){
 	if(focusTableStack.empty())return;
 
 	lastRequester = nullptr;
@@ -45,26 +45,22 @@ void UI::HoverTableManager::dropCurrentAt(const Widget* where, const bool instan
 	lastRequester = getCurrentConsumer();
 }
 
-UI::Table* UI::HoverTableManager::obtain(const Widget* consumer){
-	if(consumer && consumer->getHoverTableBuilder() &&
+UI::Table* UI::TooltipManager::tryObtain(const Widget* consumer){
+	if(consumer && consumer->getTooltipBuilder() &&
 		obtainValid(
 			consumer,
-			consumer->getHoverTableBuilder().minHoverTime,
-			consumer->getHoverTableBuilder().useStaticTime)
+			consumer->getTooltipBuilder().minHoverTime,
+			consumer->getTooltipBuilder().useStaticTime)
 	){
 		root->cursorStrandedTime = root->cursorInBoundTime = 0;
 
-		return obtain(
-			consumer,
-			consumer->getHoverTableBuilder().builder,
-			consumer->getHoverTableBuilder().followCursor,
-			consumer->getHoverTableBuilder().offset);
+		return obtainFromWedget(consumer);
 	}
 
 	return nullptr;
 }
 
-bool UI::HoverTableManager::obtainValid(const Widget* lastRequester, const float minHoverTime, const bool useStaticTime) const{
+bool UI::TooltipManager::obtainValid(const Widget* lastRequester, const float minHoverTime, const bool useStaticTime) const{
 	if(lastRequester == this->lastRequester)return false;
 
 	if(root->cursorInBoundTime > 0.0f){
@@ -78,7 +74,7 @@ bool UI::HoverTableManager::obtainValid(const Widget* lastRequester, const float
 	return false;
 }
 
-void UI::HoverTableManager::update(const float delta){
+void UI::TooltipManager::update(const float delta){
 	for(int i = 0; i < nextPopCount; ++i){
 		droppedTables.pop_back();
 	}
@@ -86,15 +82,29 @@ void UI::HoverTableManager::update(const float delta){
 	nextPopCount = 0;
 
 	auto* current = getCurrentFocus();
+	const bool autoRelease = lastRequester && lastRequester->getTooltipBuilder().autoRelease;
+	const auto& builder = lastRequester->getTooltipBuilder();
 
 	if(current && lastRequester){
-		if((!lastRequester->isCursorInbound() && followCursor) || (!current->isInbound(cursorPos) && !followCursor))
-			dropCurrentAt(current);
-	}
+		if(builder.followTarget != TooltipBuilder::FollowTarget::none)updateCurrentPosition(current);
 
-	if(current){
-		if(followCursor){
-			updateCurrentPosition(current);
+		switch(builder.followTarget){
+			case TooltipBuilder::FollowTarget::cursor:{
+				if(autoRelease && !lastRequester->isCursorInbound())dropCurrentAt(current);
+				break;
+			}
+
+			case TooltipBuilder::FollowTarget::none:{
+				if(autoRelease && !current->isInbound(cursorPos))dropCurrentAt(current);
+				break;
+			}
+
+			case TooltipBuilder::FollowTarget::parent:{
+				if(autoRelease && !current->isInbound(cursorPos) && !lastRequester->isCursorInbound())dropCurrentAt(current);
+				break;
+			}
+
+			default: dropCurrentAt(current);
 		}
 	}
 

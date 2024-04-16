@@ -104,11 +104,6 @@ export namespace Ctrl{
 			}
 		});
 
-
-		Core::input->cursorMoveListeners.emplace_back([](const float x, const float y) {
-			Core::uiRoot->cursorPos.set(x, y);
-		});
-
 		Core::input->velocityListeners.emplace_back([](const float x, const float y) {
 			Core::uiRoot->cursorVel.set(x, y);
 		});

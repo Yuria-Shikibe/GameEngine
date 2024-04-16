@@ -337,6 +337,8 @@ export namespace UI{
 				const auto end = getLayoutPos(event.end);
 				genTextSection(begin, end);
 			});
+
+			touchbility = TouchbilityFlags::enabled;
 		}
 
 		void setWrap(const bool wrapX = true, const bool wrapY = true){
@@ -713,6 +715,10 @@ export namespace UI{
 			Widget::calAbsoluteSrc(parent);
 			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::getOffsetOf(textAlignMode, border));
 			// glyphLayout->offset.set(0, 300);
+		}
+
+		CursorType getCursorType() const override{
+			return CursorType::textInput;
 		}
 	};
 }

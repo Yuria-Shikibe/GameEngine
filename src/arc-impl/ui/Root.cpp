@@ -1,10 +1,12 @@
 module UI.Root;
 
+import Graphic.Draw;
 import UI.Drawer;
 import std;
 import Core;
+import OS.ApplicationListenerSetter;
 
-UI::Root::Root(): hoverTableManager{this}{
+UI::Root::Root(): tooltipManager{this}{
 	currentScene = scenes.try_emplace("default", std::make_unique<Scene>()).first->second.get();
 	// NOLINT(*-use-equals-default)
 	currentScene->setSrc(0.0f, 0.0f);
@@ -20,9 +22,30 @@ UI::Root::Root(): hoverTableManager{this}{
 	registerCtrl();
 
 	rootDialog.content.setRoot(this);
+
+	OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::platform->window->implHandle);
+}
+
+void UI::Root::drawCursor() const{
+	using namespace Graphic;
+	const auto& cursor = getCursor(currentCursorType);
+
+	if(Core::input->cursorInbound()){
+		Draw::mixColor();
+		Draw::color(Colors::WHITE);
+		Batch::beginPorj(Geom::MAT3_IDT);
+		Batch::blend(GL::Blendings::Inverse);
+
+		auto [x, y] = Core::renderer->getNormalized(cursorPos);
+		cursor.draw(x, y, Core::renderer->getSize());
+
+		Batch::endPorj();
+		Batch::blend();
+	}
 }
 
 void UI::Root::update(const float delta){
+	cursorPos = uiInput->getMousePos();
 	if(currentScene == nullptr)return;
 
 	updateCurrentFocus();
@@ -32,9 +55,9 @@ void UI::Root::update(const float delta){
 	currentScene->postChanged();
 	currentScene->update(delta);
 
-	hoverTableManager.cursorPos = cursorPos;
+	tooltipManager.cursorPos = cursorPos;
 
-	if(hoverTableManager.isOccupied(currentCursorFocus)){
+	if(tooltipManager.isOccupied(currentCursorFocus)){
 		cursorStrandedTime = cursorInBoundTime = 0.0f;
 	}else{
 		if(cursorVel.isZero(0.005f)){
@@ -50,28 +73,34 @@ void UI::Root::update(const float delta){
 		}
 	}
 
-	if(currentCursorFocus && currentCursorFocus->getHoverTableBuilder()){
-		currentCursorFocus->updateHoverTableHandle(hoverTableManager.obtain(currentCursorFocus));
+	if(currentCursorFocus){
+		if(currentCursorFocus->getTooltipBuilder() && currentCursorFocus->getTooltipBuilder().autoBuild()){
+			currentCursorFocus->updateHoverTableHandle(tooltipManager.tryObtain(currentCursorFocus));
+		}
+		currentCursorType = currentCursorFocus->getCursorType();
+	}else{
+		currentCursorType = CursorType::regular;
 	}
 
 	rootDialog.update(delta);
-	hoverTableManager.update(delta);
+	tooltipManager.update(delta);
 }
 
 void UI::Root::determinShiftFocus(Widget* newFocus){
+
 	if(newFocus == nullptr){
 		if(currentCursorFocus != nullptr){
 			if(currentCursorFocus->shouldDropFocusAtCursorQuitBound() || pressedMouseButtons.none()){
-				setEnter(nullptr);
+				setEnter(nullptr, true);
 			}
 		}
 	} else{
 		if(currentCursorFocus != nullptr){
 			if(pressedMouseButtons.none()){
-				setEnter(newFocus);
+				setEnter(newFocus, currentCursorFocus->isQuietInteractable());
 			}
 		} else{
-			setEnter(newFocus);
+			setEnter(newFocus, newFocus->isQuietInteractable());
 		}
 	}
 }
@@ -92,7 +121,7 @@ void UI::Root::resize(const int w, const int h){
 	// projection.setOrthogonal(-marginX, -marginY, static_cast<float>(w) + marginX * 2.0f, static_cast<float>(h) + marginY * 2.0f);
 	projection.setOrthogonal(0, 0, width, height);
 
-	hoverTableManager.clear();
+	tooltipManager.clear();
 	rootDialog.resize();
 }
 
@@ -107,11 +136,11 @@ void UI::Root::renderBase() const{
 }
 
 void UI::Root::renderBase_HoverTable() const{
-	hoverTableManager.renderBase();
+	tooltipManager.renderBase();
 }
 
 void UI::Root::render_HoverTable() const{
-	hoverTableManager.render();
+	tooltipManager.render();
 }
 
 void UI::Root::onDoubleClick(const int id, int mode){
@@ -229,18 +258,18 @@ void UI::Root::registerCtrl() const{
 	});
 }
 
-void UI::Root::setEnter(Widget* elem){
+void UI::Root::setEnter(Widget* elem, const bool quiet){
 	if(elem == currentCursorFocus) return;
 
 	if(currentCursorFocus != nullptr){
 		exboundAction.set(cursorPos);
-		currentCursorFocus->getInputListener().fire(exboundAction);
+		if(!quiet)currentCursorFocus->getInputListener().fire(exboundAction);
 	}
 
 	currentCursorFocus = elem;
 
 	if(currentCursorFocus != nullptr){
 		inboundAction.set(cursorPos);
-		currentCursorFocus->getInputListener().fire(inboundAction);
+		if(!quiet)currentCursorFocus->getInputListener().fire(inboundAction);
 	}
 }

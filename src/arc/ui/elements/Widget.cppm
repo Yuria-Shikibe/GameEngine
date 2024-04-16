@@ -5,6 +5,7 @@ export module UI.Widget;
 export import UI.Flags;
 export import UI.Align;
 export import UI.Action;
+export import UI.CursorType;
 import UI.SeperateDrawable;
 import Event;
 import Math;
@@ -21,17 +22,35 @@ export namespace UI {
 	class Table;
 	class Root;
 
-	struct HoverTableBuilder{
-		std::function<void(Table&)> builder{};
-		float minHoverTime = 25.0f;
-		bool useStaticTime = true;
-		bool followCursor = false;
+	constexpr float DisableAutoTooltip = -1.0f;
+
+	struct TooltipBuilder{
+		enum struct FollowTarget : unsigned char{
+			none,
+			cursor,
+			parent,
+		};
+
+		FollowTarget followTarget{FollowTarget::none};
+		float minHoverTime{25.0f};
+		bool useStaticTime{true};
+		bool autoRelease{true};
 		Geom::Vec2 offset{};
+		Align::Mode followTargetAlign{Align::Mode::bottom_left};
+		Align::Mode tooltipSrcAlign{Align::Mode::top_left};
+
+		std::function<void(Table&)> builder{};
 
 		[[nodiscard]] explicit operator bool() const {
 			return static_cast<bool>(builder);
 		}
+
+		[[nodiscard]] bool autoBuild() const{
+			return minHoverTime > 0.0f;
+		}
 	};
+
+	using FollowTarget = TooltipBuilder::FollowTarget;
 }
 
 export namespace UI {
@@ -73,7 +92,7 @@ export namespace UI {
 			Event::indexOf<UI::CurosrExbound>(),
 		};
 
-		TouchbilityFlags touchbility = TouchbilityFlags::enabled;
+		TouchbilityFlags touchbility = TouchbilityFlags::disabled;
 
 		mutable bool layoutChanged{false};
 
@@ -111,9 +130,17 @@ export namespace UI {
 		}
 
 		Table* hoverTableHandle{nullptr};
-		HoverTableBuilder hoverTablebuilder{};
+		TooltipBuilder tooltipbuilder{};
 
 	public:
+		Widget(const Widget& other) = delete;
+
+		Widget(Widget&& other) noexcept = default;
+
+		Widget& operator=(const Widget& other) = delete;
+
+		Widget& operator=(Widget&& other) noexcept = default;
+
 		std::string name{"undefind"};
 
 		std::function<bool()> visibilityChecker{nullptr};
@@ -223,11 +250,15 @@ export namespace UI {
 
 		virtual void applyDefDrawer();
 
-		void setHoverTableBuilder(const HoverTableBuilder& hoverTableBuilder){
-			this->hoverTablebuilder = hoverTableBuilder;
+		void setTooltipBuilder(const TooltipBuilder& hoverTableBuilder){
+			this->tooltipbuilder = hoverTableBuilder;
 		}
 
-		[[nodiscard]] const HoverTableBuilder& getHoverTableBuilder() const{ return hoverTablebuilder; }
+		void setTooltipBuilder(TooltipBuilder&& hoverTableBuilder){
+			this->tooltipbuilder = std::move(hoverTableBuilder);
+		}
+
+		[[nodiscard]] const TooltipBuilder& getTooltipBuilder() const{ return tooltipbuilder; }
 
 		void updateHoverTableHandle(Table* handle){
 			this->hoverTableHandle = handle;
@@ -448,7 +479,13 @@ export namespace UI {
 
 		virtual bool hasChildren() const {return false;}
 
-		[[nodiscard]] constexpr bool isInteractable() const {return touchbility == TouchbilityFlags::enabled && visiable;}
+		[[nodiscard]] constexpr bool isInteractable() const{
+			return (touchbility == TouchbilityFlags::enabled || static_cast<bool>(tooltipbuilder)) && visiable;
+		}
+
+		[[nodiscard]] constexpr bool isQuietInteractable() const{
+			return (touchbility != TouchbilityFlags::enabled && static_cast<bool>(tooltipbuilder)) && visiable;
+		}
 
 		virtual bool hintInbound_validToParent(const Geom::Vec2 screenPos){
 			return isInbound(screenPos);
@@ -467,6 +504,14 @@ export namespace UI {
 		void setFocusedScroll(bool focus);
 
 		void releaseAllFocus() const;
+
+		virtual CursorType getCursorType() const{
+			if(touchDisabled()){
+				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
+			}else{
+				return tooltipbuilder ? CursorType::clickable_tip : CursorType::clickable;
+			}
+		}
 
 		[[nodiscard]] constexpr float drawSrcX() const {return absoluteSrc.x;}
 
@@ -504,6 +549,8 @@ export namespace UI {
 		virtual bool onEsc(){
 			return true;
 		}
+
+		void buildTooltip();
 
 	protected:
 		virtual void childrenCheck(const Widget* ptr) {

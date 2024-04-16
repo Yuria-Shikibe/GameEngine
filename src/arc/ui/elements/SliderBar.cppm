@@ -180,6 +180,10 @@ export namespace UI{
 			Widget::update(delta);
 		}
 
+		CursorType getCursorType() const override{
+			return CursorType::drag;
+		}
+
 		void applyDefDrawer() override;
 
 		void drawContent() const override;

@@ -193,6 +193,8 @@ export namespace Core{
 
 		Input& operator=(Input&& other) = delete;
 
+
+
 		void registerMouseBind(MouseBind* mouseBind) {
 			mouseGroup.registerBind(mouseBind);
 		}

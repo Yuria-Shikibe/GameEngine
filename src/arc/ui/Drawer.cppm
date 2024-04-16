@@ -31,6 +31,7 @@ export namespace UI { //TODO bullshit virtual
 		float margin = 1.0f;
 		Geom::Vec2 offsetScl{0.35f, 0.35f};
 		Graphic::Color barColor{Graphic::Colors::GRAY};
+		Graphic::Color pressedBarColor{Graphic::Colors::LIGHT_GRAY};
 		GL::TextureNineRegion region{};
 		virtual ~ScrollBarDrawer() = default;
 

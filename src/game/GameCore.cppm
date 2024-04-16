@@ -34,8 +34,8 @@ export namespace Game {
 		}
 
 		void updateGlobal(const float delta) override{
-			if(overlayManager->activated)overlayManager->updateGlobal(delta);
-			if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
+			// if(overlayManager->activated)overlayManager->updateGlobal(delta);
+			// if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
 		}
 
 		virtual void drawAboveUI(::Core::Renderer* renderer) const{

@@ -89,7 +89,7 @@ export namespace Align {
 			set(0);
 		}
 	};
-	enum class Mode : char{
+	enum class Mode : unsigned char{
 		left = 0b0000'0001,
 		right = 0b0000'0010,
 		center_x = 0b0000'0100,
@@ -182,6 +182,30 @@ export namespace Align {
 		return offset;
 	}
 
+	/**
+	 * @brief
+	 * @tparam T arithmetic type, does not accept unsigned type
+	 * @return
+	 */
+	template <Concepts::Signed T>
+	constexpr Geom::Vector2D<T> getVert(const Mode align, const Geom::Rect_Orthogonal<T>& bound) {
+		Geom::Vector2D<T> offset{bound.getSrc()};
+
+
+		if(align & Align::Mode::top) {
+			offset.y = bound.getEndY();
+		}else if(align & Align::Mode::center_y){
+			offset.y += bound.getHeight() / static_cast<T>(2);
+		}
+
+		if(align & Align::Mode::right) {
+			offset.x = bound.getEndX();
+		}else if(align & Align::Mode::center_x){
+			offset.x += bound.getWidth() / static_cast<T>(2);
+		}
+
+		return offset;
+	}
 
 	/**
 	 * @brief

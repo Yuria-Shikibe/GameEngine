@@ -10,7 +10,11 @@ import Math;
 using UI::Root;
 
 void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
-	Graphic::Draw::color(barColor);
+	if(pane->isPressed()){
+		Graphic::Draw::color(pressedBarColor);
+	}else{
+		Graphic::Draw::color(barColor);
+	}
 
 	if(pane->enableHorizonScroll()) {
 		region.render_RelativeExter(pane->getHoriBarRect().copy().shrink(margin).moveY(pane->getBorder().bottom * -offsetScl.x));
@@ -19,6 +23,19 @@ void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
 	if(pane->enableVerticalScroll()) {
 		region.render_RelativeExter(pane->getVertBarRect().copy().shrink(margin).moveX(pane->getBorder().right * offsetScl.y));
 	}
+}
+
+UI::CursorType UI::ScrollPane::getCursorType() const{
+	if(root){
+		if(isInHoriBar(root->cursorPos)){
+			return CursorType::scrollHori;
+		}
+
+		if(isInVertBar(root->cursorPos)){
+			return CursorType::scrollVert;
+		}
+	}
+	return CursorType::scroll;
 }
 
 void UI::ScrollPane::applyDefDrawer(){

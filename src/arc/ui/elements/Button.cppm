@@ -12,13 +12,20 @@ import Concepts;
 export namespace UI{
 	class Button : public Table{
 	protected:
-		void trigger(const bool ON_OFF) const{
-			if(call)call(ON_OFF);
+		bool triggerOnReleaseOnly{true};
+		std::function<void(Button&, bool)> call{};
+
+		void trigger(const bool isButtonPressed){
+			if(call){
+				if(triggerOnReleaseOnly){
+					if(!isButtonPressed)call(*this, isButtonPressed);
+				}else{
+					call(*this, isButtonPressed);
+				}
+			}
 		}
 
 	public:
-		std::function<void(bool)> call{};
-
 		Button(){
 			touchbility = TouchbilityFlags::enabled;
 
@@ -39,9 +46,17 @@ export namespace UI{
 			});
 		}
 
-		void setCall(Concepts::Invokable<void(bool)> auto&& func){
+		[[nodiscard]] bool isTriggerOnReleaseOnly() const{ return triggerOnReleaseOnly; }
+
+		void setTriggerOnReleaseOnly(const bool triggerOnReleaseOnly){
+			this->triggerOnReleaseOnly = triggerOnReleaseOnly;
+		}
+
+		void setCall(Concepts::Invokable<void(Button&, bool)> auto&& func){
 			call = std::forward<decltype(func)>(func);
 		}
+
+		[[nodiscard]] std::function<void(Button&, bool)>& getCall(){ return call; }
 
 		void drawStyle() const override{
 			Widget::drawStyle();

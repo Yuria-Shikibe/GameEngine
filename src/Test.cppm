@@ -16,7 +16,7 @@ import Assets.Sound;
 import Assets.Loader;
 import Assets.TexturePacker;
 import Assets.Manager;
-import Assets.Cursor;
+import UI.Cursor;
 import Graphic.Draw;
 import Graphic.Pixmap;
 
@@ -58,7 +58,8 @@ export namespace Test{
 
 		{
 			const Graphic::Pixmap appIcon{Assets::assetsDir.subFile("icon.png")};
-			Core::platform->window->setApplicationIcon(appIcon.data(), appIcon.getWidth(), appIcon.getHeight(), appIcon.Channels, 1);
+			Core::platform->window->setApplicationIcon(appIcon.data(), appIcon.getWidth(), appIcon.getHeight(),
+			                                           appIcon.Channels, 1);
 		}
 
 		Core::initCore_Post([]{
@@ -136,11 +137,8 @@ export namespace Test{
 					uiPage->pushRequest(file.stem(), std::move(pixmap));
 				});
 
-				Assets::TexturePackPage* cursorPage = event.manager->getAtlas().registerPage(
-					"cursor", Assets::texCacheDir);
-				cursorPage->forcePack = true;
-				Assets::textureDir.subFile("cursor").forAllSubs([cursorPage](OS::File&& file){
-					cursorPage->pushRequest(file);
+				Assets::textureDir.subFile("cursor").forAllSubs([uiPage](OS::File&& file){
+					uiPage->pushRequest(file);
 				});
 			}
 
@@ -162,7 +160,7 @@ export namespace Test{
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const Assets::AssetsLoadEnd& event){
-			for (auto& texture2D : event.manager->getAtlas().getPage("font").getTextures()){
+			for(auto& texture2D : event.manager->getAtlas().getPage("font").getTextures()){
 				texture2D->setScale(GL::TexParams::mipmap_linear_linear);
 			}
 
@@ -188,16 +186,35 @@ export namespace Test{
 			UI::Styles::load(event.manager->getAtlas());
 
 			{
-				auto& ptr = Assets::getCursorRaw(Assets::CursorType::regular);
-				ptr = std::make_unique<Assets::Cursor>();
-				ptr->setImage(event.manager->getAtlas().find("cursor-regular"));
+				auto& ptr = UI::getCursorRaw(UI::CursorType::select);
+				ptr = std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-aim"));
+				ptr->drawer = std::make_unique<UI::CursorThoroughSightDrawer>();
 			}
 
 			{
-				auto& ptr = Assets::getCursorRaw(Assets::CursorType::select);
-				ptr = std::make_unique<Assets::Cursor>();
-				ptr->setImage(event.manager->getAtlas().find("cursor-select"));
-				ptr->drawer = std::make_unique<Assets::CursorThoroughSightDrawer>();
+
+				UI::setCursorRaw(UI::CursorType::regular,
+					std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-regular")));
+				UI::setCursorRaw(UI::CursorType::regular_tip,
+					std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-regular-tip")));
+
+				UI::setCursorRaw(UI::CursorType::clickable,
+					std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-click")));
+				UI::setCursorRaw(UI::CursorType::clickable_tip,
+					std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-click-tip")));
+
+				UI::setCursorRaw(UI::CursorType::textInput,
+				                 std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-input")));
+
+				UI::setCursorRaw(UI::CursorType::scroll,
+				                 std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-scroll")));
+				UI::setCursorRaw(UI::CursorType::scrollHori,
+				                 std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-scroll-hori")));
+				UI::setCursorRaw(UI::CursorType::scrollVert,
+				                 std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-scroll-vert")));
+
+				UI::setCursorRaw(UI::CursorType::drag,
+				                 std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-drag")));
 			}
 
 			event.manager->getAtlas().bindTextureArray(BindPageName, {MainPageName, "normal", "light"},
@@ -229,18 +246,21 @@ export namespace Test{
 			Font::forwardParser = std::make_unique<Font::GlyphParser>(Assets::Fonts::telegrama);
 			Font::forwardParser->charParser->registerDefParser();
 			Font::forwardParser->tokenParser->reserveTokenSentinal = true;
-			Font::forwardParser->tokenParser->fallBackModifier = [](const int curIndex, const Font::TextView token, const Font::ModifierableData& data){
+			Font::forwardParser->tokenParser->fallBackModifier = [](const int curIndex, const Font::TextView token,
+			                                                        const Font::ModifierableData& data){
 				const auto hasType = token.find('#');
 
 				Font::TextView subToken = token;
 
-				if(hasType != Font::TextView::npos) {
+				if(hasType != Font::TextView::npos){
 					subToken = token.substr(0, hasType);
 				}
 
 				data.context.fallbackColor = data.context.currentColor;
 
-				data.context.currentColor = Font::defGlyphParser->tokenParser->modifier.contains(subToken) ? Graphic::Color{0xa1ecabff} : Graphic::Colors::RED_DUSK;
+				data.context.currentColor = Font::defGlyphParser->tokenParser->modifier.contains(subToken)
+					                            ? Graphic::Color{0xa1ecabff}
+					                            : Graphic::Colors::RED_DUSK;
 				auto backItr = data.layout.getGlyphs().rbegin();
 
 				for(int i = 0; i < 2; ++i){
@@ -253,7 +273,7 @@ export namespace Test{
 
 					if(index == subToken.size()){
 						data.context.currentColor = Graphic::Colors::ROYAL;
-					}else if(index > subToken.size()){
+					} else if(index > subToken.size()){
 						data.context.currentColor = Graphic::Colors::LIGHT_GRAY;
 					}
 
@@ -261,13 +281,15 @@ export namespace Test{
 
 					if(hasCharToken){
 						if(Font::forwardParser->charParser->shouldNotContinue(charCode)){
-							Font::ParserFunctions::pushData(charCode, curIndex - static_cast<int>(token.size() - index), charData, data);
+							Font::ParserFunctions::pushData(charCode, curIndex - static_cast<int>(token.size() - index),
+							                                charData, data);
 							Font::forwardParser->charParser->parse(charCode, data);
-						}else{
+						} else{
 							Font::forwardParser->charParser->parse(charCode, data);
 						}
-					}else{
-						Font::ParserFunctions::pushData(charCode, curIndex - static_cast<int>(token.size() - index), charData, data);
+					} else{
+						Font::ParserFunctions::pushData(charCode, curIndex - static_cast<int>(token.size() - index),
+						                                charData, data);
 					}
 				}
 

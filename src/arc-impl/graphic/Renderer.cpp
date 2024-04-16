@@ -83,7 +83,7 @@ void Core::Renderer::renderUI() {
 	processUISperateDraw(&Core::uiRoot->rootDialog);
 
 
-	const auto [dropped, focused] = Core::uiRoot->hoverTableManager.getDrawSeq();
+	const auto [dropped, focused] = Core::uiRoot->tooltipManager.getDrawSeq();
 
 	for (auto&& toDraw : focused){
 		processUISperateDraw(toDraw);

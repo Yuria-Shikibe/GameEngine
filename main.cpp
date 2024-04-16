@@ -116,7 +116,6 @@ import Game.Graphic.CombinePostProcessor;
 import ext.Encoding;
 import ext.TreeStructure;
 
-using namespace std;
 using namespace Graphic;
 using namespace GL;
 using Geom::Vec2;
@@ -168,20 +167,15 @@ void setupUITest(){
 			   t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
 			   for(int i = 0; i < 8; ++i){
 				   t.add<UI::Button>([i](UI::Button& button){
-					   button.setCall([i](bool isPressed){
-					   		if(!isPressed){
-					   			std::cout << i << std::endl;
-
-							   Core::uiRoot->showDialog(true, [i](UI::Table& hint){
-								   hint.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
-									   const OS::File src{R"(D:\projects\GameEngine\properties\resource\assets)"};
-									   selector.gotoFile(src, false);
-								   }).fillParent().setAlign(Align::Mode::top_center);
-							   });
-					   		}
+					   button.setCall([i](UI::Button& b, bool){
+						   b.buildTooltip();
 					   });
 
-					   button.setHoverTableBuilder({
+					   button.setTooltipBuilder({
+							   .followTarget = UI::FollowTarget::parent,
+							   .minHoverTime = UI::DisableAutoTooltip,
+							   .autoRelease = true,
+							   .followTargetAlign = Align::Mode::bottom_left,
 							   .builder = [i](UI::Table& hint){
 								   // hint.setMinimumSize({600, 300});
 								   hint.setCellAlignMode(Align::Mode::top_left);
@@ -194,7 +188,15 @@ void setupUITest(){
 									   label.getBorder().expand(4.0f);
 								   }).expand().endLine();
 								   hint.add<UI::Button>([i](UI::Button& button){
-									   button.setHoverTableBuilder({
+								   		button.setCall([i](UI::Button&, bool){
+											   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
+												   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
+													   const OS::File src{R"(D:\projects\GameEngine\properties\resource\assets)"};
+													   selector.gotoFile(src, false);
+												   }).fillParent().setAlign(Align::Mode::top_center);
+											   });
+								   		});
+									   button.setTooltipBuilder({
 											   .builder = [](UI::Table& hintInner){
 												   hintInner.setCellAlignMode(Align::Mode::top_left);
 												   hintInner.add<UI::Label>([](UI::Label& label){
@@ -225,6 +227,27 @@ void setupUITest(){
 				   bar.progressGetter = [&slider]{
 					   return slider.getProgress().x;
 				   };
+
+			   	bar.PointCheck = 12;
+
+				   bar.setTooltipBuilder({
+						   .followTarget = UI::FollowTarget::parent,
+						   .followTargetAlign = Align::Mode::bottom_center,
+						   .tooltipSrcAlign = Align::Mode::top_center,
+						   .builder = [&bar](UI::Table& hint){
+							   // hint.setMinimumSize({600, 300});
+							   hint.setCellAlignMode(Align::Mode::top_left);
+							   hint.add<UI::Label>([&bar](UI::Label& label){
+								   label.usingGlyphHeight = label.usingGlyphWidth = true;
+								   label.setText([&bar]{
+									   return std::format("$<c#GRAY>Progress: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%", bar.getDrawProgress() * 100.0f);
+								   });
+								   label.getGlyphLayout()->setSCale(0.55f);
+								   label.setEmptyDrawer();
+								   label.getBorder().expand(2.0f);
+							   }).expand().endLine();
+						   }
+					   });
 			   });
 		   }).fillParent().setPad({.left = 2.0f});
 	   })
@@ -434,7 +457,7 @@ int main(const int argc, char* argv[]){
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
-		Game::core->drawAboveUI(e.renderer);
+		Core::uiRoot->drawCursor();
 		Graphic::Batch::flush();
 	});
 

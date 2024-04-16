@@ -9,7 +9,7 @@ import ext.Container.ObjectPool;
 import Geom.Matrix3D;
 
 export import UI.Flags;
-export import UI.HoverTableManager;
+export import UI.TooltipManager;
 export import UI.Dialog;
 import UI.SeperateDrawable;
 
@@ -47,7 +47,7 @@ export namespace UI{
 		// 	const SeperateDrawable* dialog{};
 		// 	decltype(HoverTableManager::getDrawSeq()) hoverTable;
 		// } drawSeq{};
-		HoverTableManager hoverTableManager{};
+		TooltipManager tooltipManager{};
 		Dialog rootDialog{};
 
 		float width{0};
@@ -80,11 +80,14 @@ export namespace UI{
 
 		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
 
+		CursorType currentCursorType = CursorType::regular;
+
 		float cursorStrandedTime{0.0f};
 		float cursorInBoundTime{0.0f};
 
 		void showDialog(std::shared_ptr<Dialog>&& dialog){
 			releaseFocus();
+			tooltipManager.dropCurrentAt(nullptr, dialog->isFillScreen());
 			rootDialog.findFirstShowingDialogNode()->appendDialog(std::move(dialog));
 		}
 
@@ -154,8 +157,8 @@ export namespace UI{
 			Widget* toIterate = currentScene;
 
 
-			if(hoverTableManager.isCursorInbound()){
-				toIterate = hoverTableManager.getCurrentFocus();
+			if(tooltipManager.isCursorInbound()){
+				toIterate = tooltipManager.getCurrentFocus();
 			}else if(auto* lastDialog = rootDialog.findFirstShowingDialogNode(); lastDialog != &rootDialog){
 				toIterate = &lastDialog->content;
 			}else{
@@ -164,6 +167,7 @@ export namespace UI{
 
 
 			iterateAll_DFS(toIterate, [this, &last](Widget* elem) mutable{
+
 				if(elem->isInteractable() && elem->isInbound(cursorPos)){
 					last = elem;
 				}
@@ -173,6 +177,8 @@ export namespace UI{
 
 			determinShiftFocus(last);
 		}
+
+		void drawCursor() const;
 
 		void update(float delta) override;
 
@@ -304,7 +310,7 @@ export namespace UI{
 	protected:
 		void inform(int keyCode, int action, int mods) override{}
 
-		void setEnter(Widget* elem);
+		void setEnter(Widget* elem, const bool quiet = false);
 
 	};
 }
