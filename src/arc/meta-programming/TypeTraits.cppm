@@ -1,9 +1,42 @@
-export module TypeTraits;
+export module MetaProgramming;
 
 import std;
 import ext.RuntimeException;
 
+namespace ext{
+	template <std::size_t I, std::size_t size, typename ArgTuple, typename DefTuple>
+	constexpr decltype(auto) getWithDef(ArgTuple&& argTuple, DefTuple&& defTuple){
+		if constexpr(I < size){
+			return std::get<I>(std::forward<ArgTuple>(argTuple));
+		} else{
+			return std::get<I>(std::forward<DefTuple>(defTuple));
+		}
+	}
+
+	template <typename TargetTuple, typename... Args, std::size_t... I>
+	constexpr decltype(auto) makeTuple_withDef_impl(std::tuple<Args...>&& args, TargetTuple&& defaults,
+	                                                std::index_sequence<I...>){
+		return std::make_tuple(std::tuple_element_t<I, std::decay_t<TargetTuple>>{
+				ext::getWithDef<I, sizeof...(Args)>(std::move(args), std::forward<TargetTuple>(defaults))
+			}...);
+	}
+}
+
+
 export namespace ext{
+	template <typename TargetTuple, typename... Args>
+	constexpr decltype(auto) makeTuple_withDef(TargetTuple&& defaultArgs, Args&&... args){
+		return ext::makeTuple_withDef_impl(std::make_tuple(std::forward<Args>(args)...),
+		                                   std::forward<TargetTuple>(defaultArgs),
+		                                   std::make_index_sequence<std::tuple_size_v<std::decay_t<TargetTuple>>>());
+	}
+
+	template <typename TargetTuple, typename... Args>
+	constexpr decltype(auto) makeTuple_withDef(Args&&... args){
+		return ext::makeTuple_withDef(TargetTuple{}, std::forward<Args>(args)...);
+	}
+
+
 	template <typename MemberPtr>
 	struct GetMemberPtrClass;
 

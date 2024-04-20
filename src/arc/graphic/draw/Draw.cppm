@@ -208,10 +208,9 @@ export namespace Graphic{
 
 			if(shader){
 				shader->bind();
+				shader->apply();
 				if constexpr(!std::is_same_v<std::nullptr_t, Func>){
-					shader->applyDynamic(f);
-				} else{
-					shader->apply();
+					shader->applyDynamic(f, false);
 				}
 			}
 
@@ -280,14 +279,14 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void shader(Shader* shader, const bool flushContext){
+		void beginShader(Shader* shader, const bool flushContext){
 			if(flushContext) flush<batchPtr>();
 
 			getBatch(batchPtr)->setCustomShader(shader);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void shader(const bool flushContext = true){
+		void endShader(const bool flushContext = true){
 			getBatch(batchPtr)->clearCustomShader(flushContext);
 		}
 	}

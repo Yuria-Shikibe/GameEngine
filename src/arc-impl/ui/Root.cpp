@@ -91,13 +91,13 @@ void UI::Root::determinShiftFocus(Widget* newFocus){
 	if(newFocus == nullptr){
 		if(currentCursorFocus != nullptr){
 			if(currentCursorFocus->shouldDropFocusAtCursorQuitBound() || pressedMouseButtons.none()){
-				setEnter(nullptr, true);
+				setEnter(nullptr, currentCursorFocus->isQuietInteractable());
 			}
 		}
 	} else{
 		if(currentCursorFocus != nullptr){
 			if(pressedMouseButtons.none()){
-				setEnter(newFocus, currentCursorFocus->isQuietInteractable());
+				setEnter(newFocus, newFocus->isQuietInteractable());
 			}
 		} else{
 			setEnter(newFocus, newFocus->isQuietInteractable());

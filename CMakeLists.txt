@@ -43,7 +43,9 @@ set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
     set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:library)
+
     add_compile_definitions(ASSETS_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}\")
+    add_compile_definitions(DEBUG_CHECK=1)
 
     file(GLOB_RECURSE BIN
             ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
@@ -53,6 +55,7 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
             ${EXE_DIR}
     )
 else ()
+    add_compile_definitions(DEBUG_CHECK=0)
     message(STATUS "CXX Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
 endif ()

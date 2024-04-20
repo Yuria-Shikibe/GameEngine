@@ -19,6 +19,8 @@ export namespace Assets{
 
 
 	struct AssetsTaskHandler: ext::TaskHandler {
+		std::exception_ptr lastExceptionPtr{};
+
 		AssetsLoader* target{nullptr};
 		mutable std::mutex lock{};
 
@@ -29,6 +31,10 @@ export namespace Assets{
 		[[nodiscard]] AssetsTaskHandler() = default;
 
 		std::future<void> operator()(Concepts::Invokable<void()> auto&& func) const;
+
+		void operator()(const std::exception& postException);
+
+		void operator()(const std::exception_ptr& postException);
 	};
 
 	class AssetsLoader{
@@ -41,7 +47,7 @@ export namespace Assets{
 		ext::Timestamper timer{};
 		std::unordered_map<Task, TaskFuture> tasks{};
 
-		std::unique_ptr<Handler> postHandler{std::make_unique<Handler>(this)};
+		AssetsTaskHandler postHandler{this};
 
 		mutable std::stringstream sstream{};
 
@@ -56,6 +62,12 @@ export namespace Assets{
 		~AssetsLoader()  = default;
 
 		std::queue<std::packaged_task<void()>> postedTasks{};
+
+		void tryThrowException() const{
+			if(postHandler.lastExceptionPtr){
+				std::rethrow_exception(postHandler.lastExceptionPtr);
+			}
+		}
 
 		void begin() {
 			// std::cout << "Assets Load Begin" << std::endl;
@@ -80,8 +92,13 @@ export namespace Assets{
 			done = false;
 		}
 
-		void setDone() {
+		void setDone(){
 			done = true;
+
+			for (auto & task : tasks | std::ranges::views::values){
+				task.get();
+			}
+
 			tasks.clear();
 			OS::deactivateHander();
 			std::println(std::cout, "Assets Loader Loop Terminated");
@@ -100,6 +117,8 @@ export namespace Assets{
 		 * \brief Run This In Main Loop Until ProgressTask.finished()
 		 */
 		void processRequests(){
+			tryThrowException();
+
 			timer.mark(1);
 
 			size_t doneCount = 0;
@@ -117,20 +136,18 @@ export namespace Assets{
 
 			if(postedTasks.empty() || done)return;
 
-			auto duration = timer.toMark(1);
-
-			while(duration < maxLoadSpacing) {
-				this->postHandler->lock.lock();
+			while(timer.toMark(1) < maxLoadSpacing) {
+				this->postHandler.lock.lock();
 
 				if(postedTasks.empty()) {
-					this->postHandler->lock.unlock();
+					this->postHandler.lock.unlock();
 					break;
 				}
 
 				auto task = std::move(postedTasks.front());
 				postedTasks.pop();
 
-				this->postHandler->lock.unlock();
+				this->postHandler.lock.unlock();
 
 				try {
 					task();
@@ -138,8 +155,6 @@ export namespace Assets{
 					//TODO exception handle
 					throw std::current_exception();
 				}
-
-				duration = timer.toMark(1);
 			}
 		}
 
@@ -150,8 +165,8 @@ export namespace Assets{
 			}
 		}
 
-		void push(Task task, const bool asTask = true) {
-			task->setHandler(this->postHandler.get());
+		void push(const Task task, const bool asTask = true) {
+			task->setHandler(&postHandler);
 			if(asTask)tasks.try_emplace(task, TaskFuture{});
 		}
 
@@ -179,4 +194,15 @@ export namespace Assets{
 		return t.get_future();
 	}
 
+	void AssetsTaskHandler::operator()(const std::exception& postException){
+		try{
+			throw postException;
+		}catch(...){
+			lastExceptionPtr = std::current_exception();
+		}
+	}
+
+	void AssetsTaskHandler::operator()(const std::exception_ptr& postException){
+		lastExceptionPtr = postException;
+	}
 }

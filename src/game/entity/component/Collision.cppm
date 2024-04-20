@@ -305,31 +305,25 @@ export namespace Game{
 					//Collision Test
 					//Is a small local quad tree necessary?
 					//Should less than 6quads collide with 6quads
-					for(int subjectBoxIndex = 0; subjectBoxIndex < this->hitBoxGroup.size(); ++subjectBoxIndex){
-						for(int objectBoxIndex = 0; objectBoxIndex < other.hitBoxGroup.size(); ++objectBoxIndex){
-							const auto& subject = this->hitBoxGroup.at(subjectBoxIndex).temp;
-							const auto& object = other.hitBoxGroup.at(objectBoxIndex).temp;
-
-							if(subject.overlapRough(object)){
-								if(subject.overlapExact(object)){
-									if(requiresIntersection){
-										collisionData.set(Geom::rectAvgIntersection(subject, object), subjectBoxIndex, objectBoxIndex);
-									}else{
-										collisionData.intersection = Geom::ZERO;
-									}
-
-									this->clampCCDTo(subjectIndex);
-									this->trans.vec.mulAdd(transitionCCD, subjectIndex);
-
-									other.clampCCDTo(objectIndex);
-									other.trans.vec.mulAdd(other.transitionCCD, objectIndex);
-
-									return collisionData;
-								}
+					for(auto [subjectBoxIndex, subject] : this->hitBoxGroup | std::ranges::views::transform(&BoxStateData::temp) | std::views::enumerate){
+						for(auto [objectBoxIndex, object] : other.hitBoxGroup | std::ranges::views::transform(&BoxStateData::temp) | std::views::enumerate){
+							if(!subject.overlapRough(object) || !subject.overlapExact(object))continue;
+							if(requiresIntersection){
+								collisionData.set(Geom::rectAvgIntersection(subject, object), subjectBoxIndex, objectBoxIndex);
+							}else{
+								collisionData.intersection = Geom::ZERO;
 							}
+
+							this->clampCCDTo(subjectIndex);
+							other.clampCCDTo(objectIndex);
+
+							//TODO is this position clamp necessary？
+							this->trans.vec.mulAdd(transitionCCD, subjectIndex);
+							other.trans.vec.mulAdd(other.transitionCCD, objectIndex);
+
+							return collisionData;
 						}
 					}
-
 				}
 
 				objectLastIndex = objectCurrentIndex;
@@ -341,7 +335,7 @@ export namespace Game{
 		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
 			return std::accumulate(hitBoxGroup.begin(), hitBoxGroup.end(),
 				0.0f, [mass, scale, lengthRadiusRatio](const float val, const BoxStateData& pair){
-				return val + pair.original.getRotationalInertia(mass, scale, lengthRadiusRatio);
+				return val + pair.original.getRotationalInertia(mass, scale, lengthRadiusRatio) * pair.relaTrans.vec.length2();
 			});
 		}
 

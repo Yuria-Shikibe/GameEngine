@@ -3,7 +3,7 @@ export module Graphic.Effect.Manager;
 export import Graphic.Effect;
 
 import ext.Container.ObjectPool;
-import Heterogeneous;
+import ext.Heterogeneous;
 
 import std;
 

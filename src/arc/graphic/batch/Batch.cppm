@@ -163,7 +163,7 @@ export namespace Core{
 		void applyShader() const{
 			if(applyCustomShader()){
 				//TODO this is really dangerous!
-				customShader->applyDynamic(generalShader->getDrawer());
+				customShader->applyDynamic(generalShader->getDrawer(), true);
 			}else{
 				generalShader->apply();
 			}

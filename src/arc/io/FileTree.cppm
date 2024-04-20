@@ -5,7 +5,7 @@ export module OS.FileTree;
 import OS.File;
 import ext.RuntimeException;
 import std;
-import Heterogeneous;
+import ext.Heterogeneous;
 
 export namespace OS{
 	//dTODO use a struct to wrap the data structure of just directly use vector?

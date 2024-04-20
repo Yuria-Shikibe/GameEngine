@@ -407,8 +407,8 @@ export namespace Game {
 			return false;
 		}
 
-		static const Geom::OrthoRectFloat& getHitBoound(const RealityEntity* reality_entity) {
-			return reality_entity->hitBox.maxBound;
+		static const Geom::OrthoRectFloat& getHitBoound(const RealityEntity& reality_entity) {
+			return reality_entity.hitBox.maxBound;
 		}
 
 		static bool roughInterscet(const RealityEntity* subject, const RealityEntity* object) {

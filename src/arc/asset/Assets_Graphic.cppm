@@ -28,6 +28,7 @@ import Graphic.PostProcessor.PipeProcessor;
 import Graphic.PostProcessor;
 
 import GL.Shader.Manager;
+import GL.Shader.UniformWrapper;
 import GL.Constants;
 
 import OS.File;
@@ -36,6 +37,7 @@ import std;
 import Math;
 
 using namespace GL;
+using namespace Graphic;
 
 /**
  * \brief Inbuilt Resources
@@ -66,7 +68,8 @@ export namespace Assets{
 		inline Shader* gaussian = nullptr;
 		inline Shader* bloom = nullptr;
 		inline Shader* blit = nullptr;
-		
+
+		inline auto slideLineShaderArgs = UniformWrapper{25.0f, -1.0f, Colors::GRAY.createLerp(Colors::LIGHT_GRAY, 0.5f), 1.0f};
 		inline Shader* sildeLines = nullptr;
 
 		inline Shader* world = nullptr;

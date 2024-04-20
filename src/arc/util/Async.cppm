@@ -18,6 +18,14 @@ export namespace ext {
 			return f;
 		}
 
+		void operator()(const std::exception& postException) const{
+			throw postException;
+		}
+
+		void operator()(const std::exception_ptr& postException){
+			if(postException)std::rethrow_exception(postException);
+		}
+
 		explicit operator bool() const {
 			return true;
 		}

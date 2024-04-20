@@ -18,7 +18,7 @@ import OS.FileTree;
 import OS.Handler;
 
 import Image.Svg;
-import Heterogeneous;
+import ext.Heterogeneous;
 
 using Geom::OrthoRectUInt;
 using namespace Graphic;
@@ -303,7 +303,7 @@ export namespace Assets {
 			while(true) {
 				//TODO there should be a better way.
 				if(target.done && !target.packDone) {
-					throw ext::RuntimeException{"Failed To Pack Linked Texture Atlas: " + pageName};
+					handler->operator()(ext::RuntimeException{"Failed To Pack Linked Texture Atlas: " + pageName});
 				}
 				if(target.packDone)break;
 				std::this_thread::sleep_for(std::chrono::milliseconds(250));

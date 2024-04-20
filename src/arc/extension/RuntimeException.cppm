@@ -7,10 +7,10 @@ import std;
 export namespace ext{
 	class RuntimeException : public std::exception{
 	public:
-		~RuntimeException() override = default;
+		virtual ~RuntimeException() override = default;
 		std::string data{};
 
-		explicit RuntimeException(const std::string& str, const std::source_location location = std::source_location::current()){
+		explicit RuntimeException(const std::string& str, const std::source_location& location = std::source_location::current()){
 			std::stringstream ss;
 
 			ss << str << '\n';

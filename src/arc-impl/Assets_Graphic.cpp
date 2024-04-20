@@ -16,6 +16,10 @@ void Assets::Shaders::loadPrevious() {
 	sildeLines->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("u_texture", 0);
 		shader.setFloat("time", OS::globalTick());
+		shader.setFloat("width", slideLineShaderArgs.get<0>());
+		shader.setFloat("spacing", slideLineShaderArgs.get<1>());
+		shader.setColor("mulColor", slideLineShaderArgs.get<2, true>());
+		shader.setFloat("mulSub", slideLineShaderArgs.get<3>());
 	});
 
 	threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});

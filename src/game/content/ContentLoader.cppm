@@ -10,7 +10,7 @@ import std;
 import Concepts;
 import ext.RuntimeException;
 
-import Heterogeneous;
+import ext.Heterogeneous;
 
 export namespace Game{
 	class ContentLoader {

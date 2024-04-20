@@ -2,10 +2,10 @@
 // Created by Matrix on 2024/3/23.
 //
 
-export module Heterogeneous;
+export module ext.Heterogeneous;
 
 import std;
-import TypeTraits;
+import MetaProgramming;
 
 namespace ext{
 	struct StringEqualComparator{
@@ -136,4 +136,7 @@ export namespace ext{
 
 	template <typename V>
 	using StringMultiMap = std::unordered_multimap<std::string, V, StringHasher, StringEqualComparator>;
+
+	template <typename T, auto T::* ptr>
+	using HashSet_ByMember = std::unordered_set<T, MemberHasher<T, ptr>, MemberEqualTo<T, ptr>>;
 }

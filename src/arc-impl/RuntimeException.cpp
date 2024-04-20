@@ -13,7 +13,7 @@ void ext::RuntimeException::postProcess() const {
 		Core::log->generateCrash(what(), "RUNTIME");
 	}
 
-	if(std::this_thread::get_id() != OS::getMainThreadID()) {
-		OS::exitApplication(3, what());
-	}
+	// if(std::this_thread::get_id() != OS::getMainThreadID()) {
+	// 	OS::exitApplication(3, what());
+	// }
 }

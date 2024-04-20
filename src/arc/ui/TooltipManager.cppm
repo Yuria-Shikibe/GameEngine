@@ -10,7 +10,7 @@ import UI.Action.Actions;
 import UI.SeperateDrawable;
 import Concepts;
 import Geom.Vector2D;
-import Heterogeneous;
+import ext.Heterogeneous;
 import Concepts;
 
 import std;
@@ -177,8 +177,7 @@ export namespace UI{
 		}
 
 		[[nodiscard]] auto getDrawSeq() const{
-			auto dropped = droppedTables | std::ranges::views::transform(&std::unique_ptr<Table>::get) | std::ranges::to
-				<std::vector<const Table*>>();
+			auto dropped = droppedTables | std::ranges::views::transform(&std::unique_ptr<Table>::get);
 
 			auto focused = focusTableStack
 				| std::ranges::views::elements<0>

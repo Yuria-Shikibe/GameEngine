@@ -25,6 +25,64 @@ void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
 	}
 }
 
+void UI::ScrollPane::update(const float delta){
+	if(Widget::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())) {
+		Widget::setFocusedScroll(true);
+	}else{
+		Widget::setFocusedScroll(false);
+	}
+
+
+
+	scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta)) : 1.0f);
+
+	Group::update(delta);
+
+	if(scrollTempOffset != scrollOffset){
+		//TODO what...?
+		if(hasChildren()) {
+			itemSize = getItem()->getBound();
+			getItem()->layout_tryFillParent();
+		}
+	}else{
+		scrollOffset.add(scrollVelocity);
+		clamp(scrollOffset);
+
+		if(hasChildren()){
+			const float deltaH = getItem()->getHeight() - itemSize.getHeight();
+			const float deltaW = getItem()->getWidth() - itemSize.getWidth();
+
+			if(deltaH < getHeight())scrollOffset.y += deltaH;
+			if(deltaW < getWidth())scrollOffset.x += deltaW;
+
+			itemSize = getItem()->getBound();
+			getItem()->layout_tryFillParent();
+		}
+
+		clamp(scrollOffset);
+		resumeTemp();
+	}
+
+	const float ratioX = horiScrollRatio(-scrollOffset.x);
+	const float ratioY = vertScrollRatio(scrollOffset.y);
+	constexpr float triggerVal = 0.005f;
+	if(ratioX > 1.0f - triggerVal || ratioX < triggerVal){
+		scrollVelocity.x = 0;
+	}
+
+	if(ratioY > 1.0f - triggerVal || ratioY < triggerVal){
+		scrollVelocity.y = 0;
+	}
+
+	scrollTargetVelocity.setZero();
+
+	if(layoutChanged) {
+		layout();
+	}
+
+	calAbsoluteSrc(parent);
+}
+
 UI::CursorType UI::ScrollPane::getCursorType() const{
 	if(root){
 		if(isInHoriBar(root->cursorPos)){

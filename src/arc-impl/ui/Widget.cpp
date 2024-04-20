@@ -114,7 +114,7 @@ void UI::Widget::postChanged(){
 	lastSignal = ChangeSignal::notifyNone;
 }
 
-bool UI::Widget::isInbound(const Geom::Vec2 screenPos){
+bool UI::Widget::isInbound(const Geom::Vec2 screenPos) const{
 	if(touchbility == TouchbilityFlags::disabled && !tooltipbuilder)return false;
 	if(parent != nullptr && !parent->hintInbound_validToParent(screenPos))return false;
 	return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();

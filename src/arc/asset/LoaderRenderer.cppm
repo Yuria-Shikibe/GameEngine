@@ -53,7 +53,7 @@ export namespace Assets {
 
 		~LoaderRenderer() override { // NOLINT(*-use-equals-default)
 			Core::batchGroup.batchOverlay->setProjection(defaultMat);
-			Graphic::Batch::shader(false);
+			Graphic::Batch::endShader(false);
 
 			GL::bindFrameBuffer(GL_FRAMEBUFFER);
 			GL::setStencilOperation(GL::Operation::REPLACE, GL::Operation::REPLACE, GL::Operation::REPLACE);
@@ -76,7 +76,7 @@ export namespace Assets {
 			mat.setOrthogonal(0.0f, 0.0f, getDrawWidth(), getDrawHeight());
 			Core::batchGroup.batchOverlay->setProjection(mat);
 
-			Graphic::Batch::shader();
+			Graphic::Batch::endShader();
 			Draw::mixColor(Colors::DARK_GRAY);
 
 			if(!loader->finished()) {
@@ -115,7 +115,7 @@ export namespace Assets {
 				x - preBlockWidth + slideLineSize, y + stroke + slideLineSize
 			);
 
-			Graphic::Batch::shader(Assets::Shaders::sildeLines, true);
+			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
 			Draw::Line::setLineStroke(stroke);
 			Draw::color(Colors::GRAY);
 
@@ -172,7 +172,7 @@ export namespace Assets {
 			Graphic::Batch::flush();
 			GL::disable(GL::Test::STENCIL);
 			//End Clip Layer Draw
-			Graphic::Batch::shader();
+			Graphic::Batch::endShader();
 
 			ss.str("");
 			ss << "$<scl#[0.4]>Loading$<scl#[0.3]>: ($<color#[" << end << "]>";

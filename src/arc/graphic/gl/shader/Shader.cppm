@@ -17,7 +17,7 @@ import GL.Uniform;
 import Graphic.Color;
 import std;
 
-import Heterogeneous;
+import ext.Heterogeneous;
 
 export namespace GL {
 	enum class ShaderType : GLuint {
@@ -86,18 +86,7 @@ export namespace GL {
 		};
 
 	protected:
-		mutable ext::StringMap<UniformInfo> uniformInfoMap{};
-		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
-
-		bool valid{false};
-
-		GLuint programID = 0;
-
-		OS::File shaderDir{};
-
-		std::function<void(const Shader &)> drawer = [](const Shader&) {};
-
-		template<typename... GLuint>
+			template<typename... GLuint>
 		[[nodiscard]] static unsigned int attachShaders(GLuint... args) {
 			int success;
 			// link shaders
@@ -162,6 +151,15 @@ export namespace GL {
 			return shader;
 		}
 
+		mutable ext::StringMap<UniformInfo> uniformInfoMap{};
+		mutable std::unordered_map<ShaderType, std::pair<std::string, std::string>> typeList{};
+
+		GLuint programID = 0;
+
+		OS::File shaderDir{};
+
+		std::function<void(const Shader &)> drawer = [](const Shader&) {};
+
 		void bindLoaction() const{
 			GLint uniform_count = 0;
 			glGetProgramiv(programID, GL_ACTIVE_UNIFORMS, &uniform_count);
@@ -182,10 +180,11 @@ export namespace GL {
 					glGetActiveUniform(programID, i, maxUniformLength, &length, &count, &type, uniform_name.get());
 
 					auto str = std::string(uniform_name.get(), length);
+					auto location = glGetUniformLocation(programID, str.c_str());
 
 					uniformInfoMap.try_emplace(
-						str,
-						glGetUniformLocation(programID, str.c_str()), count
+						std::move(str),
+						location, count
 					);
 
 				}
@@ -194,17 +193,11 @@ export namespace GL {
 
 	public:
 		[[nodiscard]] GLint getLocation(const std::string_view uniform) const {
-#ifdef _DEBUG
-			auto itr = uniformInfoMap.find(uniform);
-			if(itr != uniformInfoMap.end()){
+			if(const auto itr = uniformInfoMap.find(uniform); itr != uniformInfoMap.end()){
 				return itr->second.location;
-			}else return -1;
+			}
 
-			//throw ext::IllegalArguments{std::format("Unable To Find Uniform [{}] in Shader: {}", uniform, this->getID())};
-#else
-			return uniformInfoMap.at(uniform).location;
-#endif
-
+			return -1;
 		}
 
 		[[nodiscard]] UniformInfo getUniformInfo(const std::string_view uniform) const {
@@ -246,7 +239,6 @@ export namespace GL {
 
 		Shader(const Shader& other)
 			: uniformInfoMap{ other.uniformInfoMap },
-			valid{ other.valid },
 			programID{ other.programID },
 			drawer{ other.drawer } {
 			if(!other.isValid())throw ext::IllegalArguments{"Illegal Operation: Copy Invalid Shader!"};
@@ -256,7 +248,6 @@ export namespace GL {
 			if(!other.isValid())throw ext::IllegalArguments{"Illegal Operation: Copy Invalid Shader!"};
 			if(this == &other) return *this;
 			uniformInfoMap = other.uniformInfoMap;
-			valid              = other.valid;
 			programID          = other.programID;
 			drawer             = other.drawer;
 			return *this;
@@ -266,7 +257,6 @@ export namespace GL {
 			:
 			  uniformInfoMap(std::move(other.uniformInfoMap)),
 			  typeList(std::move(other.typeList)),
-			  valid(other.valid),
 			  programID(other.programID),
 			  shaderDir(std::move(other.shaderDir)),
 			  drawer(std::move(other.drawer)){
@@ -276,7 +266,6 @@ export namespace GL {
 			if(this == &other) return *this;
 			uniformInfoMap = std::move(other.uniformInfoMap);
 			typeList = std::move(other.typeList);
-			valid = other.valid;
 			programID = other.programID;
 			shaderDir = std::move(other.shaderDir);
 			drawer = std::move(other.drawer);
@@ -309,12 +298,10 @@ export namespace GL {
 			bindLoaction();
 
 			if(freeSource)typeList.clear();
-
-			valid = true;
 		}
 
 		[[nodiscard]] bool isValid() const {
-			return valid;
+			return programID != 0;
 		}
 
 		void bind() const {
@@ -331,53 +318,66 @@ export namespace GL {
 		}
 
 		void setColor(const std::string_view name, const Graphic::Color& color) const {
-			uniformColor(getLocation(name), color);
+			if(const auto location = getLocation(name); location >= 0){
+				uniformColor(location, color);
+			}
 		}
 
 		void setBool(const std::string_view name, const bool value) const {
-			glUniform1i(getLocation(name), static_cast<int>(value));
+			if(const auto location = getLocation(name); location >= 0){
+				glUniform1i(location, static_cast<int>(value));
+			}
 		}
 
 		// ------------------------------------------------------------------------
 		void setInt(const std::string_view name, const int value) const {
-			glUniform1i(getLocation(name), value);
+			if(const auto location = getLocation(name); location >= 0){
+				glUniform1i(location, value);
+			}
 		}
 
 		// ------------------------------------------------------------------------
 		void setFloat(const std::string_view name, const float value) const {
-			glUniform1f(getLocation(name), value);
+			if(const auto location = getLocation(name); location >= 0){
+				glUniform1f(location, value);
+			}
 		}
 
 		// ------------------------------------------------------------------------
 		void setVec2(const std::string_view name, const float x, const float y) const {
-			glUniform2f(getLocation(name), x, y);
+			if(const auto location = getLocation(name); location >= 0){
+				glUniform2f(location, x, y);
+			}
 		}
 
-		void setVec2(const std::string_view name, const Geom::Vec2 &vector) const {
-			setVec2(name, vector.getX(), vector.getY());
+		void setVec2(const std::string_view name, const Geom::Vec2 vector) const {
+			setVec2(name, vector.x, vector.y);
 		}
 
 		// ------------------------------------------------------------------------
 		void setMat3(const std::string_view name, const Geom::Matrix3D &mat) const {
-			glUniformMatrix3fv(getLocation(name), 1, GL_FALSE, mat.getRawVal());
+			if(const auto location = getLocation(name); location >= 0){
+				glUniformMatrix3fv(location, 1, GL_FALSE, mat.getRawVal());
+			}
 		}
 
 		void setTexture2D(const std::string_view name, const Texture* texture, const int offset = 0) const {
-			texture->active(offset);
-
-			uniformTexture(getLocation(name), offset);
+			if(const auto location = getLocation(name); location >= 0){
+				if(texture)texture->active(offset);
+				uniformTexture(location, offset);
+			}
 		}
 
 		void setTexture2D(const std::string_view name, const int offset = 0) const {
-			uniformTexture(getLocation(name), offset);
+			setTexture2D(name, nullptr, offset);
 		}
 
 		void apply() const {
 			drawer(*this);
 		}
 
-		void applyDynamic(Concepts::Invokable<void(const Shader&)> auto&& f) const {
-			drawer(*this);
+		void applyDynamic(Concepts::Invokable<void(const Shader&)> auto&& f, const bool invokeSelfDrawer = false) const {
+			if(invokeSelfDrawer)drawer(*this);
 			f(*this);
 		}
 

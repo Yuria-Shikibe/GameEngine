@@ -45,6 +45,10 @@ export namespace GL{
 
 		}
 
+		[[nodiscard]] size_t getByteSize() const{
+			return bufferSize * sizeof T;
+		}
+
 		template <GLsizei size>
 		void setData(const T(&arr)[size], const GLenum mode = GL_DYNAMIC_DRAW) {
 			glNamedBufferData(nameID, size * sizeof(T), &arr, mode);
@@ -63,6 +67,10 @@ export namespace GL{
 		void setupStorage(const GLsizei count, const float* data = nullptr, const GLbitfield flag = BasicStorageFlags){
 			glNamedBufferStorage(nameID, count * sizeof(T), data, flag);
 			bufferSize = count;
+		}
+
+		[[nodiscard]] T* enableRangedDataMapping(const GLenum access = BasicMappingFlags) const{
+			return static_cast<T*>(glMapNamedBufferRange(nameID, 0, getByteSize(), access));
 		}
 
 		[[nodiscard]] T* enableDataMapping(const GLenum access = BasicMappingFlags) const{

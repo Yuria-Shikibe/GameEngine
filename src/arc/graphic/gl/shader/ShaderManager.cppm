@@ -35,13 +35,25 @@ export namespace GL { //TODO this isn't a good namespace, I thought
 					continue;
 				}
 
-				shader->readSource();
-				futures.emplace_back(postToHandler(std::bind(&GL::Shader::compile, shader.get(), true)));
+				try{
+					shader->readSource();
+				}catch(...){
+					handler->operator()(std::current_exception());
+				}
+
+				futures.emplace_back(postToHandler([shader = shader.get()]{
+					shader->compile(true);
+				}));
+
 				taskProgress += 0.5f * 1 / total;
 			}
 
 			for(auto& future : futures) {
-				future.get();
+				try{
+					future.get();
+				}catch(...){
+					handler->operator()(std::current_exception());
+				}
 				taskProgress += 0.5f * 1 / total;
 			}
 

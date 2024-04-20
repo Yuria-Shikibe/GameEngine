@@ -116,6 +116,16 @@ export namespace Geom{
 			return set(std::numeric_limits<float>::signaling_NaN(), std::numeric_limits<float>::signaling_NaN());
 		}
 
+		constexpr friend std::size_t hash_value(const Vector2D& obj) requires requires{sizeof(T) <= 4;} {
+			return obj.hash_value();
+		}
+
+		constexpr std::size_t hash_value() const requires requires{sizeof(T) <= 4;}{
+			const std::size_t l = std::bit_cast<unsigned>(x);
+			const std::size_t r = std::bit_cast<unsigned>(y);
+			return l << 32 | r;
+		}
+
 		constexpr Vector2D& set(const T ox, const T oy) noexcept {
 			this->x = ox;
 			this->y = oy;
@@ -618,11 +628,13 @@ export namespace Geom{
 	constexpr Vec2 Y2{ 0, 1 };
 }
 
+// static constexpr auto hasher = std::hash<size_t>{};
+
 export
 	template<>
 	struct std::hash<Geom::Vec2>{
 		size_t operator()(const Geom::Vec2& v) const noexcept {
-			return *reinterpret_cast<const size_t*>(&v.x);
+			return *reinterpret_cast<const size_t*>(&v);
 		}
 	};
 
@@ -630,7 +642,7 @@ export
 	template<>
 	struct std::hash<Geom::Point2>{
 		size_t operator()(const Geom::Point2& v) const noexcept {
-			return *reinterpret_cast<const size_t*>(&v.x);
+			return *reinterpret_cast<const size_t*>(&v);
 		}
 	};
 
@@ -638,7 +650,7 @@ export
 	template<>
 	struct std::hash<Geom::Point2U>{
 		size_t operator()(const Geom::Point2U& v) const noexcept {
-			return *reinterpret_cast<const size_t*>(&v.x);
+			return *reinterpret_cast<const size_t*>(&v);
 		}
 	};
 

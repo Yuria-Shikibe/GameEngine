@@ -22,7 +22,7 @@ import OS.InputListener;
 import UI.Widget;
 import UI.Scene;
 import Core.Input;
-import Heterogeneous;
+import ext.Heterogeneous;
 
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{

@@ -73,7 +73,6 @@ export namespace Game::EntityManage{
 	template<Concepts::Derived<Entity> T>
 	[[nodiscard]] std::shared_ptr<T> obtain() {
 		auto ptr = Pools::entityPoolGroup.obtainRaw<T>();
-		new (ptr) T{};
 
 		ptr->setID(allocateID());
 		return std::shared_ptr<T>{ptr, Pools::entityPoolGroup.getPool<T>().getDeleter()};
@@ -82,7 +81,6 @@ export namespace Game::EntityManage{
 	template<Concepts::Derived<Entity> T>
 	[[nodiscard]] std::unique_ptr<T, typename ext::ObjectPool<T>::Deleter> obtainUnique() {
 		auto ptr = Pools::entityPoolGroup.obtainRaw<T>();
-		new (ptr) T{};
 
 		ptr->setID(allocateID());
 		return std::unique_ptr<T, typename ext::ObjectPool<T>::Deleter>{ptr, Pools::entityPoolGroup.getPool<T>().getDeleter()};

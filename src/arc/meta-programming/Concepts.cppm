@@ -3,16 +3,19 @@ export module Concepts;
 import std;
 
 namespace Concepts {
+
 	/**
 	 * \brief coonditional variant but friendly to IDEs
 	 */
+	export
 	template <bool Test, class T>
-	struct RefConditional {
+	struct ValueConditional {
 		using type = T;
 	};
 
 	template <class T>
-	struct RefConditional<false, T> {
+		requires std::is_trivial_v<T>
+	struct ValueConditional<false, T> {
 		using type = std::add_lvalue_reference_t<T>;
 	};
 
@@ -48,13 +51,9 @@ namespace Concepts {
 	template <typename Func>\
 	static constexpr bool isInvocable = std::is_invocable_r_v<Ret, Func, Args...>;\
 	template <typename Func>\
-	static constexpr bool invocableAs_v() {\
-	return std::is_invocable_r_v<Ret, Func, Args...>;\
-	}\
+	static constexpr bool invocableAs_v() {return std::is_invocable_r_v<Ret, Func, Args...>;}\
 	template <typename Func>\
-	static constexpr bool invocableVoidAs_v() {\
-		return std::is_invocable_v<Func, Args...>;\
-	}\
+	static constexpr bool invocableVoidAs_v() {return std::is_invocable_v<Func, Args...>;}
 
 #define Variant(ext) export template<typename Ret, typename... Args> struct FunctionTraits<Ret(Args...) ext>{TraitContent};
 	Variant(&);
@@ -81,7 +80,7 @@ export namespace Concepts {
 	 * \tparam T Value Type
 	 */
 	template <typename T, size_t size>
-	using ParamPassType = typename RefConditional<
+	using ParamPassType = typename ValueConditional<
 		size <= sizeof(void*) * 2,
 		T
 	>::type;

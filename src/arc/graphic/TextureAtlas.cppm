@@ -10,7 +10,7 @@ import OS.File;
 
 import ext.RuntimeException;
 
-import Heterogeneous;
+import ext.Heterogeneous;
 
 // import Event;
 

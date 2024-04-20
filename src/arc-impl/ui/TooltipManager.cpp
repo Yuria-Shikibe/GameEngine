@@ -100,7 +100,7 @@ void UI::TooltipManager::update(const float delta){
 			}
 
 			case TooltipBuilder::FollowTarget::parent:{
-				if(autoRelease && !current->isInbound(cursorPos) && !lastRequester->isCursorInbound())dropCurrentAt(current);
+				if(autoRelease && !current->isInbound(cursorPos) && !lastRequester->isInbound(cursorPos))dropCurrentAt(current);
 				break;
 			}
 

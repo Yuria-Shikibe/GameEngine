@@ -113,8 +113,12 @@ import Game.Content.Builtin.SpaceCrafts;
 
 import Game.Graphic.CombinePostProcessor;
 
+import Game.ChamberFrame;
+
 import ext.Encoding;
 import ext.TreeStructure;
+import ext.Algorithm;
+import ext.Heterogeneous;
 
 using namespace Graphic;
 using namespace GL;
@@ -174,7 +178,6 @@ void setupUITest(){
 					   button.setTooltipBuilder({
 							   .followTarget = UI::FollowTarget::parent,
 							   .minHoverTime = UI::DisableAutoTooltip,
-							   .autoRelease = true,
 							   .followTargetAlign = Align::Mode::bottom_left,
 							   .builder = [i](UI::Table& hint){
 								   // hint.setMinimumSize({600, 300});
@@ -188,15 +191,20 @@ void setupUITest(){
 									   label.getBorder().expand(4.0f);
 								   }).expand().endLine();
 								   hint.add<UI::Button>([i](UI::Button& button){
-								   		button.setCall([i](UI::Button&, bool){
-											   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
-												   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
-													   const OS::File src{R"(D:\projects\GameEngine\properties\resource\assets)"};
-													   selector.gotoFile(src, false);
-												   }).fillParent().setAlign(Align::Mode::top_center);
-											   });
-								   		});
+									   button.setCall([i](UI::Button&, bool){
+										   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
+											   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
+												   const OS::File src{
+														   R"(D:\projects\GameEngine\properties\resource\assets)"
+													   };
+												   selector.gotoFile(src, false);
+											   }).fillParent().setAlign(Align::Mode::top_center);
+										   });
+									   });
 									   button.setTooltipBuilder({
+											   .followTarget = UI::FollowTarget::parent,
+											   .followTargetAlign = Align::Mode::center_right,
+											   .tooltipSrcAlign = Align::Mode::center_left,
 											   .builder = [](UI::Table& hintInner){
 												   hintInner.setCellAlignMode(Align::Mode::top_left);
 												   hintInner.add<UI::Label>([](UI::Label& label){
@@ -228,7 +236,7 @@ void setupUITest(){
 					   return slider.getProgress().x;
 				   };
 
-			   	bar.PointCheck = 12;
+				   bar.PointCheck = 12;
 
 				   bar.setTooltipBuilder({
 						   .followTarget = UI::FollowTarget::parent,
@@ -240,7 +248,9 @@ void setupUITest(){
 							   hint.add<UI::Label>([&bar](UI::Label& label){
 								   label.usingGlyphHeight = label.usingGlyphWidth = true;
 								   label.setText([&bar]{
-									   return std::format("$<c#GRAY>Progress: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%", bar.getDrawProgress() * 100.0f);
+									   return std::format(
+										   "$<c#GRAY>Progress: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%",
+										   bar.getDrawProgress() * 100.0f);
 								   });
 								   label.getGlyphLayout()->setSCale(0.55f);
 								   label.setEmptyDrawer();
@@ -417,20 +427,39 @@ void genRandomEntities(){
 	ptr->activate();
 }
 
-// int main(){
-// 	// Gra
-//
-// 	auto bitmap = ext::svgToBitmap(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\svg\icons\api-app.svg)"}, 96);
-// 	//
-// 	bitmap.each([](Graphic::Pixmap& pixmap, int x, int y){
-// 		pixmap.setRaw(x, y, pixmap.getRaw(x, y) | 0x00'ff'ff'ff);
-// 	});
-// 	bitmap.write(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\svg\icons\api-app.png)"}, true);
-// 	bitmap.mix(Graphic::Colors::ACID, 1.0f);
-// 	bitmap.write(OS::File{R"(D:\projects\GameEngine\properties\resource\assets\svg\icons\api-app-1.png)"}, true);
-//
-// 	return 0;
-// }
+
+struct TestChamberFactory : Game::ChamberFactory{
+	struct TestChamberData : Game::ChamberMetaDataBase{
+		Vec2 targetPos{};
+		float reload{};
+	};
+
+
+	struct TestChamberTrait : Game::ChamberTraitFallback<TestChamberData>{
+		float reloadTime{};
+
+		void update(Game::Chamber* chamber, TraitDataType& data, const float delta) const{
+			chamber->update(delta);
+			data.reload += delta;
+			if(data.reload > reloadTime){
+				data.reload = 0;
+			}
+		}
+
+		void draw(const Game::Chamber* chamber, const TraitDataType& data) const{
+			Graphic::Draw::Line::rectOrtho(chamber->getChamberBound());
+		}
+	} baseTraitTest;
+
+
+	template <Concepts::Derived<TestChamberTrait> Trait = TestChamberTrait>
+	using ChamberType = Game::ChamberVariant<typename Trait::TraitDataType, TestChamberTrait>;
+
+	std::unique_ptr<Game::Chamber> genChamber() const override{
+		return std::make_unique<ChamberType<>>(baseTraitTest);
+	}
+};
+
 
 int main(const int argc, char* argv[]){
 	// return 0;
@@ -449,11 +478,31 @@ int main(const int argc, char* argv[]){
 		Game::core->overlayManager->deactivate();
 	}
 
-	// Math::Rand rand{};
-	// for(int i = 0; i < 20; ++i){
-	// 	std::cout << rand.random(10.0f, 30.0f) << std::endl;
-	// }
+	Game::ChamberFrame chamberFrame{};
+	chamberFrame.setUnitLength(120.0f);
+	std::vector<Game::ChamberTile> tiles{};
 
+	for(int x = -50; x <= 50; ++x){
+		for(int y = -50; y <= 50; ++y){
+			tiles.push_back(Game::ChamberFactory::genEmptyTile({x, y}));
+		}
+	}
+
+	std::unique_ptr<Game::ChamberFactory> testFactory{std::make_unique<TestChamberFactory>()};
+	for(int i = 0; i < 128; ++i){
+		tiles.push_back(testFactory->genChamberTile({(i % 12 - 6) * 3, (i / 12 - 6) * 2, 3, 2}));
+
+		tiles.push_back(testFactory->genChamberTile({i % 12 + 16, i / 12 + 16, 1, 1}));
+	}
+	//
+
+	chamberFrame.build(std::move(tiles));
+	chamberFrame.insert(testFactory->genChamberTile({26, -6, 12, 4}));
+
+	// chamberFrame.erase({-12, -6});
+	chamberFrame.erase({-11, -6});
+
+	chamberFrame.erase({-11, -3});
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
@@ -461,7 +510,7 @@ int main(const int argc, char* argv[]){
 		Graphic::Batch::flush();
 	});
 
-	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
+	::Core::renderer->getListener().on<Event::Draw_After>([&]([[maybe_unused]] const auto& e){
 		Game::core->effectManager->render();
 		Graphic::Batch::flush();
 	});
@@ -473,11 +522,11 @@ int main(const int argc, char* argv[]){
 
 
 	// UI Test
-	setupUITest();
+	// setupUITest();
 
 	setupCtrl();
 
-	genRandomEntities();
+	// genRandomEntities();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
@@ -599,6 +648,37 @@ int main(const int argc, char* argv[]){
 		// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
 		// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
 		// );
+
+		Graphic::Draw::Line::setLineStroke(2.0f);
+
+		auto [valid, invalid] = ext::partBy(chamberFrame.getData() | std::ranges::views::filter([](const Game::ChamberTile& tile){
+			return Core::camera->viewportRect().overlap(tile.getChamberRealRegion());
+		}), &Game::ChamberTile::valid);
+
+		for(auto& tile : valid | std::ranges::views::filter(&Game::ChamberTile::ownsChamber)){
+			Draw::color(Colors::GRAY);
+			Draw::Line::setLineStroke(2.0f);
+			Draw::Line::rectOrtho(tile.getTileBound());
+
+			Draw::color(Colors::ACID);
+			Draw::Line::setLineStroke(4.0f);
+			tile.draw();
+		}
+
+		for(auto& tile : invalid){
+			Assets::Shaders::slideLineShaderArgs.set(30.0f, 45.0f, Colors::CLEAR, 1.0f);
+			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
+			Draw::color(Colors::DARK_GRAY.createLerp(Colors::BLACK, 0.2f));
+			Draw::rectOrtho(Draw::defaultTexture, tile.getTileBound());
+			Graphic::Batch::endShader(true);
+			Assets::Shaders::slideLineShaderArgs.setDef();
+		}
+
+		Graphic::Draw::Line::setLineStroke(2.0f);
+		Graphic::Draw::color(Graphic::Colors::YELLOW, 0.25f);
+		chamberFrame.getQuadTree().each([](decltype(chamberFrame)::TreeType* t){
+			Draw::Line::rectOrtho(t->getBoundary());
+		});
 
 		Draw::color();
 

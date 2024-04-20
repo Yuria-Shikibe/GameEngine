@@ -247,9 +247,7 @@ export namespace Font {
 	//
 	// std::unordered_map<std::string, GlyphLayoutCache> layoutCache(MAX_CAHCE);
 
-	ext::ObjectPool<GlyphLayout> layoutPool{250, [](GlyphLayout* item) {
-		item->reset();
-	}};
+	ext::ObjectPool<GlyphLayout> layoutPool{250};
 
 	std::shared_ptr<GlyphLayout> obtainLayoutPtr() {
 		return layoutPool.obtainShared();

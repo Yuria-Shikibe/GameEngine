@@ -491,7 +491,7 @@ export namespace UI {
 			return isInbound(screenPos);
 		}
 
-		virtual bool isInbound(Geom::Vec2 screenPos);
+		[[nodiscard]] virtual bool isInbound(Geom::Vec2 screenPos) const;
 
 		bool isFocusedKeyInput() const;
 

@@ -83,7 +83,7 @@ export namespace Core{
 			if(index == 0)return;
 
 			mesh->bind();
-			mesh->getVertexBuffer().updateDataRaw(cachedVertices.data(), index);
+			mesh->getVertexBuffer().setDataRaw(cachedVertices.data(), index);
 
 			bindShader();
 			applyShader();

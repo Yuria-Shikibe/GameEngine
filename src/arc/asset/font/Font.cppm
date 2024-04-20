@@ -22,7 +22,7 @@ import OS.File;
 import Image;
 import Event;
 import Math;
-import Heterogeneous;
+import ext.Heterogeneous;
 
 using namespace Geom;
 using Graphic::Pixmap;

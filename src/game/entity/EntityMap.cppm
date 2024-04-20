@@ -90,7 +90,7 @@ export namespace Game {
 			if(!quadTree)return;
 			quadTree->clearItemsOnly();
 
-			each([this](std::shared_ptr<T>& t) {
+			this->each([this](std::shared_ptr<T>& t) {
 				quadTree->insert(t.get());
 			});
 		}

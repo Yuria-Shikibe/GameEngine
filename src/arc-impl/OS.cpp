@@ -1,3 +1,7 @@
+module;
+
+#include <cstdlib>
+
 module OS;
 
 import std;
