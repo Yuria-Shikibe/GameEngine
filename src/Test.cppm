@@ -166,10 +166,13 @@ export namespace Test{
 
 			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("base-white-solid");
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
-			Graphic::Draw::defaultSolidTexture = Graphic::Draw::defaultTexture;
+			Graphic::Draw::globalState.defaultSolidTexture = Graphic::Draw::getDefaultTexture();
 
 			auto lightRegion = event.manager->getAtlas().find("base-white-light");
-			Graphic::Draw::defaultLightTexture = lightRegion;
+			Graphic::Draw::globalState.defaultLightTexture = lightRegion;
+
+
+
 			const_cast<GL::TextureRegionRect*>(lightRegion)->shrinkEdge(15.0f);
 
 			for(auto& texture : event.manager->getAtlas().getPage("ui").getTextures()){

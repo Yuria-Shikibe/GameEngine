@@ -69,15 +69,19 @@ export namespace Assets{
 		inline Shader* bloom = nullptr;
 		inline Shader* blit = nullptr;
 
-		inline auto slideLineShaderArgs = UniformWrapper{25.0f, -1.0f, Colors::GRAY.createLerp(Colors::LIGHT_GRAY, 0.5f), 1.0f};
+		inline UniformWrapper slideLineShaderDrawArgs{25.0f, -1.0f, Colors::GRAY.createLerp(Colors::LIGHT_GRAY, 0.5f), 1.0f};
+		inline UniformWrapper slideLineShaderScaleArgs{Geom::norBaseVec2<float>, Geom::zeroVec2<float>, 1.0f};
 		inline Shader* sildeLines = nullptr;
 
 		inline Shader* world = nullptr;
 		inline Shader* merge = nullptr;
 
 		inline Shader* mask = nullptr;
-
 		inline Shader* worldBloom = nullptr;
+
+		inline UniformWrapper outline_orthoArgs{4.0f, Geom::norBaseVec2<float>};
+		inline Shader* outline_ortho = nullptr;
+		inline Shader* outline_sobel = nullptr;
 
 		void loadPrevious();
 

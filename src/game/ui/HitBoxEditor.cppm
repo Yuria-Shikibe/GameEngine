@@ -334,7 +334,7 @@ export namespace Game{
 
 				Draw::color(Graphic::Colors::AQUA);
 				Draw::alpha(0.15f);
-				Draw::rectOrtho(Draw::defaultTexture, orthoRectBox);
+				Draw::rectOrtho(Draw::getDefaultTexture(), orthoRectBox);
 
 				Draw::alpha();
 				Draw::Line::rectOrtho(orthoRectBox);

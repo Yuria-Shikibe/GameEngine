@@ -157,7 +157,7 @@ export namespace Assets {
 		PackState state{PackState::polling};
 
 	public:
-		OrthoRectUInt texMaxBound{2048, 2048};
+		OrthoRectUInt texMaxBound{0, 0, 2048, 2048};
 		std::string pageName{};
 
 		bool forcePack{false};
@@ -180,7 +180,7 @@ export namespace Assets {
 		}
 
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir) :
-			TexturePackPage(pageName, cacheDir, {GL::getMaxTextureSize(), GL::getMaxTextureSize()}){
+			TexturePackPage(pageName, cacheDir, {0, 0, GL::getMaxTextureSize(), GL::getMaxTextureSize()}){
 		}
 
 		[[nodiscard]] const ext::StringMap<TextureRegionPackData>& getData() const {

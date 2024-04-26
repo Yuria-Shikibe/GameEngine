@@ -497,10 +497,12 @@ export namespace Geom{
 			return position;
 		}
 
-		Vec2& getScale(Vec2& scale) const {
-			scale.x = std::sqrt(val[M00] * val[M00] + val[M01] * val[M01]);
-			scale.y = std::sqrt(val[M10] * val[M10] + val[M11] * val[M11]);
-			return scale;
+		Vec2 getScale() const noexcept{
+			return {std::sqrt(Math::sqr(val[M00]) + Math::sqr(val[M01])), std::sqrt(Math::sqr(val[M10]) + Math::sqr(val[M11]))};
+		}
+
+		Vec2 getOrthoScale() const noexcept{
+			return {val[M00], val[M11]};
 		}
 
 		[[nodiscard]] float getRotation() const {

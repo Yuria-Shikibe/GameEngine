@@ -34,7 +34,7 @@ export namespace Assets::Effects{
 			Draw::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
 			Draw::Line::setLineStroke(e.progress.getInv() * 8.6f);
 
-			Draw::setTexture(Draw::defaultLightTexture);
+			Draw::setTexture(Draw::globalState.defaultLightTexture);
 			Draw::setZ(e.zOffset);
 			Graphic::splashVec(e.handle, {.count = 18, .progress = e.progress.get(Math::Interp::pow2Out) * 27.0f, .radius = {3, 15}},
 				[vecSrc = e.trans.vec, progress = e.progress.getInv()](const auto vec2, auto& rand){

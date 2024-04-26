@@ -64,8 +64,8 @@ export namespace UI{
 
 		void setImage(const GL::TextureRegionRect* const image){
 			this->image = image;
-			size.x = image->getWidth();
-			size.y = image->getHeight();
+			size.x = static_cast<unsigned int>(image->getWidth());
+			size.y = static_cast<unsigned int>(image->getHeight());
 		}
 	};
 }

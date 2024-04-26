@@ -22,6 +22,12 @@ export namespace GL{
 		static constexpr auto StandardBPP = 4;
 
 	protected:
+		auto loadFromFile(const OS::File& file){
+			//TODO File Support
+			int bpp{};
+			return ext::loadPng(file, width, height, bpp);
+		}
+
 		Texture2D* next{nullptr};
 
 	public:
@@ -107,13 +113,6 @@ export namespace GL{
 		[[nodiscard]] bool valid() const {
 			return localData != nullptr;
 		}
-
-		auto loadFromFile(const OS::File& file){
-			//TODO File Support
-			int bpp{};
-			return ext::loadPng(file, width, height, bpp);
-		}
-
 
 		/**
 		 * \brief The data will be released after init, uses rv-ref to pass the pointer

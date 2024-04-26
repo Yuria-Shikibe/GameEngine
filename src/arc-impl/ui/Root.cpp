@@ -45,7 +45,7 @@ void UI::Root::drawCursor() const{
 }
 
 void UI::Root::update(const float delta){
-	cursorPos = uiInput->getMousePos();
+	cursorPos = uiInput->getCursorPos();
 	if(currentScene == nullptr)return;
 
 	updateCurrentFocus();

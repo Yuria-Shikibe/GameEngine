@@ -119,7 +119,7 @@ export namespace Game {
 			renderer->frameBegin(&renderer->effectBuffer);
 			for(auto& entity : selected){
 				if(!entity->controller->moveCommand.shouldDrawUI())continue;
-				Draw::Line::setLineStroke(3 + (entity->controller->moveCommand.isAssigningRoute() ? 0 : 3));
+				Draw::Line::setLineStroke(3.0f + (entity->controller->moveCommand.isAssigningRoute() ? 0 : 3));
 				Draw::color(Colors::SLATE);
 
 				Draw::Line::setLerpColor(Colors::SLATE, Colors::AQUA);

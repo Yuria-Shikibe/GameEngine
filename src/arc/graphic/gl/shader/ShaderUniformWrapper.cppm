@@ -23,6 +23,7 @@ export namespace GL{
 		constexpr explicit UniformWrapper(T&& ...args) noexcept : defData(std::make_tuple(std::forward<T>(args) ... )), data{defData}{}
 
 		template <typename ...T>
+			requires requires {requires ext::isArgsSubOf<true, ArgsType, T...>();}
 		constexpr void set(T&&... args) noexcept{
 			data = ext::makeTuple_withDef(defData, std::forward<T>(args) ...);
 		}

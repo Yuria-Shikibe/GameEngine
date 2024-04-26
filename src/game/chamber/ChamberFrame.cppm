@@ -26,7 +26,6 @@ export namespace Game{
 		using TreeType = Geom::QuadTree<Tile, float, &getBoundOf>;
 		
 	protected:
-		float unitLength{120};
 		Geom::OrthoRectFloat bound{};
 
 		std::list<Tile> data{};
@@ -43,6 +42,19 @@ export namespace Game{
 				quadTree.remove(itr->second);
 				positionRef.erase(itr);
 			}
+		}
+
+		bool shouldInsert(const ChamberTile& tile) const {
+			if(const auto finded = find(tile.pos)){
+				if(!tile.ownsChamber())return false;
+
+				if(!finded->valid()){
+					return true;
+				}
+
+				throw ext::IllegalArguments{"Insertion Failed: Cannot Insert Two Valid Tile in the same pos!"};
+			}
+			return true;
 		}
 
 	public:
@@ -65,10 +77,6 @@ export namespace Game{
 		[[nodiscard]] Tile& at(const Geom::Point2 pos){
 			return *positionRef.at(pos);
 		}
-
-		[[nodiscard]] float getUnitLength() const{ return unitLength; }
-
-		void setUnitLength(const float unitLength){ this->unitLength = unitLength; }
 
 		[[nodiscard]] const Tile* find(const Geom::Point2 pos) const{
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
@@ -131,9 +139,9 @@ export namespace Game{
 				if(pos == src.pos)return;
 
 				if(insertToMap){
-					insert(Tile{pos, &src, src.unitLength});
+					insert(Tile{pos, &src});
 				}else{
-					data.emplace_back(pos, &src, src.unitLength);
+					data.emplace_back(pos, &src);
 				}
 			});
 		}
@@ -141,8 +149,7 @@ export namespace Game{
 		/**
 		 * @brief Be cautionous about iterator failure
 		 */
-		void erase(const Geom::Point2 chamberPos){
-
+		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
 			if(auto itr = std::ranges::find(data, chamberPos, &Tile::pos); itr != data.end()){
 				Tile* chamber = itr.operator->();
 
@@ -155,23 +162,32 @@ export namespace Game{
 					chamber = itr.operator->();
 				}
 
-				chamber->getChamberRegion().each([this](const Geom::Point2 subPos){
-					eraseRef(subPos);
-				});
 
 				const decltype(data)::iterator begin = itr;
 				auto end = begin;
 				std::advance(end, chamber->getChamberRegion().area());
 
-				data.erase(begin, end);
+				if(setToInvalid){
+					for(auto& element : std::ranges::subrange{begin, end}){
+						element.setReference(nullptr);
+						element.chamber.reset();
+					}
+				}else{
+					chamber->getChamberRegion().each([this](const Geom::Point2 subPos){
+						eraseRef(subPos);
+					});
 
+					data.erase(begin, end);
+				}
 			}
 		}
 
-		void insert(Tile&& elem){
-			elem.init(unitLength);
-			erase(elem.pos);
-			data.push_back(std::move(elem));
+		void insert(Tile&& tile){
+			if(!shouldInsert(tile))return;
+
+			tile.init();
+			erase(tile.pos);
+			data.push_back(std::move(tile));
 			auto& val = data.back();
 
 			positionRef.insert_or_assign(val.pos, &val);
@@ -198,20 +214,24 @@ export namespace Game{
 			bound.set(0, 0, 0, 0);
 
 			for(Tile& tile : input){
+				if(!shouldInsert(tile))continue;
 				erase(tile.pos);
-				data.emplace_back(std::move(tile));
-				Tile& t = data.back();
-				t.init(unitLength);
+				data.push_back(std::forward<std::ranges::range_value_t<Range>>(tile));
+				positionRef.insert_or_assign(tile.pos, &data.back());
 
+				Tile& t = data.back();
+				t.init();
 				t.getChamberRegion().each([this, &t](const Geom::Point2 pos){
 					if(pos == t.pos)return;
 
 					erase(pos);
-					data.emplace_back(pos, &t, t.unitLength);
+					data.emplace_back(pos, &t);
+					positionRef.insert_or_assign(pos, &data.back());
 				});
 			}
 
 			reMap(true);
+			reTree();
 		}
 
 		void reMap(const bool resizeBound = false){
@@ -228,20 +248,20 @@ export namespace Game{
 				}
 
 				for (const auto& val : data){
-					auto itemBound = this->getBoundOf(val);
-
-					bound.expandBy(itemBound);
+					bound.expandBy(getBoundOf(val));
 				}
 			}
+			
+			for (auto& tile : data){
+				positionRef.insert_or_assign(tile.pos, &tile);
+			}
+		}
 
+		void reTree(){
 			quadTree.setBoundary(bound);
 
-			for(auto cur = data.begin(); cur != data.end(); ++cur){
-				auto& val = *cur;
-
-				positionRef.insert_or_assign(val.pos, &val);
-
-				tryInsertTree(val);
+			for (auto& tile : data){
+				tryInsertTree(tile);
 			}
 		}
 
@@ -269,9 +289,13 @@ export namespace Game{
 		}
 
 		[[nodiscard]] bool placementValid(const Geom::OrthoRectInt region) const {
-			for(int x = region.srcX; x < region.getEndX(); ++x){
-				for(int y = region.srcY; y < region.getEndY(); ++y){
-					if(contains({x, y}) && positionRef.at({x, y})->valid())return false;
+			for(int x = region.getSrcX(); x < region.getEndX(); ++x){
+				for(int y = region.getSrcY(); y < region.getEndY(); ++y){
+					if(const auto tile = positionRef.find({x, y}); tile != positionRef.end()){
+						if(tile->second->valid())return false;
+					}else{
+						return false;
+					}
 				}
 			}
 
@@ -287,6 +311,18 @@ export namespace Game{
 		/** @return [compliant not] */
 		auto getPartedTiles(Concepts::Invokable<bool(const ChamberTile&)> auto&& pred){
 			return ext::partBy(data, pred);
+		}
+
+		[[nodiscard]] Geom::Point2 getNearby(Geom::Vec2 pos) const{
+			return pos.div(TileSize).trac<int>();
+		}
+
+		[[nodiscard]] const Geom::OrthoRectFloat& getBound() const{ return bound; }
+		
+		[[nodiscard]] Geom::OrthoRectInt getTiledBound() const{
+			Geom::OrthoRectFloat boundSize = bound;
+			boundSize.sclSize(1 / TileSize, 1 / TileSize);
+			return boundSize.round<int>();
 		}
 	};
 }

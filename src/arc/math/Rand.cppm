@@ -125,10 +125,10 @@ export namespace Math {
 		/**
 		 * The given seed is passed twice through a hash function. This way, if the user passes a small value we avoid the short
 		 * irregular transient associated with states having a very small number of bits set.
-		 * @param seed a nonzero seed for this generator (if zero, the generator will be seeded with @link std::numeric_limits<SeedType>::lowest() @endlink ).
+		 * @param _seed a nonzero seed for this generator (if zero, the generator will be seeded with @link std::numeric_limits<SeedType>::lowest() @endlink ).
 		 */
-		constexpr void setSeed(const SeedType seed) {
-			const SeedType seed0 = murmurHash3(seed == 0 ? std::numeric_limits<SeedType>::lowest() : seed);
+		constexpr void setSeed(const SeedType _seed) {
+			const SeedType seed0 = murmurHash3(_seed == 0 ? std::numeric_limits<SeedType>::lowest() : _seed);
 			setState(seed0, murmurHash3(seed0));
 		}
 
@@ -164,12 +164,12 @@ export namespace Math {
 
 		/**
 		 * Sets the internal state of this generator.
-		 * @param seed0 the first part of the internal state
-		 * @param seed1 the second part of the internal state
+		 * @param _seed0 the first part of the internal state
+		 * @param _seed1 the second part of the internal state
 		 */
-		constexpr void setState(const SeedType seed0, const SeedType seed1) {
-			this->seed0 = seed0;
-			this->seed1 = seed1;
+		constexpr void setState(const SeedType _seed0, const SeedType _seed1) {
+			this->seed0 = _seed0;
+			this->seed1 = _seed1;
 		}
 
 		/**

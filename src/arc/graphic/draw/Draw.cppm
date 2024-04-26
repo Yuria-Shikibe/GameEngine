@@ -321,67 +321,103 @@ export namespace Graphic{
 		constexpr float DepthNear = 1;
 		constexpr float DepthFar = 300;
 
-		//TODO necessity to move these context value to batch
-		//TODO concurrency support to remove these context value
-		inline Color contextColor = Colors::WHITE;
-		inline Color contextMixColor = Colors::CLEAR;
+		struct ColorState{
+			Color contextColor = Colors::WHITE;
+			Color contextMixColor = Colors::CLEAR;
+		};
 
-		inline const TextureRegion* contextTexture = nullptr;
-		inline const TextureRegion* defaultTexture = nullptr;
+		struct TextureState{
+			const TextureRegion* contextTexture = nullptr;
+			const TextureRegion* defaultTexture = nullptr;
+			const TextureRegion* defaultLightTexture = nullptr;
+			const TextureRegion* defaultSolidTexture = nullptr;
+		};
 
-		inline const TextureRegion* defaultLightTexture = nullptr;
-		inline const TextureRegion* defaultSolidTexture = nullptr;
+		struct DrawState : ColorState, TextureState{
+			float contextNorZ = 1.0f;
+		} globalState;
 
-		inline float contextNorZ = 1.0f;
+		struct DrawStateGuard : DrawState{
+			~DrawStateGuard(){
+				globalState = *this;
+			}
+		};
+
+		struct ColorStateGuard : ColorState{
+			~ColorStateGuard(){
+				static_cast<ColorState&>(globalState) = *this;
+			}
+		};
+
+		struct TextureStateGuard : TextureState{
+			~TextureStateGuard(){
+				static_cast<TextureState&>(globalState) = *this;
+			}
+		};
+
+		ColorStateGuard genColorGuard(){
+			return {static_cast<ColorState>(globalState)};
+		}
+
+
+		TextureStateGuard genTextureGuard(){
+			return {static_cast<TextureState>(globalState)};
+		}
+
+
+
+		const TextureRegion* getDefaultTexture() noexcept{
+			return globalState.defaultTexture;
+		}
 
 		constexpr float getNormalizedDepth(const float z){
 			return (1 / z - 1 / DepthNear) / (1 / DepthFar - 1 / DepthNear);
 		}
 
-		void setZ(const float z){ contextNorZ = getNormalizedDepth(z); }
+		void setZ(const float z){ globalState.contextNorZ = getNormalizedDepth(z); }
 
-		void setNorZ(const float z){ contextNorZ = z; }
+		void setNorZ(const float z){ globalState.contextNorZ = z; }
 
-		[[nodiscard]] float getNorZ(){ return contextNorZ; }
+		[[nodiscard]] float getNorZ(){ return globalState.contextNorZ; }
 
 		template <bool applyAlpha = true>
 		void color(const Color color = Colors::WHITE){
 			if constexpr(applyAlpha){
-				contextColor = color;
+				globalState.contextColor = color;
 			}else{
-				contextColor.set(color.r, color.g, color.b);
+				globalState.contextColor.set(color.r, color.g, color.b);
 			}
 		}
 
 		template <bool applyAlpha = true>
 		void color(const Color color, float alpha){
-			contextColor.set(color.r, color.g, color.b, alpha);
+			globalState.contextColor.set(color.r, color.g, color.b, alpha);
 		}
 
 		void tint(const Color color = Colors::WHITE, const float alpha = 0.0f){
-			contextColor.set(color.r, color.g, color.b, alpha);
+			globalState.contextColor.set(color.r, color.g, color.b, alpha);
 		}
 
 		template <bool applyAlpha = true>
 		void mixColor(const Color color = Colors::CLEAR){
 			if constexpr(applyAlpha){
-				contextMixColor = color;
+				globalState.contextMixColor = color;
 			}else{
-				contextMixColor.set(color.r, color.g, color.b);
+				globalState.contextMixColor.set(color.r, color.g, color.b);
 			}
 		}
 
-		void alpha(const float a = 1.0f){ contextColor.setA(a); }
+		void alpha(const float a = 1.0f){ globalState.contextColor.setA(a); }
 
-		void mixAlpha(const float a){ contextMixColor.setA(a); }
+		void mixAlpha(const float a){ globalState.contextMixColor.setA(a); }
 
-		void mixMulAlpha(const float a){ contextMixColor.mulA(a); }
+		void mixMulAlpha(const float a){ globalState.contextMixColor.mulA(a); }
 
-		void color(const Color c1, const Color c2, const float t){ contextColor.lerp(t, c1, c2); }
+		void color(const Color c1, const Color c2, const float t){ globalState.contextColor.lerp(t, c1, c2); }
 
-		void setDefTexture(const TextureRegion* texture){ defaultTexture = texture; }
+		void setDefTexture(const TextureRegion* texture){ globalState.defaultTexture = texture; }
 
-		void setTexture(const TextureRegion* texture = defaultTexture){ contextTexture = texture; }
+		void setTexture(const TextureRegion* texture = globalState.defaultTexture){ globalState.contextTexture = texture; }
 
 		inline void reset(){
 			color();
@@ -399,8 +435,8 @@ export namespace Graphic{
 		){
 			if constexpr(batchPtr == BatchWorld){
 				VertexPasser<BatchWorld>::vert(texture,
-				                   x1, y1, contextNorZ, u1, v1, c1, cm1, x2, y2, contextNorZ, u2, v2, c2, cm2,
-				                   x3, y3, contextNorZ, u3, v3, c3, cm3, x4, y4, contextNorZ, u4, v4, c4, cm4
+				                   x1, y1, globalState.contextNorZ, u1, v1, c1, cm1, x2, y2, globalState.contextNorZ, u2, v2, c2, cm2,
+				                   x3, y3, globalState.contextNorZ, u3, v3, c3, cm3, x4, y4, globalState.contextNorZ, u4, v4, c4, cm4
 				);
 			} else{
 				VertexPasser<BatchOverlay>::vert(texture,
@@ -420,8 +456,8 @@ export namespace Graphic{
 		){
 			if constexpr(batchPtr == BatchWorld){
 				VertexPasser<BatchWorld>::vert_monochromeMix(texture, cm,
-				                                 x1, y1, contextNorZ, u1, v1, c1, x2, y2, contextNorZ, u2, v2, c2,
-				                                 x3, y3, contextNorZ, u3, v3, c3, x4, y4, contextNorZ, u4, v4, c4
+				                                 x1, y1, globalState.contextNorZ, u1, v1, c1, x2, y2, globalState.contextNorZ, u2, v2, c2,
+				                                 x3, y3, globalState.contextNorZ, u3, v3, c3, x4, y4, globalState.contextNorZ, u4, v4, c4
 				);
 			} else{
 				VertexPasser<BatchOverlay>::vert_monochromeMix(texture, cm,
@@ -441,8 +477,8 @@ export namespace Graphic{
 		){
 			if constexpr(batchPtr == BatchWorld){
 				VertexPasser<BatchWorld>::vert_monochromeAll(texture, cm, c,
-				                                 x1, y1, contextNorZ, u1, v1, x2, y2, contextNorZ, u2, v2,
-				                                 x3, y3, contextNorZ, u3, v3, x4, y4, contextNorZ, u4, v4
+				                                 x1, y1, globalState.contextNorZ, u1, v1, x2, y2, globalState.contextNorZ, u2, v2,
+				                                 x3, y3, globalState.contextNorZ, u3, v3, x4, y4, globalState.contextNorZ, u4, v4
 				);
 			} else{
 				VertexPasser<BatchOverlay>::vert_monochromeAll(texture, cm, c,
@@ -460,7 +496,7 @@ export namespace Graphic{
 		          const float x4, const float y4, const Color c4
 		){
 			vert_monochromeMix<batchPtr>(
-				region->getData(), contextMixColor,
+				region->getData(), globalState.contextMixColor,
 				x1, y1, region->u00(), region->v00(), c1,
 				x2, y2, region->u10(), region->v10(), c2,
 				x3, y3, region->u11(), region->v11(), c3,
@@ -476,7 +512,7 @@ export namespace Graphic{
 		          const Vec2 v3, const Color c4
 		){
 			::Graphic::Draw::vert_monochromeMix<batchPtr>(
-				region->getData(), contextMixColor,
+				region->getData(), globalState.contextMixColor,
 				v0.x, v0.y, region->u00(), region->v00(), c1,
 				v1.x, v1.y, region->u10(), region->v10(), c2,
 				v2.x, v2.y, region->u11(), region->v11(), c3,
@@ -490,7 +526,7 @@ export namespace Graphic{
 			const Concepts::Pos<float> auto& v2, const Concepts::Pos<float> auto& v3
 		){
 			::Graphic::Draw::vert_monochromeAll<batchPtr>(
-				region->getData(), contextColor, contextMixColor,
+				region->getData(), globalState.contextColor, globalState.contextMixColor,
 				v0.getX(), v0.getY(), region->u00(), region->v00(),
 				v1.getX(), v1.getY(), region->u10(), region->v10(),
 				v2.getX(), v2.getY(), region->u11(), region->v11(),
@@ -504,11 +540,11 @@ export namespace Graphic{
 			const Concepts::Pos<float> auto& v2, const Concepts::Pos<float> auto& v3
 		){
 			::Graphic::Draw::vert_monochromeAll<batchPtr>(
-				contextTexture->getData(), contextColor, contextMixColor,
-				v0.getX(), v0.getY(), contextTexture->u00(), contextTexture->v00(),
-				v1.getX(), v1.getY(), contextTexture->u10(), contextTexture->v10(),
-				v2.getX(), v2.getY(), contextTexture->u11(), contextTexture->v11(),
-				v3.getX(), v3.getY(), contextTexture->u01(), contextTexture->v01()
+				globalState.contextTexture->getData(), globalState.contextColor, globalState.contextMixColor,
+				v0.getX(), v0.getY(), globalState.contextTexture->u00(), globalState.contextTexture->v00(),
+				v1.getX(), v1.getY(), globalState.contextTexture->u10(), globalState.contextTexture->v10(),
+				v2.getX(), v2.getY(), globalState.contextTexture->u11(), globalState.contextTexture->v11(),
+				v3.getX(), v3.getY(), globalState.contextTexture->u01(), globalState.contextTexture->v01()
 			);
 		}
 
@@ -520,7 +556,7 @@ export namespace Graphic{
 		          const float x4, const float y4
 		){
 			::Graphic::Draw::vert_monochromeAll<batchPtr>(
-				region->getData(), contextColor, contextMixColor,
+				region->getData(), globalState.contextColor, globalState.contextMixColor,
 				x1, y1, region->u00(), region->v00(),
 				x2, y2, region->u10(), region->v10(),
 				x3, y3, region->u11(), region->v11(),
@@ -534,7 +570,7 @@ export namespace Graphic{
 		          const float w, const float h
 		){
 			vert_monochromeAll<batchPtr>(
-				region->getData(), contextColor, contextMixColor,
+				region->getData(), globalState.contextColor, globalState.contextMixColor,
 				x, y, region->u00(), region->v00(),
 				x + w, y, region->u10(), region->v10(),
 				x + w, y + h, region->u11(), region->v11(),
@@ -549,7 +585,7 @@ export namespace Graphic{
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rectPoint(const Geom::Vec2 pos, const float size){
-			rectOrtho<batchPtr>(contextTexture, pos.x - size * 0.5f, pos.y - size * 0.5f, size, size);
+			rectOrtho<batchPtr>(globalState.contextTexture, pos.x - size * 0.5f, pos.y - size * 0.5f, size, size);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
@@ -565,7 +601,7 @@ export namespace Graphic{
 			const float w2 = -sin * region->getHeight() * 0.5f;
 			const float h2 = cos * region->getHeight() * 0.5f;
 			vert_monochromeAll<batchPtr>(
-				region->getData(), contextColor, contextMixColor,
+				region->getData(), globalState.contextColor, globalState.contextMixColor,
 				x - w1 - w2, y - h1 - h2, region->u00(), region->v00(),
 				x + w1 - w2, y + h1 - h2, region->u10(), region->v10(),
 				x + w1 + w2, y + h1 + h2, region->u11(), region->v11(),
@@ -580,14 +616,14 @@ export namespace Graphic{
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rectOrtho(const float x, const float y, const float w, const float h){
-			rectOrtho<batchPtr>(contextTexture, x, y, w, h);
+			rectOrtho<batchPtr>(globalState.contextTexture, x, y, w, h);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void quad(const TextureRegion* region, const Geom::OrthoRectFloat rect, const float x = 0,
 		          const float y = 0){
 			vert_monochromeAll<batchPtr>(
-				region->getData(), contextColor, contextMixColor,
+				region->getData(), globalState.contextColor, globalState.contextMixColor,
 				rect.getSrcX() + x, rect.getSrcY() + y, region->u00(), region->v00(),
 				rect.getSrcX() + x, rect.getEndY() + y, region->u10(), region->v10(),
 				rect.getEndX() + x, rect.getEndY() + y, region->u11(), region->v11(),
@@ -603,11 +639,11 @@ export namespace Graphic{
 			const float x4, const float y4
 		){
 			vert_monochromeAll<batchPtr>(
-				contextTexture->getData(), contextColor, contextMixColor,
-				x1, y1, contextTexture->u00(), contextTexture->v00(),
-				x2, y2, contextTexture->u10(), contextTexture->v10(),
-				x3, y3, contextTexture->u11(), contextTexture->v11(),
-				x4, y4, contextTexture->u01(), contextTexture->v01()
+				globalState.contextTexture->getData(), globalState.contextColor, globalState.contextMixColor,
+				x1, y1, globalState.contextTexture->u00(), globalState.contextTexture->v00(),
+				x2, y2, globalState.contextTexture->u10(), globalState.contextTexture->v10(),
+				x3, y3, globalState.contextTexture->u11(), globalState.contextTexture->v11(),
+				x4, y4, globalState.contextTexture->u01(), globalState.contextTexture->v01()
 			);
 		}
 
@@ -622,12 +658,12 @@ export namespace Graphic{
 				vec2_3.set(x, y).add(vec2_0.rotateRT());
 				vec2_4.set(x, y).add(vec2_0.rotateRT());
 
-				quad<batchPtr>(contextTexture, vec2_1, vec2_2, vec2_3, vec2_4);
+				quad<batchPtr>(globalState.contextTexture, vec2_1, vec2_2, vec2_3, vec2_4);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void poly(const float x, const float y, const int sides, const float radius, const float angle,
-			          const Color inner = contextColor, const Color exter = contextColor){
+			          const Color inner = globalState.contextColor, const Color exter = globalState.contextColor){
 				const float space = 360.0f / static_cast<float>(sides);
 
 				for(int i = 0; i < sides; i++){
@@ -637,7 +673,7 @@ export namespace Graphic{
 					const float cos2 = Math::cosDeg(a + space);
 					const float sin2 = Math::sinDeg(a + space);
 					quad<batchPtr>(
-						contextTexture,
+						globalState.contextTexture,
 						x, y, inner,
 						x, y, inner,
 						x + radius * cos2, y + radius * sin2, exter,
@@ -650,7 +686,7 @@ export namespace Graphic{
 		namespace Line{
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void line(const TextureRegion* region, const float x, const float y, const float x2, const float y2,
-			          const Color& c1 = contextColor, const Color& c2 = contextColor, const bool cap = true){
+			          const Color& c1 = globalState.contextColor, const Color& c2 = globalState.contextColor, const bool cap = true){
 				const float h_stroke = contextStroke / 2.0f;
 				const float len = Math::len(x2 - x, y2 - y);
 				const float diff_x = (x2 - x) / len * h_stroke;
@@ -677,14 +713,14 @@ export namespace Graphic{
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void line(const float x, const float y, const float x2, const float y2, const bool cap = true){
-				line<batchPtr>(contextTexture, x, y, x2, y2, contextColor, contextColor, cap);
+				line<batchPtr>(globalState.contextTexture, x, y, x2, y2, globalState.contextColor, globalState.contextColor, cap);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-			void line(const Vec2 v1, const Vec2 v2, const Color& c1 = contextColor,
-			                    const Color& c2 = contextColor,
+			void line(const Vec2 v1, const Vec2 v2, const Color& c1 = globalState.contextColor,
+			                    const Color& c2 = globalState.contextColor,
 			                    const bool cap = true){
-				line<batchPtr>(contextTexture, v1.x, v1.y, v2.x, v2.y, c1, c2, cap);
+				line<batchPtr>(globalState.contextTexture, v1.x, v1.y, v2.x, v2.y, c1, c2, cap);
 			}
 
 
@@ -697,8 +733,8 @@ export namespace Graphic{
 			                     const bool cap = true){
 				vec2_0.setPolar(angle, length * 0.5f);
 
-				line<batchPtr>(contextTexture, x - vec2_0.x, y - vec2_0.y, x + vec2_0.x, y + vec2_0.y, contextColor,
-				               contextColor,
+				line<batchPtr>(globalState.contextTexture, x - vec2_0.x, y - vec2_0.y, x + vec2_0.x, y + vec2_0.y, globalState.contextColor,
+				               globalState.contextColor,
 				               cap);
 			}
 
@@ -707,7 +743,7 @@ export namespace Graphic{
 			               const bool cap = true){
 				vec2_0.setPolar(angle, length);
 
-				line<batchPtr>(contextTexture, x, y, x + vec2_0.x, y + vec2_0.y, contextColor, contextColor, cap);
+				line<batchPtr>(globalState.contextTexture, x, y, x + vec2_0.x, y + vec2_0.y, globalState.contextColor, globalState.contextColor, cap);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
@@ -721,7 +757,7 @@ export namespace Graphic{
 			               const float offset){
 				vec2_0.setPolar(angle, 1.0f);
 
-				line<batchPtr>(contextTexture, x + vec2_0.x * offset, y + vec2_0.y * offset,
+				line<batchPtr>(globalState.contextTexture, x + vec2_0.x * offset, y + vec2_0.y * offset,
 				               x + vec2_0.x * (length + offset),
 				               y + vec2_0.y * (length + offset));
 			}
@@ -729,22 +765,22 @@ export namespace Graphic{
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void quad(const Geom::QuadBox& box, const bool cap = true){
 				for(int i = 0; i < 4; ++i) {
-					line<batchPtr>(box[i], box[(i + 1) % 4], contextColor, contextColor, cap);
+					line<batchPtr>(box[i], box[(i + 1) % 4], globalState.contextColor, globalState.contextColor, cap);
 				}
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 			void rectOrtho(const float srcx, const float srcy, const float width, const float height, const bool cap = true){
-				line<batchPtr>(contextTexture, srcx, srcy, srcx, srcy + height - contextStroke, contextColor,
-							   contextColor, cap);
-				line<batchPtr>(contextTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height,
-							   contextColor,
-							   contextColor, cap);
-				line<batchPtr>(contextTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke,
-							   contextColor,
-							   contextColor, cap);
-				line<batchPtr>(contextTexture, srcx + width, srcy, srcx + contextStroke, srcy, contextColor,
-							   contextColor, cap);
+				line<batchPtr>(globalState.contextTexture, srcx, srcy, srcx, srcy + height - contextStroke, globalState.contextColor,
+							   globalState.contextColor, cap);
+				line<batchPtr>(globalState.contextTexture, srcx, srcy + height, srcx + width - contextStroke, srcy + height,
+							   globalState.contextColor,
+							   globalState.contextColor, cap);
+				line<batchPtr>(globalState.contextTexture, srcx + width, srcy + height, srcx + width, srcy + contextStroke,
+							   globalState.contextColor,
+							   globalState.contextColor, cap);
+				line<batchPtr>(globalState.contextTexture, srcx + width, srcy, srcx + contextStroke, srcy, globalState.contextColor,
+							   globalState.contextColor, cap);
 			}
 
 			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
@@ -840,7 +876,7 @@ export namespace Graphic{
 
 					lerpColor2.lerp(currentRatio, args...);
 
-					::Graphic::Draw::quad<batchPtr>(contextTexture,
+					::Graphic::Draw::quad<batchPtr>(globalState.contextTexture,
 					               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 					               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 					               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -863,7 +899,7 @@ export namespace Graphic{
 
 				lerpColor2.lerp(progress / fSides, args...).lerp(lerpColor1, 1.0f - remainRatio);
 
-				::Graphic::Draw::quad<batchPtr>(contextTexture,
+				::Graphic::Draw::quad<batchPtr>(globalState.contextTexture,
 				               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 				               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 				               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -906,7 +942,7 @@ export namespace Graphic{
 
 					lerpColor2.lerp(currentRatio, colorGroup);
 
-					::Graphic::Draw::quad<batchPtr>(contextTexture,
+					::Graphic::Draw::quad<batchPtr>(globalState.contextTexture,
 					               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 					               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 					               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -929,7 +965,7 @@ export namespace Graphic{
 
 				lerpColor2.lerp(progress / fSides, colorGroup).lerp(lerpColor1, 1.0f - remainRatio);
 
-				::Graphic::Draw::quad<batchPtr>(contextTexture,
+				::Graphic::Draw::quad<batchPtr>(globalState.contextTexture,
 				               cos1 * r1 + x, sin1 * r1 + y, lerpColor1,
 				               cos1 * r2 + x, sin1 * r2 + y, lerpColor1,
 				               cos2 * r2 + x, sin2 * r2 + y, lerpColor2,
@@ -943,7 +979,7 @@ export namespace Graphic{
 			}
 
 
-			void setLerpColor(const Color begin = contextColor, const Color end = contextColor){
+			void setLerpColor(const Color begin = globalState.contextColor, const Color end = globalState.contextColor){
 				beginColor = begin;
 				endColor = end;
 			}

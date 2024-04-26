@@ -496,7 +496,7 @@ export namespace UI{
 								sectionEnd.set(glyphLayout->getRawBound().getWidth(), data.getBoundEnd().y).scl(glyphLayout->getScale());
 							}
 							Graphic::Draw::color(caret.selectionColor, 0.65f);
-							Graphic::Draw::rectOrtho(Graphic::Draw::defaultTexture, rect.setVert(sectionBegin + off, sectionEnd + off));
+							Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
 							sectionBegin.setNaN();
 						}
 					}
@@ -504,7 +504,7 @@ export namespace UI{
 					Rect rect{};
 					sectionEnd.x = caret.getDrawPos().x * glyphLayout->getScale();
 					Graphic::Draw::color(caret.selectionColor, 0.65f);
-					Graphic::Draw::rectOrtho(Graphic::Draw::defaultTexture, rect.setVert(sectionBegin + off, sectionEnd + off));
+					Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
 				}
 
 				glyphLayout->render();

@@ -58,6 +58,18 @@ export namespace Geom{
 			return this->add(tgt);
 		}
 
+		constexpr Vector2D operator~() noexcept {
+			if constexpr (std::is_floating_point_v<T>){
+				return {static_cast<T>(1) / x, static_cast<T>(1) / y};
+			}else{
+				return {~x, ~y};
+			}
+		}
+
+		constexpr Vector2D& inverse() noexcept{
+			return this->set(this->operator~());
+		}
+
 		constexpr Vector2D& operator+=(const T tgt) noexcept {
 			return this->add(tgt);
 		}
@@ -563,18 +575,41 @@ export namespace Geom{
 			return this->set(y, -x);
 		}
 
-		Vector2D& round(const Vector2D::PassType other) noexcept requires std::is_floating_point_v<T>{
+		Vector2D& roundBy(const Vector2D::PassType other) noexcept requires std::is_floating_point_v<T>{
 			x = Math::round<T>(x, other.x);
 			y = Math::round<T>(y, other.y);
 
 			return *this;
 		}
 
-		Vector2D& round(const T val) noexcept requires std::is_floating_point_v<T>{
+		Vector2D& roundBy(const T val) noexcept requires std::is_floating_point_v<T>{
 			x = Math::round<T>(x, val);
 			y = Math::round<T>(y, val);
 
 			return *this;
+		}
+
+		template <typename N>
+		Vector2D<N> roundBy(const typename Vector2D<N>::PassType other) noexcept{
+			Vector2D<N> tgt = as<N>();
+			tgt.x = Math::round<N>(static_cast<N>(x), other.x);
+			tgt.y = Math::round<N>(static_cast<N>(y), other.y);
+
+			return tgt;
+		}
+
+		template <typename N>
+		Vector2D<N> roundBy(const N val) noexcept{
+			Vector2D<N> tgt = as<N>();
+			tgt.x = Math::round<N>(static_cast<N>(x), val);
+			tgt.y = Math::round<N>(static_cast<N>(y), val);
+
+			return tgt;
+		}
+
+		template <std::integral N>
+		Vector2D<N> trac() noexcept{
+			return Vector2D<N>{Math::trac<N>(x), Math::trac<N>(y)};
 		}
 
 		[[nodiscard]] constexpr bool isZero() const noexcept {
@@ -612,6 +647,8 @@ export namespace Geom{
 		friend std::ostream& operator<<(std::ostream& os, const PassType obj) {
 			return os << '(' << std::to_string(obj.x) << ", " << std::to_string(obj.y) << ')';
 		}
+
+
 	};
 
 	using Vec2 = Vector2D<float>;
@@ -619,6 +656,18 @@ export namespace Geom{
 	using Point2U = Vector2D<unsigned int>;
 	using Point2S = Vector2D<short>;
 	using Point2US = Vector2D<unsigned short>;
+
+	template <typename N>
+	constexpr Vector2D<N> norBaseVec2{1, 1};
+
+	template <typename N>
+	constexpr Vector2D<N> zeroVec2{0, 0};
+
+	template <typename N>
+	constexpr Vector2D<N> norXVec2{1, 0};
+
+	template <typename N>
+	constexpr Vector2D<N> norYVec2{0, 1};
 
 	constexpr Vec2 ZERO{ 0, 0 };
 	constexpr Point2U ZERO_U{ 0u, 0u };

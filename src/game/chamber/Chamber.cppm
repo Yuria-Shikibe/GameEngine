@@ -15,13 +15,13 @@ using Geom::Vec2;
 using Geom::OrthoRectFloat;
 
 export namespace Game{
+	constexpr float TileSize = 64.0f;
+	constexpr float unitLength = TileSize;
 	struct ChamberTile;
-
 
 	struct Chamber{
 		Geom::OrthoRectInt region{};
 		unsigned id{};
-		float unitLength{};
 
 		std::vector<Chamber*> proximity{};
 
@@ -36,6 +36,25 @@ export namespace Game{
 		virtual void draw() const = 0;
 
 		virtual void init(const ChamberTile* chamberTile) = 0;
+
+		virtual void write(std::ostream& ostream) const{
+			ostream.write(reinterpret_cast<const char*>(&id), sizeof(id));
+			ostream.write(reinterpret_cast<const char*>(&region), sizeof(region));
+		}
+
+		virtual void read(std::istream& istream){
+			istream.read(reinterpret_cast<char*>(&id), sizeof(id));
+			istream.read(reinterpret_cast<char*>(&region), sizeof(region));
+		}
+	};
+
+
+	struct ChamberMocker final : Chamber{
+		void update(float delta) override{}
+
+		void draw() const override{}
+
+		void init(const ChamberTile* chamberTile) override{}
 	};
 
 
@@ -43,7 +62,6 @@ export namespace Game{
 		Point2 pos{};
 		/** Usage for multi tile*/
 		ChamberTile* referenceTile{nullptr};
-		float unitLength{}; //TODO Should this be constexpr??
 
 		std::unique_ptr<Chamber> chamber{};
 
@@ -77,11 +95,8 @@ export namespace Game{
 			chamber->draw();
 		}
 
-		void init(const float unitLength){
-			this->unitLength = unitLength;
-
+		void init() const{
 			if(!ownsChamber()) return;
-			chamber->unitLength = unitLength;
 			chamber->init(this);
 		}
 
@@ -108,7 +123,7 @@ export namespace Game{
 		}
 
 		[[nodiscard]] Geom::OrthoRectFloat getTileBound() const noexcept{
-			return {unitLength * pos.x, unitLength * pos.y, unitLength, unitLength};
+			return Geom::OrthoRectFloat{unitLength * pos.x, unitLength * pos.y, unitLength, unitLength};
 		}
 
 		[[nodiscard]] Geom::OrthoRectInt getChamberRegion() const noexcept{
@@ -135,9 +150,7 @@ export namespace Game{
 		// ReSharper disable CppMemberFunctionMayBeStatic
 		void update(Chamber*, TraitDataType&, const float) const{}
 
-		void init(Chamber* chamber, const ChamberTile* tile, TraitDataType&) const{
-			// chamber->region = tile->region;
-		}
+		void init(Chamber* chamber, const ChamberTile* tile, TraitDataType&) const{}
 
 		void draw(const Chamber*, const TraitDataType&) const{}
 
@@ -215,6 +228,11 @@ export namespace Game{
 		}
 	};
 
+	struct MockChamberFactory final : ChamberFactory{
+		std::unique_ptr<Chamber> genChamber() const override{
+			return std::make_unique<ChamberMocker>();
+		}
+	} mockChamberFactory;
 
 	struct TurretChamberFactory : ChamberFactory{
 		struct TurretChamberData : ChamberMetaDataBase{

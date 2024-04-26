@@ -34,7 +34,7 @@ export namespace UI{
 
 		void moveBar(const Geom::Vec2 movement){
 			if(isSegmentMoveActivated()){
-				barLastProgress = (barProgress + (movement * slideSensitivity).round(getSegmentUnit()) / getBarTotalPos()).clampNormalized();
+				barLastProgress = (barProgress + (movement * slideSensitivity).roundBy(getSegmentUnit()) / getBarTotalPos()).clampNormalized();
 			}else{
 				barLastProgress = (barProgress + (movement * slideSensitivity) / getBarTotalPos()).clampNormalized();
 			}

@@ -31,7 +31,7 @@ export namespace ext{
 
 			if(reload >= spacing){
 				if constexpr(Strict){
-					const int total = Math::floorPositive(reload / spacing);
+					const int total = Math::trac(reload / spacing);
 					for(int i = 0; i < total; ++i){
 						func();
 					}

@@ -74,7 +74,7 @@ export namespace UI {
 		 * \brief The srcx, srcy is relative to its parent.
 		 */
 		Rect bound{};
-		friend class ::UI::LayoutCell;
+		friend struct ::UI::LayoutCell;
 
 		Group* parent{nullptr};
 		mutable ::UI::Root* root{nullptr};

@@ -313,7 +313,7 @@ export namespace Core{
 			}
 		}
 
-		[[nodiscard]] Geom::Vec2 getMousePos() const {
+		[[nodiscard]] Geom::Vec2 getCursorPos() const {
 			return mousePos;
 		}
 

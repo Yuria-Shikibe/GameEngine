@@ -111,7 +111,7 @@ void UI::ScrollPane::drawContent() const{
 	const auto lastRect = GL::getScissorRect();
 
 	const Geom::OrthoRectInt clip{
-		Math::floorPositive(absoluteSrc.x + border.left), Math::floorPositive(absoluteSrc.y + horiBarStroke() + border.bottom),
+		Math::trac(absoluteSrc.x + border.left), Math::trac(absoluteSrc.y + horiBarStroke() + border.bottom),
 	Math::ceilPositive(getContentWidth()), Math::ceilPositive(getContentHeight())
 	};
 

@@ -15,14 +15,13 @@ export namespace Geom{
 	class Rect_Orthogonal/* : public Shape<Rect_Orthogonal<T>, T>*/{
 		static constexpr T TWO{2};
 
-	protected:
+		T srcX{0};
+		T srcY{0};
+
 		T width{0};
 		T height{0};
 
 	public:
-		T srcX{0};
-		T srcY{0};
-
 		constexpr Rect_Orthogonal(const T srcX, const T srcY, const T width, const T height) noexcept
 			: srcX(srcX),
 			  srcY(srcY){
@@ -45,6 +44,14 @@ export namespace Geom{
 		constexpr Rect_Orthogonal() noexcept = default;
 
 		constexpr ~Rect_Orthogonal() noexcept = default;
+
+		Rect_Orthogonal(const Rect_Orthogonal& other) noexcept = default;
+
+		Rect_Orthogonal(Rect_Orthogonal&& other) noexcept = default;
+
+		Rect_Orthogonal& operator=(const Rect_Orthogonal& other) noexcept = default;
+
+		Rect_Orthogonal& operator=(Rect_Orthogonal&& other) noexcept = default;
 
 		friend constexpr bool operator==(const Rect_Orthogonal& lhs, const Rect_Orthogonal& rhs) noexcept{
 			return lhs.srcX == rhs.srcX
@@ -145,7 +152,7 @@ export namespace Geom{
 				if(w >= 0){
 					this->width = w;
 				}else{
-					T abs = w < 0 ? -w : w;
+					T abs = static_cast<T>(w < 0 ? -w : w);
 					srcX -= abs;
 					this->width = abs;
 				}
@@ -160,7 +167,7 @@ export namespace Geom{
 				if(h >= 0){
 					this->height = h;
 				}else{
-					T abs = h < 0 ? -h : h;
+					T abs = static_cast<T>(h < 0 ? -h : h);
 					srcY -= abs;
 					this->height = abs;
 				}
@@ -209,7 +216,7 @@ export namespace Geom{
 					this->template setWidth<T>(v);
 				}
 			}else {
-				T abs = v < 0 ? -v : v;
+				T abs = static_cast<T>(v < 0 ? -v : v);
 				if(abs > width) {
 					this->template setWidth<T>(v);
 				}
@@ -223,7 +230,7 @@ export namespace Geom{
 					this->template setHeight<T>(v);
 				}
 			}else {
-				T abs = v < 0 ? -v : v;
+				T abs = static_cast<T>(v < 0 ? -v : v);
 				if(abs > height) {
 					this->template setHeight<T>(v);
 				}
@@ -236,7 +243,7 @@ export namespace Geom{
 					this->template setWidth<T>(v);
 				}
 			}else {
-				T abs = v < 0 ? -v : v;
+				T abs = static_cast<T>(v < 0 ? -v : v);
 				if(abs < width) {
 					this->template setWidth<T>(v);
 				}
@@ -250,7 +257,7 @@ export namespace Geom{
 					this->template setHeight<T>(v);
 				}
 			}else {
-				T abs = v < 0 ? -v : v;
+				T abs = static_cast<T>(v < 0 ? -v : v);
 				if(abs < height) {
 					this->template setHeight<T>(v);
 				}
@@ -436,6 +443,16 @@ export namespace Geom{
 
 			this->template setWidth<T>(width);
 			this->template setHeight<T>(height);
+		}
+
+		template <std::integral N>
+		Rect_Orthogonal<N> trac() noexcept{
+			return Rect_Orthogonal<N>{Math::trac<N>(srcX), Math::trac<N>(srcY), Math::trac<N>(width), Math::trac<N>(height)};
+		}
+
+		template <std::integral N>
+		Rect_Orthogonal<N> round() noexcept{
+			return Rect_Orthogonal<N>{Math::round<N>(srcX), Math::round<N>(srcY), Math::round<N>(width), Math::round<N>(height)};
 		}
 
 		constexpr Rect_Orthogonal& setSize(const typename Vector2D<T>::PassType v) noexcept{

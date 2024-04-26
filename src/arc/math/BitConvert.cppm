@@ -13,7 +13,7 @@ export namespace Math{
 	constexpr size_t INT_MASK_FRONT = 0xffffffff00000000L;
 
 	int charToDigitValue(const char c, const int radix) {
-		int digitValue = -1;
+		int digitValue = 0;
 
 		if (std::isdigit(c)) {
 			if (const int numericValue = c - '0'; numericValue < radix) {

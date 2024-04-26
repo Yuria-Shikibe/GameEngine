@@ -193,7 +193,7 @@ export namespace Game{
 			if(sizeTrace == 0)return;
 
 			Vec2 trans = transitionCCD;
-			trans.scl(sizeCCD());
+			trans.scl(static_cast<float>(sizeCCD()));
 
 			if(trans.x > 0){
 				(void)maxBound.addWidth(trans.x);
@@ -266,7 +266,7 @@ export namespace Game{
 		 */
 		[[nodiscard]] constexpr Vec2 transTo(const int transIndex) const{
 			Vec2 trans = transitionCCD;
-			trans.scl(sizeTrace - transIndex - 1);
+			trans.scl(sizeTrace - transIndex - 1.0f);
 			for(auto& rectBox : hitBoxGroup){
 				rectBox.trans(trans);
 			}
@@ -318,8 +318,8 @@ export namespace Game{
 							other.clampCCDTo(objectIndex);
 
 							//TODO is this position clamp necessary？
-							this->trans.vec.mulAdd(transitionCCD, subjectIndex);
-							other.trans.vec.mulAdd(other.transitionCCD, objectIndex);
+							this->trans.vec.mulAdd(transitionCCD, static_cast<float>(subjectIndex));
+							other.trans.vec.mulAdd(other.transitionCCD, static_cast<float>(objectIndex));
 
 							return collisionData;
 						}

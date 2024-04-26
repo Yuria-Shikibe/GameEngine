@@ -69,7 +69,7 @@ export namespace Ctrl{
 
 		input->registerMouseBind(LMB, Act_DoubleClick, [] {
 			if(Core::uiRoot->cursorCaptured())return;
-			auto pos = Core::input->getMousePos();
+			auto pos = Core::input->getCursorPos();
 			pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
 			pos *= Core::camera->getScreenToWorld();
 

@@ -139,6 +139,10 @@ export namespace Graphic{
             if(bitmapData)bitmapData.reset(nullptr);
         }
 
+        void fill(const Color color) const{
+            std::fill_n(reinterpret_cast<ColorBits*>(bitmapData.get()), pixelSize(), color.argb8888());
+        }
+
         DataType& operator [](const size_t index){
             return bitmapData[index];
         }
@@ -271,6 +275,14 @@ export namespace Graphic{
         }
 
         void each(Concepts::Invokable<void(Pixmap&, int, int)> auto&& func) {
+            for(int x = 0; x < width; x++) {
+                for(int y = 0; y < height; ++y) {
+                    func(*this, x, y);
+                }
+            }
+        }
+
+        void each(Concepts::Invokable<void(const Pixmap&, int, int)> auto&& func) const {
             for(int x = 0; x < width; x++) {
                 for(int y = 0; y < height; ++y) {
                     func(*this, x, y);

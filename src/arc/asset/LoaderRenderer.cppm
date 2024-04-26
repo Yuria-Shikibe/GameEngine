@@ -126,7 +126,7 @@ export namespace Assets {
 			GL::setStencilMask(0xFF);
 
 			Draw::quad(
-				Draw::defaultTexture,
+				Draw::getDefaultTexture(),
 				x, y - stroke - slideLineSize, Colors::DARK_GRAY,
 				x + barWidth - slideLineSize, y - stroke - slideLineSize, Colors::GRAY,
 				x + barWidth, y - stroke, Colors::GRAY,
@@ -134,7 +134,7 @@ export namespace Assets {
 			);
 
 			Draw::quad(
-				Draw::defaultTexture,
+				Draw::getDefaultTexture(),
 				x, y + stroke, Colors::DARK_GRAY,
 				x + barWidth, y - stroke, Colors::GRAY,
 				x + barWidth, y + stroke + slideLineSize, Colors::GRAY,
@@ -154,7 +154,7 @@ export namespace Assets {
 			end.lerp(loader->postedTasks.empty() ? Colors::SKY : Colors::ORANGE, lastProgress);
 
 			Draw::quad(
-				Draw::defaultTexture,
+				Draw::getDefaultTexture(),
 				x, y - stroke, begin,
 				x + barWidth * lastProgress, y - stroke, end,
 				x + barWidth * lastProgress, y + stroke + slideLineSize, end,
@@ -162,7 +162,7 @@ export namespace Assets {
 			);
 
 			Draw::quad(
-				Draw::defaultTexture,
+				Draw::getDefaultTexture(),
 				x, y - stroke - slideLineSize, begin,
 				x + barWidth * lastProgress - slideLineSize, y - stroke - slideLineSize, end,
 				x + barWidth * lastProgress, y - stroke, end,

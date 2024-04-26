@@ -1,10 +1,14 @@
+module;
+
+#include <glad/glad.h>
+
 export module Core.Renderer;
 
-import <glad/glad.h>;
 import std;
 import GL.Buffer.FrameBuffer;
 // import GL.Buffer.MultiSampleFrameBuffer;
 import GL;
+import GL.Shader;
 import Event;
 import Graphic.Mask;
 import Graphic.Color;
@@ -146,6 +150,8 @@ export namespace Core{
 		virtual void frameEnd(const std::function<void(FrameBuffer*, FrameBuffer*)>& func);
 
 		virtual void frameEnd(const PostProcessor* processor);
+
+		virtual void frameEnd(const GL::Shader* shader);
 
 		void frameEnd(const PostProcessor& processor){
 			frameEnd(&processor);

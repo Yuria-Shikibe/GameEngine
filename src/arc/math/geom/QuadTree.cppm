@@ -79,6 +79,43 @@ export namespace Geom{
 		std::atomic_bool leaf = true;
 
 	public:
+		QuadTree(const QuadTree& other) = delete;
+
+		QuadTree(QuadTree&& other) noexcept
+			: interscetExactFunc(std::move(other.interscetExactFunc)),
+			  interscetRoughFunc(std::move(other.interscetRoughFunc)),
+			  interscetPointFunc(std::move(other.interscetPointFunc)),
+			  boundary(std::move(other.boundary)),
+			  rectangles(std::move(other.rectangles)),
+			  topLeft(std::move(other.topLeft)),
+			  topRight(std::move(other.topRight)),
+			  bottomLeft(std::move(other.bottomLeft)),
+			  bottomRight(std::move(other.bottomRight)),
+			  maximumItemCount(other.maximumItemCount),
+			  strict(other.strict),
+			  currentSize(other.currentSize.load()),
+			  leaf(other.leaf.load()){}
+
+		QuadTree& operator=(const QuadTree& other) = delete;
+
+		QuadTree& operator=(QuadTree&& other) noexcept{
+			if(this == &other) return *this;
+			interscetExactFunc = std::move(other.interscetExactFunc);
+			interscetRoughFunc = std::move(other.interscetRoughFunc);
+			interscetPointFunc = std::move(other.interscetPointFunc);
+			boundary = std::move(other.boundary);
+			rectangles = std::move(other.rectangles);
+			topLeft = std::move(other.topLeft);
+			topRight = std::move(other.topRight);
+			bottomLeft = std::move(other.bottomLeft);
+			bottomRight = std::move(other.bottomRight);
+			maximumItemCount = other.maximumItemCount;
+			strict = other.strict;
+			currentSize = other.currentSize.load();
+			leaf = other.leaf.load();
+			return *this;
+		}
+
 		[[nodiscard]] bool isStrict() const{ return strict; }
 
 		void setStrict(const bool strict){ this->strict = strict; }

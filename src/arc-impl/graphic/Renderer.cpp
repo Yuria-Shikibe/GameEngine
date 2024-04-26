@@ -56,6 +56,16 @@ void Core::Renderer::frameEnd(const PostProcessor* processor) {
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
+void Core::Renderer::frameEnd(const Shader* shader){
+	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+	Graphic::Batch::flush();
+
+	contextFrameBuffer->getColorAttachments().front()->active(0);
+	Graphic::Frame::blit(beneathFrameBuffer, 0, shader, nullptr);
+
+	contextFrameBuffer = beneathFrameBuffer;
+}
+
 void Core::Renderer::frameEnd() {
 	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
@@ -111,10 +121,10 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 
 
 	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
-		shader.setColor("mixColor", Colors::GRAY);
+		shader.setColor("mixColor", Colors::LIGHT_GRAY);
 		// shader.setColor("mixColor", AQUA_SKY.createLerp(Colors::GRAY, 0.95f).setA(0.25f));
 		// shader.setColor("mixColor", Colors::GRAY);
-		shader.setColor("srcColor", Colors::GRAY);
+		shader.setColor("srcColor", Colors::LIGHT_GRAY.createLerp(Colors::AQUA_SKY, 0.125f));
 	});
 	Graphic::Blendings::Normal.apply();
 

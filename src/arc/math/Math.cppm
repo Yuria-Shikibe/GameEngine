@@ -471,8 +471,13 @@ export namespace Math {
 	 * positive. Note this method simply casts the float to int.
 	 */
 	template <std::integral T = int>
-	constexpr T floorPositive(const float value) noexcept {
-		return static_cast<T>(value);
+	constexpr T trac(const float value) noexcept {
+		T val = static_cast<T>(value);
+		if constexpr (Concepts::Signed<T>){
+			if(value < 0)--val;
+		}
+
+		return val;
 	}
 
 	/**
@@ -714,7 +719,7 @@ export namespace Math {
 
 	template<Concepts::Number auto cycle, auto trigger = cycle / 2>
 	bool cycleStep(Concepts::Number auto cur){
-		return Math::mod(cur, cycle) < trigger;
+		return Math::mod<decltype(cur)>(cur, cycle) < trigger;
 	}
 
 	namespace Angle{

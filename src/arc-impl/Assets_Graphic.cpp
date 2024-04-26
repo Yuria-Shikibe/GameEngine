@@ -15,11 +15,13 @@ void Assets::Shaders::loadPrevious() {
 	sildeLines = new Shader(shaderDir, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
 	sildeLines->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("u_texture", 0);
-		shader.setFloat("time", OS::globalTick());
-		shader.setFloat("width", slideLineShaderArgs.get<0>());
-		shader.setFloat("spacing", slideLineShaderArgs.get<1>());
-		shader.setColor("mulColor", slideLineShaderArgs.get<2, true>());
-		shader.setFloat("mulSub", slideLineShaderArgs.get<3>());
+		shader.setFloat("time", OS::globalTick() * slideLineShaderScaleArgs.get<2>());
+		shader.setFloat("width", slideLineShaderDrawArgs.get<0>());
+		shader.setFloat("spacing", slideLineShaderDrawArgs.get<1>());
+		shader.setColor("mulColor", slideLineShaderDrawArgs.get<2, true>());
+		shader.setFloat("mulSub", slideLineShaderDrawArgs.get<3>());
+		shader.setVec2("scale", slideLineShaderScaleArgs.get<0>());
+		shader.setVec2("offset", slideLineShaderScaleArgs.get<1>());
 	});
 
 	threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
@@ -34,7 +36,7 @@ void Assets::Shaders::loadPrevious() {
 		shader.setTexture2D("u_texture");
 
 		if(Core::batchGroup.batchOverlay->getProjection() == &Core::camera->getWorldToScreen()){
-			shader.setVec2("size", Core::renderer->getSize().div(Core::camera->getScale()));
+			shader.setVec2("size", Core::renderer->getSize().div(Core::batchGroup.batchOverlay->getProjection()->getOrthoScale()));
 		}else{
 			shader.setVec2("size", Core::renderer->getSize());
 		}
@@ -109,6 +111,13 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setTexture2D("texture1", 1);
 		shader.setTexture2D("texture2", 2);
 		shader.setFloat("clamp", 1.0f);
+	});
+
+	outline_ortho = manager->registerShader(new Shader{shaderDir, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
+	outline_ortho->setUniformer([](const Shader& shader) {
+		shader.setTexture2D("texture", 0);
+		shader.setVec2("scaleInv", outline_orthoArgs.get<1>());
+		shader.setFloat("stepLength", outline_orthoArgs.get<0>());
 	});
 
 	manager->registerShader(screenSpace);

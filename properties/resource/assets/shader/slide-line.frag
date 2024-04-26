@@ -12,6 +12,8 @@ uniform float width;
 uniform float spacing;
 uniform vec4 mulColor;
 uniform float mulSub;
+uniform vec2 scale;
+uniform vec2 offset;
 
 
 void main()
@@ -23,14 +25,18 @@ void main()
 	if(s < 0.0f){
 		s = width * 2.0f;
 	}
+
+	vec2 coord = gl_FragCoord.xy * scale + offset;
 	
-	c = v_srcColor * mix(c, vec4(v_mixColor.rgb, c.a), v_mixColor.a);
+	c *= v_srcColor;
 
 	if(mulSub >= 0){
-		c *= mix(vec4(1.0f), mulColor, mulSub * step(mod(gl_FragCoord.x - gl_FragCoord.y - time, s), width));
+		c *= mix(vec4(1.0f), mulColor, mulSub * step(mod(coord.x - coord.y - time, s), width));
 	}else{
-		c *= c * (1 + mulSub * step(mod(gl_FragCoord.x - gl_FragCoord.y - time, s), width));
+		c *= c * (1 + mulSub * step(mod(coord.x - coord.y - time, s), width));
 	}
+
+	c = mix(c, vec4(v_mixColor.rgb, c.a), v_mixColor.a);
 
 	gl_FragColor = c;
 }

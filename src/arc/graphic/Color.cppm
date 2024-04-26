@@ -582,11 +582,7 @@ export namespace Graphic{
 		}
 
 		[[nodiscard]] std::string toString() const{
-			std::stringstream ss;
-
-			ss << *this;
-
-			return ss.str();
+			return std::format("{:02X}{:02X}{:02X}{:02X}", static_cast<ColorBits>(255 * r), static_cast<ColorBits>(255 * g), static_cast<ColorBits>(255 * b), static_cast<ColorBits>(255 * a));;
 		}
 
 		Color& fromHsv(const float h, const float s, const float v) noexcept{
@@ -675,6 +671,15 @@ export namespace Graphic{
 			hsv[2] = maxV;
 
 			return hsv;
+		}
+
+		bool equalRelaxed(const Color& other) const noexcept{
+			constexpr float tolerance = 0.5f / 255.0f;
+			return
+				Math::equal(r, other.r, tolerance) &&
+				Math::equal(g, other.g, tolerance) &&
+				Math::equal(b, other.b, tolerance) &&
+				Math::equal(a, other.a, tolerance);
 		}
 
 		constexpr Color& HSVtoRGB(float h, float s, float v, Color& targetColor) noexcept{

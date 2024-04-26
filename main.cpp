@@ -5,6 +5,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "../src/code-gen/ReflectData_Builtin.hpp"
+
 import std;
 import std.compat;
 
@@ -114,17 +116,62 @@ import Game.Content.Builtin.SpaceCrafts;
 import Game.Graphic.CombinePostProcessor;
 
 import Game.ChamberFrame;
+import Game.Chamber.Util;
 
 import ext.Encoding;
 import ext.TreeStructure;
 import ext.Algorithm;
 import ext.Heterogeneous;
+import ext.Json;
+import ext.Base64;
+import ext.StringParse;
+import ext.StaticReflection;
+import ext.ReflectData;
+
+import Core.IO.Specialized;
 
 using namespace Graphic;
 using namespace GL;
 using Geom::Vec2;
 
+
+struct TestChamberFactory : Game::ChamberFactory{
+	struct TestChamberData : Game::ChamberMetaDataBase{
+		Vec2 targetPos{};
+		float reload{};
+	};
+
+
+	struct TestChamberTrait : Game::ChamberTraitFallback<TestChamberData>{
+		float reloadTime{};
+
+		void update(Game::Chamber* chamber, TraitDataType& data, const float delta) const{
+			chamber->update(delta);
+			data.reload += delta;
+			if(data.reload > reloadTime){
+				data.reload = 0;
+			}
+		}
+
+		void draw(const Game::Chamber* chamber, const TraitDataType& data) const{
+			Graphic::Draw::Line::rectOrtho(chamber->getChamberBound());
+		}
+	} baseTraitTest;
+
+
+	template <Concepts::Derived<TestChamberTrait> Trait = TestChamberTrait>
+	using ChamberType = Game::ChamberVariant<typename Trait::TraitDataType, TestChamberTrait>;
+
+	std::unique_ptr<Game::Chamber> genChamber() const override{
+		return std::make_unique<ChamberType<>>(baseTraitTest);
+	}
+};
+
+
 std::stringstream sstream{};
+Game::ChamberFrame chamberFrame{};
+std::unique_ptr<Game::ChamberFactory> testFactory{std::make_unique<TestChamberFactory>()};
+
 
 void setupUITest(){
 	const auto HUD = new UI::Table{};
@@ -352,6 +399,38 @@ void setupCtrl(){
 	// 	effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
 	// });
 
+	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press, []{
+		auto transed = (Core::input->getCursorPos() - Core::renderer->getSize().div(2)).div(Core::camera->getScale()) + Core::camera->getPosition();
+
+		Draw::Line::line(transed, {0, 0});
+		const auto pos = chamberFrame.getNearby(transed);
+		Geom::OrthoRectInt bound{pos, 3, 3};
+
+		if(chamberFrame.placementValid(bound)){
+			chamberFrame.insert(testFactory->genChamberTile(bound));
+		}
+	});
+
+	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_3, Ctrl::Act_Press, []{
+		auto transed = (Core::input->getCursorPos() - Core::renderer->getSize().div(2)).div(Core::camera->getScale()) + Core::camera->getPosition();
+
+		Draw::Line::line(transed, {0, 0});
+		const auto pos = chamberFrame.getNearby(transed);
+
+		chamberFrame.erase(pos, true);
+
+	});
+
+
+	Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, [&]{
+		const OS::File tgt{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
+
+		const auto pixmap = Game::ChamberUtil::saveToPixmap(chamberFrame);
+
+		pixmap.write(tgt, true);
+	});
+
+
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, []{
 		static ext::Timer<> timer{};
 
@@ -366,9 +445,9 @@ void setupCtrl(){
 				const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
 				ptr->trait = &Game::Content::basicBulletType;
 				ptr->trans.vec.set(Core::camera->getPosition());
-				ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input->getMousePos());
+				ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input->getCursorPos());
 
-				ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80 * i));
+				ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80.0f * i));
 
 				ptr->velo.vec.set(320, 0).rotate(ptr->trans.rot);
 				Game::EntityManage::add(ptr);
@@ -385,7 +464,7 @@ void setupCtrl(){
 		Ctrl::Mode_Shift
 	  , []{
 			Game::EntityManage::realEntities.quadTree->intersectPoint(
-				Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getMousePos())),
+				Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getCursorPos())),
 				[](decltype(Game::EntityManage::realEntities)::ValueType* entity){
 					entity->controller->selected = !entity->controller->selected;
 					Game::core->overlayManager->registerSelected(
@@ -427,42 +506,51 @@ void genRandomEntities(){
 	ptr->activate();
 }
 
+/**
+ * @brief
+ * @tparam T TypeName
+ * @tparam write true -> write | false -> read
+ */
+template <typename T, bool write>
+struct JsonEachIO{
+	// using FieldHint = ext::reflect::Field<void>;
+	using ClassField =  ext::reflect::ClassField<T>;
+	using PassType = typename ext::ConstConditional<write, T&>::type;
 
-struct TestChamberFactory : Game::ChamberFactory{
-	struct TestChamberData : Game::ChamberMetaDataBase{
-		Vec2 targetPos{};
-		float reload{};
-	};
-
-
-	struct TestChamberTrait : Game::ChamberTraitFallback<TestChamberData>{
-		float reloadTime{};
-
-		void update(Game::Chamber* chamber, TraitDataType& data, const float delta) const{
-			chamber->update(delta);
-			data.reload += delta;
-			if(data.reload > reloadTime){
-				data.reload = 0;
-			}
+	template <std::size_t I>
+	constexpr static void with(PassType val, ext::json::JsonValue& root){
+		using Field = typename ClassField::template FieldAt<I>;
+		if constexpr (Field::enableSrl){
+			//Chain invoke
+			root.append(Field::getName, ext::json::getJsonOf(val.*Field::fieldPtr));
 		}
-
-		void draw(const Game::Chamber* chamber, const TraitDataType& data) const{
-			Graphic::Draw::Line::rectOrtho(chamber->getChamberBound());
-		}
-	} baseTraitTest;
-
-
-	template <Concepts::Derived<TestChamberTrait> Trait = TestChamberTrait>
-	using ChamberType = Game::ChamberVariant<typename Trait::TraitDataType, TestChamberTrait>;
-
-	std::unique_ptr<Game::Chamber> genChamber() const override{
-		return std::make_unique<ChamberType<>>(baseTraitTest);
 	}
 };
 
+int main(){
+	OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
 
+
+	// ext::json::Json json{fi.readString()};
+	// TestT test{};
+	// ext::json::getValueTo(test, json.getData());
+
+	ext::json::JsonValue root{};
+
+	TestT test{{{10, 15}, 90}, false, Colors::PALE_GREEN, {12,45}, {-12, -545}, {0, 123123, 1512, 12}};
+	root = ext::json::getJsonOf(test);
+
+	// auto str = std::format("{:f}", root);
+	auto str = std::format("{}", root);
+
+	std::println("{}", str);
+
+	fi.writeString(str);
+}
+
+/*
 int main(const int argc, char* argv[]){
-	// return 0;
+	return 0;
 	//Init
 	::Test::init(argc, argv);
 
@@ -478,31 +566,29 @@ int main(const int argc, char* argv[]){
 		Game::core->overlayManager->deactivate();
 	}
 
-	Game::ChamberFrame chamberFrame{};
-	chamberFrame.setUnitLength(120.0f);
-	std::vector<Game::ChamberTile> tiles{};
+	std::unordered_map<Geom::Point2, Game::ChamberTile> tiles{};
 
-	for(int x = -50; x <= 50; ++x){
-		for(int y = -50; y <= 50; ++y){
-			tiles.push_back(Game::ChamberFactory::genEmptyTile({x, y}));
+	for(int x = 0; x < 100; ++x){
+		for(int y = 0; y < 100; ++y){
+			tiles.try_emplace(Geom::Point2{x, y}, Game::ChamberFactory::genEmptyTile({x, y}));
 		}
 	}
 
-	std::unique_ptr<Game::ChamberFactory> testFactory{std::make_unique<TestChamberFactory>()};
 	for(int i = 0; i < 128; ++i){
-		tiles.push_back(testFactory->genChamberTile({(i % 12 - 6) * 3, (i / 12 - 6) * 2, 3, 2}));
+		tiles.insert_or_assign({(i % 12) * 3, (i / 12) * 2}, testFactory->genChamberTile({(i % 12) * 3, (i / 12) * 2, 3, 2}));
 
-		tiles.push_back(testFactory->genChamberTile({i % 12 + 16, i / 12 + 16, 1, 1}));
+		tiles.insert_or_assign({i % 12 + 36, i / 12 + 36}, testFactory->genChamberTile({i % 12 + 36, i / 12 + 36, 1, 1}));
 	}
 	//
 
-	chamberFrame.build(std::move(tiles));
-	chamberFrame.insert(testFactory->genChamberTile({26, -6, 12, 4}));
+	chamberFrame.build(std::move(tiles) | std::ranges::views::values);
+
+	chamberFrame.insert(testFactory->genChamberTile({66, 6, 12, 4}));
 
 	// chamberFrame.erase({-12, -6});
-	chamberFrame.erase({-11, -6});
+	chamberFrame.erase({11, 6}, true);
 
-	chamberFrame.erase({-11, -3});
+	chamberFrame.erase({11, 3}, true);
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
@@ -522,7 +608,7 @@ int main(const int argc, char* argv[]){
 
 
 	// UI Test
-	// setupUITest();
+	setupUITest();
 
 	setupCtrl();
 
@@ -637,6 +723,73 @@ int main(const int argc, char* argv[]){
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 
+		auto [valid, invalid] = ext::partBy(chamberFrame.getData() | std::ranges::views::filter([](const Game::ChamberTile& tile){
+			return Core::camera->viewportRect().overlap(tile.getChamberRealRegion());
+		}), &Game::ChamberTile::valid);
+
+		{
+			[[maybe_unused]] auto guard = Draw::genColorGuard();
+			e.renderer->frameBegin(&e.renderer->effectBuffer);
+			Draw::color(Colors::DARK_GRAY);
+
+			for(Game::ChamberTile& tile : valid){
+				Draw::rectOrtho(Draw::globalState.defaultTexture, tile.getTileBound());
+			}
+
+			Assets::Shaders::outline_orthoArgs.set(4, Core::renderer->getSize().inverse());
+			e.renderer->frameEnd(Assets::Shaders::outline_ortho);
+			Assets::Shaders::outline_orthoArgs.setDef();
+
+			Draw::color(Colors::GRAY, 0.45f);
+			Draw::Line::setLineStroke(2.0f);
+			for(Game::ChamberTile& tile : valid){
+				Draw::Line::rectOrtho(tile.getTileBound());
+			}
+
+			Draw::color(Colors::LIGHT_GRAY, 0.85f);
+			for(Game::ChamberTile& tile : valid | std::ranges::views::filter(&Game::ChamberTile::ownsChamber)){
+				Draw::Line::rectOrtho(tile.getChamberRealRegion());
+			}
+		}
+
+
+		{
+			[[maybe_unused]] auto guard = Draw::genColorGuard();
+
+			Draw::color(Colors::WHITE, 0.8f);
+			Draw::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
+
+			Assets::Shaders::slideLineShaderDrawArgs.set(30.0f, 45.0f, Colors::CLEAR, 1.0f);
+			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
+
+			for(Game::ChamberTile& tile : invalid)Draw::rectOrtho(Draw::getDefaultTexture(), tile.getTileBound());
+
+			Graphic::Batch::endShader(true);
+
+			Draw::color(Colors::PALE_GREEN);
+			Draw::mixColor();
+
+			auto transed = (Core::input->getCursorPos() - Core::renderer->getSize().div(2)).div(Core::camera->getScale()) + Core::camera->getPosition();
+
+			Draw::Line::line(transed, {0, 0});
+			const auto pos = chamberFrame.getNearby(transed);
+			Geom::OrthoRectInt bound{pos, 3, 3};
+
+			if(const auto finded = chamberFrame.find(pos)){
+				Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
+			}
+
+			if(chamberFrame.placementValid(bound)){
+				Draw::color(Colors::PALE_GREEN);
+			}else{
+				Draw::color(Colors::RED_DUSK);
+			}
+			Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
+
+			Assets::Shaders::slideLineShaderDrawArgs.setDef();
+		}
+
+
 		Graphic::Batch::blend();
 		//
 		const auto cameraPos = Core::camera->screenCenter();
@@ -650,29 +803,6 @@ int main(const int argc, char* argv[]){
 		// );
 
 		Graphic::Draw::Line::setLineStroke(2.0f);
-
-		auto [valid, invalid] = ext::partBy(chamberFrame.getData() | std::ranges::views::filter([](const Game::ChamberTile& tile){
-			return Core::camera->viewportRect().overlap(tile.getChamberRealRegion());
-		}), &Game::ChamberTile::valid);
-
-		for(auto& tile : valid | std::ranges::views::filter(&Game::ChamberTile::ownsChamber)){
-			Draw::color(Colors::GRAY);
-			Draw::Line::setLineStroke(2.0f);
-			Draw::Line::rectOrtho(tile.getTileBound());
-
-			Draw::color(Colors::ACID);
-			Draw::Line::setLineStroke(4.0f);
-			tile.draw();
-		}
-
-		for(auto& tile : invalid){
-			Assets::Shaders::slideLineShaderArgs.set(30.0f, 45.0f, Colors::CLEAR, 1.0f);
-			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
-			Draw::color(Colors::DARK_GRAY.createLerp(Colors::BLACK, 0.2f));
-			Draw::rectOrtho(Draw::defaultTexture, tile.getTileBound());
-			Graphic::Batch::endShader(true);
-			Assets::Shaders::slideLineShaderArgs.setDef();
-		}
 
 		Graphic::Draw::Line::setLineStroke(2.0f);
 		Graphic::Draw::color(Graphic::Colors::YELLOW, 0.25f);
@@ -721,3 +851,4 @@ int main(const int argc, char* argv[]){
 
 	return 0;
 }
+*/
