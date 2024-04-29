@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 
 #include "../src/code-gen/ReflectData_Builtin.hpp"
+#include "src/arc/util/ReflectionUtil.hpp"
+#include "src/arc/util/ReflectionUtil.hpp"
 
 import std;
 import std.compat;
@@ -117,6 +119,7 @@ import Game.Graphic.CombinePostProcessor;
 
 import Game.ChamberFrame;
 import Game.Chamber.Util;
+import Game.Chamber.FrameTrans;
 
 import ext.Encoding;
 import ext.TreeStructure;
@@ -128,7 +131,7 @@ import ext.StringParse;
 import ext.StaticReflection;
 import ext.ReflectData;
 
-import Core.IO.Specialized;
+import Core.IO.JsonIO;
 
 using namespace Graphic;
 using namespace GL;
@@ -167,11 +170,13 @@ struct TestChamberFactory : Game::ChamberFactory{
 	}
 };
 
+REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
 std::stringstream sstream{};
-Game::ChamberFrame chamberFrame{};
+std::unique_ptr<Game::ChamberFrameTrans> chamberFrame{};
 std::unique_ptr<Game::ChamberFactory> testFactory{std::make_unique<TestChamberFactory>()};
 
+constexpr bool t = Core::IO::jsonDirectSerializable<Geom::Rect_Orthogonal<int>>;
 
 void setupUITest(){
 	const auto HUD = new UI::Table{};
@@ -211,6 +216,7 @@ void setupUITest(){
 	   .setMargin(0, 10, 0, 10);
 
 
+	/*
 	HUD->add<UI::Table>([](UI::Table& table){
 		   table.add<UI::Table>([](UI::Table& t){
 			   t.selfMaskOpacity = 0.0f;
@@ -390,45 +396,47 @@ void setupUITest(){
 	   .setAlign(Align::Mode::bottom_right)
 	   .setSizeScale(0.3f, 0.15f)
 	   .setMargin(10, 0, 10, 0);
+	   */
 }
 
 void setupCtrl(){
-	// Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press, [] {
-	// 	const auto pos = Game::core->overlayManager->getMouseInWorld();
-	// 	auto* effect = Game::core->effectManager->suspend();
-	// 	effect->setDrawer(&Assets::Effects::CircleDrawer)->set(pos, 0, Graphic::Colors::SKY);
-	// });
-
 	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press, []{
-		auto transed = (Core::input->getCursorPos() - Core::renderer->getSize().div(2)).div(Core::camera->getScale()) + Core::camera->getPosition();
+		auto transed = chamberFrame->getWorldToLocal(Core::camera->getScreenToWorld() * Core::renderer->getNormalized(Core::input->getCursorPos()));
 
-		Draw::Line::line(transed, {0, 0});
-		const auto pos = chamberFrame.getNearby(transed);
+		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
 		Geom::OrthoRectInt bound{pos, 3, 3};
 
-		if(chamberFrame.placementValid(bound)){
-			chamberFrame.insert(testFactory->genChamberTile(bound));
+		if(chamberFrame->getChambers().placementValid(bound)){
+			chamberFrame->getChambers().insert(testFactory->genChamberTile(bound));
 		}
 	});
 
 	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_3, Ctrl::Act_Press, []{
-		auto transed = (Core::input->getCursorPos() - Core::renderer->getSize().div(2)).div(Core::camera->getScale()) + Core::camera->getPosition();
+		auto transed = chamberFrame->getWorldToLocal(Core::camera->getScreenToWorld() * Core::renderer->getNormalized(Core::input->getCursorPos()));
 
-		Draw::Line::line(transed, {0, 0});
-		const auto pos = chamberFrame.getNearby(transed);
+		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
 
-		chamberFrame.erase(pos, true);
-
+		chamberFrame->getChambers().erase(pos, true);
 	});
 
+	Core::input->registerKeyBind(Ctrl::KEY_S, Ctrl::Act_Press, Ctrl::Mode_Ctrl, []{
+		std::jthread jthread([](){
+			OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
+			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
+			fi.writeString(std::format("{:nf0}", jval));
+		});
 
-	Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, [&]{
-		const OS::File tgt{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
-
-		const auto pixmap = Game::ChamberUtil::saveToPixmap(chamberFrame);
-
-		pixmap.write(tgt, true);
+		jthread.detach();
 	});
+
+	//
+	// Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, [&]{
+	// 	const OS::File tgt{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
+	//
+	// 	const auto pixmap = Game::ChamberUtil::saveToPixmap(chamberFrame->getChambers());
+	//
+	// 	pixmap.write(tgt, true);
+	// });
 
 
 	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, []{
@@ -506,89 +514,7 @@ void genRandomEntities(){
 	ptr->activate();
 }
 
-/**
- * @brief
- * @tparam T TypeName
- * @tparam write true -> write | false -> read
- */
-template <typename T, bool write>
-struct JsonEachIO{
-	// using FieldHint = ext::reflect::Field<void>;
-	using ClassField =  ext::reflect::ClassField<T>;
-	using PassType = typename ext::ConstConditional<write, T&>::type;
-
-	template <std::size_t I>
-	constexpr static void with(PassType val, ext::json::JsonValue& root){
-		using Field = typename ClassField::template FieldAt<I>;
-		if constexpr (Field::enableSrl){
-			//Chain invoke
-			root.append(Field::getName, ext::json::getJsonOf(val.*Field::fieldPtr));
-		}
-	}
-};
-
-int main(){
-	OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
-
-
-	// ext::json::Json json{fi.readString()};
-	// TestT test{};
-	// ext::json::getValueTo(test, json.getData());
-
-	ext::json::JsonValue root{};
-
-	TestT test{{{10, 15}, 90}, false, Colors::PALE_GREEN, {12,45}, {-12, -545}, {0, 123123, 1512, 12}};
-	root = ext::json::getJsonOf(test);
-
-	// auto str = std::format("{:f}", root);
-	auto str = std::format("{}", root);
-
-	std::println("{}", str);
-
-	fi.writeString(str);
-}
-
-/*
-int main(const int argc, char* argv[]){
-	return 0;
-	//Init
-	::Test::init(argc, argv);
-
-	::Test::assetsLoad();
-
-	::Test::setupAudioTest();
-
-	if(true){
-		Game::core->overlayManager->activate();
-		Game::core->hitBoxEditor->deactivate();
-	} else{
-		Game::core->hitBoxEditor->activate();
-		Game::core->overlayManager->deactivate();
-	}
-
-	std::unordered_map<Geom::Point2, Game::ChamberTile> tiles{};
-
-	for(int x = 0; x < 100; ++x){
-		for(int y = 0; y < 100; ++y){
-			tiles.try_emplace(Geom::Point2{x, y}, Game::ChamberFactory::genEmptyTile({x, y}));
-		}
-	}
-
-	for(int i = 0; i < 128; ++i){
-		tiles.insert_or_assign({(i % 12) * 3, (i / 12) * 2}, testFactory->genChamberTile({(i % 12) * 3, (i / 12) * 2, 3, 2}));
-
-		tiles.insert_or_assign({i % 12 + 36, i / 12 + 36}, testFactory->genChamberTile({i % 12 + 36, i / 12 + 36, 1, 1}));
-	}
-	//
-
-	chamberFrame.build(std::move(tiles) | std::ranges::views::values);
-
-	chamberFrame.insert(testFactory->genChamberTile({66, 6, 12, 4}));
-
-	// chamberFrame.erase({-12, -6});
-	chamberFrame.erase({11, 6}, true);
-
-	chamberFrame.erase({11, 3}, true);
+void setupBaseDraw(){
 
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
@@ -606,6 +532,47 @@ int main(const int argc, char* argv[]){
 		Graphic::Batch::flush();
 	});
 
+}
+
+int main(const int argc, char* argv[]){
+	//Init
+	::Test::init(argc, argv);
+
+	::Test::assetsLoad();
+
+	::Test::setupAudioTest();
+
+	chamberFrame = std::make_unique<Game::ChamberFrameTrans>();
+
+	if(true){
+		Game::core->overlayManager->activate();
+		Game::core->hitBoxEditor->deactivate();
+	} else{
+		Game::core->hitBoxEditor->activate();
+		Game::core->overlayManager->deactivate();
+	}
+
+	{
+		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
+		OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
+
+
+		if constexpr(false){
+			chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap(Graphic::Pixmap{pixmap}, {-32, -32});
+
+			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
+
+			fi.writeString(std::format("{:nf0}", jval));
+		}else{
+			ext::json::Json json{fi.readString()};
+
+			ext::json::getValueTo(chamberFrame->getChambers(), json.getData());
+		}
+	}
+
+	// chamberFrame->getChambers().reTree();
+
+
 
 	// UI Test
 	setupUITest();
@@ -613,6 +580,8 @@ int main(const int argc, char* argv[]){
 	setupCtrl();
 
 	// genRandomEntities();
+
+	setupBaseDraw();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
@@ -632,44 +601,6 @@ int main(const int argc, char* argv[]){
 
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
-
-	float depth = 2;
-
-	Core::input->registerKeyBind(Ctrl::KEY_PAGE_DOWN, Ctrl::Act_Press, [&depth](){
-		depth++;
-	});
-
-	Core::input->registerKeyBind(Ctrl::KEY_PAGE_UP, Ctrl::Act_Press, [&depth](){
-		depth--;
-	});
-
-	Core::renderer->getListener().on<Event::Draw_Post>([&](const auto& event){
-		Core::Renderer& renderer = *event.renderer;
-		renderer.frameBegin(&acceptBuffer1);
-
-		acceptBuffer1.clearColor(Graphic::Colors::BLACK);
-
-		GL::enable(GL::Test::DEPTH);
-		GL::setDepthFunc(GL::Func::GEQUAL);
-		GL::setDepthMask(true);
-
-		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
-		Game::EntityManage::render();
-
-		Game::core->effectManager->render();
-
-		// auto* region = Core::assetsManager->getAtlas().find("base-pester");
-		// //auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
-
-		Graphic::Batch::flush<BatchWorld>();
-
-		GL::setDepthMask(false);
-		GL::disable(GL::Test::DEPTH);
-		// GL::setDepthMask(false);
-
-		GL::Blendings::Normal.apply();
-		renderer.frameEnd(merger);
-	});
 
 	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
 		Core::Renderer& renderer = *event.renderer;
@@ -700,8 +631,7 @@ int main(const int argc, char* argv[]){
 	});
 
 
-
-	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
+	Core::renderer->getListener().on<Event::Draw_After>([](const Event::Draw_After& event){
 		event.renderer->frameBegin(&event.renderer->effectBuffer);
 
 		Draw::Line::setLineStroke(5);
@@ -715,6 +645,7 @@ int main(const int argc, char* argv[]){
 		event.renderer->frameEnd(Assets::PostProcessors::bloom.get());
 	});
 
+	chamberFrame->updateChamberFrameData();
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
 		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
@@ -723,35 +654,40 @@ int main(const int argc, char* argv[]){
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 
-		auto [valid, invalid] = ext::partBy(chamberFrame.getData() | std::ranges::views::filter([](const Game::ChamberTile& tile){
-			return Core::camera->viewportRect().overlap(tile.getChamberRealRegion());
-		}), &Game::ChamberTile::valid);
+		chamberFrame->setLocalTrans({{3000, 1200}, 3 * OS::updateTime()});
+		// chamberFrame->setLocalTrans({{200, 500}, 0});
+		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
+
+		Core::batchGroup.batchOverlay->flush();
+		Core::batchGroup.batchOverlay->modifyGetLocalToWorld() = chamberFrame->getTransformMat();
+
+		// e.renderer->frameBegin(&chamberFrame->getLocalFrameBuffer());
+		// chamberFrame->drawBegin();
 
 		{
-			[[maybe_unused]] auto guard = Draw::genColorGuard();
-			e.renderer->frameBegin(&e.renderer->effectBuffer);
-			Draw::color(Colors::DARK_GRAY);
-
-			for(Game::ChamberTile& tile : valid){
-				Draw::rectOrtho(Draw::globalState.defaultTexture, tile.getTileBound());
-			}
-
-			Assets::Shaders::outline_orthoArgs.set(4, Core::renderer->getSize().inverse());
-			e.renderer->frameEnd(Assets::Shaders::outline_ortho);
-			Assets::Shaders::outline_orthoArgs.setDef();
+			// [[maybe_unused]] auto guard = Draw::genColorGuard();
+			// e.renderer->frameBegin(&e.renderer->effectBuffer);
+			// Draw::color(Colors::WHITE);
+			//
+			// for(const Game::ChamberTile* tile : chamberFrame->getDrawable().valids){
+			// 	Draw::rectOrtho(Draw::globalState.defaultTexture, tile->getTileBound());
+			// }
+			//
+			// Assets::Shaders::outlineArgs.set(4.0f, chamberFrame->getLocalTrans().rot, Core::renderer->getSize().inverse());
+			// e.renderer->frameEnd(Assets::Shaders::outline_ortho);
+			// Assets::Shaders::outlineArgs.setDef();
 
 			Draw::color(Colors::GRAY, 0.45f);
 			Draw::Line::setLineStroke(2.0f);
-			for(Game::ChamberTile& tile : valid){
-				Draw::Line::rectOrtho(tile.getTileBound());
+			for(const auto* tile : chamberFrame->getDrawable().valids){
+				Draw::Line::rectOrtho(tile->getTileBound());
 			}
 
 			Draw::color(Colors::LIGHT_GRAY, 0.85f);
-			for(Game::ChamberTile& tile : valid | std::ranges::views::filter(&Game::ChamberTile::ownsChamber)){
-				Draw::Line::rectOrtho(tile.getChamberRealRegion());
+			for(const Game::Chamber* tile : chamberFrame->getDrawable().owners){
+				Draw::Line::rectOrtho(tile->getChamberBound());
 			}
 		}
-
 
 		{
 			[[maybe_unused]] auto guard = Draw::genColorGuard();
@@ -760,55 +696,54 @@ int main(const int argc, char* argv[]){
 			Draw::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
 
 			Assets::Shaders::slideLineShaderDrawArgs.set(30.0f, 45.0f, Colors::CLEAR, 1.0f);
+			Assets::Shaders::slideLineShaderAngle.set(chamberFrame->getLocalTrans().rot + 45);
 			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
 
-			for(Game::ChamberTile& tile : invalid)Draw::rectOrtho(Draw::getDefaultTexture(), tile.getTileBound());
+			for(const auto* tile : chamberFrame->getDrawable().invalids){
+				Draw::rectOrtho(Draw::getDefaultTexture(), tile->getTileBound());
+			}
 
 			Graphic::Batch::endShader(true);
 
-			Draw::color(Colors::PALE_GREEN);
-			Draw::mixColor();
-
-			auto transed = (Core::input->getCursorPos() - Core::renderer->getSize().div(2)).div(Core::camera->getScale()) + Core::camera->getPosition();
-
-			Draw::Line::line(transed, {0, 0});
-			const auto pos = chamberFrame.getNearby(transed);
-			Geom::OrthoRectInt bound{pos, 3, 3};
-
-			if(const auto finded = chamberFrame.find(pos)){
-				Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
-			}
-
-			if(chamberFrame.placementValid(bound)){
-				Draw::color(Colors::PALE_GREEN);
-			}else{
-				Draw::color(Colors::RED_DUSK);
-			}
-			Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
-
 			Assets::Shaders::slideLineShaderDrawArgs.setDef();
+			Assets::Shaders::slideLineShaderAngle.setDef();
 		}
+
+		auto transed = Core::renderer->getNormalized(Core::input->getCursorPos());
+		transed *= Core::camera->getScreenToWorld();
+		auto rawCpy = transed;
+
+		transed = chamberFrame->getWorldToLocal(transed);
+
+		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
+		Geom::OrthoRectInt bound{pos, 3, 3};
+
+		if(const auto finded = chamberFrame->getChambers().find(pos)){
+			Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
+		}
+
+		if(chamberFrame->getChambers().placementValid(bound)){
+			Draw::color(Colors::PALE_GREEN);
+		}else{
+			Draw::color(Colors::RED_DUSK);
+		}
+
+		Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
+
+		Core::batchGroup.batchOverlay->flush();
+		Core::batchGroup.batchOverlay->resetLocalToWorld();
+
+		Draw::Line::line(rawCpy, Core::camera->getPosition());
 
 
 		Graphic::Batch::blend();
 		//
-		const auto cameraPos = Core::camera->screenCenter();
-		//
-		Graphic::Mesh::meshBegin(Core::batchGroup.batchOverlay->getMesh());
 		Draw::color();
 
 		Draw::Line::setLineStroke(4);
 		// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
 		// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
 		// );
-
-		Graphic::Draw::Line::setLineStroke(2.0f);
-
-		Graphic::Draw::Line::setLineStroke(2.0f);
-		Graphic::Draw::color(Graphic::Colors::YELLOW, 0.25f);
-		chamberFrame.getQuadTree().each([](decltype(chamberFrame)::TreeType* t){
-			Draw::Line::rectOrtho(t->getBoundary());
-		});
 
 		Draw::color();
 
@@ -824,7 +759,6 @@ int main(const int argc, char* argv[]){
 		}
 
 		Graphic::Batch::flush();
-		Graphic::Mesh::meshEnd(Core::batchGroup.batchOverlay->getMesh());
 
 		e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
 		e.renderer->frameEnd(Assets::PostProcessors::bloom.get());
@@ -851,4 +785,4 @@ int main(const int argc, char* argv[]){
 
 	return 0;
 }
-*/
+

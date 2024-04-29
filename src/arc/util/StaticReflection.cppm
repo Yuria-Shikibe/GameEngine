@@ -3,10 +3,24 @@ export module ext.StaticReflection;
 export import MetaProgramming;
 import Concepts;
 import std;
+import ext.Owner;
 
 struct NullptrTestT{
 	void* val;
 };
+
+export namespace ext::reflect{
+	inline auto& constructors_RTTI() noexcept{
+		static std::unordered_map<std::string_view, std::function<Owner<void*>()>> _constructors;
+		return _constructors;
+	}
+
+	inline auto& classNames_RTTI() noexcept{
+		static std::unordered_map<std::type_index, std::string_view> _classNames_RTTI;
+		return _classNames_RTTI;
+	}
+}
+
 
 export namespace ext::reflect{
 	enum struct SrlType : unsigned char{
@@ -28,9 +42,42 @@ export namespace ext::reflect{
 
 	template <typename T>
 	struct ClassInfo{
-		static constexpr std::string_view name{"~Unspec"};
+		static constexpr std::string_view name{};
 		static constexpr SrlType srlType{};
 	};
+
+	template <typename T>
+		requires std::is_default_constructible_v<T> && std::is_nothrow_constructible_v<T>
+	struct RTTIRegistor{
+		RTTIRegistor(){
+			static_assert(requires{
+				ClassInfo<T>::name;
+				requires ClassInfo<T>::name.data() != nullptr;
+			}, "Field Necessary Info Incomplete!");
+
+			constructors_RTTI().insert_or_assign(ClassInfo<T>::name, +[]{return new T;});
+
+			classNames_RTTI().insert_or_assign(typeid(T), ClassInfo<T>::name);
+		}
+	};
+
+	template <typename T>
+	Owner<T*> tryConstruct() noexcept(std::same_as<void, T>){
+		if(const std::decay_t<decltype(constructors_RTTI())>::const_iterator itr = constructors_RTTI().find(ClassInfo<T>::name); itr != constructors_RTTI().end() && itr->second){
+			return static_cast<T*>(itr->second.operator()());
+		}
+
+		return nullptr;
+	}
+
+	template <typename T = void>
+	Owner<T*> tryConstruct(const std::string_view name) noexcept(std::same_as<void, T>){
+		if(const std::decay_t<decltype(constructors_RTTI())>::const_iterator itr = constructors_RTTI().find(name); itr != constructors_RTTI().end() && itr->second){
+			return static_cast<T*>(itr->second.operator()());
+		}
+
+		return nullptr;
+	}
 
 	//TODO
 	template <typename T>
@@ -55,10 +102,10 @@ export namespace ext::reflect{
 		using ClassType = typename ext::GetMemberPtrInfo<PtrType>::ClassType;
 		using ClassInfo = ClassInfo<Type>;
 
-		static constexpr auto fieldPtr = ptr;
+		static constexpr auto mptr = ptr;
 
 		static constexpr bool accessible = requires(ClassType c){
-			c.*fieldPtr;
+			c.*mptr;
 		};
 
 		static constexpr bool defined = requires{requires FieldInfo<ptr>::name.data() != nullptr;};
@@ -74,6 +121,7 @@ export namespace ext::reflect{
 			if constexpr (requires{ FieldInfo<ptr>::srlType; }){
 				return FieldInfo<ptr>::srlType;
 			}else{
+				static_assert(requires{FieldInfo<ptr>::srlType;}, "Field Srl Info Incomplete!");
 				return SrlType::disable;
 			}
 		}()};
@@ -82,7 +130,6 @@ export namespace ext::reflect{
 
 		static_assert(getSrlType != SrlType::depends, "Fields Shouldn't have depends attribute at serilization!");
 		static_assert(requires{FieldInfo<ptr>::name;}, "Field Necessary Info Incomplete!");
-		// static_assert(requires{FieldInfo<ptr>::srlType;}, "Field Info Incomplete!");
 	};
 
 	template <>

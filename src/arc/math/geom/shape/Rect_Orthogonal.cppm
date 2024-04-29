@@ -93,11 +93,10 @@ export namespace Geom{
 		}
 
 		Rect_Orthogonal& expandBy(const Rect_Orthogonal& other) noexcept{
-			this->setSrcX(Math::min(getSrcX(), other.getSrcX()));
-			this->setSrcY(Math::min(getSrcY(), other.getSrcY()));
+			Geom::Vector2D<T> min{Math::min(getSrcX(), other.getSrcX()), Math::min(getSrcY(), other.getSrcY())};
+			Geom::Vector2D<T> max{Math::max(getEndX(), other.getEndX()), Math::max(getEndY(), other.getEndY())};
 
-			this->setEndX(Math::max(getEndX(), other.getEndX()));
-			this->setEndY(Math::max(getEndY(), other.getEndY()));
+			this->setVert(min, max);
 
 			return *this;
 		}
@@ -150,7 +149,7 @@ export namespace Geom{
 				this->width = w;
 			}else {
 				if(w >= 0){
-					this->width = w;
+					this->width = static_cast<T>(w);
 				}else{
 					T abs = static_cast<T>(w < 0 ? -w : w);
 					srcX -= abs;
@@ -165,7 +164,7 @@ export namespace Geom{
 				this->height = h;
 			}else {
 				if(h >= 0){
-					this->height = h;
+					this->height = static_cast<T>(h);
 				}else{
 					T abs = static_cast<T>(h < 0 ? -h : h);
 					srcY -= abs;

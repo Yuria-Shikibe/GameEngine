@@ -1,11 +1,8 @@
-//
-// Created by Matrix on 2024/4/26.
-//
-
 export module Core.IO.General;
 
 import std;
 import ext.DynamicBuffer;
+import MetaProgramming;
 
 export namespace Core::IO{
 	using BinDataType = unsigned char;

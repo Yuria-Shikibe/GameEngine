@@ -57,10 +57,10 @@ export namespace Game::EntityManage{
 	}
 
 	void render() {
-		realEntities.quadTree->intersectRect(drawables.getViewPort(), [](const RealityEntity* entity, const auto& rect){
-			return entity->getDrawBound().overlap(rect);
-		}, [](RealityEntity* entity){
-			entity->setInScreen(true);
+		realEntities.quadTree->intersectRect(drawables.getViewPort(), [](RealityEntity* entity, const Geom::OrthoRectFloat& rect){
+			if(entity->getDrawBound().overlap(rect)){
+				entity->setInScreen(true);
+			}
 		});
 
 		drawables.render();

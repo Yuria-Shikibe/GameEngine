@@ -39,7 +39,7 @@ export namespace Game{
 			}
 		}
 
-		[[nodiscard]] Geom::OrthoRectFloat getViewPort() const{ return viewPort; }
+		[[nodiscard]] const Geom::OrthoRectFloat& getViewPort() const{ return viewPort; }
 
 		void setViewport(const Geom::OrthoRectFloat& view) {
 			viewPort = view;

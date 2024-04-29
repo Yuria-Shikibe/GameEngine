@@ -78,6 +78,15 @@ void Core::Renderer::frameEnd() {
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
+void Core::Renderer::frameEnd_Quiet(){
+	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+	Graphic::Batch::flush();
+
+	contextFrameBuffer = beneathFrameBuffer;
+	contextFrameBuffer->bind();
+
+}
+
 
 
 

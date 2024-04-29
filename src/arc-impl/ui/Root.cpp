@@ -263,7 +263,7 @@ void UI::Root::setEnter(Widget* elem, const bool quiet){
 
 	if(currentCursorFocus != nullptr){
 		exboundAction.set(cursorPos);
-		if(!quiet)currentCursorFocus->getInputListener().fire(exboundAction);
+		if(!currentCursorFocus->isQuietInteractable())currentCursorFocus->getInputListener().fire(exboundAction);
 	}
 
 	currentCursorFocus = elem;

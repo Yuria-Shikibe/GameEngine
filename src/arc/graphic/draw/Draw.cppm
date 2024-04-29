@@ -327,10 +327,10 @@ export namespace Graphic{
 		};
 
 		struct TextureState{
-			const TextureRegion* contextTexture = nullptr;
-			const TextureRegion* defaultTexture = nullptr;
-			const TextureRegion* defaultLightTexture = nullptr;
-			const TextureRegion* defaultSolidTexture = nullptr;
+			const TextureRegionRect* contextTexture = nullptr;
+			const TextureRegionRect* defaultTexture = nullptr;
+			const TextureRegionRect* defaultLightTexture = nullptr;
+			const TextureRegionRect* defaultSolidTexture = nullptr;
 		};
 
 		struct DrawState : ColorState, TextureState{
@@ -366,7 +366,7 @@ export namespace Graphic{
 
 
 
-		const TextureRegion* getDefaultTexture() noexcept{
+		const TextureRegionRect* getDefaultTexture() noexcept{
 			return globalState.defaultTexture;
 		}
 
@@ -415,9 +415,9 @@ export namespace Graphic{
 
 		void color(const Color c1, const Color c2, const float t){ globalState.contextColor.lerp(t, c1, c2); }
 
-		void setDefTexture(const TextureRegion* texture){ globalState.defaultTexture = texture; }
+		void setDefTexture(const TextureRegionRect* texture){ globalState.defaultTexture = texture; }
 
-		void setTexture(const TextureRegion* texture = globalState.defaultTexture){ globalState.contextTexture = texture; }
+		void setTexture(const TextureRegionRect* texture = globalState.defaultTexture){ globalState.contextTexture = texture; }
 
 		inline void reset(){
 			color();
@@ -591,15 +591,16 @@ export namespace Graphic{
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rect(const TextureRegionRect* region,
 		          const float x, const float y,
-		          const float ang
+		          const float width, const float height,
+		          const float ang = 0
 		){
 			const float sin = Math::sinDeg(ang);
 			const float cos = Math::cosDeg(ang);
-			const float w1 = cos * region->getWidth() * 0.5f;
-			const float h1 = sin * region->getWidth() * 0.5f;
+			const float w1 = cos * width * 0.5f;
+			const float h1 = sin * width * 0.5f;
 
-			const float w2 = -sin * region->getHeight() * 0.5f;
-			const float h2 = cos * region->getHeight() * 0.5f;
+			const float w2 = -sin * height * 0.5f;
+			const float h2 = cos * height * 0.5f;
 			vert_monochromeAll<batchPtr>(
 				region->getData(), globalState.contextColor, globalState.contextMixColor,
 				x - w1 - w2, y - h1 - h2, region->u00(), region->v00(),
@@ -607,6 +608,15 @@ export namespace Graphic{
 				x + w1 + w2, y + h1 + h2, region->u11(), region->v11(),
 				x - w1 + w2, y - h1 + h2, region->u01(), region->v01()
 			);
+		}
+
+
+		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+		void rect(const TextureRegionRect* region,
+		          const float x, const float y,
+		          const float ang = 0
+		){
+		rect<batchPtr>(region, x, y, region->getWidth(), region->getHeight(), ang);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>

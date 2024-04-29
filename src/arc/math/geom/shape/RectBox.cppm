@@ -31,7 +31,24 @@ export namespace Geom {
 		 */
 		OrthoRectFloat maxOrthoBound{};
 
-		[[nodiscard]] constexpr Vec2 operator[](const int i) const {
+		[[nodiscard]] constexpr QuadBox() noexcept = default;
+
+		[[nodiscard]] constexpr QuadBox(const Vec2 v0, const Vec2 v1, const Vec2 v2, const Vec2 v3) noexcept
+			: v0{v0},
+			  v1{v1},
+			  v2{v2},
+			  v3{v3}{}
+
+
+		[[nodiscard]] explicit constexpr QuadBox(const OrthoRectFloat rect) noexcept
+			: v0{rect.vert_00()},
+			  v1{rect.vert_10()},
+			  v2{rect.vert_11()},
+			  v3{rect.vert_01()}, maxOrthoBound{rect}{}
+
+
+
+		[[nodiscard]] constexpr Vec2 operator[](const int i) const noexcept{
 			switch(i) {
 				case 0 : return v0;
 				case 1 : return v1;
@@ -41,7 +58,7 @@ export namespace Geom {
 			}
 		}
 
-		constexpr void move(const Vec2 trans, const QuadBox& other) {
+		constexpr void move(const Vec2 trans, const QuadBox& other) noexcept{
 			v0.set(other.v0).add(trans);
 			v1.set(other.v1).add(trans);
 			v2.set(other.v2).add(trans);
@@ -51,7 +68,7 @@ export namespace Geom {
 			maxOrthoBound.move(trans.x, trans.y);
 		}
 
-		constexpr void move(const Vec2 vec2) {
+		constexpr void move(const Vec2 vec2) noexcept{
 			v0.add(vec2);
 			v1.add(vec2);
 			v2.add(vec2);
@@ -60,7 +77,7 @@ export namespace Geom {
 			maxOrthoBound.move(vec2.x, vec2.y);
 		}
 
-		constexpr void move(const Vec2 vec2, const float scl) {
+		constexpr void move(const Vec2 vec2, const float scl) noexcept{
 			v0.mulAdd(vec2, scl);
 			v1.mulAdd(vec2, scl);
 			v2.mulAdd(vec2, scl);
@@ -76,7 +93,16 @@ export namespace Geom {
 			maxOrthoBound.setVert(xMin, yMin, xMax, yMax);
 		}
 
-		[[nodiscard]] constexpr bool axisOverlap(const QuadBox& other, const Vec2& axis) const {
+		friend bool operator==(const QuadBox& lhs, const QuadBox& rhs) noexcept{
+			return lhs.v0 == rhs.v0
+				&& lhs.v1 == rhs.v1
+				&& lhs.v2 == rhs.v2
+				&& lhs.v3 == rhs.v3;
+		}
+
+		friend bool operator!=(const QuadBox& lhs, const QuadBox& rhs) noexcept{ return !(lhs == rhs); }
+
+		[[nodiscard]] constexpr bool axisOverlap(const QuadBox& other, const Vec2& axis) const noexcept{
 			float box1_min   = v0.dot(axis);
 			float box1_max   = box1_min;
 			float projection = v1.dot(axis);
@@ -107,18 +133,32 @@ export namespace Geom {
 		[[nodiscard]] constexpr bool overlapExact(const QuadBox& other,
 			const Vec2 axis_1, const Vec2 axis_2,
 			const Vec2 axis_3, const Vec2 axis_4
-		) const {
+		) const noexcept{
 			return
 				axisOverlap(other, axis_1) && axisOverlap(other, axis_2) &&
 				axisOverlap(other, axis_3) && axisOverlap(other, axis_4);
 		}
 
-		[[nodiscard]] constexpr bool overlapRough(const QuadBox& other) const {
+		[[nodiscard]] constexpr bool overlapRough(const QuadBox& other) const noexcept{
 			return
 				maxOrthoBound.overlap(other.maxOrthoBound);
 		}
 
-		[[nodiscard]] constexpr bool contains(const Geom::Vec2 point) const {
+		[[nodiscard]] constexpr bool overlapRough(const OrthoRectFloat& other) const noexcept{
+			return
+				maxOrthoBound.overlap(other);
+		}
+
+		[[nodiscard]] constexpr bool overlapExact(const OrthoRectFloat& other) const noexcept{
+			return overlapExact(QuadBox{other},
+				Geom::norXVec2<float>,
+				Geom::norYVec2<float>,
+				getNormalVec(0),
+				getNormalVec(1)
+			);
+		}
+
+		[[nodiscard]] constexpr bool contains(const Geom::Vec2 point) const noexcept{
 			bool oddNodes = false;
 
 			for(int i = 0; i < 4; ++i){
@@ -133,13 +173,33 @@ export namespace Geom {
 			return oddNodes;
 		}
 
-		[[nodiscard]] constexpr VertGroup verts() const {
+		[[nodiscard]] constexpr VertGroup verts() const noexcept{
 			return VertGroup{v0, v1, v2, v3};
 		}
 
-		[[nodiscard]] constexpr Vec2 getNormalVec(const int index) const {
-			const auto begin = this->operator[](index);
-			const auto end   = this->operator[]((index + 1) % 4);
+		[[nodiscard]] constexpr Geom::Vec2& vertAt(const unsigned i) noexcept{
+			switch(i) {
+				case 0 : return v0;
+				case 1 : return v1;
+				case 2 : return v2;
+				case 3 : return v3;
+				default: return vertAt(i % 4);
+			}
+		}
+
+		[[nodiscard]] constexpr const Geom::Vec2& vertAt(const unsigned i) const noexcept{
+			switch(i) {
+				case 0 : return v0;
+				case 1 : return v1;
+				case 2 : return v2;
+				case 3 : return v3;
+				default: return vertAt(i % 4);
+			}
+		}
+
+		[[nodiscard]] constexpr Vec2 getNormalVec(const int edgeIndex) const noexcept{
+			const auto& begin = vertAt(edgeIndex);
+			const auto& end   = vertAt((edgeIndex + 1) % 4);
 
 			return (begin - end).rotateRT();
 		}

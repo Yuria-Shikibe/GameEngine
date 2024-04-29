@@ -22,6 +22,7 @@ void Assets::Shaders::loadPrevious() {
 		shader.setFloat("mulSub", slideLineShaderDrawArgs.get<3>());
 		shader.setVec2("scale", slideLineShaderScaleArgs.get<0>());
 		shader.setVec2("offset", slideLineShaderScaleArgs.get<1>());
+		shader.setFloat("angle", slideLineShaderAngle.get<0>() + 45.0f);
 	});
 
 	threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
@@ -116,8 +117,16 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	outline_ortho = manager->registerShader(new Shader{shaderDir, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
 	outline_ortho->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
-		shader.setVec2("scaleInv", outline_orthoArgs.get<1>());
-		shader.setFloat("stepLength", outline_orthoArgs.get<0>());
+		shader.setVec2("scaleInv", outlineArgs.get<2>());
+		shader.setFloat("stepLength", outlineArgs.get<0>());
+		shader.setFloat("rot", outlineArgs.get<1>());
+	});
+
+	outline_sobel = manager->registerShader(new Shader{shaderDir, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
+	outline_sobel->setUniformer([](const Shader& shader) {
+		shader.setTexture2D("texture", 0);
+		shader.setVec2("scaleInv", outlineArgs.get<2>());
+		shader.setFloat("stepLength", outlineArgs.get<0>());
 	});
 
 	manager->registerShader(screenSpace);

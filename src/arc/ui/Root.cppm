@@ -154,26 +154,30 @@ export namespace UI{
 		void updateCurrentFocus(){
 			Widget* last = nullptr;
 
-			Widget* toIterate = currentScene;
+			Widget* toIterate = nullptr;
 
 
-			if(tooltipManager.isCursorInbound()){
-				toIterate = tooltipManager.getCurrentFocus();
-			}else if(auto* lastDialog = rootDialog.findFirstShowingDialogNode(); lastDialog != &rootDialog){
-				toIterate = &lastDialog->content;
-			}else{
-				toIterate = currentScene;
+			if(!tooltipManager.focusEmpty()){
+				toIterate = tooltipManager.findFocus();
 			}
 
-
-			iterateAll_DFS(toIterate, [this, &last](Widget* elem) mutable{
-
-				if(elem->isInteractable() && elem->isInbound(cursorPos)){
-					last = elem;
+			if(!toIterate){
+				if(auto* lastDialog = rootDialog.findFirstShowingDialogNode(); lastDialog != &rootDialog){
+					toIterate = &lastDialog->content;
+				}else{
+					toIterate = currentScene;
 				}
+			}
 
-				return !elem->touchDisabled();
-			});
+			if(toIterate){
+				iterateAll_DFS(toIterate, [this, &last](Widget* elem) mutable{
+					if(elem->isInteractable() && elem->isInbound(cursorPos)){
+						last = elem;
+					}
+
+					return !elem->touchDisabled();
+				});
+			}
 
 			determinShiftFocus(last);
 		}

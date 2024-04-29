@@ -10,14 +10,12 @@ import Concepts;
 import ext.RuntimeException;
 import std;
 
-using Geom::Rect_Orthogonal;
-
 //TODO The design is so bad!
 export namespace Geom{
-	template <typename Cont, Concepts::Number T, Concepts::InvokeNullable<Rect_Orthogonal<T>(const Cont&)> auto
+	template <typename Cont, Concepts::Number T, Concepts::InvokeNullable<Geom::Rect_Orthogonal<T>(const Cont&)> auto
 	          transformer = nullptr>
 	class QuadTree{
-		using Rect = Rect_Orthogonal<T>;
+		using Rect = Geom::Rect_Orthogonal<T>;
 
 	public:
 		using NumType = T;
@@ -307,26 +305,38 @@ export namespace Geom{
 			}
 		}
 
-		template <typename Rect>
-		void intersectRect(const Rect& rect,
-		                   Concepts::Invokable<bool(const Cont*, const Rect&)> auto&& check,
-		                   Concepts::Invokable<void(Cont*)> auto&& pred){
+		template <Concepts::Invokable<void(Cont*, const Rect&)> Func>
+		void intersectRect(const Rect& rect,  Func&& pred){
 			if(!this->inbound(rect)) return;
+
+			//If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(!isLeaf()){
+				topLeft->intersectRect(rect, pred);
+				topRight->intersectRect(rect, pred);
+				bottomLeft->intersectRect(rect, pred);
+				bottomRight->intersectRect(rect, pred);
+			}
+
+			for(auto cont : rectangles){
+				pred(cont, rect);
+			}
+		}
+
+		template <typename Region, Concepts::Invokable<bool(const Rect&, const Region&)> Check, Concepts::Invokable<void(Cont*, const Region&)> Pred>
+			requires !std::same_as<Region, Rect>
+		void intersectRegion(const Region& region, Check&& boundCheck,  Pred&& pred){
+			if(!boundCheck(boundary, region)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
 			if(!isLeaf()){
-				topLeft->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
-				topRight->intersectRect(rect, std::forward<decltype(check)>(check), std::forward<decltype(pred)>(pred));
-				bottomLeft->intersectRect(rect, std::forward<decltype(check)>(check),
-				                          std::forward<decltype(pred)>(pred));
-				bottomRight->intersectRect(rect, std::forward<decltype(check)>(check),
-				                           std::forward<decltype(pred)>(pred));
+				topLeft->template intersectRegion<Region>(region, boundCheck, pred);
+				topRight->template intersectRegion<Region>(region, boundCheck, pred);
+				bottomLeft->template intersectRegion<Region>(region, boundCheck, pred);
+				bottomRight->template intersectRegion<Region>(region, boundCheck, pred);
 			}
 
 			for(const auto cont : rectangles){
-				if(check(cont, rect)){
-					pred(cont);
-				}
+				if(boundCheck(this->obtainBound(cont), region))pred(cont, region);
 			}
 		}
 

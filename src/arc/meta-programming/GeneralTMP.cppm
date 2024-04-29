@@ -70,6 +70,16 @@ namespace ext{
 	export
 	template <bool Test, auto val1, decltype(val1) val2>
 	constexpr auto conditionalVal = conditional_constexpr_val<Test, val1, val2>::val;
+
+	template <typename T, typename = void>
+	struct is_complete_type : std::false_type {};
+
+	template <typename T>
+	struct is_complete_type<T, decltype(void(sizeof(T)))> : std::true_type{};
+
+	export
+	template <typename T>
+	constexpr bool isTypeComplteted = is_complete_type<T>::value;
 }
 
 

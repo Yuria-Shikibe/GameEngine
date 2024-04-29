@@ -24,8 +24,25 @@ export namespace Game{
 	public:
 		using Tile = ChamberTile;
 		using TreeType = Geom::QuadTree<Tile, float, &getBoundOf>;
+
+		struct TileBrief{
+			std::vector<Game::Chamber*> owners{};
+			std::vector<const Game::ChamberTile*> invalids{};
+			std::vector<const Game::ChamberTile*> valids{};
+
+			bool dataValid{false};
+
+			constexpr void reset() noexcept{
+				dataValid = false;
+				owners.clear();
+				invalids.clear();
+				valids.clear();
+			}
+		};
 		
 	protected:
+		TileBrief mutable brief;
+
 		Geom::OrthoRectFloat bound{};
 
 		std::list<Tile> data{};
@@ -34,7 +51,6 @@ export namespace Game{
 		//TODO Is all these worth it to sustain this vector?
 		//Maybe directly uses umap is a better choise
 
-		std::vector<Game::Chamber*> tileEntities{};
 		std::unordered_map<Geom::Point2, Tile*> positionRef{};
 
 		void eraseRef(const Geom::Point2 pos){
@@ -57,9 +73,77 @@ export namespace Game{
 			return true;
 		}
 
+		void padReference(Tile& src, const bool insertToMap = true){
+
+			if(src.getChamberRegion().area() <= 1)return;
+
+			src.getChamberRegion().each([this, &src, insertToMap](const Geom::Point2 pos){
+				if(pos == src.pos)return;
+
+				const Tile* tile{nullptr};
+
+				if(insertToMap){
+					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
+						tile = itr->second;
+					}
+				}else{
+					if(const auto itr = std::ranges::find(data, pos, &Tile::pos); itr != data.end()){
+						tile = itr.operator->();
+					}
+				}
+
+				if(tile){
+					if(tile->valid()){
+						throw ext::IllegalArguments{"Overlap Valid Should Never Happend During MultiTile Chamber Insertion!"};
+					}
+					erase(pos);
+				}
+			});
+
+			src.getChamberRegion().each([this, &src, insertToMap](const Geom::Point2 pos){
+				if(pos == src.pos)return;
+
+				if(insertToMap){
+					insert(Tile{pos, &src});
+				}else{
+					data.emplace_back(pos, &src);
+				}
+			});
+		}
+
+		void resetBrief() const{
+			if(!brief.dataValid)return;
+			brief.~TileBrief();
+			new (&brief) TileBrief;
+		}
+
+
 	public:
 		ChamberFrame(){
 			quadTree.setStrict(false);
+		}
+
+		void updateBrief() const{
+			if(brief.dataValid)return;
+
+			for (auto& chamberTile : data){
+				if(chamberTile.ownsChamber()){
+					brief.owners.push_back(chamberTile.chamber.get());
+				}
+
+				if(chamberTile.valid()){
+					brief.valids.push_back(&chamberTile);
+				}else{
+					brief.invalids.push_back(&chamberTile);
+				}
+			}
+
+			brief.dataValid = true;
+		}
+
+		[[nodiscard]] const TileBrief& getBrief() const{
+			updateBrief();
+			return brief;
 		}
 
 		[[nodiscard]] TreeType& getQuadTree() noexcept { return quadTree; }
@@ -108,48 +192,13 @@ export namespace Game{
 			return nullptr;
 		}
 
-		void padReference(Tile& src, const bool insertToMap = true){
-
-			if(src.getChamberRegion().area() <= 1)return;
-
-			src.getChamberRegion().each([this, &src, insertToMap](const Geom::Point2 pos){
-				if(pos == src.pos)return;
-
-				const Tile* tile{nullptr};
-
-				if(insertToMap){
-					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-						tile = itr->second;
-					}
-				}else{
-					if(const auto itr = std::ranges::find(data, pos, &Tile::pos); itr != data.end()){
-						tile = itr.operator->();
-					}
-				}
-
-				if(tile){
-					if(tile->valid()){
-						throw ext::IllegalArguments{"Overlap Valid Should Never Happend During MultiTile Chamber Insertion!"};
-					}
-					erase(pos);
-				}
-			});
-
-			src.getChamberRegion().each([this, &src, insertToMap](const Geom::Point2 pos){
-				if(pos == src.pos)return;
-
-				if(insertToMap){
-					insert(Tile{pos, &src});
-				}else{
-					data.emplace_back(pos, &src);
-				}
-			});
-		}
-
 		/**
 		 * @brief Be cautionous about iterator failure
+		 * @param setToInvalid erase relative tiles or set them to invalid
 		 */
 		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
+			resetBrief();
+
 			if(auto itr = std::ranges::find(data, chamberPos, &Tile::pos); itr != data.end()){
 				Tile* chamber = itr.operator->();
 
@@ -182,7 +231,12 @@ export namespace Game{
 			}
 		}
 
-		void insert(Tile&& tile){
+		/**
+		 * @brief
+		 * @param tile Tile to insert
+		 * @param noTreeInsertion whether to insert tile to the quad tree now, used for IO and editor when quad tree is not needed
+		 */
+		void insert(Tile&& tile, const bool noTreeInsertion = false){
 			if(!shouldInsert(tile))return;
 
 			tile.init();
@@ -192,11 +246,10 @@ export namespace Game{
 
 			positionRef.insert_or_assign(val.pos, &val);
 
-			tryInsertTree(val, true);
+			if(!noTreeInsertion)tryInsertTree(val, true);
 			padReference(val, true);
-			if(val.ownsChamber()){
-				tileEntities.emplace_back(val.chamber.get());
-			}
+
+			resetBrief();
 		}
 
 		void erase(const Tile* val){
@@ -208,7 +261,7 @@ export namespace Game{
 			quadTree.clear();
 			positionRef.clear();
 			data.clear();
-			tileEntities.clear();
+			resetBrief();
 
 			//TODO better bound allocation if the origin point of tilemap doesn't begin at (0, 0) [esp > (0, 0)]
 			bound.set(0, 0, 0, 0);
@@ -258,6 +311,7 @@ export namespace Game{
 		}
 
 		void reTree(){
+			quadTree.clearItemsOnly();
 			quadTree.setBoundary(bound);
 
 			for (auto& tile : data){
@@ -266,7 +320,7 @@ export namespace Game{
 		}
 
 		void tryInsertTree(Tile& val, const bool boundCheck = false){
-			if(val.ownsChamber()){
+			// if(val.ownsChamber()){
 				quadTree.insert(&val);
 
 				if(boundCheck){
@@ -276,12 +330,12 @@ export namespace Game{
 					if(bound != oriBound){
 						quadTree.clear();
 						quadTree.setBoundary(bound);
-						for(auto& bound : data | std::ranges::views::filter(&ChamberTile::ownsChamber)){
+						for(auto& bound : data/* | std::ranges::views::filter(&ChamberTile::ownsChamber)*/){
 							quadTree.insert(&bound);
 						}
 					}
 				}
-			}
+			// }
 		}
 
 		[[nodiscard]] bool contains(const Geom::Point2 point2) const {
@@ -313,7 +367,7 @@ export namespace Game{
 			return ext::partBy(data, pred);
 		}
 
-		[[nodiscard]] Geom::Point2 getNearby(Geom::Vec2 pos) const{
+		[[nodiscard]] Geom::Point2 getNearbyPos(Geom::Vec2 pos) const{
 			return pos.div(TileSize).trac<int>();
 		}
 
@@ -326,3 +380,54 @@ export namespace Game{
 		}
 	};
 }
+
+
+export
+	template <>
+	struct ::Core::IO::JsonSerializator<Game::ChamberFrame>{
+		static constexpr std::string_view InvalidTiles = "it";
+		static constexpr std::string_view OwnerTiles = "ot";
+		static void write(ext::json::JsonValue& jsonValue, const Game::ChamberFrame& data){
+			auto& map = jsonValue.asObject();
+
+			ext::json::JsonValue owners{};
+			ext::json::JsonValue invalids{};
+			auto& ownersArray = owners.asArray();
+			auto& invalidsArray = invalids.asArray();
+
+			ownersArray.reserve(data.getData().size() / 3);
+			invalidsArray.reserve(data.getData().size() / 2);
+
+			for (const auto & chamberTile : data.getData()){
+				if(chamberTile.ownsChamber()){
+					ownersArray.push_back(ext::json::getJsonOf(chamberTile));
+					continue;
+				}
+
+				if(!chamberTile.valid()){
+					invalidsArray.push_back(ext::json::getJsonOf(chamberTile.pos));
+				}
+			}
+
+			map.insert_or_assign(OwnerTiles, std::move(owners));
+			map.insert_or_assign(InvalidTiles, std::move(invalids));
+		}
+
+		static void read(const ext::json::JsonValue& jsonValue, Game::ChamberFrame& data){
+			auto& map = jsonValue.asObject();
+			auto& owners = map.at(OwnerTiles).asArray();
+
+			for (const auto & jval : owners){
+				auto tile = ext::json::getValueFrom<Game::ChamberTile>(jval);
+				data.insert(std::move(tile), false);
+			}
+
+			auto& invalids = map.at(InvalidTiles).asArray();
+
+			for (const auto & jval : invalids){
+				data.insert(Game::ChamberTile{ext::json::getValueFrom<Geom::Point2>(jval)}, false);
+			}
+
+			data.reTree();
+		}
+	};

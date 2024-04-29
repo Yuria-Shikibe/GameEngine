@@ -69,6 +69,7 @@ export namespace Test{
 				shader->setUniformer([&self](const GL::Shader& s){
 					s.setTexture2D("u_texture", self.getTexture());
 					s.setMat3("view", *self.getProjection());
+					s.setMat3("localToWorld", self.getLocalToWorld());
 				});
 
 				return shader;
@@ -234,6 +235,7 @@ export namespace Test{
 					shader->setUniformer([&self](const GL::Shader& s){
 						s.setTexture2D("texArray", self.getTexture());
 						s.setMat3("view", *self.getProjection());
+						s.setMat3("localToWorld", self.getLocalToWorld());
 					});
 
 					return shader;

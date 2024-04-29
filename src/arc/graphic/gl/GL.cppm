@@ -206,25 +206,6 @@ export namespace GL {
         }
     }
 
-    void bindFrameBuffer(const GLenum flag, const GLuint id = 0) {
-        if(flag == GL_FRAMEBUFFER) {
-            if(id != currentDrawFrameBufferID || id != currentReadFrameBufferID) {
-                currentDrawFrameBufferID = currentReadFrameBufferID = id;
-                glBindFramebuffer(flag, id);
-            }
-        }else if(flag == GL_READ_FRAMEBUFFER) {
-            if(id != currentReadFrameBufferID) {
-                currentReadFrameBufferID = id;
-                glBindFramebuffer(flag, id);
-            }
-        }else {
-            if(id != currentDrawFrameBufferID) {
-                currentDrawFrameBufferID = id;
-                glBindFramebuffer(flag, id);
-            }
-        }
-    }
-
     void blit(const GLint srcX0, const GLint srcY0, const GLint srcX1, const GLint srcY1, const GLint dstX0, const GLint dstY0, const GLint dstX1, const GLint dstY1, const GLbitfield mask, const GLenum filter){
         glBlitFramebuffer(
                 srcX0, srcY0, srcX1, srcY1,
@@ -341,6 +322,25 @@ export namespace GL {
 
     void setStencilOperation(Operation stencilFail, Operation depthFail, Operation pass){
         glStencilOp(static_cast<GLenum>(stencilFail), static_cast<GLenum>(depthFail), static_cast<GLenum>(pass));
+    }
+
+    void bindFrameBuffer(const GLenum flag, const GLuint id = 0) {
+        if(flag == GL_FRAMEBUFFER) {
+            if(id != currentDrawFrameBufferID || id != currentReadFrameBufferID) {
+                currentDrawFrameBufferID = currentReadFrameBufferID = id;
+                glBindFramebuffer(flag, id);
+            }
+        }else if(flag == GL_READ_FRAMEBUFFER) {
+            if(id != currentReadFrameBufferID) {
+                currentReadFrameBufferID = id;
+                glBindFramebuffer(flag, id);
+            }
+        }else {
+            if(id != currentDrawFrameBufferID) {
+                currentDrawFrameBufferID = id;
+                glBindFramebuffer(flag, id);
+            }
+        }
     }
 }
 

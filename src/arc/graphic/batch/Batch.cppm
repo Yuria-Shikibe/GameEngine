@@ -35,6 +35,7 @@ export namespace Core{
 		 * \brief From Viewport Size to normalized [-1, 1]
 		 */
 		const Geom::Matrix3D* projection = nullptr;
+		Geom::Matrix3D localToWorld{};
 
 		// const Geom::Matrix3D*
 
@@ -64,11 +65,29 @@ export namespace Core{
 			lastTexture = nullptr;
 		}
 
+		void setLocalToWorld(const Geom::Matrix3D& mat){
+			localToWorld = mat;
+		}
+
+		void resetLocalToWorld(){
+			flush();
+			localToWorld = Geom::MAT3_IDT;
+		}
+
+		/**
+		 * @brief notice that this will change flush the context;
+		 */
+		[[nodiscard]] Geom::Matrix3D& modifyGetLocalToWorld() noexcept{
+			flush();
+			return localToWorld;
+		}
+		[[nodiscard]] const Geom::Matrix3D& getLocalToWorld() const noexcept{ return localToWorld; }
+
 		[[nodiscard]] bool hasShader() const {
 			return customShader || generalShader;
 		}
 
-		[[nodiscard]] bool applyCustomShader() const {
+		[[nodiscard]] bool hasCustomShader() const {
 			return customShader;
 		}
 
@@ -92,7 +111,7 @@ export namespace Core{
 			blending->apply();
 		}
 
-		void switchShader(Shader* shader) {
+		void switchCustomShader(Shader* shader = nullptr) {
 			flush();
 
 			setCustomShader(shader);
@@ -153,7 +172,7 @@ export namespace Core{
 		}
 
 		void bindShader() const{
-			if(applyCustomShader()){
+			if(hasCustomShader()){
 				customShader->bind();
 			}else{
 				generalShader->bind();
@@ -161,7 +180,7 @@ export namespace Core{
 		}
 
 		void applyShader() const{
-			if(applyCustomShader()){
+			if(hasCustomShader()){
 				//TODO this is really dangerous!
 				customShader->applyDynamic(generalShader->getDrawer(), true);
 			}else{

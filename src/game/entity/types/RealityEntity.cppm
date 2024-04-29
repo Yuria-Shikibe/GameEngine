@@ -165,7 +165,7 @@ export namespace Game {
 		}
 
 		virtual void updateTransition(){
-			(void)localToSuper.translateTo(trans);
+			(void)localToSuper.setTranslation(trans);
 		}
 
 		void update(const float deltaTick) override {

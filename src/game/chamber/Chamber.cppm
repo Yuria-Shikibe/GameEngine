@@ -10,42 +10,47 @@ import Concepts;
 import ext.RuntimeException;
 import std;
 
+export import Core.IO.Specialized;
+
 using Geom::Point2;
 using Geom::Vec2;
 using Geom::OrthoRectFloat;
 
+namespace Game{
+	constexpr std::string_view ChamberRegionFieldName = "region";
+}
+
 export namespace Game{
-	constexpr float TileSize = 64.0f;
-	constexpr float unitLength = TileSize;
+	constexpr float TileSize = 32.0f;
+
 	struct ChamberTile;
 
-	struct Chamber{
+	struct Chamber : Core::IO::DynamicJsonSerializable{
 		Geom::OrthoRectInt region{};
 		unsigned id{};
 
 		std::vector<Chamber*> proximity{};
 
 		OrthoRectFloat getChamberBound() const{
-			return region.as<float>().scl(unitLength, unitLength);;
+			return region.as<float>().scl(TileSize, TileSize);;
 		}
 
-		virtual ~Chamber() = default;
+		void writeTo(ext::json::JsonValue& jval) const override{
+			writeType(jval);
+			jval.append(ChamberRegionFieldName, ext::json::getJsonOf(region));
+		}
+
+		void readFrom(const ext::json::JsonValue& jval) override{
+			ext::json::getValueTo(region, jval.asObject().at(ChamberRegionFieldName));
+		}
+
+		~Chamber() override = default;
 
 		virtual void update(float delta) = 0;
 
 		virtual void draw() const = 0;
 
 		virtual void init(const ChamberTile* chamberTile) = 0;
-
-		virtual void write(std::ostream& ostream) const{
-			ostream.write(reinterpret_cast<const char*>(&id), sizeof(id));
-			ostream.write(reinterpret_cast<const char*>(&region), sizeof(region));
-		}
-
-		virtual void read(std::istream& istream){
-			istream.read(reinterpret_cast<char*>(&id), sizeof(id));
-			istream.read(reinterpret_cast<char*>(&region), sizeof(region));
-		}
 	};
 
 
@@ -123,7 +128,7 @@ export namespace Game{
 		}
 
 		[[nodiscard]] Geom::OrthoRectFloat getTileBound() const noexcept{
-			return Geom::OrthoRectFloat{unitLength * pos.x, unitLength * pos.y, unitLength, unitLength};
+			return Geom::OrthoRectFloat{TileSize * pos.x, TileSize * pos.y, TileSize, TileSize};
 		}
 
 		[[nodiscard]] Geom::OrthoRectInt getChamberRegion() const noexcept{
@@ -173,6 +178,8 @@ export namespace Game{
 		TraitDataType mataData{};
 
 	public:
+		[[nodiscard]] ChamberVariant() noexcept = default;
+
 		explicit ChamberVariant(const TraitType& metaDataPtr)
 			: trait{&metaDataPtr}{}
 
@@ -274,5 +281,49 @@ template <>
 struct std::hash<Game::ChamberTile>{
 	size_t operator()(const Game::ChamberTile& v) const noexcept{
 		return v.pos.hash_value();
+	}
+};
+
+
+export
+template <>
+struct ::Core::IO::JsonSerializator<Game::ChamberTile>{
+	static constexpr std::string_view DstToRef = "relativeRefPos";
+	static constexpr std::string_view OwnsChamber = "ownsChamber";
+	static constexpr std::string_view Chamber = "chamber";
+
+	static void write(ext::json::JsonValue& jval, const Game::ChamberTile& data){
+		ext::json::append(jval, ext::json::keys::Pos, data.pos);
+
+		if(data.ownsChamber()){
+			ext::json::JsonValue chamberJval{};
+			chamberJval.asObject();
+			data.chamber->writeType(chamberJval);
+			data.chamber->writeTo(chamberJval);
+			jval.append(Chamber, chamberJval);
+		}
+	}
+
+	static void read(const ext::json::JsonValue& jval, Game::ChamberTile& data){
+		ext::json::read(jval, ext::json::keys::Pos, data.pos);
+
+		const auto& map = jval.asObject();
+
+		if(const auto itr = map.find(Chamber); itr != map.end()){
+			const auto& chamberJval = itr->second;
+			data.chamber.reset(data.chamber->generate<Game::Chamber>(chamberJval));
+			if(data.chamber){
+				data.chamber->readFrom(chamberJval);
+			}else{
+				data.chamber = Game::mockChamberFactory.genChamber();
+
+				if(chamberJval.asObject().contains(Game::ChamberRegionFieldName)){
+					ext::json::getValueTo(data.chamber->region, chamberJval.asObject().at(Game::ChamberRegionFieldName));
+				}else{
+					data.chamber->region.setSrc(data.pos);
+				}
+
+			}
+		}
 	}
 };

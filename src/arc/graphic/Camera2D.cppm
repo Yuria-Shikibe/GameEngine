@@ -56,7 +56,7 @@ export namespace Core{
 			return *viewport;
 		}
 
-		[[nodiscard]] OrthoRectFloat& viewportRect() const {
+		[[nodiscard]] OrthoRectFloat& getViewportRect() const {
 			return viewport->getPorjectedBound();
 		}
 

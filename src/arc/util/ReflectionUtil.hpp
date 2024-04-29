@@ -17,10 +17,12 @@ import std;
 #define REFL_GEN_NAME(x) REFL___FLATTEN_FUNC1(x,__COUNTER__)
 
 #define REFL_NAMESPACE ext::reflect
-#define REFL_INSTANCE_NAMESPACE ext::reflect::_instantiation
-#define REFL_INSTANCE(type) namespace REFL_INSTANCE_NAMESPACE{type REFL_GEN_NAME(_instance_){};}
-
 #define REFL_NAMESPACE_OF ::REFL_NAMESPACE::
+
+
+#define REFL_INSTANCE_NAMESPACE REFL_NAMESPACE :: _instantiation
+#define REFL_INSTANCE(type) namespace REFL_INSTANCE_NAMESPACE{inline type REFL_GEN_NAME(_instance_){};}
+
 
 #define REFL_INFO__NAME(Type) static constexpr std::string_view name{#Type};
 
@@ -34,7 +36,7 @@ template<> struct REFL_NAMESPACE_OF ClassInfo<Class>{\
 template<> struct REFL_NAMESPACE_OF FieldInfo<&Class::Member>{\
 	REFL_INFO__NAME(Member)\
 
-#define REFL_INFO__SERI(type) static constexpr SrlType srlType{type};
+#define REFL_INFO__SERI(type) static constexpr REFL_NAMESPACE_OF SrlType srlType{type};
 
 #define REFL_TEMPLATE_CONTEXT_MPTR ptr
 
@@ -57,9 +59,15 @@ ext::reflect::dependencySrlType<ext::GetMemberPtrInfo<decltype(&Class::Member)>:
 #define REFL_REGISTER_END };\
 
 
-#define  REFL_REGISTER_POD(type) REFL_REGISTER_CLASS_BEGIN(type)\
+#define REFL_REGISTER_RTTI(type) REFL_INSTANCE(REFL_NAMESPACE_OF RTTIRegistor<type>)\
+
+
+
+#define  REFL_REGISTER_CLASS_DEF(type) REFL_REGISTER_CLASS_BEGIN(type)\
 REFL_INFO__SERI(REFL__SRL_ depends)\
 REFL_REGISTER_END\
+;\
+REFL_REGISTER_RTTI(type)\
 
 
 #define REFL_REGISTER_FUNDAMENTAL(type) template <>\

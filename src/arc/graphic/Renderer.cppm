@@ -135,6 +135,7 @@ export namespace Core{
 			return static_cast<float>(height) * 0.5f;
 		}
 
+
 		virtual void frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask);
 
 		virtual void frameBegin(FrameBuffer* frameBuffer){
@@ -158,6 +159,8 @@ export namespace Core{
 		}
 
 		virtual void frameEnd();
+
+		virtual void frameEnd_Quiet();
 
 		virtual void renderUI();
 

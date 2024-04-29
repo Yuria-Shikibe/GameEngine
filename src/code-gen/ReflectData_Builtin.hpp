@@ -31,17 +31,13 @@ struct TestT{
 };
 
 #define REG_VEC(type) \
-REFL_REGISTER_POD(Geom::Vector2D<type>)\
-REFL_REGISTER_FIELD_BEGIN(Geom::Vector2D<type>, x)\
-static constexpr ext::reflect::SrlType srlType{ext::reflect::SrlType::depends};\
-REFL_REGISTER_END\
-;\
-REFL_REGISTER_FIELD_BEGIN(Geom::Vector2D<type>, y)\
-static constexpr ext::reflect::SrlType srlType{ext::reflect::SrlType::depends};\
-REFL_REGISTER_END\
+REFL_REGISTER_CLASS_DEF(Geom::Vector2D<type>);\
+REFL_REGISTER_FIELD_DEF(Geom::Vector2D<type>, x)\
+REFL_REGISTER_FIELD_DEF(Geom::Vector2D<type>, y)\
+REFL_REGISTER_COMPLETION(Geom::Vector2D<type>, &Geom::Vector2D<type>::x, &Geom::Vector2D<type>::y)
 
-
-
+//
+//
 REG_VEC(char              );
 REG_VEC(signed char       );
 REG_VEC(unsigned char     );
@@ -60,22 +56,23 @@ REG_VEC(unsigned long long);
 REG_VEC(float             );
 REG_VEC(double            );
 
-REFL_REGISTER_POD(Geom::OrthoRectFloat);
-REFL_REGISTER_POD(Geom::OrthoRectInt);
-REFL_REGISTER_POD(Geom::OrthoRectUInt);
+REFL_REGISTER_CLASS_DEF(Geom::OrthoRectFloat);
+REFL_REGISTER_CLASS_DEF(Geom::OrthoRectInt);
+REFL_REGISTER_CLASS_DEF(Geom::OrthoRectUInt);
 
-REFL_REGISTER_POD(Geom::Transform);
+REFL_REGISTER_CLASS_DEF(Geom::Transform);
 
-REFL_REGISTER_POD(Graphic::Color);
+REFL_REGISTER_CLASS_DEF(Graphic::Color);
 REFL_REGISTER_FIELD_DEF(Graphic::Color, r)
 REFL_REGISTER_FIELD_DEF(Graphic::Color, g)
 REFL_REGISTER_FIELD_DEF(Graphic::Color, b)
 REFL_REGISTER_FIELD_DEF(Graphic::Color, a)
 
-REFL_REGISTER_POD(Math::Section<int>);
-REFL_REGISTER_POD(Math::Section<unsigned int>);
-REFL_REGISTER_POD(Math::Section<float>);
+REFL_REGISTER_CLASS_DEF(Math::Section<int>);
+REFL_REGISTER_CLASS_DEF(Math::Section<unsigned int>);
+REFL_REGISTER_CLASS_DEF(Math::Section<float>);
 
+REFL_REGISTER_CLASS_DEF(TestT)
 REFL_REGISTER_FIELD_AS(TestT, transform, json)
 REFL_REGISTER_FIELD_DEF(TestT, val)
 REFL_REGISTER_FIELD_DEF(TestT, vec2)

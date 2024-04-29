@@ -96,6 +96,16 @@ export namespace UI{
 			return top && top->isInbound(cursorPos);
 		}
 
+		Table* findFocus(){
+			for(const auto& table : focusTableStack | std::ranges::views::keys | std::ranges::views::reverse){
+				if(table->isInbound(cursorPos)){
+					return table.get();
+				}
+			}
+
+			return nullptr;
+		}
+
 		[[nodiscard]] Table* getCurrentFocus() const{
 			return focusTableStack.empty() ? nullptr : focusTableStack.back().first.get();
 		}
@@ -141,6 +151,10 @@ export namespace UI{
 			for(auto& element : focusTableStack | std::ranges::views::elements<0>){
 				element->drawBase();
 			}
+		}
+
+		constexpr bool focusEmpty() const noexcept{
+			return focusTableStack.empty();
 		}
 
 		void render() const{

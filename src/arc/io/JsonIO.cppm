@@ -1,11 +1,27 @@
 export module Core.IO.JsonIO;
 
+export import Core.IO.General;
 import std;
 import MetaProgramming;
-import ext.StaticReflection;
 export import ext.Json;
+import ext.Owner;
 import ext.Base64;
+
+import ext.StaticReflection;
 export import Core.IO.General;
+
+namespace Core::IO{
+	export
+	template <typename T>
+		requires !std::is_pointer_v<T>
+	struct JsonSerializator;
+
+	export
+	template <typename T>
+	inline constexpr bool jsonDirectSerializable = requires{
+		requires ext::isTypeComplteted<JsonSerializator<std::decay_t<T>>>;
+	};
+}
 
 template<typename T = void>
 struct TriggerFailure
@@ -28,12 +44,48 @@ export namespace Core::IO{
 			: exception{_Other}{}
 	};
 
-	template <typename T>
-		requires !std::is_pointer_v<T>
-	struct JsonSerializator;
+	struct DynamicJsonSerializable{
+		virtual ~DynamicJsonSerializable() = default;
+		virtual void writeTo(ext::json::JsonValue& jval) const = 0;
+		virtual void readFrom(const ext::json::JsonValue& jval) = 0;
 
-	template <typename T>
-	constexpr bool jsonDirectSerializable = requires{JsonSerializator<std::decay_t<T>>{};};
+		void writeType(ext::json::JsonValue& jval) const {
+			auto& map = jval.asObject();
+			const std::string_view name = ext::reflect::classNames_RTTI().at(getTypeIndex());
+			map.insert_or_assign(ext::json::keys::Typename, ext::json::JsonValue{name});
+		}
+
+		template <typename T>
+		static ext::Owner<T*> generate(const ext::json::JsonValue& jval) noexcept(std::same_as<void, T>){
+			if(jval.is<ext::json::object>()){
+				auto& map = jval.asObject();
+				if(const auto itr = map.find(ext::json::keys::Typename); itr != map.end() && itr->second.is<std::string>()){
+					return static_cast<T*>(ext::reflect::tryConstruct(itr->second.as<std::string>()));
+				}
+			}
+
+			return nullptr;
+		}
+
+		template <typename T>
+		static ext::Owner<T*> generate_noCheck(const ext::json::JsonValue& jval){
+			return static_cast<T*>(ext::reflect::tryConstruct(jval.asObject().at(ext::json::keys::Typename).as<std::string>()));
+		}
+
+		std::type_index getTypeIndex() const noexcept{return typeid(*this);}
+	};
+
+	template <typename T = void>
+	ext::Owner<T*> getObjectFrom(const ext::json::JsonValue& jval){
+		if(jval.is<ext::json::object>()){
+			const auto& map = jval.asObject();
+			if(const auto itr = map.find(ext::json::keys::Typename); itr != map.end()){
+				return ext::reflect::tryConstruct<T>(itr->second.as<std::string>());
+			}
+		}
+ 		return nullptr;
+	}
+
 
 	/**
 	 * @brief
@@ -51,7 +103,7 @@ export namespace Core::IO{
 		using DataPassType = typename ext::ConstConditional<!isWriting, ext::json::JsonValue&>::type;
 
 		template <std::size_t I>
-		constexpr static void with(PassType val, DataPassType& src){
+		constexpr static void with(PassType val, DataPassType src){
 			if constexpr (isWriting){
 				JsonFieldIOCallable::write<I>(val, src);
 			}else{
@@ -60,37 +112,35 @@ export namespace Core::IO{
 		}
 
 		template <std::size_t I>
-		constexpr static void read(PassType& val, DataPassType& src);
+		constexpr static void read(PassType val, DataPassType src);
 
 		template <std::size_t I>
-		constexpr static void write(PassType& val, DataPassType& src);
+		constexpr static void write(PassType val, DataPassType src);
 	};
-}
 
-export
-template <typename T>
-void operator <<(ext::json::JsonValue& jval, T&& val){
-	using RawT = std::decay_t<T>;
-	if constexpr (Core::IO::jsonDirectSerializable<RawT>){
-		Core::IO::JsonSerializator<RawT>::write(jval, std::forward<T>(val));
-	}else if constexpr (ext::reflect::ClassField<RawT>::defined){
-		ext::reflect::ClassField<RawT>::template fieldEach<Core::IO::JsonFieldIOCallable<RawT, true>>(std::forward<T>(val), jval);
-	}else{
-		(void)TriggerFailure{};
+	template <typename T>
+	void writeToJson(ext::json::JsonValue& jval, const T& val){
+		using RawT = std::decay_t<T>;
+		if constexpr (jsonDirectSerializable<RawT>){
+			Core::IO::JsonSerializator<RawT>::write(jval, val);
+		}else if constexpr (ext::reflect::ClassField<RawT>::defined){
+			ext::reflect::ClassField<RawT>::template fieldEach<Core::IO::JsonFieldIOCallable<RawT, true>>(val, jval);
+		}else{
+			(void)TriggerFailure<std::decay_t<T>>{};
+		}
 	}
-}
 
-export
-template <typename T>
-void operator >>(const ext::json::JsonValue& jval, T& val){
-	using RawT = std::decay_t<T>;
+	template <typename T>
+	void readFromJson(const ext::json::JsonValue& jval, T& val){
+		using RawT = std::decay_t<T>;
 
-	if constexpr (Core::IO::jsonDirectSerializable<RawT>){
-		Core::IO::JsonSerializator<RawT>::read(jval, val);
-	}else if constexpr (ext::reflect::ClassField<RawT>::defined){
-		ext::reflect::ClassField<RawT>::template fieldEach<Core::IO::JsonFieldIOCallable<RawT, false>>(val, jval);
-	}else{
-		(void)TriggerFailure{};
+		if constexpr (jsonDirectSerializable<RawT>){
+			Core::IO::JsonSerializator<RawT>::read(jval, val);
+		}else if constexpr (ext::reflect::ClassField<RawT>::defined){
+			ext::reflect::ClassField<RawT>::template fieldEach<Core::IO::JsonFieldIOCallable<RawT, false>>(val, jval);
+		}else{
+			(void)TriggerFailure{};
+		}
 	}
 }
 
@@ -99,29 +149,69 @@ export namespace ext::json{
 	template <typename T>
 	ext::json::JsonValue getJsonOf(T&& val){
 		ext::json::JsonValue jval{};
-		jval << std::forward<T>(val);
+		Core::IO::writeToJson(jval, std::forward<T>(val));
 
 		return jval;
 	}
 
 	template <typename T>
 	T& getValueTo(T& val, const ext::json::JsonValue& jval){
-		jval >> val;
+		Core::IO::readFromJson(jval, val);
 		return val;
+	}
+
+	template <typename T>
+		requires std::is_default_constructible_v<T>
+	T getValueFrom(const ext::json::JsonValue& jval){
+		T t{};
+		Core::IO::readFromJson(jval, t);
+		return t;
+	}
+
+	template <typename T>
+	void append(ext::json::JsonValue& jval, const std::string_view key, const T& val){
+		jval.asObject().insert_or_assign(key, ext::json::getJsonOf(val));
+	}
+
+	template <typename T>
+	void push_back(ext::json::JsonValue& jval, const T& val){
+		jval.asArray().push_back(ext::json::getJsonOf(val));
+	}
+
+	template <typename T>
+	void read(const ext::json::JsonValue& jval, const std::string_view key, T& val){
+		ext::json::getValueTo(val, jval.asObject().at(key));
+	}
+
+	template <typename T>
+		requires std::is_copy_assignable_v<T>
+	void read(const ext::json::JsonValue& jval, const std::string_view key, T& val, const T& defValue){
+		auto& map = jval.asObject();
+		if(const auto itr = map.find(key); itr != map.end()){
+			ext::json::getValueTo(val, itr->second);
+		}else{
+			val = defValue;
+		}
 	}
 }
 
 export namespace Core::IO{
+	template <typename T>
+	constexpr bool jsonSerializable = requires(T& val){
+		ext::json::getJsonOf(val);
+		ext::json::getValueTo(val, ext::json::JsonValue{});
+	};
+
 	template <typename T, bool isWriting>
 	template <std::size_t I>
-	constexpr void JsonFieldIOCallable<T, isWriting>::read(PassType& val, DataPassType& src){
+	constexpr void JsonFieldIOCallable<T, isWriting>::read(PassType val, DataPassType src){
 		using Field = typename ClassField::template FieldAt<I>;
 		using FieldClassInfo = typename Field::ClassInfo;
 
 		if(src.getTag() != ext::json::object)return; //TODO throw maybe?
 
 		if constexpr(Field::getSrlType != ext::reflect::SrlType::disable){
-			auto& member = val.*Field::fieldPtr;
+			auto& member = val.*Field::mptr;
 			constexpr std::string_view fieldName = Field::getName;
 
 			constexpr auto srlType = ext::conditionalVal<
@@ -147,7 +237,7 @@ export namespace Core::IO{
 
 	template <typename T, bool write>
 	template <std::size_t I>
-	constexpr void JsonFieldIOCallable<T, write>::write(PassType& val, DataPassType& src){
+	constexpr void JsonFieldIOCallable<T, write>::write(PassType val, DataPassType src){
 		using Field = typename ClassField::template FieldAt<I>;
 		using FieldClassInfo = typename Field::ClassInfo;
 
@@ -160,7 +250,7 @@ export namespace Core::IO{
 			(void)src.asObject(); //TODO is this really good?
 
 			if constexpr (srlType == ext::reflect::SrlType::json){
-				src.append(fieldName, ext::json::getJsonOf(std::forward<PassType>(val).*Field::fieldPtr));
+				src.append(fieldName, ext::json::getJsonOf(std::forward<PassType>(val).*Field::mptr));
 			}else if constexpr (srlType == ext::reflect::SrlType::binary_all){
 				ext::json::JsonValue value{};
 

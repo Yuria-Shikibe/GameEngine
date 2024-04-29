@@ -25,17 +25,26 @@ export namespace ext::json{
 	template <typename T>
 	using JsonScalarType = std::conditional_t<std::same_as<T, bool>, bool, std::conditional_t<std::is_floating_point_v<T>, JsonFloat, JsonInteger>>;
 
-	constexpr std::string_view Typename = "$type";
-	constexpr std::string_view Tag = "$tag";
-	constexpr std::string_view ID = "$id";
-	constexpr std::string_view Version = "$ver";
-	constexpr std::string_view Pos = "$pos";
-	constexpr std::string_view Size2D = "$size2D";
-	constexpr std::string_view Size = "$size";
-	constexpr std::string_view Bound = "$bound";
+	namespace keys{
+		/**
+		 * @brief Indeicate this json info refer to a Polymorphic Class
+		 */
+		constexpr std::string_view Typename = "$ty"; //type
+		constexpr std::string_view Tag = "$t"; //tag
+		constexpr std::string_view ID = "$i"; //id
+		constexpr std::string_view Data = "$d"; //data
+		constexpr std::string_view Version = "$v"; //version
+		constexpr std::string_view Pos = "$p"; //position
+		constexpr std::string_view Size2D = "$s2"; //size 2D
+		constexpr std::string_view Size = "$s1"; //size 1D
+		constexpr std::string_view Bound = "$b"; //bound
 
-	constexpr std::string_view Key = "$key";
-	constexpr std::string_view Value = "$value";
+		constexpr std::string_view Key = "$k"; //key
+		constexpr std::string_view Value = "$v"; //value
+
+		constexpr std::string_view First = "$f"; //first
+		constexpr std::string_view Secound = "$s"; //second
+	}
 
 	struct IllegalJsonSegment final : std::exception{
 		IllegalJsonSegment() = default;
@@ -124,9 +133,23 @@ export namespace ext::json{
 		JsonValue() = default;
 
 		template <typename T>
-			requires validType<T>
+			requires validType<T> && !std::is_arithmetic_v<T>
 		explicit JsonValue(T&& val){
 			this->setData(std::forward<T>(val));
+		}
+
+		template <typename T>
+			requires std::is_arithmetic_v<T> || std::same_as<T, bool>
+		explicit JsonValue(const T val){
+			this->setData<JsonScalarType<T>>(val);
+		}
+
+		explicit JsonValue(const std::string_view val){
+			this->setData(val);
+		}
+
+		void setData(const std::string_view str){
+			data = static_cast<std::string>(str);
 		}
 
 		template <typename T>
@@ -141,12 +164,23 @@ export namespace ext::json{
 			data = val;
 		}
 
+		template <JsonValueTag tag>
+		bool is() const noexcept{
+			return getTag() == tag;
+		}
+
+		template <typename T>
+			requires validType<T>
+		bool is() const noexcept{
+			return getTagIndex() == typeIndex<T>;
+		}
+
 		void setData(const bool val){
 			data = val;
 		}
 
 		[[nodiscard]] constexpr std::size_t getTagIndex() const noexcept{
-			return static_cast<size_t>(data.index());
+			return data.index();
 		}
 
 		auto& asObject(){
@@ -158,10 +192,6 @@ export namespace ext::json{
 		}
 
 		auto& asObject() const {
-			if(getTag() != object){
-				throw std::bad_variant_access{};
-			}
-
 			return as<object>();
 		}
 
@@ -173,8 +203,18 @@ export namespace ext::json{
 			return as<array>();
 		}
 
+		auto& asArray() const {
+			return as<array>();
+		}
+
 		// ReSharper disable CppDFAUnreachableCode
 		// ReSharper disable CppDFAConstantConditions
+		template <typename T>
+			requires std::same_as<std::decay_t<T>, JsonValue> || validType<T>
+		void append(const char* name, T&& val){
+			this->append(std::string{name}, std::forward<T>(val));
+		}
+
 		template <typename T>
 			requires std::same_as<std::decay_t<T>, JsonValue> || validType<T>
 		void append(const std::string_view name, T&& val){
@@ -187,7 +227,7 @@ export namespace ext::json{
 		}
 
 		template <typename T>
-			requires std::same_as<T, JsonValue> || validType<T>
+			requires std::same_as<std::decay_t<T>, JsonValue> || validType<T>
 		void append(std::string&& name, T&& val){
 			if(getTag() != object)return; //TODO throw maybe?
 			if constexpr (std::same_as<T, JsonValue>){
@@ -211,7 +251,7 @@ export namespace ext::json{
 		// ReSharper restore CppDFAUnreachableCode
 
 
-		[[nodiscard]] JsonValueTag getTag() const{ return JsonValueTag{data.index()}; }
+		[[nodiscard]] JsonValueTag getTag() const noexcept{ return JsonValueTag{getTagIndex()}; }
 
 		friend bool operator==(const JsonValue& lhs, const JsonValue& rhs){
 			return lhs.getTagIndex() == rhs.getTagIndex()
@@ -466,9 +506,14 @@ export namespace ext::json{
 			}
 		}
 
-		void print(std::ostream& os, const bool flat = false, const unsigned depth = 1) const{
-			const std::string pad(flat ? 0 : depth * 4, ' ');
-			const char endRow = flat ? ' ' : '\n';
+		void print(std::ostream& os, const bool flat = false, const bool noSpace = false, const unsigned padSize = 1, const unsigned depth = 1) const{
+			const std::string pad(flat ? 0 : depth * padSize, ' ');
+			const std::string_view endRow =
+				flat
+					? noSpace
+						  ? ""
+						  : " "
+					: "\n";
 
 			switch(getTag()){
 				case arithmetic_int :{
@@ -495,18 +540,20 @@ export namespace ext::json{
 					os << '[' << endRow;
 					const auto data = as<array>();
 
-					int index = 0;
-					for(; index < data.size() - 1; ++index){
+					if(!data.empty()){
+						int index = 0;
+						for(; index < data.size() - 1; ++index){
+							os << pad;
+							data[index].print(os, flat, noSpace, padSize, depth + 1);
+							os << ',' << endRow;
+						}
+
 						os << pad;
-						data[index].print(os, flat, depth + 1);
-						os << ',' << endRow;
+						data[index].print(os, flat, noSpace, padSize, depth + 1);
+						os << endRow;
 					}
 
-					os << pad;
-					data[index].print(os, flat, depth + 1);
-					os << endRow;
-
-					os << pad.substr(0, pad.size() - 4) << ']';
+					os << std::string_view(pad).substr(0, pad.size() - 4) << ']';
 					break;
 				}
 
@@ -517,15 +564,15 @@ export namespace ext::json{
 
 					int count = 0;
 					for(const auto& [k, v] : data){
-						os << pad << '"' << k << R"(" : )";
-						v.print(os, flat, depth + 1);
+						os << pad << '"' << k << '"' << (noSpace ? ":" : " : ");
+						v.print(os, flat, noSpace, padSize, depth + 1);
 						count++;
 						if(count == data.size()) break;
 						os << ',' << endRow;
 					}
 
 					os << endRow;
-					os << pad.substr(0, pad.size() - 4) << '}';
+					os << std::string_view(pad).substr(0, pad.size() - 4) << '}';
 					break;
 				}
 
@@ -610,20 +657,39 @@ struct ::std::formatter<ext::json::JsonValue>{
 	}
 
 	bool flat{ false };
+	bool noSpace{ false };
+	int pad{2};
 
 	constexpr auto parse(std::format_parse_context& context)
 	{
-		auto it = context.begin(), end = context.end();
-		if (it != end && *it == 'f') flat = *it++ == 'f';
+		auto it = context.begin();
+		if (it == context.end())
+			return it;
 
-		if (it != end && *it != '}') throw format_error("Invalid format");
+		if (*it == 'n'){
+			noSpace = true;
+			++it;
+		}
+
+		if (*it == 'f'){
+			flat = true;
+			++it;
+		}
+
+		if (*it >= '0' && *it <= '9'){
+			pad = *it - '0';
+			++it;
+		}
+
+		if (it != context.end() && *it != '}')
+			throw std::format_error("Invalid format");
 
 		return it;
 	}
 
 	auto format(const ext::json::JsonValue& json, auto& context) const{
 		std::ostringstream ss{};
-		json.print(ss, flat);
+		json.print(ss, flat, noSpace);
 
 		return std::format_to(context.out(), "{}", ss.str());
 	}

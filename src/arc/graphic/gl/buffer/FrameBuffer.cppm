@@ -26,7 +26,7 @@ export namespace GL{
 		std::unique_ptr<RenderBuffer> renderBuffer{nullptr};
 
 	public:
-		static constexpr int RecommendedMinSize = 200;
+		static constexpr int RecommendedMinSize = 100;
 		static constexpr std::array<GLenum, 32> ALL_COLOR_ATTACHMENTS {
 			[] {
 				std::array<GLenum, 32> arr{};
@@ -161,10 +161,14 @@ export namespace GL{
 
 		void bind() const{
 			GL::bindFrameBuffer(targetFlag, nameID);
+			GL::viewport(getWidth(), getHeight());
 		}
 
 		void bind(const GLenum mode) const {
 			GL::bindFrameBuffer(mode, nameID);
+			if(targetFlag == DRAW || targetFlag == DEF){
+				GL::viewport(getWidth(), getHeight());
+			}
 		}
 
 		void unbind() const{

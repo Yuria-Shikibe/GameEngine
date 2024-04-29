@@ -115,12 +115,12 @@ export namespace ext::string{
 			auto newView = view.substr(begin + 1, end - begin - 1);
 
 			const auto noSpaceBegin = newView.find_first_not_of(' ');
-			const auto noSpaceEnd = newView.find_last_not_of(' ');
+			const auto noSpaceEnd = newView.find_last_not_of(' ') + 1;
 
 			if(noSpaceBegin == noSpaceEnd) continue;
 
 
-			splited.push_back(newView.substr(noSpaceBegin, noSpaceEnd - noSpaceBegin + 1));
+			splited.push_back(newView.substr(noSpaceBegin, noSpaceEnd - noSpaceBegin));
 		}
 
 		return splited;

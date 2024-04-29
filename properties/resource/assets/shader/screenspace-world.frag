@@ -5,7 +5,7 @@ uniform sampler2DArray texArray;
 in float depth;
 
 in vec4 v_srcColor;
-in vec2 v_texCoord;
+in vec2 texCoord;
 in vec4 v_mixColor;
 
 layout (location = 0) out vec4 FragColor;
@@ -22,9 +22,9 @@ float layer2coord(uint capacity, uint layer)
 void main()
 {
 	if(v_srcColor.a < 0.0033)discard;
-	vec4 baseColor = texture(texArray, vec3(v_texCoord, 0.0f));
-	vec4 normalColor = texture(texArray, vec3(v_texCoord, 1.0f));
-	vec4 lightColor = texture(texArray, vec3(v_texCoord, 2.0f));
+	vec4 baseColor = texture(texArray, vec3(texCoord, 0.0f));
+	vec4 normalColor = texture(texArray, vec3(texCoord, 1.0f));
+	vec4 lightColor = texture(texArray, vec3(texCoord, 2.0f));
 
 //	baseColor = v_srcColor * mix(baseColor, vec4(v_mixColor.rgb, baseColor.a), v_mixColor.a);
 	lightColor = v_srcColor * mix(lightColor, vec4(v_mixColor.rgb, lightColor.a), v_mixColor.a);

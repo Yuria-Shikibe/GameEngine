@@ -14,8 +14,6 @@ export namespace Geom{
 	using MatRaw = std::array<float, 9>;
 
 	struct Matrix3D{
-	private: MatRaw tmp{};
-
 	public:
 		static constexpr int M00 = 0;
 		static constexpr int M01 = 3;
@@ -60,6 +58,14 @@ export namespace Geom{
 			return val.data();
 		}
 
+		constexpr Matrix3D(const Matrix3D& other) = default;
+
+		constexpr Matrix3D(Matrix3D&& other) noexcept = default;
+
+		constexpr Matrix3D& operator=(const Matrix3D& other) = default;
+
+		constexpr Matrix3D& operator=(Matrix3D&& other) noexcept = default;
+
 		friend constexpr bool operator==(const Matrix3D& lhs, const Matrix3D& rhs){
 			return lhs.val == rhs.val;
 		}
@@ -70,14 +76,18 @@ export namespace Geom{
 
 		constexpr ~Matrix3D() = default;
 
-		friend constexpr Vec2 operator*(const Matrix3D& mat, const Vec2& vec2) {
+		friend constexpr Vec2 operator*(const Matrix3D& mat, const Vec2& vec2) noexcept{
 			Vec2 vector2D{};
 			return vector2D.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
 		}
 
-		friend constexpr Vec2 operator*=(Vec2& vec2, const Matrix3D& mat) {
+		friend constexpr Vec2 operator*=(Vec2& vec2, const Matrix3D& mat) noexcept{
 			return vec2.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
 		}
+
+		// friend constexpr Vec2 operator*=(const Matrix3D& mat, Vec2& vec2,) {
+		// 	return vec2.set(vec2.x * mat.val[0] + vec2.y * mat.val[3] + mat.val[6], vec2.x * mat.val[1] + vec2.y * mat.val[4] + mat.val[7]);
+		// }
 
 		constexpr Matrix3D& operator*=(const Matrix3D& lhs) {
 			return mulLeft(lhs);
@@ -106,9 +116,13 @@ export namespace Geom{
 				<< "[" << obj.val[M20] << "|" << obj.val[M21] << "|" << obj.val[M22] << "]";
 		}
 
-		constexpr Matrix3D& translateTo(const Transform translation){
+		constexpr Matrix3D& setTranslation(const Transform translation){
 			return setToRotation(translation.rot).translateTo(translation.vec);
 		}
+
+		// constexpr Matrix3D& translateTo(const Transform translation){
+		// 	return setToRotation(translation.rot).translateTo(translation.vec);
+		// }
 
 		constexpr Matrix3D& setOrthogonal(const float x, const float y, const float width, const float height) {
 			const float right = x + width, top = y + height;
@@ -256,16 +270,16 @@ export namespace Geom{
 		}
 
 		constexpr Matrix3D& translateTo(const float x, const float y) {
-			val[M02] = x;
-			val[M12] = y;
+			val[M02] += x;
+			val[M12] += y;
 			val[M22] = 1;
 
 			return *this;
 		}
 
 		constexpr Matrix3D& translateTo(const Vec2 translation) {
-			val[M02] = translation.x;
-			val[M12] = translation.y;
+			val[M02] += translation.x;
+			val[M12] += translation.y;
 			val[M22] = 1;
 
 			return *this;
@@ -339,12 +353,43 @@ export namespace Geom{
 			                                                                                                          * val[M12] * val[M21] - val[M01] * val[M10] * val[M22] - val[M02] * val[M11] * val[M20];
 		}
 
+		/**
+		* @brief Only works when this mat is rot * square scale + trans
+		* */
+		constexpr Matrix3D& simpleInv() noexcept {
+			const float v0 = val[M01];
+			val[M01] = val[M10];
+			val[M10] = v0;
+
+			val[M02] *= -1;
+			val[M12] *= -1;
+
+			return *this;
+		}
+
+
+		/**
+		* @brief Only works when this mat is rot * square scale + trans
+		* */
+		constexpr Matrix3D getSimpleInv() const noexcept {
+			Matrix3D nmat{*this};
+
+			const float v0 = nmat.val[M01];
+			nmat.val[M01] = nmat.val[M10];
+			nmat.val[M10] = v0;
+			nmat.val[M02] *= -1;
+			nmat.val[M12] *= -1;
+
+			return nmat;
+		}
+
 		constexpr Matrix3D& inv() {
 			const float detV = det();
 			if (detV == 0) throw std::exception("Can't invert a singular matrix");  // NOLINT(clang-diagnostic-float-equal)
 
 			const float inv_det = 1.0f / detV;
 
+			MatRaw tmp{};
 			tmp[M00] = val[M11] * val[M22] - val[M21] * val[M12];
 			tmp[M10] = val[M20] * val[M12] - val[M10] * val[M22];
 			tmp[M20] = val[M10] * val[M21] - val[M20] * val[M11];
@@ -365,18 +410,6 @@ export namespace Geom{
 			val[M12] = inv_det * tmp[M12];
 			val[M22] = inv_det * tmp[M22];
 
-			return *this;
-		}
-
-		constexpr Matrix3D& operator=(const Matrix3D& other){
-			if(this == &other) return *this;
-			val = other.val;
-			return *this;
-		}
-
-		constexpr Matrix3D& operator=(Matrix3D&& other) noexcept{
-			if(this == &other) return *this;
-			val = std::move(other.val);
 			return *this;
 		}
 
@@ -404,6 +437,8 @@ export namespace Geom{
 		}
 
 		constexpr Matrix3D& translate(const float x, const float y) {
+			MatRaw tmp{};
+
 			tmp[M00] = 1;
 			tmp[M10] = 0;
 			tmp[M20] = 0;
@@ -420,6 +455,8 @@ export namespace Geom{
 		}
 
 		constexpr Matrix3D& translate(const Vec2& translation) {
+			MatRaw tmp{};
+
 			tmp[M00] = 1;
 			tmp[M10] = 0;
 			tmp[M20] = 0;
@@ -444,6 +481,8 @@ export namespace Geom{
 			const float cos = Math::cos(radians);
 			const float sin = Math::sin(radians);
 
+			MatRaw tmp{};
+
 			tmp[M00] = cos;
 			tmp[M10] = sin;
 			tmp[M20] = 0;
@@ -460,6 +499,8 @@ export namespace Geom{
 		}
 
 		constexpr Matrix3D& scale(const float scaleX, const float scaleY) {
+			MatRaw tmp{};
+
 			tmp[M00] = scaleX;
 			tmp[M10] = 0;
 			tmp[M20] = 0;
@@ -474,6 +515,8 @@ export namespace Geom{
 		}
 
 		constexpr Matrix3D& scale(const Vec2& scale) {
+			MatRaw tmp{};
+
 			tmp[M00] = scale.x;
 			tmp[M10] = 0;
 			tmp[M20] = 0;
