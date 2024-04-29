@@ -32,7 +32,7 @@ export namespace Game{
 		std::vector<Chamber*> proximity{};
 
 		OrthoRectFloat getChamberBound() const{
-			return region.as<float>().scl(TileSize, TileSize);;
+			return region.as<float>().scl(TileSize, TileSize);
 		}
 
 		void writeTo(ext::json::JsonValue& jval) const override{

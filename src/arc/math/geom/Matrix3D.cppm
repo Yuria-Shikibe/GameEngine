@@ -120,6 +120,10 @@ export namespace Geom{
 			return setToRotation(translation.rot).translateTo(translation.vec);
 		}
 
+		constexpr Matrix3D& translateTo(const Transform translation){
+			return rotate(translation.rot).translateTo(translation.vec);
+		}
+
 		// constexpr Matrix3D& translateTo(const Transform translation){
 		// 	return setToRotation(translation.rot).translateTo(translation.vec);
 		// }

@@ -146,6 +146,10 @@ export namespace Game{
 			return brief;
 		}
 
+		[[nodiscard]] bool isBriefValid() const noexcept{
+			return brief.dataValid;
+		}
+
 		[[nodiscard]] TreeType& getQuadTree() noexcept { return quadTree; }
 
 		[[nodiscard]] const std::list<Tile>& getData() const noexcept{ return data; }

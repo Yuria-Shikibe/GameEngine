@@ -38,8 +38,9 @@ export namespace Game{
 
 		[[nodiscard]] const Geom::Transform& getLocalTrans() const{ return localTrans; }
 
-		void setLocalTrans(Geom::Transform localTrans){
-			this->localTrans = std::move(localTrans);
+		void setLocalTrans(const Geom::Transform localTrans){
+			this->localTrans = localTrans;
+			// transMat.setScaling(0.05f, 0.05f).translateTo(localTrans);
 			transMat.setTranslation(localTrans);
 		}
 
@@ -56,8 +57,8 @@ export namespace Game{
 		Geom::QuadBox transformViewport(Geom::OrthoRectFloat viewport) const noexcept{
 			viewport.expand(ExtendSize / 2, ExtendSize / 2);
 			Geom::QuadBox portBox{viewport};
-			Geom::Matrix3D mat{};
-			mat.setTranslation(localTrans).inv(); //Get world to local
+			Geom::Matrix3D mat{transMat};
+			mat.inv(); //Get world to local
 
 			for(unsigned i = 0; i < 4; ++i){
 				portBox.vertAt(i) *= mat;
@@ -69,7 +70,7 @@ export namespace Game{
 		void updateDrawTarget(const Geom::OrthoRectFloat rawViewport, const bool nolimit = false){
 			auto viewport = transformViewport(rawViewport);
 
-			if(viewport == lastViewport)return;
+			if(viewport == lastViewport && frameData.isBriefValid())return;
 			viewport.updateBound();
 
 			lastViewport = viewport;

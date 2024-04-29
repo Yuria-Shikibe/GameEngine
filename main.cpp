@@ -558,7 +558,8 @@ int main(const int argc, char* argv[]){
 
 
 		if constexpr(false){
-			chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap(Graphic::Pixmap{pixmap}, {-32, -32});
+			auto pixmap_ = Graphic::Pixmap{pixmap};
+			chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap(pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
 
 			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
 
@@ -624,7 +625,6 @@ int main(const int argc, char* argv[]){
 
 		GL::setDepthMask(false);
 		GL::disable(GL::Test::DEPTH);
-		// GL::setDepthMask(false);
 
 		GL::Blendings::Normal.apply();
 		renderer.frameEnd(merger);
@@ -654,15 +654,12 @@ int main(const int argc, char* argv[]){
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 
-		chamberFrame->setLocalTrans({{3000, 1200}, 3 * OS::updateTime()});
-		// chamberFrame->setLocalTrans({{200, 500}, 0});
+		chamberFrame->setLocalTrans({{3000, 1200}, 45});
 		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
 
 		Core::batchGroup.batchOverlay->flush();
 		Core::batchGroup.batchOverlay->modifyGetLocalToWorld() = chamberFrame->getTransformMat();
 
-		// e.renderer->frameBegin(&chamberFrame->getLocalFrameBuffer());
-		// chamberFrame->drawBegin();
 
 		{
 			// [[maybe_unused]] auto guard = Draw::genColorGuard();
@@ -732,6 +729,8 @@ int main(const int argc, char* argv[]){
 
 		Core::batchGroup.batchOverlay->flush();
 		Core::batchGroup.batchOverlay->resetLocalToWorld();
+
+		Draw::rectPoint(chamberFrame->getLocalTrans().vec, 6);
 
 		Draw::Line::line(rawCpy, Core::camera->getPosition());
 
