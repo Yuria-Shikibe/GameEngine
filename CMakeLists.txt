@@ -101,11 +101,11 @@ set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 FetchContent_Declare(
     lunasvg
     GIT_REPOSITORY https://github.com/Yuria-Shikibe/lunasvg.git
-    SOURCE_DIR ${INCLUDES}/lunasvg/lunasvg
+    GIT_TAG master
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDES}/lunasvg/lunasvg
 )
 FetchContent_MakeAvailable(lunasvg)
 add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
-target_link_libraries(${PROJECT_NAME} PRIVATE lunasvg::lunasvg)
 
 message(STATUS "Building...")
 
@@ -149,6 +149,9 @@ target_link_libraries(${PROJECT_NAME}
         gdiplus.lib
 )
 #endmacro()
+
+target_link_libraries(${PROJECT_NAME} lunasvg)
+
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
