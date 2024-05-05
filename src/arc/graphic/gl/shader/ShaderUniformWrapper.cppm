@@ -10,7 +10,7 @@ import Concepts;
 export namespace GL{
 	template<typename ...Args>
 	struct UniformWrapper{
-		static constexpr auto size = sizeof...(Args);
+		static constexpr std::size_t size = sizeof...(Args);
 		using ArgsType = std::tuple<Args...>;
 		ArgsType defData{};
 		ArgsType data{};
@@ -33,7 +33,7 @@ export namespace GL{
 		}
 
 		template<std::size_t argIndex, bool asReference = false>
-			requires requires{argIndex < size;}
+			requires requires{argIndex < sizeof...(Args);}
 		constexpr typename ext::ConstConditional<asReference,
 		    typename Concepts::ValueConditional<!asReference, std::tuple_element_t<argIndex, ArgsType>>::type
 		>::type get() noexcept{

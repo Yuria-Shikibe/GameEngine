@@ -1,5 +1,7 @@
 module;
 
+#include <cerrno>
+
 export module ext.Json;
 
 import std;
@@ -58,37 +60,37 @@ export namespace ext::json{
 	};
 
 	inline JsonInteger parseInt(const std::string_view str, const int base = 10){
-		// int& errno_ref = errno; // Nonzero cost, pay it once
+		int& errno_ref = errno; // Nonzero cost, pay it once
 		const char* ptr = str.data();
 		char* endPtr{nullptr};
-		// errno_ref = 0;
+		errno_ref = 0;
 		const long _Ans = std::strtol(ptr, &endPtr, base);
 
 		if(ptr == endPtr){
 			throw IllegalJsonSegment("invalid stoi argument");
 		}
 
-		// if(errno_ref == ERANGE){
-		// 	throw IllegalJsonSegment("stoi argument out of range");
-		// }
+		if(errno_ref == ERANGE){
+			throw IllegalJsonSegment("stoi argument out of range");
+		}
 
 		return _Ans;
 	}
 
 	inline JsonFloat parseFloat(const std::string_view str){
-		// int& errno_ref = errno; // Nonzero cost, pay it once
+		int& errno_ref = errno; // Nonzero cost, pay it once
 		const char* ptr = str.data();
 		char* endPtr{nullptr};
-		// errno_ref = 0;
+		errno_ref = 0;
 		const auto ans = std::strtof(ptr, &endPtr);
 
 		if(ptr == endPtr){
 			throw IllegalJsonSegment("invalid stoi argument");
 		}
 
-		// if(errno_ref == ERANGE){
-		// 	throw IllegalJsonSegment("stoi argument out of range");
-		// }
+		if(errno_ref == ERANGE){
+			throw IllegalJsonSegment("stoi argument out of range");
+		}
 
 		return ans;
 	}
