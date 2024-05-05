@@ -129,6 +129,9 @@ export namespace ext::json{
 		template <std::size_t index>
 		using TypeAt = std::tuple_element_t<index, VariantTypeTuple>;
 
+
+		static constexpr auto VariantSize = std::variant_size_v<decltype(data)>;
+
 		JsonValue() = default;
 
 		template <typename T>
@@ -204,13 +207,11 @@ export namespace ext::json{
 		}
 
 		template <JsonValueTag tag>
-			requires requires{ requires static_cast<size_t>(tag) < std::variant_size_v<decltype(data)>; }
 		[[nodiscard]] constexpr decltype(auto) as(){
 			return std::get<static_cast<size_t>(tag)>(data);
 		}
 
 		template <JsonValueTag tag>
-			requires requires{ requires static_cast<size_t>(tag) < std::variant_size_v<decltype(data)>; }
 		[[nodiscard]] constexpr decltype(auto) as() const{
 			return std::get<static_cast<size_t>(tag)>(data);
 		}
