@@ -98,13 +98,13 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 
 set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 
-add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 FetchContent_Declare(
     lunasvg
     GIT_REPOSITORY https://github.com/Yuria-Shikibe/lunasvg.git
     SOURCE_DIR ${INCLUDES}/lunasvg/lunasvg
 )
 FetchContent_MakeAvailable(lunasvg)
+add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 
 message(STATUS "Building...")
 
