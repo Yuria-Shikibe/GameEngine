@@ -94,7 +94,7 @@ export namespace ext::json{
 	}
 
 
-	enum struct JsonValueTag : std::size_t{
+	enum struct JsonValueTag : std::size_t {
 		arithmetic_int,
 		arithmetic_float,
 		boolean,
@@ -313,16 +313,14 @@ export namespace ext::json{
 			return std::get_if<T>(&data);
 		}
 
-		template <JsonValueTag t>
-			requires requires{ requires static_cast<size_t>(t) < std::variant_size_v<decltype(data)>; }
-		[[nodiscard]] constexpr TypeAt<static_cast<size_t>(t)>* tryGetValue() noexcept{
-			return std::get_if<static_cast<size_t>(t)>(&data);
+		template <JsonValueTag tag>
+		[[nodiscard]] constexpr TypeAt<static_cast<size_t>(tag)>* tryGetValue() noexcept{
+			return std::get_if<static_cast<size_t>(tag)>(&data);
 		}
 
-		template <JsonValueTag t>
-			requires requires{ requires static_cast<size_t>(t) < std::variant_size_v<decltype(data)>; }
-		[[nodiscard]] constexpr const TypeAt<static_cast<size_t>(t)>* tryGetValue() const noexcept{
-			return std::get_if<static_cast<size_t>(t)>(&data);
+		template <JsonValueTag tag>
+		[[nodiscard]] constexpr const TypeAt<static_cast<size_t>(tag)>* tryGetValue() const noexcept{
+			return std::get_if<static_cast<size_t>(tag)>(&data);
 		}
 
 		/**
