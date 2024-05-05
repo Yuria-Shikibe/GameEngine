@@ -109,6 +109,7 @@ export namespace ext::json{
 
 	class JsonValue{
 #define TypeGroup JsonInteger, JsonFloat, bool, std::string, Array, Object
+
 	public:
 		using Object = StringMap<JsonValue>;
 		using Array = std::vector<JsonValue>;
@@ -221,11 +222,11 @@ export namespace ext::json{
 				setData(ext::StringMap<JsonValue>{});
 			}
 
-			return this->as<object>();
+			return std::get<Object>(data);
 		}
 
 		auto& asObject() const {
-			return this->as<object>();
+			return std::get<Object>(data);
 		}
 
 		auto& asArray(){
@@ -233,11 +234,11 @@ export namespace ext::json{
 				setData(std::vector<JsonValue>{});
 			}
 
-			return this->as<array>();
+			return std::get<Array>(data);
 		}
 
 		auto& asArray() const {
-			return this->as<array>();
+			return std::get<Array>(data);
 		}
 
 		// ReSharper disable CppDFAUnreachableCode
