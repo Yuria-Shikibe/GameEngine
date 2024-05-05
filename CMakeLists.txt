@@ -44,6 +44,7 @@ set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
 add_compile_options("/W4")
 add_compile_options("/wd4244")
+add_compile_options("/wd4100")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
@@ -140,12 +141,6 @@ target_link_libraries(${PROJECT_NAME}
         freetype.lib
         glfw3.lib
         irrKlang.lib
-        #    opengl32.lib
-        #    gdi32.lib
-        #    shell32.lib
-        #    shell32.lib
-        #    User32.lib
-        #    irrKlang.exp
 )
 
 #macro(get_WIN32_WINNT version)

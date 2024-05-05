@@ -7,6 +7,7 @@ export module StackTrace;
 
 import std;
 
+//TODO shits
 export namespace ext{
 	void getStackTraceBrief(std::stringstream&ss, const bool jumpUnSource = true, const bool showExec = false, const int skipNative = 3){
 		ss << "\n--------------------- Stack Trace Begin:\n\n";
@@ -46,16 +47,16 @@ export namespace ext{
 			ss << std::left << "[FUNC     NAME] : " << entry.description().substr(exePrefix) << '\n';
 			ss << std::left << "[FUNC END LINE] : " << entry.source_line() << " [FUNC PTR]: " << std::dec << functionPtr << "\n\n";
 #else
-			auto index = entry.description().find_first_of('!');
+			auto index_of_0x = entry.description().find_first_of('!');
 
-			index = (index == std::string::npos && showExec) ? 0 : (index + 1);
+			index_of_0x = (index_of_0x == std::string::npos && showExec) ? 0 : (index_of_0x + 1);
 
 			auto charIndex = entry.description().find_first_of("+0x");
 
 			std::filesystem::path path{entry.source_file()};
 
 			ss << std::left << "[FILE]: " << path.filename().string() << '\n';
-			ss << std::left << "[DESC]: " << entry.description().substr(index, charIndex) << '\n';
+			ss << std::left << "[DESC]: " << entry.description().substr(index_of_0x, charIndex) << '\n';
 			ss << std::left << "[LINE]: " << entry.source_line() << " [At]: " << std::dec << entry.description().substr(charIndex + 1) << "\n\n";
 #endif
 		}
