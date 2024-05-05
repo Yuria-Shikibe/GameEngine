@@ -46,6 +46,7 @@ add_compile_options("/W4")
 add_compile_options("/wd4244")
 add_compile_options("/wd4100")
 add_compile_options("/wd4458")
+add_compile_options("/wd4267")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")

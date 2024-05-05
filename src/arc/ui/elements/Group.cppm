@@ -61,7 +61,7 @@ export namespace UI {
 			children.emplace_back(elem);
 		}
 
-		virtual void addChildren(Widget* elem, const int depth) {
+		virtual void addChildren(Widget* elem, const std::size_t depth) {
 			if(depth >= children.size()) {
 				addChildren(elem);
 			}else {

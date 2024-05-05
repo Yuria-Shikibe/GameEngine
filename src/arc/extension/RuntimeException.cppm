@@ -36,7 +36,7 @@ export namespace ext{
 		}
 	};
 
-	class NullPointerException final : RuntimeException{
+	class NullPointerException final : public RuntimeException{
 	public:
 		[[nodiscard]] explicit NullPointerException(const std::string& str)
 			: RuntimeException(str) {
@@ -47,7 +47,7 @@ export namespace ext{
 		}
 	};
 
-	class IllegalArguments final : RuntimeException {
+	class IllegalArguments final : public RuntimeException {
 	public:
 		[[nodiscard]] explicit IllegalArguments(const std::string& str)
 			: RuntimeException(str) {
@@ -58,7 +58,7 @@ export namespace ext{
 		}
 	};
 
-	class ArrayIndexOutOfBound final : RuntimeException {
+	class ArrayIndexOutOfBound final : public RuntimeException {
 	public:
 		[[nodiscard]] explicit ArrayIndexOutOfBound(const std::string& str)
 			: RuntimeException(str) {

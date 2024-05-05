@@ -46,13 +46,13 @@ export namespace Core{
 			 * | p - press
 			 * @endcode
 			 */
-			static constexpr unsigned short ModeMask = 0xff;
-			static constexpr unsigned short DoubleClick = 0b0001'0000'0000'0000;
-			static constexpr unsigned short Continuous = 0b1000'0000'0000;
-			static constexpr unsigned short Repeat = 0b0100'0000'0000;
-			static constexpr unsigned short Release = 0b0010'0000'0000;
-			static constexpr unsigned short Press = 0b0001'0000'0000;
-			static constexpr unsigned short RP_Eraser = ~(Release | Press | DoubleClick);
+			static constexpr auto ModeMask = 0xff;
+			static constexpr auto DoubleClick = 0b0001'0000'0000'0000;
+			static constexpr auto Continuous = 0b1000'0000'0000;
+			static constexpr auto Repeat = 0b0100'0000'0000;
+			static constexpr auto Release = 0b0010'0000'0000;
+			static constexpr auto Press = 0b0001'0000'0000;
+			static constexpr auto RP_Eraser = ~(Release | Press | DoubleClick);
 			std::array<unsigned short, total> pressed{};
 
 			bool get(const int code, const int action, int mode){

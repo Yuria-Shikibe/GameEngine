@@ -20,13 +20,13 @@ import OS.Handler;
 import Image.Svg;
 import ext.Heterogeneous;
 
-using Geom::OrthoRectUInt;
+using Geom::OrthoRectInt;
 using namespace Graphic;
 
 export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
 	struct TextureRegionPackData{
-		OrthoRectUInt bound{};
+		OrthoRectInt bound{};
 		GL::TextureRegionRect textureRegion{};
 		Graphic::Pixmap pixmap{};
 		OS::File sourceFile{};
@@ -157,7 +157,7 @@ export namespace Assets {
 		PackState state{PackState::polling};
 
 	public:
-		OrthoRectUInt texMaxBound{0, 0, 2048, 2048};
+		OrthoRectInt texMaxBound{0, 0, 2048, 2048};
 		std::string pageName{};
 
 		bool forcePack{false};
@@ -167,7 +167,7 @@ export namespace Assets {
 		const TexturePackPage* linkTarget = nullptr;
 
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
-			const OrthoRectUInt& texMaxBound, const bool forcePack)
+			const OrthoRectInt& texMaxBound, const bool forcePack)
 			: cacheDir(cacheDir),
 			texMaxBound(texMaxBound),
 			pageName(pageName),
@@ -175,7 +175,7 @@ export namespace Assets {
 		}
 
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
-									  const OrthoRectUInt& texMaxBound)
+									  const OrthoRectInt& texMaxBound)
 			: TexturePackPage(pageName, cacheDir, texMaxBound, false){
 		}
 
@@ -292,7 +292,7 @@ export namespace Assets {
 		}
 
 	protected:
-		static OrthoRectUInt& transformBound(TextureRegionPackData* d) noexcept {
+		static OrthoRectInt& transformBound(TextureRegionPackData* d) noexcept {
 			return d->bound;
 		}
 
@@ -478,14 +478,14 @@ export namespace Assets {
 			if(remains.empty())return;
 			setProgress(TotalProgressWeight, 2, 1, packData.size() - remains.size(), packData.size());
 
-			Math::StripPacker2D<TextureRegionPackData*, unsigned int, TexturePackPage::transformBound> packer{};
+			Math::StripPacker2D<TextureRegionPackData*, int, TexturePackPage::transformBound> packer{};
 
 			packer.push(remains);
 
 			packer.setMaxSize(texMaxBound.getWidth(), texMaxBound.getHeight());
 			packer.sortDatas();
 			packer.process();
-			const OrthoRectUInt r = packer.getResultBound();
+			const OrthoRectInt r = packer.getResultBound();
 
 			//Move it
 			toMerge.emplace_back(std::move(packer.packed), r.getWidth(), r.getHeight(), currentID);

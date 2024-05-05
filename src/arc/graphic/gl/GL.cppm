@@ -118,7 +118,7 @@ export namespace GL {
         INVERT = GL_INVERT,
     };
 
-    unsigned int getMaxTextureSize() {
+    int getMaxTextureSize() {
         return maxTexSize;
     }
     
@@ -263,8 +263,6 @@ export namespace GL {
     void setScissor(Geom::OrthoRectInt cur) {
         if(cur == scissorRect)return;
         if(scissorShrinkActivatedCount){
-            auto& rect_ = scissorRect;
-
             const Geom::OrthoRectInt rect = scissorRect.getOverlap(cur);
 
             glScissor(
