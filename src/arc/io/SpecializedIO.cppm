@@ -54,7 +54,7 @@ namespace Core::IO{
 		}
 
 		static void read(const ext::json::JsonValue& jsonValue, T& data){
-			data = jsonValue.as<Ty>();
+			data = jsonValue.asType<Ty>();
 		}
 	};
 
@@ -72,8 +72,8 @@ namespace Core::IO{
 
 		static void read(const ext::json::JsonValue& jsonValue, Math::Section<T>& data){
 			if(auto* ptr = jsonValue.tryGetValue<ext::json::array>(); ptr && ptr->size() >= 2){
-				data.from = ptr->at(0).as<Ty>();
-				data.to = ptr->at(1).as<Ty>();
+				data.from = ptr->at(0).asType<Ty>();
+				data.to = ptr->at(1).asType<Ty>();
 			}
 		}
 	};
@@ -92,8 +92,8 @@ namespace Core::IO{
 
 		static void read(const ext::json::JsonValue& jsonValue, Geom::Vector2D<T>& data){
 			if(auto* ptr = jsonValue.tryGetValue<ext::json::array>(); ptr && ptr->size() >= 2){
-				data.x = ptr->at(0).as<Ty>();
-				data.y = ptr->at(1).as<Ty>();
+				data.x = ptr->at(0).asType<Ty>();
+				data.y = ptr->at(1).asType<Ty>();
 			}
 		}
 	};
@@ -115,10 +115,10 @@ namespace Core::IO{
 		static void read(const ext::json::JsonValue& jsonValue, Geom::Rect_Orthogonal<T>& data){
 			if(auto* ptr = jsonValue.tryGetValue<ext::json::array>(); ptr && ptr->size() >= 4){
 				data.set(
-					ptr->at(0).as<Ty>(),
-					ptr->at(1).as<Ty>(),
-					ptr->at(2).as<Ty>(),
-					ptr->at(3).as<Ty>());
+					ptr->at(0).asType<Ty>(),
+					ptr->at(1).asType<Ty>(),
+					ptr->at(2).asType<Ty>(),
+					ptr->at(3).asType<Ty>());
 			}
 		}
 	};
@@ -130,7 +130,7 @@ namespace Core::IO{
 		}
 
 		static void read(const ext::json::JsonValue& jsonValue, Graphic::Color& data){
-			Graphic::Color::valueOf(data, jsonValue.as<std::string>());
+			Graphic::Color::valueOf(data, jsonValue.as<ext::json::string>());
 		}
 	};
 
