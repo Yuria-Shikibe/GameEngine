@@ -42,7 +42,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${BUILD_DIR})
 set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
-add_compile_options("/W2")
+add_compile_options("/W4")
 add_compile_options("/wd4244")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
@@ -109,10 +109,11 @@ if(BUILD_CLOUD)
             SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDES}/lunasvg/lunasvg
     )
     FetchContent_MakeAvailable(lunasvg)
+else ()
+    add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 endif()
 
 
-add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 
 message(STATUS "Building...")
 
