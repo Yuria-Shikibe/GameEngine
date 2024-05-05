@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.3)
 
+include(FetchContent)
 message(STATUS "Preparing Env...")
 
 #Using Cpp-23
@@ -8,7 +9,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(GameEngine
-        VERSION 0.0.1
+    VERSION 0.0.1
+    LANGUAGES CXX C
 )
 
 message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
@@ -41,6 +43,7 @@ set(EXE_DIR_RELA ${BUILD_DIR}/${CMAKE_BUILD_TYPE})
 set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 
 add_compile_options("/W2")
+add_compile_options("/wd4244")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
@@ -96,6 +99,12 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 
 add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
+FetchContent_Declare(
+    lunasvg
+    GIT_REPOSITORY https://github.com/Yuria-Shikibe/lunasvg.git
+    GIT_TAG latest
+    SOURCE_DIR ${INCLUDES}/lunasvg/lunasvg
+)
 
 message(STATUS "Building...")
 
@@ -131,7 +140,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 #macro(get_WIN32_WINNT version)
-#
+#TODO win spec
 #message(STATUS "ON Windows")
 target_link_libraries(${PROJECT_NAME}
         dwmapi.lib
@@ -143,7 +152,6 @@ target_link_libraries(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME} lunasvg)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
-#target_compile_options(${PROJECT_NAME} PRIVATE "/MD$<$<CONFIG:Debug>:d>")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     set(FILE_TO_DELETE "${EXE_DIR}/${PROJECT_NAME}.pdb")

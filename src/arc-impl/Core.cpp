@@ -12,6 +12,7 @@ import std;
 using namespace Core;
 
 
+
 void Core::initMainWindow() {
 	platform->window->initWindow(title);
 	platform->window->setVerticalSync();

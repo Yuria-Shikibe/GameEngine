@@ -411,11 +411,11 @@ export namespace Geom{
 			rhs.y = y1;
 		}
 
-		[[nodiscard]] friend bool operator==(const PassType lhs, const PassType rhs) noexcept {
+		[[nodiscard]] friend constexpr bool operator==(const Vector2D& lhs, const Vector2D& rhs) noexcept {
 			return lhs.x == rhs.x && lhs.y == rhs.y;
 		}
 
-		[[nodiscard]] friend bool operator!=(const PassType lhs, const PassType rhs) noexcept {
+		[[nodiscard]] friend constexpr bool operator!=(const Vector2D& lhs, const Vector2D& rhs) noexcept {
 			return lhs.x != rhs.x || lhs.y != rhs.y;
 		}
 
@@ -624,7 +624,7 @@ export namespace Geom{
 			return {Math::sign(x), Math::sign(y)};
 		}
 
-		auto constexpr operator<=>(const PassType v) const noexcept {
+		/*auto constexpr operator<=>(const PassType v) const noexcept {
 			T len = length2();
 			T lenO = v.length2();
 
@@ -637,7 +637,7 @@ export namespace Geom{
 			}
 
 			return std::weak_ordering::equivalent;
-		}
+		}*/
 
 		template <Concepts::Number TN>
 		[[nodiscard]] constexpr Vector2D<TN> as() const noexcept{
@@ -677,7 +677,7 @@ export namespace Geom{
 	constexpr Vec2 Y2{ 0, 1 };
 }
 
-// static constexpr auto hasher = std::hash<size_t>{};
+
 
 export
 	template<>
