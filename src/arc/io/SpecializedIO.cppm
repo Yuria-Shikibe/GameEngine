@@ -130,7 +130,7 @@ namespace Core::IO{
 		}
 
 		static void read(const ext::json::JsonValue& jsonValue, Graphic::Color& data){
-			Graphic::Color::valueOf(data, jsonValue.as<ext::json::string>());
+			Graphic::Color::valueOf(data, jsonValue.asType<std::string>());
 		}
 	};
 
