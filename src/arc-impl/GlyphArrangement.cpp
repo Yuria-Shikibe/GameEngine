@@ -251,7 +251,7 @@ void Font::initParser(const FontFlags* const defFont) {
 				data.context.fallbackFont = data.context.currentFont;
 				try {
 					data.context.currentFont = defGlyphParser->fontLib->obtain(std::stoi(static_cast<Font::TextString>(sub)));
-				} catch(std::invalid_argument& e) {
+				} catch([[maybe_unused]] std::invalid_argument& e) {
 					//TODO throw maybe ?
 				}
 			}
@@ -288,7 +288,7 @@ void Font::initParser(const FontFlags* const defFont) {
 				float scl = 1.0f;
 				try{
 					scl = std::stof(static_cast<Font::TextString>(sub));
-				} catch(std::invalid_argument& e) {
+				} catch([[maybe_unused]] std::invalid_argument& e) {
 
 				}
 
@@ -312,7 +312,7 @@ void Font::initParser(const FontFlags* const defFont) {
 					const float moveY = std::stof(static_cast<Font::TextString>(sub.substr(splitIndex + 1)));
 
 					data.context.offset.set(moveX, moveY);
-				} catch(std::invalid_argument& e) {
+				} catch([[maybe_unused]] std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			}
@@ -320,13 +320,13 @@ void Font::initParser(const FontFlags* const defFont) {
 			if(std::tolower(command.front()) == 'x') {
 				try {
 					data.context.offset.set(std::stof(static_cast<Font::TextString>(command.substr(1))), 0);
-				} catch(std::invalid_argument& e) {
+				} catch([[maybe_unused]] std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			} else if(std::tolower(command.front()) == 'y') {
 				try {
 					data.context.offset.set(0, std::stof(static_cast<Font::TextString>(command.substr(1))));
-				} catch(std::invalid_argument& e) {
+				} catch([[maybe_unused]] std::invalid_argument& e) {
 					//TODO maybe ?
 				}
 			}
@@ -337,7 +337,7 @@ void Font::initParser(const FontFlags* const defFont) {
 		if(command.front() == '[' && command.back() == ']') {
 			if(const auto sub = command.substr(1, command.size() - 2); !sub.empty()) {
 				float alpha = 1.0f;
-				try { alpha = std::stof(static_cast<Font::TextString>(sub)); } catch(std::invalid_argument& e) {
+				try { alpha = std::stof(static_cast<Font::TextString>(sub)); } catch([[maybe_unused]] std::invalid_argument& e) {
 				}
 
 				data.context.currentColor.setA(alpha);

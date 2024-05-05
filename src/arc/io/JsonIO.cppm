@@ -1,14 +1,13 @@
 export module Core.IO.JsonIO;
 
-export import Core.IO.General;
-import std;
-import MetaProgramming;
 export import ext.Json;
+export import Core.IO.General;
+import MetaProgramming;
 import ext.Owner;
 import ext.Base64;
-
 import ext.StaticReflection;
-export import Core.IO.General;
+
+import std;
 
 namespace Core::IO{
 	export

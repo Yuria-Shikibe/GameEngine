@@ -176,8 +176,6 @@ std::stringstream sstream{};
 std::unique_ptr<Game::ChamberFrameTrans> chamberFrame{};
 std::unique_ptr<Game::ChamberFactory> testFactory{std::make_unique<TestChamberFactory>()};
 
-constexpr bool t = Core::IO::jsonDirectSerializable<Geom::Rect_Orthogonal<int>>;
-
 void setupUITest(){
 	const auto HUD = new UI::Table{};
 
