@@ -102,7 +102,6 @@ add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 FetchContent_Declare(
     lunasvg
     GIT_REPOSITORY https://github.com/Yuria-Shikibe/lunasvg.git
-    GIT_TAG latest
     SOURCE_DIR ${INCLUDES}/lunasvg/lunasvg
 )
 FetchContent_MakeAvailable(lunasvg)
