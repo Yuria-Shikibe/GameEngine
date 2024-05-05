@@ -45,6 +45,7 @@ set(EXE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${EXE_DIR_RELA})
 add_compile_options("/W4")
 add_compile_options("/wd4244")
 add_compile_options("/wd4100")
+add_compile_options("/wd4458")
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
