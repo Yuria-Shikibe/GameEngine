@@ -182,27 +182,6 @@ export namespace ext::json{
 			return data.index();
 		}
 
-
-		template <typename T>
-			requires validType<T> || (std::is_arithmetic_v<T> && validType<JsonScalarType<T>>)
-		[[nodiscard]] constexpr decltype(auto) as(){
-			if constexpr (std::is_arithmetic_v<T>){
-				return std::get<JsonScalarType<T>>(data);
-			}else{
-				return std::get<T>(data);
-			}
-		}
-
-		template <typename T>
-			requires validType<T> || (std::is_arithmetic_v<T> && validType<JsonScalarType<T>>)
-		[[nodiscard]] constexpr decltype(auto) as() const{
-			if constexpr (std::is_arithmetic_v<T>){
-				return std::get<JsonScalarType<T>>(data);
-			}else{
-				return std::get<T>(data);
-			}
-		}
-
 		template <JsonValueTag tag>
 			requires requires{ requires static_cast<size_t>(tag) < std::variant_size_v<decltype(data)>; }
 		[[nodiscard]] constexpr decltype(auto) as(){
@@ -527,7 +506,7 @@ export namespace ext::json{
 				}
 
 				case boolean :{
-					os << (as<bool>() ? "true" : "false");
+					os << (as<boolean>() ? "true" : "false");
 					break;
 				}
 
