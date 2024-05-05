@@ -5,11 +5,10 @@ module;
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <native/stbi/stbi_image_write.h>
 #include <native/stbi/stbi_image.h>
-// #include <GLFW/glfw3.h>
-
 
 export module Image;
 
