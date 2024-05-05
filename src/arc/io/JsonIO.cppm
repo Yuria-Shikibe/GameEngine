@@ -58,8 +58,8 @@ export namespace Core::IO{
 		static ext::Owner<T*> generate(const ext::json::JsonValue& jval) noexcept(std::same_as<void, T>){
 			if(jval.is<ext::json::object>()){
 				auto& map = jval.asObject();
-				if(const auto itr = map.find(ext::json::keys::Typename); itr != map.end() && itr->second.is<std::string>()){
-					return static_cast<T*>(ext::reflect::tryConstruct(itr->second.as<std::string>()));
+				if(const auto itr = map.find(ext::json::keys::Typename); itr != map.end() && itr->second.is<ext::json::string>()){
+					return static_cast<T*>(ext::reflect::tryConstruct(itr->second.as<ext::json::string>()));
 				}
 			}
 
@@ -68,7 +68,7 @@ export namespace Core::IO{
 
 		template <typename T>
 		static ext::Owner<T*> generate_noCheck(const ext::json::JsonValue& jval){
-			return static_cast<T*>(ext::reflect::tryConstruct(jval.asObject().at(ext::json::keys::Typename).as<std::string>()));
+			return static_cast<T*>(ext::reflect::tryConstruct(jval.asObject().at(ext::json::keys::Typename).as<ext::json::string>()));
 		}
 
 		std::type_index getTypeIndex() const noexcept{return typeid(*this);}
@@ -79,7 +79,7 @@ export namespace Core::IO{
 		if(jval.is<ext::json::object>()){
 			const auto& map = jval.asObject();
 			if(const auto itr = map.find(ext::json::keys::Typename); itr != map.end()){
-				return ext::reflect::tryConstruct<T>(itr->second.as<std::string>());
+				return ext::reflect::tryConstruct<T>(itr->second.as<ext::json::string>());
 			}
 		}
  		return nullptr;
@@ -224,7 +224,7 @@ export namespace Core::IO{
 			if constexpr (srlType == ext::reflect::SrlType::json){
 				ext::json::getValueTo(member, jval);
 			}else if constexpr (srlType == ext::reflect::SrlType::binary_all){
-				Core::IO::fromByte(member, ext::base64::decode<std::vector<char>>(jval.as<std::string>()));
+				Core::IO::fromByte(member, ext::base64::decode<std::vector<char>>(jval.as<ext::json::string>()));
 			}else if constexpr (srlType == ext::reflect::SrlType::binary_byMember){
 				//TODO binary IO support
 				(void)TriggerFailure<T>{};

@@ -32,7 +32,7 @@ namespace CurrentPlatform{
 	void PrintErrorMessage(const HRESULT hr) {
 		if (FAILED(hr)) {
 			LPVOID lpMsgBuf;
-			DWORD dw = GetLastError();
+			[[maybe_unused]] DWORD dw = GetLastError();
 
 			FormatMessage(
 				FORMAT_MESSAGE_ALLOCATE_BUFFER |

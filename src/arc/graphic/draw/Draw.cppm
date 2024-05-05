@@ -225,7 +225,7 @@ export namespace Graphic{
 			read->bind(GL::FrameBuffer::READ);
 			draw->bind(GL::FrameBuffer::DRAW);
 
-			for(int i = 0; i < max; ++i){
+			for(unsigned i = 0; i < max; ++i){
 				read->enableRead(i);
 				draw->enableDrawAt(i);
 

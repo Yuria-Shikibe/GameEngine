@@ -58,7 +58,7 @@ namespace Font {
 	}
 
 	void writeIntoPixmap(const FT_Bitmap& map, unsigned char* data) {
-		for(auto size = 0; size < map.width * map.rows; ++size) {
+		for(unsigned size = 0; size < map.width * map.rows; ++size) {
 			//Normal
 			data[size * 4 + 0] = 0xff;
 			data[size * 4 + 1] = 0xff;
@@ -458,7 +458,7 @@ export namespace Font{
 		}
 
 		[[nodiscard]] FT_UInt familyFallback() const {
-			constexpr FT_UInt mask = ~(0x0000'00ff << styleOffset); //0x0000'0000__0000'00ff__0000'0000__0000'0000
+			constexpr FT_UInt mask = static_cast<FT_UInt>(~(0x0000'00ff << styleOffset)); //0x0000'0000__0000'00ff__0000'0000__0000'0000
 			return internalID & mask | static_cast<FT_UInt>(Style::regualr) << styleOffset;
 		}
 
