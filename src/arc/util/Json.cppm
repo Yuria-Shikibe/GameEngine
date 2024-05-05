@@ -312,16 +312,16 @@ export namespace ext::json{
 			}
 		}
 
-		template <JsonValueTag t>
-			requires requires{ requires static_cast<size_t>(t) < std::variant_size_v<decltype(data)>; }
+		template <JsonValueTag tag>
+			requires requires{ requires static_cast<size_t>(tag) < std::variant_size_v<decltype(data)>; }
 		[[nodiscard]] constexpr decltype(auto) as(){
-			return std::get<static_cast<size_t>(t)>(data);
+			return std::get<static_cast<size_t>(tag)>(data);
 		}
 
-		template <JsonValueTag t>
-			requires requires{ requires static_cast<size_t>(t) < std::variant_size_v<decltype(data)>; }
+		template <JsonValueTag tag>
+			requires requires{ requires static_cast<size_t>(tag) < std::variant_size_v<decltype(data)>; }
 		[[nodiscard]] constexpr decltype(auto) as() const{
-			return std::get<static_cast<size_t>(t)>(data);
+			return std::get<static_cast<size_t>(tag)>(data);
 		}
 
 		/**
