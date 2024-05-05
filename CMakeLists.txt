@@ -105,6 +105,7 @@ FetchContent_Declare(
     GIT_TAG latest
     SOURCE_DIR ${INCLUDES}/lunasvg/lunasvg
 )
+FetchContent_MakeAvailable(lunasvg)
 
 message(STATUS "Building...")
 
