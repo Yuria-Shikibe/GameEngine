@@ -189,8 +189,8 @@ export namespace ext::json{
 
 
 		template <typename T>
-			requires validType<T> || (std::is_arithmetic_v<T> && validType<JsonScalarType<T>>)
-		[[nodiscard]] constexpr decltype(auto) asType(){
+			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
+		[[nodiscard]] constexpr decltype(auto) as(){
 			if constexpr (std::is_arithmetic_v<T>){
 				return std::get<JsonScalarType<T>>(data);
 			}else{
@@ -199,8 +199,8 @@ export namespace ext::json{
 		}
 
 		template <typename T>
-			requires validType<T> || (std::is_arithmetic_v<T> && validType<JsonScalarType<T>>)
-		[[nodiscard]] constexpr decltype(auto) asType() const{
+			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
+		[[nodiscard]] constexpr decltype(auto) as() const{
 			if constexpr (std::is_arithmetic_v<T>){
 				return std::get<JsonScalarType<T>>(data);
 			}else{

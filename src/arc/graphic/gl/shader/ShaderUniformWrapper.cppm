@@ -33,14 +33,14 @@ export namespace GL{
 		}
 
 		template <std::size_t argIndex, bool asReference = false>
-			requires requires{ requires argIndex < size; }
+			requires requires{ requires argIndex < UniformWrapper::size; }
 		inline constexpr typename Concepts::ValueConditional<!asReference, std::tuple_element_t<argIndex, ArgsType>>::type
 			get() noexcept{
 			return std::get<argIndex>(data);
 		}
 
 		template <std::size_t argIndex, bool asReference = true>
-			requires requires{ requires argIndex < size; }
+			requires requires{ requires argIndex < UniformWrapper::size; }
 		inline constexpr typename Concepts::ValueConditional<!asReference, std::tuple_element_t<argIndex, ArgsType>>::type
 			get() const noexcept{
 			return std::get<argIndex>(data);
