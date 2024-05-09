@@ -97,6 +97,7 @@ export namespace ext::json{
 
 
 	enum struct JsonValueTag : std::size_t {
+		null,
 		arithmetic_int,
 		arithmetic_float,
 		boolean,
@@ -108,15 +109,14 @@ export namespace ext::json{
 	using enum JsonValueTag;
 
 	class JsonValue{
-#define TypeGroup JsonInteger, JsonFloat, bool, std::string, Array, Object
+#define TypeGroup std::nullptr_t, JsonInteger, JsonFloat, bool, std::string, Array, Object
 
 	public:
 		using Object = StringMap<JsonValue>;
 		using Array = std::vector<JsonValue>;
 
 		template <typename T>
-		static constexpr std::size_t typeIndex = uniqueTypeIndex_v<
-			T, TypeGroup>;
+		static constexpr std::size_t typeIndex = uniqueTypeIndex_v<T, TypeGroup>;
 
 		template <typename T>
 		static constexpr bool validType = requires{
@@ -130,7 +130,6 @@ export namespace ext::json{
 	public:
 		template <std::size_t index>
 		using TypeAt = std::tuple_element_t<index, VariantTypeTuple>;
-
 
 		static constexpr auto VariantSize = std::variant_size_v<decltype(data)>;
 
@@ -438,41 +437,33 @@ export namespace ext::json{
 			if(valueView.empty()){
 				throw IllegalJsonSegment{"Json with empty value string"};
 			}
-			if(valueView.front() == '{'){
-				if(valueView.back() != '}'){
-					throw IllegalJsonSegment{"Losing '}' At Json Object Back"};
+
+			const auto frontChar = valueView.front();
+
+			switch(frontChar){
+				case '{' : {
+					if(valueView.back() != '}')throw IllegalJsonSegment{"Losing '}' At Json Object Back"};
+
+					parseObject(valueView);
+					return;
+				}
+				case '[' : {
+					if(valueView.back() != ']')throw IllegalJsonSegment{"Losing ']' At Json Array Back"};
+
+					parseArray(valueView);
+					return;
+				}
+				case '"' : {
+					if(valueView.back() != '"' || valueView.size() == 1)throw IllegalJsonSegment{"Losing '\"' At Json String Back"};
+
+					data.emplace<std::string>(std::string(valueView.substr(1, valueView.size() - 2)));
+					return;
 				}
 
-				parseObject(valueView);
-				return;
-			}
-
-			if(valueView.front() == '['){
-				if(valueView.back() != ']'){
-					throw IllegalJsonSegment{"Losing ']' At Json Array Back"};
-				}
-
-				parseArray(valueView);
-				return;
-			}
-
-			if(valueView.front() == '"'){
-				if(valueView.back() != '"' || valueView.size() == 1){
-					throw IllegalJsonSegment{"Losing '""' At Json String Back"};
-				}
-
-				data.emplace<std::string>(static_cast<std::string>(valueView.substr(1, valueView.size() - 2)));
-				return;
-			}
-
-			if(valueView.front() == 't'){
-				data.emplace<bool>(true);
-				return;
-			}
-
-			if(valueView.front() == 'f'){
-				data.emplace<bool>(false);
-				return;
+				case 't': data.emplace<bool>(true); return;
+				case 'f': data.emplace<bool>(false); return;
+				case 'n': data.emplace<std::nullptr_t>(nullptr); return;
+				default: break;
 			}
 
 			if(
@@ -489,7 +480,7 @@ export namespace ext::json{
 				return;
 			}
 
-			if(valueView.front() == '0'){
+			if(frontChar == '0'){
 				if(valueView.size() >= 2){
 					switch(valueView[1]){
 						case 'x' : data.emplace<JsonInteger>(parseInt(valueView.substr(2), 16));
@@ -577,7 +568,7 @@ export namespace ext::json{
 					break;
 				}
 
-				default : os << "Undefined";
+				default : os << "null";
 			}
 		}
 
@@ -618,7 +609,7 @@ export namespace ext::json{
 		 * @brief This is not always valid!
 		 * @return
 		 */
-		[[nodiscard]] constexpr const std::string& getStrData() const{ return strData; }
+		[[nodiscard]] constexpr const std::string& getStrData() const noexcept{ return strData; }
 
 		[[nodiscard]] constexpr const JsonValue& getData() const noexcept{ return root; }
 
@@ -635,7 +626,7 @@ export namespace ext::json{
 		}
 
 		constexpr void flattenString(){
-			strData = strData | std::ranges::views::filter([](const char c){ return c != '\n'; }) | std::ranges::to<
+			strData = strData | std::ranges::views::filter([](const char c){ return c != '\n' && c != '\t'; }) | std::ranges::to<
 				std::string>();
 		}
 

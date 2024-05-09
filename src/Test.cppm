@@ -28,6 +28,7 @@ import GL.TextureArray;
 import GL.Shader;
 import UI.Root;
 import UI.Styles;
+import UI.Palette;
 import Core.Renderer;
 import Ctrl.Constants;
 import Ctrl.ControlCommands;
@@ -63,7 +64,7 @@ export namespace Test{
 		}
 
 		Core::initCore_Post([]{
-			Core::batchGroup.batchOverlay = std::make_unique<Core::SpriteBatch<>>([](const Core::SpriteBatch<>& self){
+			Core::batchGroup.overlay = std::make_unique<Core::SpriteBatch<>>([](const Core::SpriteBatch<>& self){
 				auto* const shader = Assets::Shaders::screenSpace;
 
 				shader->setUniformer([&self](const GL::Shader& s){
@@ -75,7 +76,7 @@ export namespace Test{
 				return shader;
 			});
 
-			Core::batchGroup.batchOverlay->setProjection(&Core::camera->getWorldToScreen());
+			Core::batchGroup.overlay->setProjection(&Core::camera->getWorldToScreen());
 
 			{
 				// auto size = Core::platform
@@ -147,7 +148,7 @@ export namespace Test{
 				Assets::TexturePackPage* mainPage = event.manager->getAtlas().registerPage(
 					MainPageName, Assets::texCacheDir);
 				mainPage->pushRequest("white-solid", Assets::textureDir.find("white.png"));
-				Assets::TexturePackPage* normalPage = event.manager->getAtlas().registerAttachmentPage(
+				[[maybe_unused]] Assets::TexturePackPage* normalPage = event.manager->getAtlas().registerAttachmentPage(
 					"normal", mainPage);
 				Assets::TexturePackPage* lightPage = event.manager->getAtlas().
 				                                           registerAttachmentPage("light", mainPage);
@@ -228,14 +229,15 @@ export namespace Test{
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPost>([](const auto& event){
-			Core::batchGroup.batchWorld = std::make_unique<Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>>(
+			Core::batchGroup.world = std::make_unique<Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>>(
 				[](const Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>& self){
 					auto* const shader = Assets::Shaders::world;
 
 					shader->setUniformer([&self](const GL::Shader& s){
 						s.setTexture2D("texArray", self.getTexture());
 						s.setMat3("view", *self.getProjection());
-						s.setMat3("localToWorld", self.getLocalToWorld());
+						// s.setMat3("localToWorld", self.getLocalToWorld());
+						s.setMat3("localToWorld", Geom::MAT3_IDT);
 					});
 
 					return shader;
@@ -246,7 +248,7 @@ export namespace Test{
 					layout.addFloat(4);
 				});
 
-			Core::batchGroup.batchWorld->setProjection(&Core::camera->getWorldToScreen());
+			Core::batchGroup.world->setProjection(&Core::camera->getWorldToScreen());
 
 			Font::forwardParser = std::make_unique<Font::GlyphParser>(Assets::Fonts::telegrama);
 			Font::forwardParser->charParser->registerDefParser();
@@ -264,22 +266,23 @@ export namespace Test{
 				data.context.fallbackColor = data.context.currentColor;
 
 				data.context.currentColor = Font::defGlyphParser->tokenParser->modifier.contains(subToken)
-					                            ? Graphic::Color{0xa1ecabff}
-					                            : Graphic::Colors::RED_DUSK;
+					                            ? UI::Pal::PALE_GREEN
+					                            : UI::Pal::RED_DUSK;
 				auto backItr = data.layout.getGlyphs().rbegin();
 
 				for(int i = 0; i < 2; ++i){
-					backItr->fontColor = Graphic::Colors::GRAY;
+					backItr->fontColor = UI::Pal::GRAY;
 					++backItr;
 				}
 
 				for(const auto [index, charCode] : token | std::ranges::views::enumerate){
 					const auto* charData = data.context.currentFont->getCharData(charCode);
 
-					if(index == subToken.size()){
-						data.context.currentColor = Graphic::Colors::ROYAL;
-					} else if(index > subToken.size()){
-						data.context.currentColor = Graphic::Colors::LIGHT_GRAY;
+					if(std::cmp_equal(index, subToken.size())){
+						data.context.currentColor = UI::Pal::KEY_WORD;
+
+					} else if(std::cmp_greater(index, subToken.size())){
+						data.context.currentColor = UI::Pal::LIGHT_GRAY;
 					}
 
 					const bool hasCharToken = Font::forwardParser->charParser->contains(charCode);
@@ -298,11 +301,11 @@ export namespace Test{
 					}
 				}
 
-				data.context.currentColor = Graphic::Colors::GRAY;
+				data.context.currentColor = UI::Pal::GRAY;
 			};
 
-			Font::forwardParser->charParser->shouldNotContinueSet.insert('}');
-			Font::forwardParser->charParser->modifier['}'] = [](const Font::ModifierableData& data){
+			Font::forwardParser->charParser->shouldNotContinueSet.insert(Font::forwardParser->TokenEndCode);
+			Font::forwardParser->charParser->modifier[Font::forwardParser->TokenEndCode] = [](const Font::ModifierableData& data){
 				if(data.context.currentColor == Graphic::Colors::GRAY){
 					data.context.currentColor = data.context.fallbackColor;
 				}

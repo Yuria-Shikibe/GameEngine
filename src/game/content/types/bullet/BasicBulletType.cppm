@@ -34,7 +34,7 @@ export namespace Game::Content{
 			namespace Draw = Graphic::Draw;
 
 			Draw::color(Graphic::Colors::RED_DUSK);
-			Graphic::Draw::Game::hitbox(bullet.hitBox);
+			Game::Draw::hitbox(bullet.hitBox);
 			// Draw::quad(Draw::defaultTexture, bullet.hitBox.v0, bullet.hitBox.v1, bullet.hitBox.v2, bullet.hitBox.v3);
 		}
 

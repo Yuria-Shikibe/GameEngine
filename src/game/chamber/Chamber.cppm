@@ -21,7 +21,7 @@ namespace Game{
 }
 
 export namespace Game{
-	constexpr float TileSize = 32.0f;
+	constexpr float TileSize = 8.0f;
 
 	struct ChamberTile;
 

@@ -12,6 +12,9 @@ import Geom.Position;
 
 export namespace Game {
 	class BaseEntity : public DrawableEntity, public PosedEntity, public Healthed, public Factional {
+	public:
+		[[nodiscard]] BaseEntity() noexcept = default;
+
 		virtual void init(){
 
 		}

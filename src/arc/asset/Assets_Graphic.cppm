@@ -36,9 +36,6 @@ import OS.File;
 import std;
 import Math;
 
-using namespace GL;
-using namespace Graphic;
-
 /**
  * \brief Inbuilt Resources
  *
@@ -58,33 +55,41 @@ export namespace Assets{
 	inline OS::FileTree textureTree;
 
 	namespace Shaders {
-		inline Shader* stdPost = nullptr;
-		inline Shader* texPost = nullptr;
-		inline Shader* screenSpace = nullptr;
-		inline Shader* coordAxis = nullptr;
-		inline Shader* filter = nullptr;
+		inline GL::Shader* stdPost = nullptr;
+		inline GL::Shader* texPost = nullptr;
+		inline GL::Shader* screenSpace = nullptr;
+		inline GL::Shader* coordAxis = nullptr;
+		inline GL::Shader* filter = nullptr;
 
-		inline Shader* threshold_light = nullptr;
-		inline Shader* gaussian = nullptr;
-		inline Shader* bloom = nullptr;
-		inline Shader* blit = nullptr;
+		inline GL::Shader* threshold_light = nullptr;
+		inline GL::Shader* gaussian = nullptr;
+		inline GL::Shader* gaussian_world = nullptr;
+		inline GL::Shader* bloom = nullptr;
+		inline GL::Shader* blit = nullptr;
 
-		inline UniformWrapper slideLineShaderDrawArgs{25.0f, -1.0f, Colors::GRAY.createLerp(Colors::LIGHT_GRAY, 0.5f), 1.0f};
-		inline UniformWrapper slideLineShaderScaleArgs{Geom::norBaseVec2<float>, Geom::zeroVec2<float>, 1.0f};
-		inline UniformWrapper slideLineShaderAngle{45.0f};
-		inline Shader* sildeLines = nullptr;
+		/** @brief [width, spacing, color, mulScale] */
+		inline GL::UniformTupleWrapper slideLineShaderDrawArgs
+			{25.0f, -1.0f, Graphic::Colors::GRAY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.5f), 1.0f};
 
-		inline Shader* world = nullptr;
-		inline Shader* merge = nullptr;
+		/** @brief [screen scale, offset, timeScale] */
+		inline GL::UniformTupleWrapper slideLineShaderScaleArgs{1.0f};
+		inline GL::UniformTupleWrapper slideLineShaderAngle{45.0f};
+		inline GL::Shader* sildeLines = nullptr;
 
-		inline Shader* mask = nullptr;
-		inline Shader* worldBloom = nullptr;
+		inline GL::Shader* world = nullptr;
+		inline GL::Shader* merge = nullptr;
 
-		inline UniformWrapper outlineArgs{4.0f, 0.0f, Geom::norBaseVec2<float>};
-		inline Shader* outline_ortho = nullptr;
-		inline Shader* outline_sobel = nullptr;
+		inline GL::Shader* mask = nullptr;
+		inline GL::Shader* worldBloom = nullptr;
 
-		void loadPrevious();
+		inline GL::Shader* frostedGlass = nullptr;
+
+		inline GL::UniformTupleWrapper outlineArgs{4.0f, 0.0f, Geom::norBaseVec2<float>};
+		inline GL::Shader* outline_ortho = nullptr;
+		inline GL::Shader* outline_sobel = nullptr;
+
+
+		void loadPrimitive();
 
 		void load(GL::ShaderManager* manager);
 	}
@@ -95,30 +100,35 @@ export namespace Assets{
 			blendMulti{nullptr},
 			blurX{nullptr},
 			blurY{nullptr},
-			blurX_Far{nullptr},
-			blurY_Far{nullptr},
-			blend{nullptr}
+			blurX_World{nullptr},
+			blurY_World{nullptr},
+			blend{nullptr},
+			frostedGlass{nullptr},
+			frostedGlassTest{nullptr}
 		;
 
 		std::unique_ptr<Graphic::PingPongProcessor>
-			blur_Far
+			blur_Far,
+			frostedGlassBlur
 		;
 
 
 		std::unique_ptr<Graphic::BloomProcessor> bloom{nullptr};
 
+		void loadPrimitive();
+
 		void load();
 	}
 
 	namespace Textures {
-		inline const Texture2D* whiteTex = nullptr;
-		inline TextureRegionRect whiteRegion{};
+		inline const GL::Texture2D* whiteTex = nullptr;
+		inline GL::TextureRegionRect whiteRegion{};
 		Graphic::Pixmap error{};
 
 		void load() {
-			whiteTex = new Texture2D{textureDir.find("white.png")};
+			whiteTex = new GL::Texture2D{textureDir.find("white.png")};
 			error = Graphic::Pixmap{textureDir.find("error.png")};
-			whiteRegion = TextureRegionRect{whiteTex};
+			whiteRegion = GL::TextureRegionRect{whiteTex};
 		}
 
 		void dispose() {
@@ -245,7 +255,7 @@ export namespace Assets{
 			*coords{nullptr}
 		;
 
-		void loadPrevious() {
+		void loadPrimitive() {
 			raw = new GL::Mesh{[]( GL::Mesh& mesh) {
 				mesh.bind();
 				mesh.getVertexBuffer().setData({
@@ -257,7 +267,7 @@ export namespace Assets{
 
 				mesh.getIndexBuffer().setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
-				AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				GL::AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
 				layout.addFloat(2);
 				mesh.applyLayout();
@@ -277,7 +287,7 @@ export namespace Assets{
 				}, GL_STATIC_DRAW);
 				mesh.getIndexBuffer().setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
-				AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				GL::AttributeLayout& layout = mesh.getVertexArray().getLayout();
 				layout.addFloat(2);
 				mesh.applyLayout();;
 
@@ -295,6 +305,7 @@ export namespace Assets{
 
 	inline void loadAfter() {
 		Meshes::load();
+		PostProcessors::load();
 	}
 
 	inline void dispose() {

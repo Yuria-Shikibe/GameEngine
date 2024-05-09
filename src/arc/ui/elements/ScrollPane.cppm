@@ -141,19 +141,22 @@ export namespace UI {
 			}
 		}
 
-		template <Concepts::Derived<Widget> T>
-		void setItem(Concepts::Invokable<void(T&)> auto&& func, const int depth = std::numeric_limits<int>::max()) {
+		template <Concepts::Derived<Widget> T, bool fillX = true, bool fillY = false>
+		void setItem(Concepts::Invokable<void(T&)> auto&& func) {
 			auto ptr = std::make_unique<T>();
 
 			if constexpr (!std::same_as<decltype(func), std::nullptr_t>) {
 				func(*ptr);
 			}
 
+			ptr->setFillparentX(fillX);
+			ptr->setFillparentY(fillY);
+
 			children.clear();
-			this->addChildren(std::move(ptr), depth);
+			this->addChildren(std::move(ptr));
 		}
 
-		//TODO this has bug when resized !
+		//BUG this has bug when resized !
 		//If layouted multible times, this will shrink itemsize!
 		Rect getFilledChildrenBound(Widget* elem) const override {
 			Rect rect = Widget::getFilledChildrenBound(elem);

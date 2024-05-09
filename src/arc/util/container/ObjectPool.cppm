@@ -4,6 +4,7 @@ import std;
 
 import Concepts;
 import ext.RuntimeException;
+import ext.Owner;
 
 
 export namespace ext{
@@ -12,7 +13,6 @@ export namespace ext{
         requires Concepts::DefConstructable<T>
     class ObjectPool{
     public:
-        using ItemRef = T*;
         struct Deleter {
             ObjectPool* src{ nullptr };
 
@@ -21,26 +21,30 @@ export namespace ext{
             Deleter() = default;
 
             explicit Deleter(ObjectPool* src)
-                    : src(src) {
+                : src(src) {
             }
 
-            void operator()(const ItemRef t) const {
+            void operator()(const ext::Owner<T*> t) const {
                 if(!src) {
                     delete t;
                 }else{
                     src->store(t);
                 }
             }
+
+            friend bool operator==(const Deleter& lhs, const Deleter& rhs){ return lhs.src == rhs.src; }
+
+            friend bool operator!=(const Deleter& lhs, const Deleter& rhs){ return !(lhs == rhs); }
         };
 
-        struct Allocator_Raw : ::std::allocator<ItemRef> {
+        struct Allocator_Raw : ::std::allocator<ext::Owner<T*>> {
             ObjectPool* const src{ nullptr };
 
-            ItemRef* allocate(const size_t count) {
+            ext::Owner<T*>* allocate(const size_t count) {
                 return &src->obtainRaw();
             }
 
-            void deallocate(ItemRef* ptr, size_t n) {
+            void deallocate(ext::Owner<T*>* ptr, size_t n) {
                 src->store(*ptr);
             }
         };
@@ -71,9 +75,9 @@ export namespace ext{
 
     protected:
         size_t maxSize{5000};
-        std::vector<ItemRef> vault;
+        std::vector<ext::Owner<T*>> vault;
 
-        Deleter deleter;
+        Deleter deleter{this};
         std::mutex vaultLock{};
         // std::unique_ptr<std::pmr::monotonic_buffer_resource> monotonicPool{nullptr};
 
@@ -84,7 +88,7 @@ export namespace ext{
 
         using UniquePtr = std::unique_ptr<T, Deleter>;
 
-        explicit ObjectPool(const size_t maxSize) : maxSize(maxSize), deleter(Deleter{this}){
+        explicit ObjectPool(const size_t maxSize) : maxSize(maxSize){
             vault.reserve(maxSize);
         }
 
@@ -96,36 +100,28 @@ export namespace ext{
 
         ObjectPool& operator=(ObjectPool&& other) noexcept = default;
 
-        ObjectPool() : deleter(Deleter{this}){
+        ObjectPool(){
             vault.reserve(maxSize);
         }
 
         ~ObjectPool() {
-            while(!vault.empty()) {
-                delete vault.back();
-                vault.pop_back();
+            for(auto element : vault){
+                std::free(element);
             }
         }
 
         void store(std::shared_ptr<T>& ptr) {
             //TODO does this safe>>
-            if(std::addressof(get_deleter(ptr)) == &deleter) {
-                std::lock_guard guard{vaultLock};
+            if(std::addressof(*std::get_deleter<Deleter>(ptr)) == deleter) {
                 ptr.reset(nullptr);
             }
         }
 
         void store(std::unique_ptr<T>&& ptr){
-            std::lock_guard guard{vaultLock};
-
-            if(vault.size() < maxSize){
-                vault.push_back(ptr.release());
-            }else {
-                ptr.reset();
-            }
+            this->store(ptr.release());
         }
 
-        void store(ItemRef ptr) {
+        void store(T* ptr) {
             if(std::lock_guard guard{vaultLock}; vault.size() < maxSize){
                 ptr->~T();
                 vault.push_back(ptr);
@@ -160,19 +156,18 @@ export namespace ext{
             return UniquePtr{obtainRaw(), deleter};
         }
 
-        [[nodiscard]] ItemRef obtainRaw() {
-            if (vault.empty()) {
-                return new T;
-            }
-
-            ItemRef ptr = nullptr;
-
-            {
-                std::lock_guard guard{vaultLock};
+        [[nodiscard]] ext::Owner<T*> obtainRaw() {
+            ext::Owner<T*> ptr{nullptr};
+            if (std::lock_guard guard{vaultLock}; !vault.empty()) {
                 ptr = vault.back();
-                new (ptr) T{};
                 vault.pop_back();
             }
+
+            if(!ptr){
+                ptr = static_cast<ext::Owner<T*>>(std::malloc(sizeof T));
+            }
+
+            new (ptr) T{};
 
             return ptr;
         }

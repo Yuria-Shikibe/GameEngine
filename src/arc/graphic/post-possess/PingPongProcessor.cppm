@@ -20,18 +20,18 @@ export namespace Graphic {
 		mutable FrameBuffer ping{200, 200};
 		mutable FrameBuffer pong{200, 200};
 
-		unsigned int processTimes = 3;
-
 		float scale = 1.0f;
-
 	public:
 		FramePort port{};
+
 		[[nodiscard]] PingPongProcessor() = default;
 
 		~PingPongProcessor() override = default;
 
 		PostProcessor* ping2pong = nullptr;
 		PostProcessor* pong2ping = nullptr;
+
+		unsigned int processTimes = 3;
 
 		[[nodiscard]] FrameBuffer* getPing() const {
 			return &ping;
@@ -47,9 +47,9 @@ export namespace Graphic {
 		}
 
 		[[nodiscard]] PingPongProcessor(PostProcessor* const ping2Pong, PostProcessor* const pong2Ping, const unsigned processTimes)
-			: processTimes(processTimes),
-			ping2pong(ping2Pong),
-			pong2ping(pong2Ping) {
+			: ping2pong(ping2Pong),
+			pong2ping(pong2Ping),
+			processTimes(processTimes) {
 		}
 
 		[[nodiscard]] unsigned getProcessTimes() const {
@@ -69,8 +69,16 @@ export namespace Graphic {
 			this->scale = scale;
 		}
 
+		void runProcess() const override {
+			for(unsigned int i = 0; i < processTimes; i ++) {
+				ping2pong->apply(&ping, &pong);
+				pong2ping->apply(&pong, &ping);
+			}
+		}
+
 		void beginProcess() const override {
 			if(ping2pong == nullptr || ping2pong == nullptr || toProcess == nullptr)throwException();
+
 
 			ping.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
 			pong.resize(toProcess->getWidth() * scale, toProcess->getHeight() * scale);
@@ -80,20 +88,13 @@ export namespace Graphic {
 
 			toProcess->getColorAttachments().at(port.inPort)->active(0);
 
-			Graphic::Frame::blit(&ping);
-		}
-
-		void runProcess() const override {
-			for(unsigned int i = 0; i < processTimes; i ++) {
-				ping2pong->apply(&ping, &pong);
-				pong2ping->apply(&pong, &ping);
-			}
+			Frame::blit(&ping);
 		}
 
 		void endProcess(FrameBuffer* target) const override {
 			ping.getTexture().active(0);
 
-			Graphic::Frame::blit(target, port.outPort);
+			Frame::blit(target, port.outPort);
 		}
 	};
 }

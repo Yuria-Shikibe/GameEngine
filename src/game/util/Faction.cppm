@@ -62,7 +62,7 @@ export namespace Game {
 			: id(id) {
 		}
 
-		[[nodiscard]] FactionID getID() const {
+		[[nodiscard]] FactionID getID() const noexcept{
 			return id;
 		}
 	};

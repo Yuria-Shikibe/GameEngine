@@ -6,7 +6,7 @@ export module Game.Chamber.Util;
 
 export import Graphic.Pixmap;
 export import Game.Chamber;
-export import Game.ChamberFrame;
+export import Game.Chamber.Frame;
 import Geom.Rect_Orthogonal;
 import Graphic.Color;
 import std;

@@ -132,7 +132,7 @@ export namespace Game {
 
 				auto dest = entity->controller->moveCommand.destination;
 				Font::defGlyphParser->parseWith(coordText, std::format(
-					"${{scl#[0.85]}}${{color#[eeeeeeff]}}[{:.1f}, {:.1f}]",
+					"$<scl#[0.55]>$<color#[eeeeeeff]>[{:.1f}, {:.1f}]",
 				dest.x, dest.y));
 				coordText->offset.set(dest).add(45, 45);
 				coordText->setAlign(Align::Mode::bottom_left);

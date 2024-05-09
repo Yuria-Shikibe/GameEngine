@@ -68,6 +68,8 @@ export namespace Game{
 		RealityEntity* parent{nullptr};
 
 	public:
+		[[nodiscard]] TurretEntity() = default;
+
 		Geom::Vec2 relativePosition{};
 
 		void update(const float deltaTick) override{

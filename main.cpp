@@ -116,8 +116,9 @@ import Game.Content.Type.Turret.BasicTurretType;
 import Game.Content.Builtin.SpaceCrafts;
 
 import Game.Graphic.CombinePostProcessor;
+import Game.Graphic.Draw;
 
-import Game.ChamberFrame;
+import Game.Chamber.Frame;
 import Game.Chamber.Util;
 import Game.Chamber.FrameTrans;
 
@@ -198,7 +199,7 @@ void setupUITest(){
 						   Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{},
 						   &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
 
-					   return sstream.str();
+					   return std::move(sstream).str();
 				   });
 
 				   label.setFillparentX();
@@ -214,7 +215,7 @@ void setupUITest(){
 	   .setMargin(0, 10, 0, 10);
 
 
-	/*
+
 	HUD->add<UI::Table>([](UI::Table& table){
 		   table.add<UI::Table>([](UI::Table& t){
 			   t.selfMaskOpacity = 0.0f;
@@ -227,7 +228,7 @@ void setupUITest(){
 					   });
 
 					   button.setTooltipBuilder({
-							   .followTarget = UI::FollowTarget::parent,
+							   .followTarget = UI::TooltipFollowTarget::parent,
 							   .minHoverTime = UI::DisableAutoTooltip,
 							   .followTargetAlign = Align::Mode::bottom_left,
 							   .builder = [i](UI::Table& hint){
@@ -253,7 +254,7 @@ void setupUITest(){
 										   });
 									   });
 									   button.setTooltipBuilder({
-											   .followTarget = UI::FollowTarget::parent,
+											   .followTarget = UI::TooltipFollowTarget::parent,
 											   .followTargetAlign = Align::Mode::center_right,
 											   .tooltipSrcAlign = Align::Mode::center_left,
 											   .builder = [](UI::Table& hintInner){
@@ -290,7 +291,7 @@ void setupUITest(){
 				   bar.PointCheck = 12;
 
 				   bar.setTooltipBuilder({
-						   .followTarget = UI::FollowTarget::parent,
+						   .followTarget = UI::TooltipFollowTarget::parent,
 						   .followTargetAlign = Align::Mode::bottom_center,
 						   .tooltipSrcAlign = Align::Mode::top_center,
 						   .builder = [&bar](UI::Table& hint){
@@ -372,7 +373,7 @@ void setupUITest(){
 
 	HUD->add<UI::Table>([](UI::Table& table){
 		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-			   pane.setItem<UI::InputArea>([](UI::InputArea& area){
+			   pane.setItem<UI::InputArea, false, false>([](UI::InputArea& area){
 				   area.usingGlyphWidth = area.usingGlyphHeight = true;
 				   area.setMaxTextLength(1000);
 
@@ -394,7 +395,7 @@ void setupUITest(){
 	   .setAlign(Align::Mode::bottom_right)
 	   .setSizeScale(0.3f, 0.15f)
 	   .setMargin(10, 0, 10, 0);
-	   */
+
 }
 
 void setupCtrl(){
@@ -455,7 +456,7 @@ void setupCtrl(){
 
 				ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80.0f * i));
 
-				ptr->velo.vec.set(320, 0).rotate(ptr->trans.rot);
+				ptr->vel.vec.set(320, 0).rotate(ptr->trans.rot);
 				Game::EntityManage::add(ptr);
 				ptr->hitBox.init(box);
 				ptr->physicsBody.inertialMass = 100;
@@ -506,10 +507,14 @@ void genRandomEntities(){
 	ptr->trans.vec.set(0, 0);
 	Game::EntityManage::add(ptr);
 	Game::read(OS::File{Assets::assetsDir.subFile(R"(hitbox\pester.hitbox)")}, ptr->hitBox);
-	ptr->velo.vec.set(0, 0);
+
+	ptr->vel.vec.set(0, 0);
 	ptr->setHealth(10000);
 	ptr->init(Game::Content::Builtin::test);
 	ptr->activate();
+	ptr->chambers.operator=(std::move(*chamberFrame));
+	ptr->chamberTrans.vec.x = 85;
+	chamberFrame = std::make_unique<Game::ChamberFrameTrans>();
 }
 
 void setupBaseDraw(){
@@ -533,6 +538,7 @@ void setupBaseDraw(){
 }
 
 int main(const int argc, char* argv[]){
+
 	//Init
 	::Test::init(argc, argv);
 
@@ -569,41 +575,39 @@ int main(const int argc, char* argv[]){
 		}
 	}
 
-	// chamberFrame->getChambers().reTree();
-
-
-
 	// UI Test
 	setupUITest();
 
 	setupCtrl();
 
-	// genRandomEntities();
+	genRandomEntities();
 
 	setupBaseDraw();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 3};
+	// GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 3};
 	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
 
 	Game::CombinePostProcessor merger{
-			Assets::PostProcessors::blurX_Far.get(), Assets::PostProcessors::blurY_Far.get(),
+			Assets::PostProcessors::blurX_World.get(), Assets::PostProcessors::blurY_World.get(),
 			Assets::Shaders::merge
 		};
+	// merger.blur.setScale(0.5f);
+	merger.blur.setProcessTimes(6);
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
-	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
+	// Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
 
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
-
+	//
 	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
 		Core::Renderer& renderer = *event.renderer;
-		renderer.frameBegin(&acceptBuffer1);
+		renderer.frameBegin(acceptBuffer1);
 
 		acceptBuffer1.clearColor(Graphic::Colors::BLACK);
 
@@ -629,8 +633,9 @@ int main(const int argc, char* argv[]){
 	});
 
 
-	Core::renderer->getListener().on<Event::Draw_After>([](const Event::Draw_After& event){
-		event.renderer->frameBegin(&event.renderer->effectBuffer);
+	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
+		// event.renderer->effectBuffer.bind();
+		event.renderer->frameBegin(&frameBuffer);
 
 		Draw::Line::setLineStroke(5);
 		Draw::color(Colors::GRAY);
@@ -641,6 +646,8 @@ int main(const int argc, char* argv[]){
 		Game::EntityManage::renderDebug();
 
 		event.renderer->frameEnd(Assets::PostProcessors::bloom.get());
+		// Assets::PostProcessors::blur_Far->apply(&event.renderer->effectBuffer, event.renderer->contextFrameBuffer);
+		// event.renderer->contextFrameBuffer->bind();
 	});
 
 	chamberFrame->updateChamberFrameData();
@@ -652,97 +659,48 @@ int main(const int argc, char* argv[]){
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 
-		chamberFrame->setLocalTrans({{3000, 1200}, 45});
-		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
-
-		Core::batchGroup.batchOverlay->flush();
-		Core::batchGroup.batchOverlay->modifyGetLocalToWorld() = chamberFrame->getTransformMat();
-
-
-		{
-			// [[maybe_unused]] auto guard = Draw::genColorGuard();
-			// e.renderer->frameBegin(&e.renderer->effectBuffer);
-			// Draw::color(Colors::WHITE);
-			//
-			// for(const Game::ChamberTile* tile : chamberFrame->getDrawable().valids){
-			// 	Draw::rectOrtho(Draw::globalState.defaultTexture, tile->getTileBound());
-			// }
-			//
-			// Assets::Shaders::outlineArgs.set(4.0f, chamberFrame->getLocalTrans().rot, Core::renderer->getSize().inverse());
-			// e.renderer->frameEnd(Assets::Shaders::outline_ortho);
-			// Assets::Shaders::outlineArgs.setDef();
-
-			Draw::color(Colors::GRAY, 0.45f);
-			Draw::Line::setLineStroke(2.0f);
-			for(const auto* tile : chamberFrame->getDrawable().valids){
-				Draw::Line::rectOrtho(tile->getTileBound());
-			}
-
-			Draw::color(Colors::LIGHT_GRAY, 0.85f);
-			for(const Game::Chamber* tile : chamberFrame->getDrawable().owners){
-				Draw::Line::rectOrtho(tile->getChamberBound());
-			}
-		}
-
-		{
-			[[maybe_unused]] auto guard = Draw::genColorGuard();
-
-			Draw::color(Colors::WHITE, 0.8f);
-			Draw::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
-
-			Assets::Shaders::slideLineShaderDrawArgs.set(30.0f, 45.0f, Colors::CLEAR, 1.0f);
-			Assets::Shaders::slideLineShaderAngle.set(chamberFrame->getLocalTrans().rot + 45);
-			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
-
-			for(const auto* tile : chamberFrame->getDrawable().invalids){
-				Draw::rectOrtho(Draw::getDefaultTexture(), tile->getTileBound());
-			}
-
-			Graphic::Batch::endShader(true);
-
-			Assets::Shaders::slideLineShaderDrawArgs.setDef();
-			Assets::Shaders::slideLineShaderAngle.setDef();
-		}
-
-		auto transed = Core::renderer->getNormalized(Core::input->getCursorPos());
-		transed *= Core::camera->getScreenToWorld();
-		auto rawCpy = transed;
-
-		transed = chamberFrame->getWorldToLocal(transed);
-
-		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-		Geom::OrthoRectInt bound{pos, 3, 3};
-
-		if(const auto finded = chamberFrame->getChambers().find(pos)){
-			Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
-		}
-
-		if(chamberFrame->getChambers().placementValid(bound)){
-			Draw::color(Colors::PALE_GREEN);
-		}else{
-			Draw::color(Colors::RED_DUSK);
-		}
-
-		Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
-
-		Core::batchGroup.batchOverlay->flush();
-		Core::batchGroup.batchOverlay->resetLocalToWorld();
-
-		Draw::rectPoint(chamberFrame->getLocalTrans().vec, 6);
-
-		Draw::Line::line(rawCpy, Core::camera->getPosition());
+		Graphic::Batch::blend<>();
+		//
+		// chamberFrame->setLocalTrans({{3000, 1200}, 45});
+		//
+		// chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
+		// ::Game::Draw::chamberFrame(*chamberFrame);
+		//
+		// {
+		// 	[[maybe_unused]] Core::BatchGuard_L2W batchGuard{
+		// 			*Core::batchGroup.overlay, chamberFrame->getTransformMat()
+		// 		};
+		//
+		// 	auto transed = Core::renderer->getNormalized(Core::input->getCursorPos());
+		// 	transed *= Core::camera->getScreenToWorld();
+		// 	auto rawCpy = transed;
+		//
+		// 	transed = chamberFrame->getWorldToLocal(transed);
+		//
+		// 	const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
+		// 	Geom::OrthoRectInt bound{pos, 3, 3};
+		//
+		// 	if(const auto finded = chamberFrame->getChambers().find(pos)){
+		// 		Draw::color(Colors::LIGHT_GRAY);
+		// 		Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
+		// 	}
+		//
+		// 	if(chamberFrame->getChambers().placementValid(bound)){
+		// 		Draw::color(Colors::PALE_GREEN);
+		// 	} else{
+		// 		Draw::color(Colors::RED_DUSK);
+		// 	}
+		//
+		// 	Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
+		// }
+		//
+		// Draw::rectPoint(chamberFrame->getLocalTrans().vec, 6);
+		// Draw::Line::line(rawCpy, Core::camera->getPosition());
 
 
 		Graphic::Batch::blend();
-		//
-		Draw::color();
 
 		Draw::Line::setLineStroke(4);
-		// Draw::Line::poly(cameraPos.getX(), cameraPos.getY(), 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
-		// 		   Colors::SKY, Colors::ROYAL, Colors::SKY, Colors::WHITE, Colors::ROYAL, Colors::SKY
-		// );
-
-		Draw::color();
 
 		{
 			static Geom::Matrix3D mat{};
@@ -750,7 +708,13 @@ int main(const int argc, char* argv[]){
 			Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
 			Draw::color();
 
-			Draw::Line::square(Core::renderer->getCenterX(), Core::renderer->getCenterY(), 50, 45);
+			auto [x, y] = Core::renderer->getSize().scl(0.5f);
+			Draw::Line::square(x, y, 50, 45);
+			Draw::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+			                 Colors::SKY.copy().setA(0.55f), Colors::ROYAL.copy().setA(0.55f),
+			                 Colors::SKY.copy().setA(0.55f), Colors::WHITE.copy().setA(0.55f),
+			                 Colors::ROYAL.copy().setA(0.55f), Colors::SKY.copy().setA(0.55f)
+			);
 
 			Graphic::Batch::endPorj();
 		}

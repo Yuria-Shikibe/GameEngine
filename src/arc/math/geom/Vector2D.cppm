@@ -201,7 +201,7 @@ export namespace Geom{
 			return this->mul(val, val);
 		}
 
-		constexpr Vector2D& inv() noexcept requires Concepts::Signed<T> {
+		constexpr Vector2D& reverse() noexcept requires Concepts::Signed<T> {
 			x = -x;
 			y = -y;
 			return *this;

@@ -9,7 +9,7 @@ import std;
 
 //TODO shits
 export namespace ext{
-	void getStackTraceBrief(std::stringstream&ss, const bool jumpUnSource = true, const bool showExec = false, const int skipNative = 3){
+	void getStackTraceBrief(std::ostringstream& ss, const bool jumpUnSource = true, const bool showExec = false, const int skipNative = 3){
 		ss << "\n--------------------- Stack Trace Begin:\n\n";
 
 		const auto currentStacktrace = std::stacktrace::current();

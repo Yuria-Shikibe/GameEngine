@@ -29,7 +29,7 @@ export namespace Game {
 			inScreen = val;
 		}
 
-		virtual void calculateInScreen(Geom::OrthoRectFloat& viewport) {
+		virtual void calculateInScreen(const Geom::OrthoRectFloat& viewport) {
 			inScreen = getDrawBound().overlap(viewport);
 		}
 
@@ -46,7 +46,7 @@ export namespace Game {
 			return expectedDrawRegion;
 		}
 
-		void calculateInScreen(Geom::OrthoRectFloat& viewport) override {
+		void calculateInScreen(const Geom::OrthoRectFloat& viewport) override {
 			inScreen = viewport.overlap(expectedDrawRegion);
 		}
 	};

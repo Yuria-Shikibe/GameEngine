@@ -10,7 +10,7 @@ export namespace Game {
 	class PosedEntity : public Geom::Position2D{
 	public:
 		Geom::Transform trans{};
-		Geom::Transform velo{};
+		Geom::Transform vel{};
 		Geom::Transform accel{};
 
 		float zLayer{3};

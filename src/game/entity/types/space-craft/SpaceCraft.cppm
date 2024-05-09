@@ -18,6 +18,11 @@ import ext.RuntimeException;
 import std;
 import ext.Encoding;
 
+import Game.Graphic.Draw;
+import Game.Chamber;
+import Game.Chamber.Frame;
+import Game.Chamber.FrameTrans;
+
 export namespace Game {
 	class SpaceCraft;
 
@@ -40,6 +45,9 @@ export namespace Game {
 	 */
 	class SpaceCraft : public RealityEntity{
 	public:
+		Geom::Transform chamberTrans{};
+		ChamberFrameTrans chambers{};
+
 		const SpaceCraftTrait* trait{nullptr};
 
 		std::shared_ptr<Font::GlyphLayout> coordText = Font::obtainLayoutPtr();
@@ -105,28 +113,28 @@ export namespace Game {
 			if(controller->moveCommand.moveActivated()){
 				float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst, 0.5f)){
-					const float curAngularInertial = 0.5f * Math::sqr(this->velo.rot) / maxAngularAccel;
+					const float curAngularInertial = 0.5f * Math::sqr(this->vel.rot) / maxAngularAccel;
 					const float maxAngularInertial = 0.5f * Math::sqr(maxAngularSpeed) / maxAngularAccel;
 
 					const float dstSign = Math::Angle::angleDstSign(trans.rot, controller->moveCommand.expectedFaceAngle);
 
-					if(curAngularInertial < angleDst || Math::diffSign(velo.rot, dstSign)){
+					if(curAngularInertial < angleDst || Math::diffSign(vel.rot, dstSign)){
 						if(Math::diffSign(accel.rot, dstSign)){
-							accel.rot = Math::min(maxAngularAccel, 0.5f * Math::sqr(velo.rot) / angleDst) * dstSign * -1;
+							accel.rot = Math::min(maxAngularAccel, 0.5f * Math::sqr(vel.rot) / angleDst) * dstSign * -1;
 						}else{
-							accel.rot = Math::min(maxAngularAccel, (maxAngularSpeed - Math::abs(velo.rot)) / delta) * dstSign;
+							accel.rot = Math::min(maxAngularAccel, (maxAngularSpeed - Math::abs(vel.rot)) / delta) * dstSign;
 						}
 					}else{
 						if(curAngularInertial > angleDst){
-							accel.rot = Math::min(maxAngularAccel, 0.5f * Math::sqr(velo.rot) / angleDst) * dstSign * -1;
+							accel.rot = Math::min(maxAngularAccel, 0.5f * Math::sqr(vel.rot) / angleDst) * dstSign * -1;
 						}
 					}
 				}else{
 					accel.rot = 0;
 				}
 			}else{
-				if(!Math::zero(velo.rot, 0.005f)){
-					accel.rot = std::copysign(Math::min(maxAngularAccel, Math::abs(velo.rot) / delta), -velo.rot);
+				if(!Math::zero(vel.rot, 0.005f)){
+					accel.rot = std::copysign(Math::min(maxAngularAccel, Math::abs(vel.rot) / delta), -vel.rot);
 				}
 			}
 
@@ -150,8 +158,17 @@ export namespace Game {
 			RealityEntity::updateMovement(delta);
 		}
 
+		void calculateInScreen(const Geom::OrthoRectFloat& viewport) override{
+			RealityEntity::calculateInScreen(viewport);
+
+			chambers.updateDrawTarget(viewport);
+		}
+
 		void update(const float deltaTick) override {
 			RealityEntity::update(deltaTick);
+
+			// auto t = chamberTrans | trans;
+			chambers.setLocalTrans(chamberTrans | trans);
 
 			if(const auto t = trans.vec.copy().toAbs(); t.x > 50000 || t.y > 50000) {
 				deactivate();
@@ -166,7 +183,7 @@ export namespace Game {
 			}
 		}
 
-		[[nodiscard]] bool selectable() const override{
+		[[nodiscard]] bool selectable() const noexcept override{
 			return true;
 		}
 
@@ -179,7 +196,7 @@ export namespace Game {
 		}
 
 		void drawDebug() const override {
-			using namespace Graphic;
+			Game::Draw::chamberFrame(chambers);
 
 			GL::setDepthMask(false);
 			Font::defGlyphParser->parseWith(coordText, std::format("$<scl#[0.85]>$<color#[eeeeeeff]>Health: {:.1f}", this->health));
@@ -189,49 +206,49 @@ export namespace Game {
 			// Graphic::Batch::flush();
 			GL::setDepthMask(true);
 
-			Draw::alpha();
-			Draw::color(Colors::RED);
+			Graphic::Draw::alpha();
+			Graphic::Draw::color(Graphic::Colors::RED);
 
 			for(const auto& data : intersectedPointWith | std::ranges::views::values) {
-				Draw::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
+				Graphic::Draw::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
 			}
 
-			Draw::Line::setLineStroke(1.0f);
-			Draw::color(Colors::MAGENTA);
-			Draw::Line::lineAngle(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
+			Graphic::Draw::Line::setLineStroke(1.0f);
+			Graphic::Draw::color(Graphic::Colors::MAGENTA);
+			Graphic::Draw::Line::lineAngle(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
-			Draw::Line::setLineStroke(2.0f);
+			Graphic::Draw::Line::setLineStroke(2.0f);
 
 			for (auto& boxData : hitBox.hitBoxGroup){
-				constexpr Color colors[]{Colors::ROYAL, Colors::PINK, Colors::GREEN, Colors::PURPLE};
+				constexpr Graphic::Color colors[]{Graphic::Colors::ROYAL, Graphic::Colors::PINK, Graphic::Colors::GREEN, Graphic::Colors::PURPLE};
 				auto& cur = boxData.original;
 				for(int i = 0; i < 4; ++i) {
-					Draw::color(colors[i]);
-					Draw::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);
+					Graphic::Draw::color(colors[i]);
+					Graphic::Draw::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);
 
 					const Vec2 begin = cur[i];
 					const Vec2 end = cur[(i + 1) % 4];
 					const Vec2 center = (begin + end) / 2;
 
-					Draw::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
+					Graphic::Draw::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
 				}
 
 				if(controller->selected) {
-					Draw::color(Colors::TAN);
-				}else Draw::color(Colors::LIGHT_GRAY);
+					Graphic::Draw::color(Graphic::Colors::TAN);
+				}else Graphic::Draw::color(Graphic::Colors::LIGHT_GRAY);
 
-				Draw::Line::setLineStroke(2);
-				Draw::Line::quad(cur);
+				Graphic::Draw::Line::setLineStroke(2);
+				Graphic::Draw::Line::quad(cur);
 
-				Draw::Line::line(cur.v0, cur.originPoint, colors[0], Colors::RED);
+				Graphic::Draw::Line::line(cur.v0, cur.originPoint, colors[0], Graphic::Colors::RED);
 
-				Draw::color(Colors::RED);
-				Draw::rectOrtho(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
+				Graphic::Draw::color(Graphic::Colors::RED);
+				Graphic::Draw::rectOrtho(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
 			}
 
 
-			Draw::color(Colors::PURPLE);
-			Draw::rectOrtho(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
+			Graphic::Draw::color(Graphic::Colors::PURPLE);
+			Graphic::Draw::rectOrtho(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->drawDebug();

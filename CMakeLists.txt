@@ -28,7 +28,7 @@ message(STATUS "Msvc Current Dir: ${MSVC_DIR}")
 
 set(MSVC_MODULE_DIR ${MSVC_DIR}/modules)
 file(COPY ${MSVC_MODULE_DIR} DESTINATION
-        ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 set(SRC_DIR src)
@@ -47,8 +47,9 @@ add_compile_options("/wd4244")
 add_compile_options("/wd4100")
 add_compile_options("/wd4458")
 add_compile_options("/wd4267")
+add_compile_options("/wd4189")
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Debug Mode")
     set(CMAKE_EXE_LINKER_FLAGS /NODEFAULTLIB:library)
 
@@ -56,17 +57,17 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_compile_definitions(DEBUG_CHECK=1)
 
     file(GLOB_RECURSE BIN
-            ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
+        ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/*.dll
     )
 
     file(COPY ${BIN} DESTINATION
-            ${EXE_DIR}
+        ${EXE_DIR}
     )
-else ()
+else()
     add_compile_definitions(DEBUG_CHECK=0)
     message(STATUS "CXX Options: ${CMAKE_CXX_FLAGS_RELEASE}")
     message(STATUS "Release Mode")
-endif ()
+endif()
 
 
 add_compile_definitions(APPLICATION_NAME=\"Game_Engine_Demo-${PROJECT_VERSION}\")
@@ -75,21 +76,21 @@ message(STATUS "Loading...")
 
 # Source Files...
 file(GLOB_RECURSE SOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cpp
 )
 
 # Header Files...
 file(GLOB_RECURSE CURRENT_HEADERS
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.hpp
 )
 
 
 # Modules...
 #
 file(GLOB_RECURSE FAST_MODULES
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
-        ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.cppm
+    ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*.ixx
 )
 
 message(STATUS "Linking...")
@@ -100,58 +101,55 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 
 set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 
-set(BUILD_CLOUD OFF CACHE BOOL "Whether remote build")
+set(BUILD_CLOUD OFF CACHE BOOL "Using Remote Build Mode (Enable Dependency Fetch)")
 message(STATUS "Remote Build: ${BUILD_CLOUD}")
 
 
 if(BUILD_CLOUD)
     FetchContent_Declare(
-            lunasvg
-            GIT_REPOSITORY https://github.com/Yuria-Shikibe/lunasvg.git
-            GIT_TAG master
-            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDES}/lunasvg/lunasvg
+        lunasvg
+        GIT_REPOSITORY https://github.com/Yuria-Shikibe/lunasvg.git
+        GIT_TAG master
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDES}/lunasvg/lunasvg
     )
     FetchContent_MakeAvailable(lunasvg)
-else ()
+else()
     add_subdirectory(${INCLUDES}/lunasvg/lunasvg)
 endif()
-
 
 
 message(STATUS "Building...")
 
 # Build .exe
-add_executable(
-        ${PROJECT_NAME}      #[[Project Name]]
-        ${SOURCE_FILES}      #[[.cpp]]
-        ${CURRENT_HEADERS}   #[[.h]]
-        glad.c               #[[Glad Attachment]]
-        main.cpp
-        #        test.cpp
-)
+add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME}
-        PUBLIC
-        ${MODULE_DIR}/std.compat.ixx
-        ${MODULE_DIR}/std.ixx
-        ${FAST_MODULES}      #[[Modules]]
-        ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/target.rc
+    PUBLIC
+    ${SOURCE_FILES}      #[[.cpp]]
+    ${CURRENT_HEADERS}   #[[.h]]
+    glad.c               #[[Glad Attachment]]
+    main.cpp
+
+    ${MODULE_DIR}/std.compat.ixx
+    ${MODULE_DIR}/std.ixx
+    ${FAST_MODULES}      #[[Modules]]
+    ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/target.rc
 )
 
 # Static link
 target_link_libraries(${PROJECT_NAME}
-        freetype.lib
-        glfw3.lib
-        irrKlang.lib
+    freetype.lib
+    glfw3.lib
+    irrKlang.lib
 )
 
 #macro(get_WIN32_WINNT version)
 #TODO win spec
 #message(STATUS "ON Windows")
 target_link_libraries(${PROJECT_NAME}
-        dwmapi.lib
-        shell32.lib
-        gdiplus.lib
+    dwmapi.lib
+    shell32.lib
+    gdiplus.lib
 )
 #endmacro()
 
@@ -160,19 +158,19 @@ target_link_libraries(${PROJECT_NAME} lunasvg)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     set(FILE_TO_DELETE "${EXE_DIR}/${PROJECT_NAME}.pdb")
     add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E remove ${FILE_TO_DELETE}
-            COMMENT "Deleting ${FILE_TO_DELETE}"
+        COMMAND ${CMAKE_COMMAND} -E remove ${FILE_TO_DELETE}
+        COMMENT "Deleting ${FILE_TO_DELETE}"
     )
-elseif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
     message(STATUS "Copy Properties Setup")
 
     add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ ${EXE_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ ${EXE_DIR}
     )
-endif ()
+endif()
 
 
 message(STATUS "Configuration Complete...")

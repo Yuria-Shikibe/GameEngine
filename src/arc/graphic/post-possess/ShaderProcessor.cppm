@@ -23,6 +23,7 @@ export namespace Graphic {
 
 		[[nodiscard]] explicit ShaderProcessor(const GL::Shader* const shader)
 			: shader(shader) {
+			if(!shader)ShaderProcessor::throwException();
 		}
 
 		[[nodiscard]] ShaderProcessor() : ShaderProcessor(Graphic::Frame::blitter) { // NOLINT(*-use-equals-default)
@@ -33,6 +34,7 @@ export namespace Graphic {
 		                              const std::function<void(const GL::Shader&)>& shaderHandler)
 			: shader(shader),
 			shaderHandler(shaderHandler) {
+			if(!shader)ShaderProcessor::throwException();
 		}
 
 		const GL::Shader* shader{nullptr};
@@ -53,7 +55,6 @@ export namespace Graphic {
 			}else {
 				Graphic::Frame::blit(target, port.outPort, shader, nullptr);
 			}
-
 		}
 
 		void runProcess() const override {}

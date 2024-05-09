@@ -24,11 +24,12 @@ export namespace UI{
 
 		Geom::Vec2 cursorPos{};
 
-		const Widget* lastRequester{nullptr};
+		/** @brief Nullable */
+		const Widget* lastConsumer{nullptr};
 		Root* root{nullptr};
 		friend class Root;
 
-		int nextPopCount = 0;
+		unsigned nextPopCount = 0;
 
 		void drop(std::unique_ptr<Table>&& element, const bool instantDrop = false);
 
@@ -48,22 +49,23 @@ export namespace UI{
 		} deleter{*this};
 
 
-		[[nodiscard]] const Widget* getLastRequester() const{ return lastRequester; }
+		[[nodiscard]] const Widget* getLastRequester() const{ return lastConsumer; }
 
 		void dropCurrentAt(const Widget* where = nullptr, const bool instantDrop = false);
 
 		/**
 		 * @brief
+		 * @param builder
 		 * @param consumer
 		 * @return Used as a release handle, should avoid using it to access members deferly
 		 */
-		Table* obtainFromWedget(const Widget* consumer){
+		Table* generateTooltip(const std::function<void(Table&)>& builder, const Widget* consumer = nullptr){
 			if(getCurrentFocus() != consumer){
 				dropCurrentAt(consumer);
 			}
 
 			auto ptr = std::make_unique<Table>();
-			consumer->getTooltipBuilder().builder(*ptr);
+			builder(*ptr);
 
 			// updateCurrentPosition();
 			ptr->setRoot(root);
@@ -72,9 +74,9 @@ export namespace UI{
 			ptr->layout();
 			ptr->setDropFocusAtCursorQuitBound(true);
 
-			lastRequester = consumer;
 			updateCurrentPosition(ptr.get());
 
+			lastConsumer = consumer;
 			focusTableStack.emplace_back(std::move(ptr), consumer);
 
 			return ptr.get();
@@ -115,30 +117,36 @@ export namespace UI{
 		}
 
 		void updateCurrentPosition(Table* table) const{
-			if(!lastRequester) return;
-
-			const auto offset = getOffsetOf(lastRequester->getTooltipBuilder().tooltipSrcAlign,
-			                                       table->getBound());
 			Geom::Vec2 followOffset{};
 
-			switch(lastRequester->getTooltipBuilder().followTarget){
-				//TODO align apply
-				case FollowTarget::cursor : followOffset.set(-6.0f, 6.0f).inv().add(cursorPos);
+			if(!lastConsumer){
+				//Follow cursor by default
+				followOffset.set(-6.0f, 6.0f).reverse().add(cursorPos);
+			}else{
+				const auto offset =
+					getOffsetOf(lastConsumer->getTooltipBuilder().tooltipSrcAlign, table->getBound());
+
+				switch(lastConsumer->getTooltipBuilder().followTarget){
+					//TODO align apply
+					case TooltipFollowTarget::cursor : followOffset.set(-6.0f, 6.0f).reverse().add(cursorPos);
 					break;
-				case FollowTarget::none : followOffset.set(-6.0f, 6.0f).add(cursorPos);
+					case TooltipFollowTarget::none : followOffset.set(-6.0f, 6.0f).add(cursorPos);
 					break;
-				case FollowTarget::parent :{
-					if(lastRequester){
-						followOffset = getVert(lastRequester->getTooltipBuilder().followTargetAlign,
-						                              lastRequester->getBound().setSrc(0, 0));
-						followOffset += lastRequester->getAbsSrc();
+					case TooltipFollowTarget::parent :{
+						if(lastConsumer){
+							followOffset = getVert(lastConsumer->getTooltipBuilder().followTargetAlign,
+														  lastConsumer->getBound().setSrc(0, 0));
+							followOffset += lastConsumer->getAbsSrc();
+						}
 					}
+
+					default : break;
 				}
 
-				default : break;
+				followOffset += offset;
 			}
 
-			table->setSrc(followOffset + offset);
+			table->setSrc(followOffset);
 
 			table->calAbsoluteSrc(nullptr);
 		}
@@ -176,18 +184,18 @@ export namespace UI{
 				return ptr.get() == handle;
 			});
 
-			lastRequester = getCurrentConsumer();
+			lastConsumer = getCurrentConsumer();
 		}
 
-		void clear(){
+		void clear() noexcept{
 			focusTableStack.clear();
 			droppedTables.clear();
 			nextPopCount = 0;
 			// lastRequester = nullptr;
 		}
 
-		[[nodiscard]] bool isOccupied(const Widget* widget) const{
-			return widget == lastRequester;
+		[[nodiscard]] bool isOccupied(const Widget* widget) const noexcept{
+			return widget == lastConsumer;
 		}
 
 		[[nodiscard]] auto getDrawSeq() const{

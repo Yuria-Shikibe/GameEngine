@@ -96,6 +96,10 @@ export namespace GL {
         constexpr GLenum SCISSOR = 0x0C11;
     }
 
+    namespace State{
+        constexpr GLenum BLEND = GL_BLEND;
+    }
+
     enum class Func : GLenum {
         NEVER = GL_NEVER,
         LESS = GL_LESS,

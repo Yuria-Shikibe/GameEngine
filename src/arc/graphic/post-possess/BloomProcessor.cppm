@@ -80,7 +80,7 @@ export namespace Graphic {
 			GL::enable(GL_BLEND);
 			GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			Graphic::Frame::blit(target, port.outPort, bloomShader, [this](const Shader& shader) {
+			Frame::blit(target, port.outPort, bloomShader, [this](const Shader& shader) {
 				shader.setFloat("intensity_blo", intensity_blo);
 				shader.setFloat("intensity_ori", intensity_ori);
 			});

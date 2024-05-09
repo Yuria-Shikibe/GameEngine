@@ -11,14 +11,20 @@ export namespace Game {
 		Faction* faction = &Factions::ownerless;
 
 	public:
+		[[nodiscard]] Factional() = default;
+
 		virtual ~Factional() = default;
 
-		[[nodiscard]] virtual Faction* getFaction() const {
+		[[nodiscard]] virtual Faction* getFaction() const noexcept{
 			return faction;
 		}
 
-		virtual void setFaction(Faction* const faction) {
-			this->faction = faction;
+		virtual void setFaction(Faction* const faction) noexcept{
+			if(faction){
+				this->faction = faction;
+			}else{
+				this->faction = &Factions::ownerless;
+			}
 		}
 	};
 }

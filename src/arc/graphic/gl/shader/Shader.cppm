@@ -158,7 +158,7 @@ export namespace GL {
 
 		OS::File shaderDir{};
 
-		std::function<void(const Shader &)> drawer = [](const Shader&) {};
+		std::function<void(const Shader &)> uniformSetter = [](const Shader&) {};
 
 		void bindLoaction() const{
 			GLint uniform_count = 0;
@@ -196,6 +196,10 @@ export namespace GL {
 			if(const auto itr = uniformInfoMap.find(uniform); itr != uniformInfoMap.end()){
 				return itr->second.location;
 			}
+
+#if DEBUG_CHECK
+			//TODO post a warning
+#endif
 
 			return -1;
 		}
@@ -240,7 +244,7 @@ export namespace GL {
 		Shader(const Shader& other)
 			: uniformInfoMap{ other.uniformInfoMap },
 			programID{ other.programID },
-			drawer{ other.drawer } {
+			uniformSetter{ other.uniformSetter } {
 			if(!other.isValid())throw ext::IllegalArguments{"Illegal Operation: Copy Invalid Shader!"};
 		}
 
@@ -249,7 +253,7 @@ export namespace GL {
 			if(this == &other) return *this;
 			uniformInfoMap = other.uniformInfoMap;
 			programID          = other.programID;
-			drawer             = other.drawer;
+			uniformSetter             = other.uniformSetter;
 			return *this;
 		}
 
@@ -259,7 +263,7 @@ export namespace GL {
 			  typeList(std::move(other.typeList)),
 			  programID(other.programID),
 			  shaderDir(std::move(other.shaderDir)),
-			  drawer(std::move(other.drawer)){
+			  uniformSetter(std::move(other.uniformSetter)){
 		}
 
 		Shader& operator=(Shader&& other) noexcept{
@@ -268,7 +272,7 @@ export namespace GL {
 			typeList = std::move(other.typeList);
 			programID = other.programID;
 			shaderDir = std::move(other.shaderDir);
-			drawer = std::move(other.drawer);
+			uniformSetter = std::move(other.uniformSetter);
 			return *this;
 		}
 
@@ -314,7 +318,7 @@ export namespace GL {
 		}
 
 		void setUniformer(const std::function<void(const Shader&)>& run) {
-			drawer = run;
+			uniformSetter = run;
 		}
 
 		void setColor(const std::string_view name, const Graphic::Color& color) const {
@@ -373,16 +377,16 @@ export namespace GL {
 		}
 
 		void apply() const {
-			drawer(*this);
+			uniformSetter(*this);
 		}
 
 		void applyDynamic(Concepts::Invokable<void(const Shader&)> auto&& f, const bool invokeSelfDrawer = false) const {
-			if(invokeSelfDrawer)drawer(*this);
+			if(invokeSelfDrawer)uniformSetter(*this);
 			f(*this);
 		}
 
 		[[nodiscard]] const std::function<void(const Shader&)>& getDrawer() const {
-			return drawer;
+			return uniformSetter;
 		}
 
 		[[nodiscard]] GLuint getID() const {

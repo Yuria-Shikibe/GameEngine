@@ -6,17 +6,18 @@ export module Game.Entity.Collision;
 
 export import Geom.Shape.RectBox;
 import Geom.Transform;
+import Geom.Vector2D;
 import Geom.Rect_Orthogonal;
 import Geom.Matrix3D;
 import Math;
 import Geom;
 
+//TODO remove the IO to other place
 import OS.File;
 
 import std;
 
 export namespace Game{
-	using namespace Geom;
 
 	/**
 	 * \brief Used of CCD precision, the larger - the slower and more accurate
@@ -24,7 +25,7 @@ export namespace Game{
 	constexpr float ContinousTestScl = 1.5f;
 
 	struct CollisionData {
-		Vec2 intersection{Geom::SNAN2};
+		Geom::Vec2 intersection{Geom::SNAN2};
 		int subjectSubBoxIndex{};
 		int objectSubBoxIndex{};
 
@@ -32,7 +33,7 @@ export namespace Game{
 			return !intersection.isNaN();
 		}
 
-		void set(const Vec2 intersection, const int subjectSubBoxIndex, const int objectSubBoxIndex){
+		void set(const Geom::Vec2 intersection, const int subjectSubBoxIndex, const int objectSubBoxIndex){
 			this->intersection = intersection;
 			this->objectSubBoxIndex = objectSubBoxIndex;
 			this->subjectSubBoxIndex = subjectSubBoxIndex;
@@ -44,61 +45,61 @@ export namespace Game{
 	};
 
 	struct HitBoxFragmentData {
-		Transform relaTrans{};
-		RectBox original{};
+		Geom::Transform relaTrans{};
+		Geom::RectBox original{};
 
 		HitBoxFragmentData() = default;
 
-		HitBoxFragmentData(const Transform relaTrans, const RectBox& original)
+		HitBoxFragmentData(const Geom::Transform relaTrans, const Geom::RectBox& original)
 			: relaTrans(relaTrans),
 			  original(original){
 		}
 
 		void read(std::istream& reader){
-			reader.read(reinterpret_cast<char*>(&this->relaTrans), sizeof Transform);
-			reader.read(reinterpret_cast<char*>(static_cast<RectBoxBrief*>(&this->original)), sizeof RectBoxBrief);
+			reader.read(reinterpret_cast<char*>(&this->relaTrans), sizeof Geom::Transform);
+			reader.read(reinterpret_cast<char*>(static_cast<Geom::RectBoxBrief*>(&this->original)), sizeof Geom::RectBoxBrief);
 		}
 
 		void write(std::ostream& writer) const{ //TODO rectbox opt
-			writer.write(reinterpret_cast<const char*>(&this->relaTrans), sizeof Transform);
-			writer.write(reinterpret_cast<const char*>(static_cast<const RectBoxBrief*>(&this->original)), sizeof RectBoxBrief);
+			writer.write(reinterpret_cast<const char*>(&this->relaTrans), sizeof Geom::Transform);
+			writer.write(reinterpret_cast<const char*>(static_cast<const Geom::RectBoxBrief*>(&this->original)), sizeof Geom::RectBoxBrief);
 		}
 	};
 
 	struct HitBox {
 		struct BoxStateData : HitBoxFragmentData{
-			mutable RectBox temp{};
+			mutable Geom::RectBox temp{};
 
 			constexpr void reset() const{
 				temp = original;
 			}
 
-			constexpr void trans(const Vec2 vec2) const{
+			constexpr void trans(const Geom::Vec2 vec2) const{
 				temp.move(vec2, original);
 			}
 
 			BoxStateData() = default;
 
-			BoxStateData(const Transform& relaTrans, const RectBox& original, const RectBox& temp)
+			BoxStateData(const Geom::Transform& relaTrans, const Geom::RectBox& original, const Geom::RectBox& temp)
 				: HitBoxFragmentData(relaTrans, original),
 				  temp(temp){
 			}
 		};
 
 		std::vector<BoxStateData> hitBoxGroup{};
-		mutable Transform trans{};
+		mutable Geom::Transform trans{};
 
 		//Bolow are transient fields
 
 		/** @brief CCD-traces size.*/
 		int sizeTrace{};
 		/** @brief CCD-traces spacing*/
-		Vec2 transitionCCD{};
+		Geom::Vec2 transitionCCD{};
 		/** @brief CCD-traces clamp size.*/
 		mutable std::atomic<int> sizeTraceClamped{};
 
-		OrthoRectFloat maxTransientBound{};
-		OrthoRectFloat maxBound{};
+		Geom::OrthoRectFloat maxTransientBound{};
+		Geom::OrthoRectFloat maxBound{};
 
 		HitBox() = default;
 
@@ -126,14 +127,14 @@ export namespace Game{
 			return *this;
 		}
 
-		void updateHitbox(const Transform translation){
+		void updateHitbox(const Geom::Transform translation){
 			this->trans = translation;
 
 			const float cos = Math::cosDeg(this->trans.rot);
 			const float sin = Math::sinDeg(this->trans.rot);
 
 			for(auto& group : hitBoxGroup){
-				Vec2 trans = group.relaTrans.vec;
+				Geom::Vec2 trans = group.relaTrans.vec;
 
 				group.original.update(this->trans.vec + trans.rotate(cos, sin), this->trans.rot + group.relaTrans.rot);
 				group.reset();
@@ -150,7 +151,7 @@ export namespace Game{
 		 * \brief This ignores the rotation of the subject entity!
 		 * Record backwards movements
 		 */
-		void genContinousRectBox(Vec2 velo, const float delta,
+		void genContinousRectBox(Geom::Vec2 velo, const float delta,
 								 const float scl = ContinousTestScl) {
 			velo *= delta;
 			const float dst2  = velo.length2();
@@ -166,7 +167,7 @@ export namespace Game{
 			transitionCCD = -velo;
 		}
 
-		void scl(const Vec2 scl){
+		void scl(const Geom::Vec2 scl){
 			for (auto& data : hitBoxGroup){
 				data.original.offset *= scl;
 				data.original.sizeVec2 *= scl;
@@ -192,7 +193,7 @@ export namespace Game{
 
 			if(sizeTrace == 0)return;
 
-			Vec2 trans = transitionCCD;
+			Geom::Vec2 trans = transitionCCD;
 			trans.scl(static_cast<float>(sizeCCD()));
 
 			if(trans.x > 0){
@@ -219,38 +220,38 @@ export namespace Game{
 			}
 		}
 
-		void init(const RectBox& sample, const Transform trans = {}){
+		void init(const Geom::RectBox& sample, const Geom::Transform trans = {}){
 			hitBoxGroup.emplace_back(trans, sample, sample);
 		}
 
-		constexpr void reset() const{
+		constexpr void reset() const noexcept{
 			for(auto& group : hitBoxGroup){
 				group.reset();
 			}
 		}
 
-		[[nodiscard]] bool enableCCD() const{
+		[[nodiscard]] bool enableCCD() const noexcept{
 			return sizeTraceClamped > 0;
 		}
 
-		void clampCCDTo(const int index) const{
+		void clampCCDTo(const int index) const noexcept{
 			if(index>= sizeTraceClamped)return;
 			sizeTraceClamped = index;
 		}
 
-		void resizeCCD(const int tgtSize) const{
+		void resizeCCD(const int tgtSize) const noexcept{
 			sizeTraceClamped = tgtSize;
 		}
 
-		[[nodiscard]] int sizeCCD() const{
+		[[nodiscard]] int sizeCCD() const noexcept{
 			return Math::max(static_cast<int>(sizeTraceClamped), 1);
 		}
 
-		[[nodiscard]] bool emptyCCD() const{
+		[[nodiscard]] bool emptyCCD() const noexcept{
 			return sizeTraceClamped == 0;
 		}
 
-		[[nodiscard]] std::size_t size() const {
+		[[nodiscard]] std::size_t size() const noexcept{
 			return hitBoxGroup.size();
 		}
 
@@ -264,8 +265,8 @@ export namespace Game{
 		 * @param transIndex [0, @link sizeCCD() @endlink)
 		 * @return Translation
 		 */
-		[[nodiscard]] constexpr Vec2 transTo(const int transIndex) const{
-			Vec2 trans = transitionCCD;
+		[[nodiscard]] constexpr Geom::Vec2 transTo(const int transIndex) const{
+			Geom::Vec2 trans = transitionCCD;
 			trans.scl(sizeTrace - transIndex - 1.0f);
 			for(auto& rectBox : hitBoxGroup){
 				rectBox.trans(trans);
@@ -274,7 +275,7 @@ export namespace Game{
 			return trans;
 		}
 
-		[[nodiscard]] Vec2 getAvgEdgeNormal(const CollisionData data) const{
+		[[nodiscard]] Geom::Vec2 getAvgEdgeNormal(const CollisionData data) const{
 			return Geom::avgEdgeNormal(data.intersection, hitBoxGroup.at(data.objectSubBoxIndex).original);
 		}
 
@@ -339,7 +340,7 @@ export namespace Game{
 			});
 		}
 
-		[[nodiscard]] bool contains(Vec2 vec2) const{
+		[[nodiscard]] bool contains(const Geom::Vec2 vec2) const{
 			return std::ranges::any_of(hitBoxGroup, [vec2](const BoxStateData& data){
 				return data.original.contains(vec2);
 			});

@@ -22,7 +22,7 @@ export namespace Game{
 	class HitboxEntity : public RealityEntity {
 	public:
 		HitBox tempHitbox{};
-		void calculateInScreen(Geom::OrthoRectFloat& viewport) override{
+		void calculateInScreen(const Geom::OrthoRectFloat& viewport) override{
 			inScreen = true;
 		}
 
@@ -32,10 +32,10 @@ export namespace Game{
 
 		void drawDebug() const override{
 			Graphic::Draw::color();
-			Graphic::Draw::Game::hitbox(tempHitbox.hitBoxGroup.back().original);
+			Game::Draw::hitbox(tempHitbox.hitBoxGroup.back().original);
 
 			if(controller->selected)Graphic::Draw::color(Graphic::Colors::ORANGE);
-			Graphic::Draw::Game::hitbox(tempHitbox.hitBoxGroup.front().original);
+			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().original);
 		}
 
 		bool ignoreCollisionTo(const Game::RealityEntity* object) const override{
@@ -285,7 +285,7 @@ export namespace Game{
 			Geom::OrthoRectFloat orthoRectBox{};
 			orthoRectBox.setVert(selectionBegin.x, selectionBegin.y, mouseWorldPos.x, mouseWorldPos.y);
 
-			RectBox rectBox{};
+			Geom::RectBox rectBox{};
 			rectBox.setSize(orthoRectBox.getWidth(), orthoRectBox.getHeight());
 			rectBox.offset.set(rectBox.sizeVec2).scl(-0.5f);
 
@@ -465,7 +465,7 @@ export namespace Game{
 
 			ptr->setID(lastQuadID++);
 
-			RectBox box{};
+			Geom::RectBox box{};
 			box.setSize(60, 60);
 			box.offset.set(box.sizeVec2).scl(-0.5f);
 			ptr->hitBox.init(box, {mouseWorldPos, 0});

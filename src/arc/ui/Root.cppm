@@ -42,11 +42,6 @@ export namespace UI{
 		Geom::Matrix3D projection{};
 
 	public:
-		// struct DrawSeq{
-		// 	const SeperateDrawable* scene{};
-		// 	const SeperateDrawable* dialog{};
-		// 	decltype(HoverTableManager::getDrawSeq()) hoverTable;
-		// } drawSeq{};
 		TooltipManager tooltipManager{};
 		Dialog rootDialog{};
 
@@ -202,51 +197,6 @@ export namespace UI{
 		[[nodiscard]] float getWidth() const{ return width; }
 
 		[[nodiscard]] float getHeight() const{ return height; }
-		//
-		// DrawSeq& getDrawSeq(){
-		// 	drawSeq.scene = currentScene;
-		// 	drawSeq.dialog = currentScene;
-		// 	drawSeq.hoverTable = hoverTableManager.getDrawSeq();
-		//
-		// 	return drawSeq;
-		// }
-
-		constexpr int getRenderLayers() const{
-			return 2;
-		}
-
-		void renderLayer(const int layer) const{
-			switch(layer){
-				case 0 : render();
-					break;
-				case 1 : render_Dialog();
-					break;
-				case 2 : render_HoverTable();
-					break;
-				default : break;
-			}
-		}
-
-		void renderBaseLayer(const int layer) const{
-			switch(layer){
-				case 0 : renderBase();
-					break;
-				case 1 : renderBase_Dialog();
-					break;
-				case 2 : renderBase_HoverTable();
-					break;
-				default : break;
-			}
-		}
-
-		//TODO uses layer things to optimize this
-		void render_Dialog() const{
-			rootDialog.draw();
-		}
-
-		void renderBase_Dialog() const{
-			rootDialog.drawBase();
-		}
 
 		void render() const;
 

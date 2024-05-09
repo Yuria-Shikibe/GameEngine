@@ -12,7 +12,6 @@ out vec2 texCoord;
 out vec4 v_mixColor;
 out vec4 v_srcColor;
 
-out mat3 trans;
 
 void main()
 {

@@ -52,7 +52,7 @@ export namespace Assets {
 		}
 
 		~LoaderRenderer() override { // NOLINT(*-use-equals-default)
-			Core::batchGroup.batchOverlay->setProjection(defaultMat);
+			Core::batchGroup.overlay->setProjection(defaultMat);
 			Graphic::Batch::endShader(false);
 
 			GL::bindFrameBuffer(GL_FRAMEBUFFER);
@@ -74,7 +74,7 @@ export namespace Assets {
 			constexpr float preBlockWidth = 32.0f;
 
 			mat.setOrthogonal(0.0f, 0.0f, getDrawWidth(), getDrawHeight());
-			Core::batchGroup.batchOverlay->setProjection(mat);
+			Core::batchGroup.overlay->setProjection(mat);
 
 			Graphic::Batch::endShader();
 			Draw::mixColor(Colors::DARK_GRAY);

@@ -5,7 +5,7 @@
 export module Game.Chamber.FrameTrans;
 
 export import Game.Chamber;
-export import Game.ChamberFrame;
+export import Game.Chamber.Frame;
 import GL.Buffer.FrameBuffer;
 import Geom.Transform;
 import Geom.Matrix3D;
@@ -19,6 +19,7 @@ export namespace Game{
 	/**
 	 * @brief This frame should be workable on a async thread
 	 */
+	//TODO using template maybe, to support different types
 	class ChamberFrameTrans{
 		static constexpr float ExtendSize{100};
 
@@ -52,7 +53,8 @@ export namespace Game{
 
 		[[nodiscard]] ChamberFrame& getChambers(){ return frameData; }
 
-		[[nodiscard]] ChamberFrame::TileBrief& getDrawable(){ return drawable; }
+		[[nodiscard]] ChamberFrame::TileBrief& getDrawable() noexcept{ return drawable; }
+		[[nodiscard]] const ChamberFrame::TileBrief& getDrawable() const noexcept{ return drawable; }
 
 		Geom::QuadBox transformViewport(Geom::OrthoRectFloat viewport) const noexcept{
 			viewport.expand(ExtendSize / 2, ExtendSize / 2);

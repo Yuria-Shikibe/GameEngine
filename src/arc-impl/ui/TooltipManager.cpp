@@ -20,7 +20,7 @@ void UI::TooltipManager::drop(std::unique_ptr<Table>&& element, const bool insta
 void UI::TooltipManager::dropCurrentAt(const Widget* where, const bool instantDrop){
 	if(focusTableStack.empty())return;
 
-	lastRequester = nullptr;
+	lastConsumer = nullptr;
 
 	if(where == nullptr){
 		for(auto& element : focusTableStack | std::ranges::views::elements<0> | std::ranges::views::reverse){
@@ -29,7 +29,7 @@ void UI::TooltipManager::dropCurrentAt(const Widget* where, const bool instantDr
 
 		focusTableStack.clear();
 
-		lastRequester = getCurrentConsumer();
+		lastConsumer = getCurrentConsumer();
 	}
 
 	const auto begin =
@@ -42,7 +42,7 @@ void UI::TooltipManager::dropCurrentAt(const Widget* where, const bool instantDr
 
 	focusTableStack.erase(begin, end);
 
-	lastRequester = getCurrentConsumer();
+	lastConsumer = getCurrentConsumer();
 }
 
 UI::Table* UI::TooltipManager::tryObtain(const Widget* consumer){
@@ -54,14 +54,14 @@ UI::Table* UI::TooltipManager::tryObtain(const Widget* consumer){
 	){
 		root->cursorStrandedTime = root->cursorInBoundTime = 0;
 
-		return obtainFromWedget(consumer);
+		return generateTooltip(consumer->getTooltipBuilder().builder, consumer);
 	}
 
 	return nullptr;
 }
 
 bool UI::TooltipManager::obtainValid(const Widget* lastRequester, const float minHoverTime, const bool useStaticTime) const{
-	if(lastRequester == this->lastRequester)return false;
+	if(lastRequester == this->lastConsumer)return false;
 
 	if(root->cursorInBoundTime > 0.0f){
 		if(useStaticTime){
@@ -75,37 +75,43 @@ bool UI::TooltipManager::obtainValid(const Widget* lastRequester, const float mi
 }
 
 void UI::TooltipManager::update(const float delta){
-	for(int i = 0; i < nextPopCount; ++i){
+	for(unsigned i = 0; i < nextPopCount; ++i){
 		droppedTables.pop_back();
 	}
-
 	nextPopCount = 0;
 
 	auto* current = getCurrentFocus();
-	const bool autoRelease = lastRequester && lastRequester->getTooltipBuilder().autoRelease;
-	const auto& builder = lastRequester->getTooltipBuilder();
+	const bool autoRelease = lastConsumer && lastConsumer->getTooltipBuilder().autoRelease;
 
-	if(current && lastRequester){
-		if(builder.followTarget != TooltipBuilder::FollowTarget::none)updateCurrentPosition(current);
+	if(current && lastConsumer){
+		const auto& builder = lastConsumer->getTooltipBuilder();
 
-		switch(builder.followTarget){
-			case TooltipBuilder::FollowTarget::cursor:{
-				if(autoRelease && !lastRequester->isCursorInbound())dropCurrentAt(current);
-				break;
+		if(builder.followTarget != TooltipFollowTarget::none)updateCurrentPosition(current);
+
+		if(autoRelease){
+			switch(builder.followTarget){
+				case TooltipFollowTarget::cursor:{
+					if(!lastConsumer->isCursorInbound())
+						dropCurrentAt(current);
+					break;
+				}
+
+				case TooltipFollowTarget::none:{
+					if(!current->isInbound(cursorPos))
+						dropCurrentAt(current);
+					break;
+				}
+
+				case TooltipFollowTarget::parent:{
+					if(!current->isInbound(cursorPos) && !lastConsumer->isInbound(cursorPos))
+						dropCurrentAt(current);
+					break;
+				}
+
+				default: dropCurrentAt(current);
 			}
-
-			case TooltipBuilder::FollowTarget::none:{
-				if(autoRelease && !current->isInbound(cursorPos))dropCurrentAt(current);
-				break;
-			}
-
-			case TooltipBuilder::FollowTarget::parent:{
-				if(autoRelease && !current->isInbound(cursorPos) && !lastRequester->isInbound(cursorPos))dropCurrentAt(current);
-				break;
-			}
-
-			default: dropCurrentAt(current);
 		}
+
 	}
 
 	for (const auto& dropped : focusTableStack | std::ranges::views::elements<0>){

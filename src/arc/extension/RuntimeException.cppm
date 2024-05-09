@@ -11,7 +11,7 @@ export namespace ext{
 		std::string data{};
 
 		explicit RuntimeException(const std::string& str, const std::source_location& location = std::source_location::current()){
-			std::stringstream ss;
+			std::ostringstream ss;
 
 			ss << str << '\n';
 			ss << "at: " << location.file_name() << '\n';
@@ -20,7 +20,7 @@ export namespace ext{
 
 			getStackTraceBrief(ss);
 
-			data = ss.str();
+			data = std::move(ss).str();
 
 			RuntimeException::postProcess();
 		}

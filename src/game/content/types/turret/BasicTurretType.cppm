@@ -39,7 +39,7 @@ export namespace Game::Content{
 			ptr->trans.rot = turret->trans.rot;
 			ptr->trans.vec = turret->trans.vec;
 
-			ptr->velo.vec.setPolar(ptr->trans.rot, 320);
+			ptr->vel.vec.setPolar(ptr->trans.rot, 320);
 			ptr->hitBox.init(box);
 			ptr->physicsBody.inertialMass = 100;
 			ptr->damage.materialDamage.fullDamage = 100;

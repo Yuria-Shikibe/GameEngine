@@ -64,7 +64,7 @@ export namespace Event{
 }
 
 export namespace Core{
-	class Renderer : virtual public ResizeableInt{
+	class Renderer : public ResizeableInt{
 	protected:
 		std::vector<ResizeableInt*> synchronizedSizedObjects{};
 
@@ -138,11 +138,15 @@ export namespace Core{
 
 		virtual void frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask);
 
-		virtual void frameBegin(FrameBuffer* frameBuffer){
+		void frameBegin(FrameBuffer* frameBuffer){
 			frameBegin(frameBuffer, false, Colors::CLEAR);
 		}
 
-		virtual void frameBegin(FrameBuffer* frameBuffer, const bool resize, const Color& initColor){
+		void frameBegin(FrameBuffer& frameBuffer){
+			frameBegin(&frameBuffer, false, Colors::CLEAR);
+		}
+
+		void frameBegin(FrameBuffer* frameBuffer, const bool resize, const Color& initColor){
 			frameBegin(frameBuffer, resize, initColor, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
@@ -166,7 +170,7 @@ export namespace Core{
 
 		virtual void processUISperateDraw(const UI::SeperateDrawable* drawable);
 
-		[[nodiscard]] bool sustainSize(const unsigned int w, const unsigned int h) const{
+		[[nodiscard]] bool sustainSize(const int w, const int h) const{
 			return w == width && h == height;
 		}
 

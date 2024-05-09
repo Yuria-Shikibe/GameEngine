@@ -194,6 +194,10 @@ export namespace GL{
 			return attachmentsColor;
 		}
 
+		[[nodiscard]] Texture2D& getTopTexture() const noexcept{
+			return attachmentsColor.front().operator*();
+		}
+
 		[[nodiscard]] const Texture2D* operator[](const size_t index) const{
 			return attachmentsColor.at(index).get();
 		}

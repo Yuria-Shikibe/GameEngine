@@ -1,21 +1,17 @@
-module ;
-
 export module OS.File;
 
 import Concepts;
-
 import ext.RuntimeException;
+import ext.Heterogeneous;
 
 import std;
 
-import ext.Heterogeneous;
+namespace fs = std::filesystem;
 
-using namespace std::filesystem;
-
-export namespace OS{
-	class File{
+namespace OS{
+	export class File{
 	protected:
-		std::filesystem::path rawPath{};
+		fs::path rawPath{};
 
 	public:
 		static constexpr std::string_view EMPTY_EXTENSION = "[empty]";
@@ -26,27 +22,27 @@ export namespace OS{
 
 		explicit File(decltype(rawPath)::string_type&& p) : rawPath{std::move(p)}{}
 
-		explicit File(const path& p) : rawPath{p}{}
+		explicit File(const fs::path& p) : rawPath{p}{}
 
-		explicit File(path&& p) : rawPath{std::move(p)}{}
+		explicit File(fs::path&& p) : rawPath{std::move(p)}{}
 
-		explicit File(const directory_entry& p) : rawPath(p){}
+		explicit File(const fs::directory_entry& p) : rawPath(p){}
 
-		File& operator=(const path& other){
+		File& operator=(const fs::path& other){
 			rawPath = other;
 			return *this;
 		}
 
-		File& operator=(path&& other){
+		File& operator=(fs::path&& other){
 			rawPath = std::move(other);
 			return *this;
 		}
 
-		explicit operator directory_entry() const{
-			return directory_entry{rawPath};
+		explicit operator fs::directory_entry() const{
+			return fs::directory_entry{rawPath};
 		}
 
-		explicit operator path() const{
+		explicit operator fs::path() const{
 			return rawPath;
 		}
 
@@ -58,7 +54,7 @@ export namespace OS{
 			return !(lhs == rhs);
 		}
 
-		[[nodiscard]] path absolutePath() const{
+		[[nodiscard]]fs::path absolutePath() const{
 			return absolute(getPath());
 		}
 
@@ -90,31 +86,31 @@ export namespace OS{
 			return name;
 		}
 
-		[[nodiscard]] path& getPath(){
+		[[nodiscard]] fs::path& getPath(){
 			return rawPath;
 		}
 
-		[[nodiscard]] const std::filesystem::path& getPath() const{
+		[[nodiscard]] const fs::path& getPath() const{
 			return rawPath;
 		}
 
 		[[nodiscard]] bool exist() const{
-			return std::filesystem::exists(rawPath);
+			return fs::exists(rawPath);
 		}
 
 		[[nodiscard]] bool deleteFile() const{
 			return exist() && (isDir()
-				                   ? std::filesystem::remove(absolutePath())
-				                   : std::filesystem::remove_all(absolutePath()));
+				                   ? fs::remove(absolutePath())
+				                   : fs::remove_all(absolutePath()));
 		}
 
 		void deleteFileQuiet() const{
 			(void)deleteFile();
 		}
 
-		[[nodiscard]] bool copy(const std::filesystem::path& dest) const{
+		[[nodiscard]] bool copy(const fs::path& dest) const{
 			try{
-				std::filesystem::copy(getPath(), dest);
+				fs::copy(getPath(), dest);
 				return true;
 			} catch([[maybe_unused]] std::error_code& ignore){
 				return false;
@@ -142,7 +138,7 @@ export namespace OS{
 		}
 
 		[[nodiscard]] bool createDir(const bool autoCreateParents = true) const{
-			return autoCreateParents ? create_directories(getPath()) : create_directory(getPath());
+			return autoCreateParents ? fs::create_directories(getPath()) : fs::create_directory(getPath());
 		}
 
 		void createDirQuiet(const bool autoCreateParents = true) const{
@@ -154,7 +150,7 @@ export namespace OS{
 
 			if(autoCreateParents){
 				if(const File parent = File{getParent()}; !parent.exist()){
-					return parent.createDir();
+					(void)parent.createDir();
 				}
 			}
 
@@ -224,7 +220,7 @@ export namespace OS{
 		template <bool careDirs = false>
 		[[nodiscard]] std::vector<File> subs() const{
 			std::vector<File> files;
-			for(const auto& item : directory_iterator(getPath())){
+			for(const auto& item : fs::directory_iterator(getPath())){
 				if constexpr (careDirs){
 					files.emplace_back(item);
 				}else{
@@ -238,14 +234,14 @@ export namespace OS{
 		}
 
 		void forSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
-			for(const auto& item : directory_iterator(getPath())){
+			for(const auto& item : fs::directory_iterator(getPath())){
 				consumer(File{item});
 			}
 		}
 
 		template <bool careDirs = false>
 		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
-			for(const auto& item : directory_iterator(getPath())){
+			for(const auto& item : fs::directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
 				} else{
@@ -259,7 +255,7 @@ export namespace OS{
 
 		template <bool careDirs = false>
 		void allSubs(std::vector<File>& container) const{
-			for(const auto& item : directory_iterator(getPath())){
+			for(const auto& item : fs::directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					container.emplace_back(std::move(f));
 				} else{
@@ -271,49 +267,33 @@ export namespace OS{
 			}
 		}
 
-		[[nodiscard]] std::string readString(Concepts::Invokable<void(std::string&)> auto&& consumer = nullptr) const{
+		template <Concepts::InvokeNullable<void(std::string&)> Consumer = std::nullptr_t>
+		[[nodiscard]] std::string readString(Consumer&& consumer = nullptr) const{
 			std::ifstream file_stream(getPath());
 
 			if(!file_stream.is_open()) return "";
 
-			std::stringstream file_contents;
+			std::ostringstream file_contents;
 			std::string line;
 
 			while(std::getline(file_stream, line)){
-				consumer(line);
+				if constexpr (!std::same_as<std::nullptr_t, Consumer>){
+					consumer(line);
+				}
+
 				file_contents << line;
 				if(!file_stream.eof()){
 					file_contents << '\n';
 				}
 			}
 
-			return file_contents.str();
+			return std::move(file_contents).str();
 		}
 
 		void writeByte(Concepts::Invokable<void(const std::ofstream&)> auto&& func){
 			if(std::ofstream ofStream(absolutePath(), std::ios::binary); ofStream.is_open()){
 				func(ofStream);
 			}
-		}
-
-		[[nodiscard]] std::string readString() const{
-			std::ifstream file_stream(getPath());
-
-			if(!file_stream.is_open()){
-				throw ext::RuntimeException{"Illegal Reading An Invalid File!: " + filename()};
-			}
-
-			std::stringstream file_contents{};
-			std::string line{};
-
-			while(std::getline(file_stream, line)){
-				file_contents << line;
-				if(!file_stream.eof()){
-					file_contents << '\n';
-				}
-			}
-
-			return file_contents.str();
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const File& file){
@@ -349,9 +329,9 @@ export namespace OS{
 			return map;
 		}
 
-		static std::unordered_map<std::string, std::vector<File>> sortBy(
+		static ext::StringMap<std::vector<File>> sortBy(
 			const std::span<File>& files, const std::span<Filter>& standards){
-			std::unordered_map<std::string, std::vector<File>> map;
+			ext::StringMap<std::vector<File>> map;
 
 			for(const File& file : files){
 				if(
@@ -367,36 +347,27 @@ export namespace OS{
 			return map;
 		}
 
-		friend bool operator<(const File& lhs, const File& rhs){
+		friend auto operator<=>(const File& lhs, const File& rhs){
 			if(lhs.isDir()){
 				if(rhs.isDir()){
-					return lhs.rawPath < rhs.rawPath;
+					return lhs.rawPath <=> rhs.rawPath;
 				}
-				return true;
+				return std::strong_ordering::less;
 			}
 
 			if(rhs.isDir()){
-				return false;
+				return std::strong_ordering::greater;
 			}
 
-			return lhs.rawPath < rhs.rawPath;
+			return lhs.rawPath <=> rhs.rawPath;
 		}
 
-		friend bool operator<=(const File& lhs, const File& rhs){ return rhs >= lhs; }
-
-		friend bool operator>(const File& lhs, const File& rhs){ return rhs < lhs; }
-
-		friend bool operator>=(const File& lhs, const File& rhs){ return !(lhs < rhs); }
 	};
 }
 
 export
 template <>
 struct std::formatter<OS::File>{
-	constexpr auto parse(std::format_parse_context& context) const{
-		return context.begin();
-	}
-
 	auto format(const OS::File& p, auto& context) const{
 		return std::format_to(context.out(), "{}", p.filenameFull());
 	}

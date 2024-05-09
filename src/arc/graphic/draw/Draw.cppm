@@ -104,8 +104,8 @@ export namespace Graphic{
 
 	using BatchPtr = std::unique_ptr<Core::Batch>;
 
-	constexpr auto BatchOverlay = &Core::BatchGroup::batchOverlay;
-	constexpr auto BatchWorld = &Core::BatchGroup::batchWorld;
+	constexpr auto BatchOverlay = &Core::BatchGroup::overlay;
+	constexpr auto BatchWorld = &Core::BatchGroup::world;
 	constexpr auto DefBatch = BatchOverlay;
 
 	BatchPtr& getBatch(BatchPtr Core::BatchGroup::* batchPtr);
@@ -114,8 +114,8 @@ export namespace Graphic{
 	struct VertexPasser;
 
 	template <>
-	struct VertexPasser<&Core::BatchGroup::batchWorld> {
-		static constexpr auto batchPtr = &Core::BatchGroup::batchWorld;
+	struct VertexPasser<&Core::BatchGroup::world> {
+		static constexpr auto batchPtr = &Core::BatchGroup::world;
 
 		static constexpr int size = VERT_LENGTH_WORLD;
 
@@ -138,8 +138,8 @@ export namespace Graphic{
 	};
 
 	template <>
-	struct VertexPasser<&Core::BatchGroup::batchOverlay> {
-		static constexpr auto batchPtr = &Core::BatchGroup::batchOverlay;
+	struct VertexPasser<&Core::BatchGroup::overlay> {
+		static constexpr auto batchPtr = &Core::BatchGroup::overlay;
 
 		static constexpr int size = VERT_LENGTH_OVERLAY;
 
@@ -590,9 +590,8 @@ export namespace Graphic{
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rect(const TextureRegionRect* region,
-		          const float x, const float y,
-		          const float width, const float height,
-		          const float ang = 0
+		          const float x, const float y,  const float ang,
+		          const float width, const float height
 		){
 			const float sin = Math::sinDeg(ang);
 			const float cos = Math::cosDeg(ang);
@@ -614,14 +613,14 @@ export namespace Graphic{
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
 		void rect(const TextureRegionRect* region,
 		          const float x, const float y,
-		          const float ang = 0
+		          const float ang = 0, const Geom::Vec2 scl = Geom::norBaseVec2<float>
 		){
-		rect<batchPtr>(region, x, y, region->getWidth(), region->getHeight(), ang);
+		rect<batchPtr>(region, x, y, ang, region->getWidth() * scl.x, region->getHeight() * scl.y);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void rect(const TextureRegionRect* region, Concepts::Derived<Geom::Transform> auto trans){
-			::Graphic::Draw::rect<batchPtr>(region, trans.vec.x, trans.vec.y, trans.rot);
+		void rect(const TextureRegionRect* region, Concepts::Derived<Geom::Transform> auto trans, const Geom::Vec2 scl = Geom::norBaseVec2<float>){
+			::Graphic::Draw::rect<batchPtr>(region, trans.vec.x, trans.vec.y, trans.rot, scl);
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>

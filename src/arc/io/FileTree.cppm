@@ -105,9 +105,10 @@ export namespace OS{
 
 			if constexpr(quiet){
 				return {};
+			}else{
+				throw ext::IllegalArguments{std::format("Failed To Find File: {}", fileName)};
 			}
 
-			throw ext::IllegalArguments{std::format("Failed To Find File: {}", fileName)};
 		}
 
 		void reDirect(const File& rootFile){

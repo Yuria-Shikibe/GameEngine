@@ -2,7 +2,7 @@
 // Created by Matrix on 2024/4/18.
 //
 
-export module Game.ChamberFrame;
+export module Game.Chamber.Frame;
 
 import std;
 export import Game.Chamber;

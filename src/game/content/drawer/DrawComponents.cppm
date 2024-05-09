@@ -71,6 +71,7 @@ export namespace Game::Drawer{
 	struct TextureDrawer : DrawComponent<T>{
 		GL::TextureRegionRect* mainRegion{};
 
+		Geom::Vec2 scl = Geom::norBaseVec2<float>;
 		Graphic::Color lightColor{Graphic::Colors::WHITE};
 
 		using DrawComponent<T>::generalMovement;
@@ -102,7 +103,7 @@ export namespace Game::Drawer{
 
 			Draw::color(lightColor);
 			Draw::setZ(cur.zOffset);
-			Draw::rect<BatchWorld>(mainRegion, cur);
+			Draw::rect<BatchWorld>(mainRegion, cur, scl);
 		}
 	};
 

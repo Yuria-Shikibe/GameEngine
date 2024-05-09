@@ -68,7 +68,7 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 		initializer();
 	}
 
-	if(!batchGroup.batchOverlay)throw ext::NullPointerException{"Empty Overlay Batch!"};
+	if(!batchGroup.overlay)throw ext::NullPointerException{"Empty Overlay Batch!"};
 
 	OS::registerListener(input);
 	OS::registerListener(camera);

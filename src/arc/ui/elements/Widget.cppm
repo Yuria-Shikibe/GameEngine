@@ -41,16 +41,16 @@ export namespace UI {
 
 		std::function<void(Table&)> builder{};
 
-		[[nodiscard]] explicit operator bool() const {
+		[[nodiscard]] explicit operator bool() const noexcept{
 			return static_cast<bool>(builder);
 		}
 
-		[[nodiscard]] bool autoBuild() const{
+		[[nodiscard]] bool autoBuild() const noexcept{
 			return minHoverTime > 0.0f;
 		}
 	};
 
-	using FollowTarget = TooltipBuilder::FollowTarget;
+	using TooltipFollowTarget = TooltipBuilder::FollowTarget;
 }
 
 export namespace UI {
@@ -465,8 +465,8 @@ export namespace UI {
 		[[nodiscard]] auto& getActions() const{ return actions; }
 
 		template <Concepts::Derived<Action<Widget>> ActionType, typename ...T>
-		void pushAction(T... args){
-			actions.push(std::make_unique<ActionType>(args...));
+		void pushAction(T&&... args){
+			actions.push(std::make_unique<ActionType>(std::forward<T>(args)...));
 		}
 
 		template<Concepts::Derived<Action<Widget>> ...ActionType>

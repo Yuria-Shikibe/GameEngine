@@ -1,7 +1,7 @@
 export module MetaProgramming;
 
 import std;
-import ext.RuntimeException;
+// import ext.RuntimeException;
 
 namespace ext{
 	template <std::size_t I, std::size_t size, typename ArgTuple, typename DefTuple>
@@ -22,10 +22,10 @@ namespace ext{
 	}
 
 	template<typename T, T a, T b>
-	constexpr T max = a > b ? a : b;
+	constexpr T max_const = a > b ? a : b;
 
 	template<typename T, T a, T b>
-	constexpr T min = a < b ? a : b;
+	constexpr T min_const = a < b ? a : b;
 
 	template <typename TargetTuple, typename FromTuple, std::size_t... I>
 	constexpr bool tupleConvertableTo(std::index_sequence<I...>){
@@ -58,7 +58,7 @@ namespace ext{
 
 
 	template <bool Test, auto val1, decltype(val1) val2>
-	struct conditional_constexpr_val{ // Choose _Ty1 if _Test is true, and _Ty2 otherwise
+	struct conditional_constexpr_val{
 		static constexpr auto val = val1;
 	};
 
@@ -84,60 +84,63 @@ namespace ext{
 
 
 export namespace ext{
-	template <typename TargetTuple, typename... Args>
-	constexpr decltype(auto) makeTuple_withDef(TargetTuple&& defaultArgs, Args&&... args){
+	template <typename SuperTuple, typename... Args>
+	constexpr decltype(auto) makeTuple_withDef(SuperTuple&& defaultArgs, Args&&... args){
 		return ext::makeTuple_withDef_impl(std::make_tuple(std::forward<Args>(args)...),
-		                                   std::forward<TargetTuple>(defaultArgs),
-		                                   std::make_index_sequence<std::tuple_size_v<std::decay_t<TargetTuple>>>());
+		                                   std::forward<SuperTuple>(defaultArgs),
+		                                   std::make_index_sequence<std::tuple_size_v<std::decay_t<SuperTuple>>>());
 	}
 
-	template <typename TargetTuple, typename... Args>
+	template <typename SuperTuple, typename... Args>
 	constexpr decltype(auto) makeTuple_withDef(Args&&... args){
-		return ext::makeTuple_withDef(TargetTuple{}, std::forward<Args>(args)...);
+		return ext::makeTuple_withDef(SuperTuple{}, std::forward<Args>(args)...);
 	}
 
-	template <bool strict, typename TargetTuple, typename...Args>
+	/**
+	 * @brief
+	 * @tparam strict Using std::same_as or std::convertable_to
+	 * @tparam SuperTuple Super sequence of the params
+	 * @tparam Args given params
+	 * @return Whether given param types are the subseq of the SuperTuple
+	 */
+	template <bool strict, typename SuperTuple, typename...Args>
 	constexpr bool isArgsSubOf(){
-		constexpr size_t fromSize = sizeof...(Args);
-		constexpr size_t toSize = std::tuple_size_v<TargetTuple>;
-		if constexpr(std::tuple_size_v<TargetTuple> < fromSize)return false;
+		constexpr std::size_t fromSize = sizeof...(Args);
+		constexpr std::size_t toSize = std::tuple_size_v<SuperTuple>;
+		if constexpr(std::tuple_size_v<SuperTuple> < fromSize)return false;
 
 		if constexpr(strict){
-			return ext::tupleSameAs<TargetTuple, std::tuple<std::decay_t<Args>...>>(std::make_index_sequence<ext::min<size_t, toSize, fromSize>>());
+			return ext::tupleSameAs<SuperTuple, std::tuple<std::decay_t<Args>...>>(std::make_index_sequence<ext::min_const<std::size_t, toSize, fromSize>>());
 		}else{
-			return ext::tupleConvertableTo<TargetTuple, std::tuple<std::decay_t<Args>...>>(std::make_index_sequence<ext::min<size_t, toSize, fromSize>>());
+			return ext::tupleConvertableTo<SuperTuple, std::tuple<std::decay_t<Args>...>>(std::make_index_sequence<ext::min_const<std::size_t, toSize, fromSize>>());
 		}
 	}
 
-	template <typename T, typename TargetTuple>
+	template <typename T, typename ArgsTuple>
 	constexpr bool containedIn(){
-		constexpr size_t toSize = std::tuple_size_v<TargetTuple>;
+		constexpr std::size_t toSize = std::tuple_size_v<ArgsTuple>;
 
-		return ext::tupleContains<TargetTuple, T>(std::make_index_sequence<toSize>());
+		return ext::tupleContains<ArgsTuple, T>(std::make_index_sequence<toSize>());
 	}
 
 	template <typename T, typename...Args>
 	constexpr bool containedWith(){
-		constexpr size_t toSize = std::tuple_size_v<std::tuple<Args...>>;
+		constexpr std::size_t toSize = std::tuple_size_v<std::tuple<Args...>>;
 
 		return ext::tupleContains<std::tuple<Args...>, T>(std::make_index_sequence<toSize>());
 	}
 
-	template <typename TargetTuple, typename FromTuple>
+	template <typename SuperTuple, typename FromTuple>
 	constexpr bool isTupleSubOf(){
-		constexpr size_t fromSize = std::tuple_size_v<FromTuple>;
-		constexpr size_t toSize = std::tuple_size_v<TargetTuple>;
+		constexpr std::size_t fromSize = std::tuple_size_v<FromTuple>;
+		constexpr std::size_t toSize = std::tuple_size_v<SuperTuple>;
 		if constexpr(toSize < fromSize)return false;
 
-		return ext::tupleConvertableTo<TargetTuple, FromTuple>(std::make_index_sequence<ext::min<size_t, toSize, fromSize>>());
+		return ext::tupleConvertableTo<SuperTuple, FromTuple>(std::make_index_sequence<ext::min_const<std::size_t, toSize, fromSize>>());
 	}
-
-	constexpr bool test = isArgsSubOf<true, std::tuple<int, int>, float>();
-
 
 	template <typename MemberPtr>
 	struct GetMemberPtrInfo;
-
 
 	template <typename C, typename T>
 	struct GetMemberPtrInfo<T C::*>{
@@ -146,28 +149,17 @@ export namespace ext{
 	};
 
 	template <typename C, typename T>
-	struct GetMemberPtrInfo<T C::* const>{
-		using ClassType = C;
-		using ValueType = T;
-	};
+	struct GetMemberPtrInfo<T C::* const> : GetMemberPtrInfo<T C::*>{};
 
 	template <typename C, typename T>
-	struct GetMemberPtrInfo<T C::* &>{
-		using ClassType = C;
-		using ValueType = T;
-	};
+	struct GetMemberPtrInfo<T C::* &> : GetMemberPtrInfo<T C::*>{};
 
 	template <typename C, typename T>
-	struct GetMemberPtrInfo<T C::* &&>{
-		using ClassType = C;
-		using ValueType = T;
-	};
+	struct GetMemberPtrInfo<T C::* &&> : GetMemberPtrInfo<T C::*>{};
 
 	template <typename C, typename T>
-	struct GetMemberPtrInfo<T C::* const&>{
-		using ClassType = C;
-		using ValueType = T;
-	};
+	struct GetMemberPtrInfo<T C::* const&> : GetMemberPtrInfo<T C::*>{};
+
 
 	// template<auto mPtr>
 	// constexpr std::size_t offset_of = std::bit_cast<std::size_t>(&(static_cast<typename GetMemberPtrClass<decltype(mPtr)>::type*>(nullptr)->*mPtr));

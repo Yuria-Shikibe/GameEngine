@@ -10,7 +10,7 @@ import std;
 
 export namespace Core{
 	struct BatchGroup {
-		std::unique_ptr<Batch> batchOverlay{nullptr};
-		std::unique_ptr<Batch> batchWorld{nullptr};
+		std::unique_ptr<Batch> overlay{nullptr};
+		std::unique_ptr<Batch> world{nullptr};
 	};
 }

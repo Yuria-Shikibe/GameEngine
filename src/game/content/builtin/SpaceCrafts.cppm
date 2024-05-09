@@ -19,6 +19,7 @@ export namespace Game::Content::Builtin{
 			self->drawer = std::make_unique<Game::Drawer::TextureDrawer<Game::SpaceCraft>>("",
 			[](Game::Drawer::TextureDrawer<Game::SpaceCraft>* drawer){
 				drawer->trans.vec.x = 100;
+				// drawer->scl.scl(4);
 			});
 		});
 

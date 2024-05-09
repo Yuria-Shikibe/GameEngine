@@ -12,7 +12,7 @@ import Geom.Matrix3D;
 import UI.SeperateDrawable;
 
 void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask) {
-	if (frameStack.top() == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
+	if (contextFrameBuffer == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
 
 	Graphic::Batch::flush();
 
@@ -88,19 +88,50 @@ void Core::Renderer::frameEnd_Quiet(){
 }
 
 
+void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
+	Graphic::Blendings::Normal.apply();
 
+	uiBlurMask.bind();
+	uiBlurMask.clearColor();
+	drawable->drawBase();
+	Graphic::Batch::flush();
+
+	// effectBuffer.clear();
+	Assets::PostProcessors::frostedGlassBlur->apply(contextFrameBuffer, &effectBuffer);
+	// Graphic::Frame::blitCopy(&effectBuffer, 0, contextFrameBuffer, 0);
+	// Assets::PostProcessors::c->apply();
+
+	effectBuffer.getTopTexture().active(0);
+	contextFrameBuffer->getTopTexture().active(1);
+	uiBlurMask.getMaskBuffer().getTopTexture().active(2);
+
+	GL::disable(GL::State::BLEND);
+	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
+		// shader.setColor("mixColor", Colors::CLEAR);
+		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::DARK_GRAY, 0.55f).setA(0.25f));
+		// shader.setColor("mixColor", Colors::GRAY);
+		shader.setColor("srcColor", Colors::GRAY.createLerp(Colors::DARK_GRAY, 0.35f).createLerp(Colors::AQUA_SKY, 0.125f));
+		// shader.setColor("srcColor", Colors::WHITE);
+	});
+	GL::enable(GL::State::BLEND);
+
+	Renderer::frameBegin(&uiPostBuffer);
+	drawable->draw();
+	frameEnd(Assets::PostProcessors::bloom.get());
+}
 
 //TODO merge these two function
+
 void Core::Renderer::renderUI() {
+
 	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
-	Core::batchGroup.batchOverlay->setProjection(Core::uiRoot->getPorj());
+	Core::batchGroup.overlay->setProjection(Core::uiRoot->getPorj());
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
 
 	processUISperateDraw(Core::uiRoot->currentScene);
 	processUISperateDraw(&Core::uiRoot->rootDialog);
-
 
 	const auto [dropped, focused] = Core::uiRoot->tooltipManager.getDrawSeq();
 
@@ -112,35 +143,8 @@ void Core::Renderer::renderUI() {
 		processUISperateDraw(toDraw);
 	}
 
-	batchGroup.batchOverlay->setProjection(mat);
+	batchGroup.overlay->setProjection(mat);
 	Assets::PostProcessors::bloom->blur.setProcessTimes(times);
-}
-
-void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
-	uiBlurMask.bind();
-	uiBlurMask.clearColor();
-	drawable->drawBase();
-	Graphic::Batch::flush();
-
-	Assets::PostProcessors::blur_Far->apply(contextFrameBuffer, &effectBuffer);
-
-	uiBlurMask.getMaskBuffer().getColorAttachments().front()->active(2);
-	contextFrameBuffer->getColorAttachments().front()->active(1);
-	effectBuffer.getColorAttachments().front()->active(0);
-
-
-	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
-		shader.setColor("mixColor", Colors::LIGHT_GRAY);
-		// shader.setColor("mixColor", AQUA_SKY.createLerp(Colors::GRAY, 0.95f).setA(0.25f));
-		// shader.setColor("mixColor", Colors::GRAY);
-		shader.setColor("srcColor", Colors::LIGHT_GRAY.createLerp(Colors::AQUA_SKY, 0.125f));
-	});
-	Graphic::Blendings::Normal.apply();
-
-	Renderer::frameBegin(&uiPostBuffer);
-	drawable->draw();
-	Graphic::Batch::flush();
-	frameEnd(Assets::PostProcessors::bloom.get());
 }
 
 void Core::Renderer::resize(const int w, const int h) {
@@ -158,7 +162,7 @@ void Core::Renderer::resize(const int w, const int h) {
 
 	contextFrameBuffer->resize(w, h);
 
-	GL::viewport(static_cast<int>(w), static_cast<int>(h));
+	GL::viewport(w, h);
 
 	for(const auto& resizeable : synchronizedSizedObjects) {
 		resizeable->resize(w, h);

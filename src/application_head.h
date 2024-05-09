@@ -1,6 +1,7 @@
 // ReSharper disable CppNonInlineVariableDefinitionInHeaderFile
 #ifndef APPLICATION_HEAD_H
 #define APPLICATION_HEAD_H
+
 	extern "C" {
 		__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 	}

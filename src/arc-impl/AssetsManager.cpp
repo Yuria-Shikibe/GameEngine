@@ -61,7 +61,7 @@ void Assets::Manager::load_Visible(const int width, const int height, Core::Rend
 		OS::pollWindowEvent();
 	}
 
-	Core::batchGroup.batchOverlay->reset();
+	Core::batchGroup.overlay->reset();
 
 	if(!loader.finished()) { //TODO better interruption
 		loader.interrupt();

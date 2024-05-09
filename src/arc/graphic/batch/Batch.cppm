@@ -99,13 +99,15 @@ export namespace Core{
 			return lastTexture;
 		}
 
-		void setCustomShader(Shader* shader) {
+		void setCustomShader(Shader* shader) noexcept{
 			customShader = shader;
 		}
 
 		void setCustomShader() {
 			customShader = nullptr;
 		}
+
+		[[nodiscard]] Shader* getCustomShader() const{ return customShader; }
 
 		void setupBlending() const {
 			blending->apply();
@@ -196,6 +198,46 @@ export namespace Core{
 
 		virtual void post(const std::function<void()>& drawPost){
 			drawPost();
+		}
+	};
+
+	struct BatchGuard{
+		Batch& batch;
+
+		[[nodiscard]] explicit BatchGuard(Batch& batch) noexcept
+			: batch{batch}{}
+	};
+
+	/**
+	 * @brief L2W --- Local Coordinate To World Transformation Matrix(2D)
+	 */
+	struct BatchGuard_L2W : BatchGuard{
+		const Geom::Matrix3D originalMat{};
+
+		[[nodiscard]] explicit BatchGuard_L2W(Batch& batch, const Geom::Matrix3D& mat)
+			: BatchGuard{batch}, originalMat{batch.getLocalToWorld()}{
+			batch.flush();
+			batch.setLocalToWorld(mat);
+		}
+
+		~BatchGuard_L2W(){
+			batch.flush();
+			batch.setLocalToWorld(originalMat);
+		}
+	};
+
+	struct BatchGuard_Shader : BatchGuard{
+		GL::Shader* originalShader{nullptr};
+
+		[[nodiscard]] explicit BatchGuard_Shader(Batch& batch, GL::Shader* shader) noexcept
+			: BatchGuard{batch}, originalShader{batch.getCustomShader()}{
+			batch.flush();
+			batch.setCustomShader(shader);
+		}
+
+		~BatchGuard_Shader(){
+			batch.flush();
+			batch.setCustomShader(originalShader);
 		}
 	};
 }

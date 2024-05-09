@@ -9,14 +9,13 @@ namespace Concepts {
 	 */
 	export
 	template <bool Test, class T>
-	struct ValueConditional {
-		using type = T;
+	struct RefConditional {
+		using type = std::add_lvalue_reference_t<T>;
 	};
 
 	template <class T>
-		requires std::is_trivial_v<T>
-	struct ValueConditional<false, T> {
-		using type = std::add_lvalue_reference_t<T>;
+	struct RefConditional<false, T> {
+		using type = T;
 	};
 
 	export
@@ -80,16 +79,13 @@ export namespace Concepts {
 	 * \tparam T Value Type
 	 */
 	template <typename T, size_t size>
-	using ParamPassType = typename ValueConditional<
-		size <= sizeof(void*) * 2,
+	using ParamPassType = typename RefConditional<
+		(size > sizeof(void*) * 2),
 		T
 	>::type;
 
     template <typename T>
     concept Number = std::is_arithmetic_v<T>;
-
-	template <typename T, typename R>
-	concept Pass = std::same_as<std::remove_cvref_t<T>, R>;
 
     template <typename T>
     concept NumberSingle = std::is_arithmetic_v<T> && sizeof(T) <= 4;
@@ -98,7 +94,7 @@ export namespace Concepts {
     concept Derived = std::derived_from<DerivedT, Base>;
 
     template <class DerivedT, class... Bases>
-    concept DerivedMulti = (std::derived_from<Bases, DerivedT> && ...);;
+    concept DerivedMulti = (std::derived_from<Bases, DerivedT> && ...);
 
 	template <class T>
 	concept DefConstructable = std::is_default_constructible_v<T>;

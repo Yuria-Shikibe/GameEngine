@@ -57,6 +57,17 @@ export namespace Graphic{
 		}
 
 		constexpr Color(const float r, const float g, const float b): Color(r, g, b, 1){}
+	private:
+		template <bool doClamp>
+		inline constexpr Color& clampCond() noexcept{
+			if constexpr (doClamp){
+				return clamp();
+			}else{
+				return *this;
+			}
+		}
+
+	public:
 
 		[[nodiscard]] const float* asRaw() const noexcept{
 			return reinterpret_cast<const float*>(this);
@@ -297,41 +308,46 @@ export namespace Graphic{
 			return *this;
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& mul(const Color& color) noexcept{
 			this->r *= color.r;
 			this->g *= color.g;
 			this->b *= color.b;
 			this->a *= color.a;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& mul_rgb(const float value) noexcept{
 			this->r *= value;
 			this->g *= value;
 			this->b *= value;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& mul_rgba(const float value) noexcept{
 			this->r *= value;
 			this->g *= value;
 			this->b *= value;
 			this->a *= value;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& add(const Color& color) noexcept{
 			this->r += color.r;
 			this->g += color.g;
 			this->b += color.b;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& sub(const Color& color) noexcept{
 			this->r -= color.r;
 			this->g -= color.g;
 			this->b -= color.b;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
 		constexpr Color& clamp() noexcept{
@@ -362,19 +378,21 @@ export namespace Graphic{
 			return *this;
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& set(const float tr, const float tg, const float tb, const float ta) noexcept{
 			this->r = tr;
 			this->g = tg;
 			this->b = tb;
 			this->a = ta;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& set(const float tr, const float tg, const float tb) noexcept{
 			this->r = tr;
 			this->g = tg;
 			this->b = tb;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
 		constexpr Color& set(const int rgba) noexcept{
@@ -385,34 +403,38 @@ export namespace Graphic{
 			return r + g + b;
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& add(const float tr, const float tg, const float tb, const float ta) noexcept{
 			this->r += tr;
 			this->g += tg;
 			this->b += tb;
 			this->a += ta;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& add(const float tr, const float tg, const float tb) noexcept{
 			this->r += tr;
 			this->g += tg;
 			this->b += tb;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& sub(const float tr, const float tg, const float tb, const float ta) noexcept{
 			this->r -= tr;
 			this->g -= tg;
 			this->b -= tb;
 			this->a -= ta;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& sub(const float tr, const float tg, const float tb) noexcept{
 			this->r -= tr;
 			this->g -= tg;
 			this->b -= tb;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
 		constexpr Color& inv(){
@@ -447,37 +469,42 @@ export namespace Graphic{
 			return *this;
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& mul(const float tr, const float tg, const float tb, const float ta) noexcept{
 			this->r *= tr;
 			this->g *= tg;
 			this->b *= tb;
 			this->a *= ta;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& mul(const float val) noexcept{
 			this->r *= val;
 			this->g *= val;
 			this->b *= val;
 			this->a *= val;
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& lerp(const Color& target, const float t) noexcept{
 			this->r += t * (target.r - this->r);
 			this->g += t * (target.g - this->g);
 			this->b += t * (target.b - this->b);
 			this->a += t * (target.a - this->a);
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& lerpRGB(const Color& target, const float t) noexcept{
 			this->r += t * (target.r - this->r);
 			this->g += t * (target.g - this->g);
 			this->b += t * (target.b - this->b);
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		[[nodiscard]] constexpr Color createLerp(const Color& target, const float t) const noexcept{
 			Color newColor{
 				r + t * (target.r - r),
@@ -486,15 +513,16 @@ export namespace Graphic{
 				a + t * (target.a - a)
 			};
 
-			return newColor.clamp();
+			return newColor.clampCond<doClamp>();
 		}
 
+		template <bool doClamp = true>
 		constexpr Color& lerp(const float tr, const float tg, const float tb, const float ta, const float t) noexcept{
 			this->r += t * (tr - this->r);
 			this->g += t * (tg - this->g);
 			this->b += t * (tb - this->b);
 			this->a += t * (ta - this->a);
-			return clamp();
+			return clampCond<doClamp>();
 		}
 
 		constexpr Color& preMultiplyAlpha() noexcept{
@@ -890,3 +918,5 @@ export
 			return obj.hashCode();
 		}
 	};
+
+// export namespace Colors = Graphic::Colors;

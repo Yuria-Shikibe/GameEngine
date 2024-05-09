@@ -1,5 +1,3 @@
-module ;
-
 export module Geom.Position;
 
 import std;

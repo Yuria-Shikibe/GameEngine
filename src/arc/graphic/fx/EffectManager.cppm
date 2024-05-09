@@ -17,7 +17,6 @@ export namespace Graphic{
 		using PoolType = ext::ObjectPool<Effect>;
 		PoolType effectPool{};
 
-		//yes this is bad
 		ext::UniquePtrSet<Effect, PoolType::Deleter> activatedEffects{MaxEffectBufferSize};
 
 		std::vector<Effect*> toRemove{};
@@ -43,7 +42,7 @@ export namespace Graphic{
 		}
 
 		[[nodiscard]] Effect* suspend(){
-			Effect* out{};
+			Effect* out;
 
 			{
 				PoolType::UniquePtr ptr;

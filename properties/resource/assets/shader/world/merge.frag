@@ -7,8 +7,8 @@ uniform sampler2D texNormal;
 uniform lowp sampler2D texLight;
 uniform lowp sampler2D bloom;
 
-const lowp float intensity_blo = 1.45f;
-const lowp float intensity_ori = 1.15f;
+const lowp float intensity_blo = 1.35f;
+const lowp float intensity_ori = 1.2f;
 
 out vec4 FragColor;
 
