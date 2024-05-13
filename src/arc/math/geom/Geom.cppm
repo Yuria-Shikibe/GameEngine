@@ -3,7 +3,7 @@ module ;
 export module Geom;
 
 import std;
-import Concepts;
+import ext.Concepts;
 import Math;
 import Math.Interpolation;
 

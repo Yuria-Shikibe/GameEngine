@@ -8,7 +8,7 @@ export import GL.Buffer.FrameBuffer;
 export import GL.Texture.Texture2D;
 export import GL;
 
-import Concepts;
+import ext.Concepts;
 
 export import ext.RuntimeException;
 

@@ -6,7 +6,7 @@ export module Game.Chamber;
 
 export import Geom.Rect_Orthogonal;
 export import Geom.Vector2D;
-import Concepts;
+import ext.Concepts;
 import ext.RuntimeException;
 import std;
 
@@ -18,14 +18,19 @@ using Geom::OrthoRectFloat;
 
 namespace Game{
 	constexpr std::string_view ChamberRegionFieldName = "region";
+
+	class SpaceCraft;
 }
 
 export namespace Game{
 	constexpr float TileSize = 8.0f;
 
+	template <typename Entity>
 	struct ChamberTile;
 
+	template <typename Entity>
 	struct Chamber : Core::IO::DynamicJsonSerializable{
+		using EntityType = Entity;
 		Geom::OrthoRectInt region{};
 		unsigned id{};
 
@@ -46,29 +51,31 @@ export namespace Game{
 
 		~Chamber() override = default;
 
-		virtual void update(float delta) = 0;
+		virtual void update(float delta, Entity& entity) = 0;
 
-		virtual void draw() const = 0;
+		virtual void draw(const Entity& entity) const = 0;
 
-		virtual void init(const ChamberTile* chamberTile) = 0;
+		virtual void init(const ChamberTile<Entity>* chamberTile) = 0;
+
+		virtual void initEntityInfo(Entity& entity){}
 	};
 
+	template <typename Entity>
+	struct ChamberMocker final : Chamber<Entity>{
+		void update(float delta, Entity& entity) override{}
 
-	struct ChamberMocker final : Chamber{
-		void update(float delta) override{}
+		void draw(const Entity& entity) const override{}
 
-		void draw() const override{}
-
-		void init(const ChamberTile* chamberTile) override{}
+		void init(const ChamberTile<Entity>* chamberTile) override{}
 	};
 
-
+	template <typename Entity>
 	struct ChamberTile{
 		Point2 pos{};
 		/** Usage for multi tile*/
 		ChamberTile* referenceTile{nullptr};
 
-		std::unique_ptr<Chamber> chamber{};
+		std::unique_ptr<Chamber<Entity>> chamber{};
 
 		[[nodiscard]] bool valid() const {
 			//Not chain query, only one-depth reference is allowed
@@ -148,26 +155,26 @@ export namespace Game{
 	struct ChamberMetaDataBase{};
 
 
-	template <Concepts::Derived<ChamberMetaDataBase> TraitData = ChamberMetaDataBase>
+	template <typename Entity, Concepts::Derived<ChamberMetaDataBase> TraitData = ChamberMetaDataBase>
 	struct ChamberTraitFallback{
 		using TraitDataType = TraitData;
 
 		// ReSharper disable CppMemberFunctionMayBeStatic
-		void update(Chamber*, TraitDataType&, const float) const{}
+		void update(Chamber<Entity>*, Entity&, TraitDataType&, const float) const{}
 
-		void init(Chamber* chamber, const ChamberTile* tile, TraitDataType&) const{}
+		void init(Chamber<Entity>*, const ChamberTile<Entity>* tile, TraitDataType&) const{}
 
-		void draw(const Chamber*, const TraitDataType&) const{}
-
+		void draw(const Chamber<Entity>*, const Entity&, const TraitDataType&) const{}
 		// ReSharper restore CppMemberFunctionMayBeStatic
 	};
 
 
 	template <
+		typename Entity,
 		Concepts::Derived<ChamberMetaDataBase> TraitData = ChamberMetaDataBase,
-		Concepts::Derived<ChamberTraitFallback<TraitData>> Trait = ChamberTraitFallback<TraitData>>
+		Concepts::Derived<ChamberTraitFallback<Entity, TraitData>> Trait = ChamberTraitFallback<TraitData>>
 		requires std::same_as<TraitData, typename Trait::TraitDataType>
-	class ChamberVariant : public Chamber{
+	class ChamberVariant : public Chamber<Entity>{
 	public:
 		using TraitType = Trait;
 		using TraitDataType = typename TraitType::TraitDataType;
@@ -185,37 +192,37 @@ export namespace Game{
 
 		~ChamberVariant() override = default;
 
-		void update(float delta) override{
-			trait->update(this, mataData, delta);
+		void update(float delta, Entity& entity) override{
+			trait->update(this, entity, mataData, delta);
 		}
 
-		void draw() const override{
-			trait->draw(this, mataData);
+		void draw(const Entity& entity) const override{
+			trait->draw(this, entity, mataData);
 		}
 
-		void init(const ChamberTile* chamberTile) override{
+		void init(const ChamberTile<Entity>* chamberTile) override{
 			trait->init(this, chamberTile, mataData);
 		}
 	};
-
-
-
-	template <typename MetadataType, Concepts::Derived<ChamberTraitFallback<MetadataType>> Trait = ChamberTraitFallback<
-		MetadataType>>
-	ChamberVariant(const Trait&) -> ChamberVariant<typename Trait::TraitDataType, Trait>;
+	
+	// template <typename MetadataType, Concepts::Derived<ChamberTraitFallback<MetadataType>> Trait = ChamberTraitFallback<
+	// 	MetadataType>>
+	// ChamberVariant(const Trait&) -> ChamberVariant<typename Trait::TraitDataType, Trait>;
 
 	/**
 	 * @brief MetaData Wrapper. Used for chamber complex constructor with Type Erasure
 	 */
+	template <typename Entity> 
 	struct ChamberFactory{
+		using EntityType = Entity;
 		virtual ~ChamberFactory() = default;
 
-		virtual std::unique_ptr<Chamber> genChamber() const{
-			return std::unique_ptr<Chamber>(nullptr);
+		virtual std::unique_ptr<Chamber<Entity>> genChamber() const{
+			return std::unique_ptr<Chamber<Entity>>(nullptr);
 		}
 
-		virtual ChamberTile genChamberTile(const Geom::OrthoRectInt region) const{
-			ChamberTile tile{};
+		virtual ChamberTile<Entity> genChamberTile(const Geom::OrthoRectInt region) const{
+			ChamberTile<Entity> tile{};
 			tile.chamber = genChamber();
 			tile.pos = region.getSrc();
 
@@ -230,18 +237,22 @@ export namespace Game{
 			return tile;
 		}
 
-		static ChamberTile genEmptyTile(const Point2 pos){
+		static ChamberTile<Entity> genEmptyTile(const Point2 pos){
 			return {pos};
 		}
 	};
+	
+	template <typename Entity> 
+	struct MockChamberFactory final : ChamberFactory<Entity>{
+		[[nodiscard]] constexpr MockChamberFactory() = default;
 
-	struct MockChamberFactory final : ChamberFactory{
-		std::unique_ptr<Chamber> genChamber() const override{
-			return std::make_unique<ChamberMocker>();
+		std::unique_ptr<Chamber<Entity>> genChamber() const override{
+			return std::make_unique<ChamberMocker<Entity>>();
 		}
-	} mockChamberFactory;
-
-	struct TurretChamberFactory : ChamberFactory{
+	};
+	
+	template <typename Entity> 
+	struct TurretChamberFactory : ChamberFactory<Entity>{
 		struct TurretChamberData : ChamberMetaDataBase{
 			Vec2 targetPos{};
 			float reload{};
@@ -251,7 +262,7 @@ export namespace Game{
 		struct TurretChamberTrait : ChamberTraitFallback<TurretChamberData>{
 			float reloadTime{};
 
-			void update(Chamber* chamber, TraitDataType& data, const float delta) const{
+			void update(Chamber<Entity>* chamber, typename ChamberFactory<Entity>::template TraitDataType<Entity>& data, const float delta) const{
 				chamber->update(delta);
 				data.reload += delta;
 				if(data.reload > reloadTime){
@@ -264,66 +275,72 @@ export namespace Game{
 		template <Concepts::Derived<TurretChamberTrait> Trait = TurretChamberTrait>
 		using ChamberType = ChamberVariant<typename Trait::TraitDataType, TurretChamberTrait>;
 
-		std::unique_ptr<Chamber> genChamber() const override{
+		std::unique_ptr<Chamber<Entity>> genChamber() const override{
 			return std::make_unique<ChamberType<>>(baseTraitTest);
 		}
 	};
 
-
-	TurretChamberFactory::TurretChamberTrait baseTraitTest{};
-
-	TurretChamberFactory::ChamberType<> testChamberType{baseTraitTest};
-}
-
-
-export
-template <>
-struct std::hash<Game::ChamberTile>{
-	size_t operator()(const Game::ChamberTile& v) const noexcept{
-		return v.pos.hash_value();
-	}
-};
-
-
-export
-template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberTile>{
-	static constexpr std::string_view DstToRef = "relativeRefPos";
-	static constexpr std::string_view OwnsChamber = "ownsChamber";
-	static constexpr std::string_view Chamber = "chamber";
-
-	static void write(ext::json::JsonValue& jval, const Game::ChamberTile& data){
-		ext::json::append(jval, ext::json::keys::Pos, data.pos);
-
-		if(data.ownsChamber()){
-			ext::json::JsonValue chamberJval{};
-			chamberJval.asObject();
-			data.chamber->writeType(chamberJval);
-			data.chamber->writeTo(chamberJval);
-			jval.append(Chamber, chamberJval);
+	template <typename Entity>
+	struct ChamberHasher{
+		size_t operator()(const Game::ChamberTile<Entity>& v) const noexcept{
+			return v.pos.hash_value();
 		}
-	}
+	};
 
-	static void read(const ext::json::JsonValue& jval, Game::ChamberTile& data){
-		ext::json::read(jval, ext::json::keys::Pos, data.pos);
+	template <typename Entity>
+	struct ChamberJsonSrl{
+		static constexpr std::string_view DstToRef = "relativeRefPos";
+		static constexpr std::string_view OwnsChamber = "ownsChamber";
+		static constexpr std::string_view Chamber = "chamber";
+		static constexpr Game::MockChamberFactory<Entity> mockFactory{};
 
-		const auto& map = jval.asObject();
+		static void write(ext::json::JsonValue& jval, const Game::ChamberTile<Entity>& data){
+			ext::json::append(jval, ext::json::keys::Pos, data.pos);
 
-		if(const auto itr = map.find(Chamber); itr != map.end()){
-			const auto& chamberJval = itr->second;
-			data.chamber.reset(data.chamber->generate<Game::Chamber>(chamberJval));
-			if(data.chamber){
-				data.chamber->readFrom(chamberJval);
-			}else{
-				data.chamber = Game::mockChamberFactory.genChamber();
-
-				if(chamberJval.asObject().contains(Game::ChamberRegionFieldName)){
-					ext::json::getValueTo(data.chamber->region, chamberJval.asObject().at(Game::ChamberRegionFieldName));
-				}else{
-					data.chamber->region.setSrc(data.pos);
-				}
-
+			if(data.ownsChamber()){
+				ext::json::JsonValue chamberJval{};
+				chamberJval.asObject();
+				data.chamber->writeType(chamberJval);
+				data.chamber->writeTo(chamberJval);
+				jval.append(Chamber, chamberJval);
 			}
 		}
-	}
-};
+
+		static void read(const ext::json::JsonValue& jval, Game::ChamberTile<Entity>& data){
+			ext::json::read(jval, ext::json::keys::Pos, data.pos);
+
+			const auto& map = jval.asObject();
+
+			if(const auto itr = map.find(Chamber); itr != map.end()){
+				const auto& chamberJval = itr->second;
+				data.chamber.reset(data.chamber->template generate<Game::Chamber<Entity>>(chamberJval));
+				if(data.chamber){
+					data.chamber->readFrom(chamberJval);
+				}else{
+					data.chamber = mockFactory.genChamber();
+
+					if(chamberJval.asObject().contains(Game::ChamberRegionFieldName)){
+						ext::json::getValueTo(data.chamber->region, chamberJval.asObject().at(Game::ChamberRegionFieldName));
+					}else{
+						data.chamber->region.setSrc(data.pos);
+					}
+
+				}
+			}
+		}
+	};
+
+	using DeckTile = ChamberTile<SpaceCraft>;
+	using DeckUnit = Chamber<SpaceCraft>;
+}
+
+export template<>
+struct std::hash<Game::DeckTile> : Game::ChamberHasher<Game::SpaceCraft>{};
+
+export template<>
+struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
+
+
+
+
+

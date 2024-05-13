@@ -23,10 +23,13 @@ import Game.Chamber;
 import Game.Chamber.Frame;
 import Game.Chamber.FrameTrans;
 
+export import Game.Attributes.ThrusterTrait;
+
 export namespace Game {
 	class SpaceCraft;
 
 	struct SpaceCraftTrait {
+		ThrusterTrait thrusterTrait{};
 		virtual ~SpaceCraftTrait() = default;
 		virtual void init(SpaceCraft* entity) const = 0;
 		virtual void update(SpaceCraft* entity) const = 0;
@@ -46,7 +49,7 @@ export namespace Game {
 	class SpaceCraft : public RealityEntity{
 	public:
 		Geom::Transform chamberTrans{};
-		ChamberFrameTrans chambers{};
+		ChamberFrameTrans<SpaceCraft> chambers{};
 
 		const SpaceCraftTrait* trait{nullptr};
 
@@ -110,7 +113,9 @@ export namespace Game {
 			constexpr float maxAngularSpeed = angularVelocityLimit;
 			constexpr float maxAngularAccel = angularAccelerationLimit;
 
-			if(controller->moveCommand.moveActivated()){
+			const float powerScale = trait->thrusterTrait.getPowerScale(getYawAngle());
+
+			if(controller->moveCommand.rotateActivated()){
 				float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst, 0.5f)){
 					const float curAngularInertial = 0.5f * Math::sqr(this->vel.rot) / maxAngularAccel;
@@ -134,7 +139,7 @@ export namespace Game {
 				}
 			}else{
 				if(!Math::zero(vel.rot, 0.005f)){
-					accel.rot = std::copysign(Math::min(maxAngularAccel, Math::abs(vel.rot) / delta), -vel.rot);
+					accel.rot = std::copysign(Math::min(maxAngularAccel, Math::abs(vel.rot) / delta), -vel.rot) * angularAccelerationLimit;
 				}
 			}
 
@@ -147,15 +152,47 @@ export namespace Game {
 
 					const float dst2 = dir.length2();
 					if(dst2 < Math::sqr(tolerance)){
-						accel.vec = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance)));
+						accel.vec = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance))) * powerScale;
 					}else{
-						accel.vec.approach(dir.setLength2(2.25f), delta);
+						accel.vec.approach(dir.setLength2(2.25f), delta * powerScale);
 					}
 				}
 			}
 
+			accel.vec.clampMax(accelerationLimit * powerScale);
+			accel.rot = Math::clampRange(accel.rot, angularAccelerationLimit);
 
-			RealityEntity::updateMovement(delta);
+			{
+				//TODO pre global force field process.
+				//TODO drag should be applied by things like a global force field.
+				vel.rot = Math::lerp(vel.rot, 0, 0.0075f * delta);
+				vel.vec.lerp(Geom::ZERO, 0.075f * delta);
+			}
+
+			//Loacl process
+			vel.vec.mulAdd(accel.vec, delta);
+			vel.rot += accel.rot * delta;
+
+			vel.rot = Math::clampRange(vel.rot, angularVelocityLimit);
+			vel.vec.clampMax(speedLimit * powerScale);
+
+			trans.vec.mulAdd(vel.vec, delta);
+
+			if(controller->moveCommand.rotateActivated()){
+				trans.rot = Math::Angle::moveToward_signed(
+					trans.rot, controller->moveCommand.expectedFaceAngle,
+					vel.rot * delta, 2.0f * delta, [this]{
+						vel.rot = 0;
+					});
+			}else{
+				trans.rot += vel.rot * delta;
+			}
+
+			trans.rot = Math::Angle::getAngleInPi2(trans.rot);
+
+			accel.setZero();
+
+			updateHitbox(delta);
 		}
 
 		void calculateInScreen(const Geom::OrthoRectFloat& viewport) override{
@@ -193,10 +230,11 @@ export namespace Game {
 
 		void draw() const override {
 			trait->draw(this);
+			Game::Draw::chamberFrame(*this, chambers);
 		}
 
 		void drawDebug() const override {
-			Game::Draw::chamberFrame(chambers);
+			Game::Draw::chamberFrameTile(chambers);
 
 			GL::setDepthMask(false);
 			Font::defGlyphParser->parseWith(coordText, std::format("$<scl#[0.85]>$<color#[eeeeeeff]>Health: {:.1f}", this->health));

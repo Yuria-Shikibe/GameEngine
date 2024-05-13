@@ -6,7 +6,7 @@ import Game.Entity;
 import Game.Entity.RealityEntity;
 import Game.Entity.Drawable;
 export import Game.Pool;
-import Concepts;
+import ext.Concepts;
 
 import std;
 

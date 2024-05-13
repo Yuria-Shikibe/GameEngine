@@ -36,7 +36,7 @@ export namespace Game::Content{
 		void pullLoadRequest(Graphic::TextureAtlas& atlas, const OS::FileTree& searchTree, std::string prefix) override{
 			prefix.append(name);
 
-			drawer->pullLoadRequest(atlas, searchTree, prefix);
+			if(drawer)drawer->pullLoadRequest(atlas, searchTree, std::move(prefix));
 		}
 	};
 }

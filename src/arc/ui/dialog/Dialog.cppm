@@ -7,7 +7,7 @@ export module UI.Dialog;
 export import UI.Table;
 import UI.SeperateDrawable;
 
-import Concepts;
+import ext.Concepts;
 
 import std;
 

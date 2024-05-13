@@ -4,11 +4,11 @@ in vec2 texCoord;
 
 uniform sampler2D texBase;
 uniform sampler2D texNormal;
-uniform lowp sampler2D texLight;
-uniform lowp sampler2D bloom;
+uniform mediump sampler2D texLight;
+uniform mediump sampler2D bloom;
 
-const lowp float intensity_blo = 1.35f;
-const lowp float intensity_ori = 1.2f;
+const mediump float intensity_blo = 1.15f;
+const mediump float intensity_ori = 1.0f;
 
 out vec4 FragColor;
 
@@ -29,14 +29,14 @@ void main() {
 //    lightColor.a = max(lightColor.a * 0.15f, lightColor.a - fog.a * (0.2f * lightColor.a));
 
     baseColor = mix(vec4(
-    baseColor.rgb * (1.0f - lightColor.a) + lightColor.rgb * lightColor.a,
-    baseColor.a * (1.0f - lightColor.a) + lightColor.a
+        baseColor.rgb * (1.0f - lightColor.a) + lightColor.rgb * lightColor.a,
+        baseColor.a * (1.0f - lightColor.a) + lightColor.a
     ), normalColor, 0.00001f);
 
-    baseColor = vec4(
-    baseColor.rgb * (1.0f - fog.a) + fog.rgb * fog.a,
-    baseColor.a * (1.0f - fog.a) + fog.a
-    );
+//    baseColor = vec4(
+//    baseColor.rgb * (1.0f - fog.a) + fog.rgb * fog.a,
+//    baseColor.a * (1.0f - fog.a) + fog.a
+//    );
 
 
     FragColor = baseColor;

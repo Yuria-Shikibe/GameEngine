@@ -2,8 +2,8 @@
 
 
 in vec2 texCoord;
-in vec4 v_mixColor;
-in vec4 v_srcColor;
+in vec4 mixColor;
+in vec4 srcColor;
 
 uniform sampler2D texture;
 uniform float time;
@@ -31,12 +31,12 @@ float getIfInLine(vec2 T){
 
 void main()
 {
-	if(v_srcColor.a < 0.0033)discard;
+	if(srcColor.a < 0.0033)discard;
 	vec4 c = texture2D(texture, texCoord);
 
 	vec2 coord = (inverse(localToWorld) * inverse(view) * vec3(gl_FragCoord.xy * scale * 2.0f - vec2(1.0f, 1.0f), 1)).xy;
-	
-	c *= v_srcColor;
+
+	c *= srcColor;
 
 	if(mulSub >= 0){
 		c *= mix(vec4(1.0f), mulColor, getIfInLine(coord));
@@ -44,7 +44,7 @@ void main()
 		c *= c * (1 + getIfInLine(coord));
 	}
 
-	c = mix(c, vec4(v_mixColor.rgb, c.a), v_mixColor.a);
+	c = mix(c, vec4(mixColor.rgb, c.a), mixColor.a);
 
 	gl_FragColor = c;
 }

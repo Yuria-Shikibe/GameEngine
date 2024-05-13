@@ -1,7 +1,7 @@
 module ;
 
 export module Geom.Vector3D;
-import Concepts;
+import ext.Concepts;
 
 import Math;
 import std;

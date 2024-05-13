@@ -1,12 +1,8 @@
-module;
+//
+// Created by Matrix on 2024/5/10.
+//
 
-#include <GLFW/glfw3.h>
-
-export module Core;
-
-import std;
-
-import Geom.Rect_Orthogonal;
+export module Core:Global;
 
 export import Core.Audio;
 export import Assets.Manager;
@@ -22,16 +18,12 @@ export import Core.Renderer;
 export import Core.Platform;
 export import Core.Platform.Current;
 
-import OS.FileTree;
+export import OS.FileTree;
+export import OS.Ctrl;
 
-export namespace Core {
-	const std::string title = APPLICATION_NAME;
-
-	bool maximizeWinOnInit = true;
-	//TODO using unique ptr?
-
+export namespace Core{
 	/* Almost Done */
-	inline Input* input = nullptr;
+	inline Input input{};
 	/* Basically Done */
 	inline Camera2D* camera = nullptr;
 	/* Basically Done */
@@ -39,7 +31,7 @@ export namespace Core {
 	/* Basically Done */
 	inline Renderer* renderer = nullptr;
 	/* 88.00% */
-	inline std::unique_ptr<OS::FileTree> rootFileTree{};
+	inline OS::FileTree rootFileTree{};
 
 	//TODO main components... maybe more
 
@@ -58,25 +50,8 @@ export namespace Core {
 
 	inline std::unique_ptr<PlatformHandle> platform{};
 
-	//TODO maybe some objects for task management, if necessary
-	//TODO Async Impl...
+	inline Ctrl::GlobalFocus focus{
+		{camera, camera},
 
-	void initPlatform(const int argc = 0, char* argv[] = nullptr){
-		initCurrentPlatform(platform, APPLICATION_NAME, argc, argv);
-	}
-
-	void initMainWindow();
-
-	void initFileSystem();
-
-	void initCore(const std::function<void()>& initializer = nullptr);
-
-	/**
-	* \brief Invoke this after assets load!
-	**/
-	void initCore_Post(const std::function<void()>& initializer = nullptr);
-
-	void loadAssets();
-
-	void dispose();
+	};
 }

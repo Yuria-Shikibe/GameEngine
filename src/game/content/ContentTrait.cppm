@@ -5,7 +5,7 @@
 export module Game.Content.ContentType;
 
 export import Game.Content.Loadable;
-export import Concepts;
+export import ext.Concepts;
 
 import std;
 
@@ -17,7 +17,8 @@ export namespace Game{
 	};
 
 	struct ContentTrait : Loadable{
-		std::string name{}; //Should be static string, I believe!
+		std::string name{};
+
 		unsigned int id{0};
 
 		~ContentTrait() override = default;

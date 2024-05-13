@@ -7,7 +7,7 @@ export module Game.ContentLoader;
 export import Game.Content.ContentType;
 
 import std;
-import Concepts;
+import ext.Concepts;
 import ext.RuntimeException;
 
 import ext.Heterogeneous;

@@ -111,7 +111,7 @@ export namespace GL {
         ALWAYS = GL_ALWAYS,
     };
 
-    enum class Operation : GLenum {
+    enum class StencilOperation : GLenum {
         KEEP = GL_KEEP,
         ZERO = GL_ZERO,
         REPLACE = GL_REPLACE,
@@ -322,7 +322,7 @@ export namespace GL {
         glStencilMask(mask);
     }
 
-    void setStencilOperation(Operation stencilFail, Operation depthFail, Operation pass){
+    void setStencilOperation(StencilOperation stencilFail, StencilOperation depthFail, StencilOperation pass){
         glStencilOp(static_cast<GLenum>(stencilFail), static_cast<GLenum>(depthFail), static_cast<GLenum>(pass));
     }
 

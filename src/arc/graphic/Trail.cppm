@@ -7,7 +7,7 @@ export module Graphic.Trail;
 import std;
 import Geom.Vector2D;
 import Math;
-import Concepts;
+import ext.Concepts;
 
 export namespace Graphic{
     struct Trail {

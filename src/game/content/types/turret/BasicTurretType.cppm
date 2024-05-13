@@ -11,20 +11,24 @@ import Geom.Transform;
 import Game.Entity.Bullet;
 import Game.Entity.EntityManager;
 import Game.Content.Type.BasicBulletType;
+import Game.Content.Drawer.DrawComponents;
+import Game.Content.ContentType;
+
 
 import std;
 
 export namespace Game::Content{
-	using namespace Graphic;
 
-	struct BasicTurretType : TurretTrait{
+	struct BasicTurretType : TurretTrait, Game::ContentTrait{
+		std::unique_ptr<Game::Drawer::DrawComponent<TurretEntity>> drawer{nullptr}; //I believe drawers should be unique!
+
 		void update(TurretEntity* turret) const override{
 
 		}
 
 		void draw(const TurretEntity* turret) const override{
-			Draw::color(Colors::RED_DUSK);
-			Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->trans.rot);
+			Graphic::Draw::color(Graphic::Colors::RED_DUSK);
+			Graphic::Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->trans.rot);
 		}
 
 		void shoot(TurretEntity* turret, RealityEntity* shooter) const override{
@@ -47,6 +51,12 @@ export namespace Game::Content{
 
 			ptr->activate();
 			Game::EntityManage::add(ptr);
+		}
+
+		void pullLoadRequest(Graphic::TextureAtlas& atlas, const OS::FileTree& searchTree, std::string prefix) override{
+			prefix.append(name);
+
+			if(drawer)drawer->pullLoadRequest(atlas, searchTree, std::move(prefix));
 		}
 	} baseTurret;
 }

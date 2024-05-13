@@ -4,7 +4,7 @@
 
 export module Graphic.FxFunc;
 
-import Concepts;
+import ext.Concepts;
 export import Math.Rand;
 export import Math;
 export import Math.Interpolation;

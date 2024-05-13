@@ -1,13 +1,13 @@
 // ReSharper disable CppNonInlineVariableDefinitionInHeaderFile
-#ifndef APPLICATION_HEAD_H
-#define APPLICATION_HEAD_H
+#pragma once
 
-	extern "C" {
-		__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-	}
+#include "api_def.hpp"
+
+extern "C" {
+	API_EXPORT int AmdPowerXpressRequestHighPerformance = 1;
+}
 
 
-	extern "C" {
-		_declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
-	}
-#endif //APPLICATION_HEAD_H
+extern "C" {
+	API_EXPORT unsigned long NvOptimusEnablement = 0x00000001;
+}

@@ -8,7 +8,7 @@ export import Math.Timed;
 
 import Geom.Transform;
 import Graphic.Color;
-import Concepts;
+import ext.Concepts;
 import std;
 
 namespace Graphic{

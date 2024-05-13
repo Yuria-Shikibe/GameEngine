@@ -3,7 +3,7 @@ module;
 export module UI.Root;
 
 import std;
-import Concepts;
+import ext.Concepts;
 import ext.Container.ObjectPool;
 
 import Geom.Matrix3D;
@@ -13,7 +13,7 @@ export import UI.TooltipManager;
 export import UI.Dialog;
 import UI.SeperateDrawable;
 
-import Ctrl.Constants;
+import OS.Ctrl.Bind.Constants;
 import Graphic.Resizeable;
 import OS.ApplicationListener;
 import OS.TextInputListener;
@@ -52,13 +52,15 @@ export namespace UI{
 
 		[[nodiscard]] Root();
 
+		~Root() override;
+
 		Geom::Vec2 cursorPos{};
 		Geom::Vec2 cursorPressedBeginPos{};
 		Geom::Vec2 cursorVel{};
 		Geom::Vec2 mouseScroll{};
 
 		//TODO use bitmap or array??? this is a byte long seroulsy
-		std::bitset<Ctrl::MOUSE_BUTTON_COUNT> pressedMouseButtons{};
+		std::array<int, Ctrl::Mouse::Count> pressedMouseButtons{};
 
 		//TODO is this necessary?
 		Widget* currentInputFocused{nullptr};
@@ -73,12 +75,16 @@ export namespace UI{
 
 		Scene* currentScene{nullptr};
 
-		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
+		Core::InputBindGroup uiInput{};
 
 		CursorType currentCursorType = CursorType::regular;
 
 		float cursorStrandedTime{0.0f};
 		float cursorInBoundTime{0.0f};
+
+		[[nodiscard]] constexpr bool noMousePress() const noexcept{
+			return std::ranges::all_of(pressedMouseButtons, Ctrl::Mode::isDisabled);
+		}
 
 		void showDialog(std::shared_ptr<Dialog>&& dialog){
 			releaseFocus();
@@ -235,23 +241,25 @@ export namespace UI{
 		}
 
 		//TODO mode support
-		void onDoubleClick(int id, int mode = 0);
+		void onDoubleClick(int id, int mode);
 
-		void onPress(const int id, int mode = 0);
+		void onPress(int id, int mode);
 
-		void onRelease(const int id, int mode = 0);
+		void onRelease(int id, int mode);
 
 		void onScroll() const;
 
-		void disable();
+		[[nodiscard]] bool onDrag(const int id) const noexcept(!DEBUG_CHECK){
+#if DEBUG_CHECK
+			if(id > Ctrl::Mouse::Count)throw ext::IllegalArguments{std::format("Illegal Mouse Button: {}", id)};
+#endif
 
-		void enable();
-
-		[[nodiscard]] bool onDrag(const int id, int mode = 0) const;
+			return !Ctrl::Mode::isDisabled(pressedMouseButtons[id]) && currentCursorFocus != nullptr;
+		}
 
 		void onDragUpdate() const;
 
-		bool keyDown(const int code, const int action, const int mode) const;
+		bool keyDown(int code, int action, int mode) const;
 
 		void textInputInform(const unsigned int code, const int mods) const{
 			if(textInputListener){
@@ -259,12 +267,20 @@ export namespace UI{
 			}
 		}
 
-		void registerCtrl() const;
+		void registerCtrl();
+
+		constexpr void show() noexcept{
+			isHidden = false;
+		}
+
+		constexpr void hide() noexcept{
+			isHidden = true;
+		}
 
 	protected:
 		void inform(int keyCode, int action, int mods) override{}
 
-		void setEnter(Widget* elem, const bool quiet = false);
+		void setEnter(Widget* elem, bool quiet = false);
 
 	};
 }

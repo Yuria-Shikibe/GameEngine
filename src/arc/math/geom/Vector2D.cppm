@@ -11,7 +11,7 @@ import std;
 import Geom.Vector3D;
 import Math;
 import Math.Bit;
-import Concepts;
+import ext.Concepts;
 
 export namespace Geom{
 	template <Concepts::Number T>

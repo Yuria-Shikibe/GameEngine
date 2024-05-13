@@ -1,6 +1,6 @@
 export module Graphic.Resizeable;
 
-export import Concepts;
+export import ext.Concepts;
 
 export namespace Graphic{
 	template <Concepts::Number T>

@@ -4,8 +4,8 @@
 
 export module GL.Shader.UniformWrapper;
 import std;
-import MetaProgramming;
-import Concepts;
+import ext.MetaProgramming;
+import ext.Concepts;
 
 export namespace GL{
 	template<typename ...Args>
@@ -53,33 +53,33 @@ export namespace GL{
 	template<typename ...Args>
 	UniformTupleWrapper(Args...) -> UniformTupleWrapper<Args...>;
 
-	template <typename T>
-		// requires std::is_nothrow_constructible_v<T> && std::is_copy_assignable_v<T>
-	struct UniformStructWrapper{
-		using DataType = T;
-		T defData;
-		T data;
-
-		constexpr UniformStructWrapper() noexcept = default;
-
-		template <typename... Args>
-			requires requires(Args&&... args){
-				T{std::forward<Args>(args)...};
-			}
-		explicit constexpr UniformStructWrapper(Args&&... args) noexcept : defData{std::forward<Args>(args)...}, data{defData}{}
-
-		template <typename... Args>
-			requires requires(T t, Args&&... args){
-				t = {std::forward<Args>(args)...};
-			}
-		constexpr void set(Args&&... args) noexcept{
-			data = {args...};
-		}
-
-		constexpr void setDef() noexcept{
-			data = defData;
-		}
-	};
+	// template <typename T>
+	// 	// requires std::is_nothrow_constructible_v<T> && std::is_copy_assignable_v<T>
+	// struct UniformStructWrapper{
+	// 	using DataType = T;
+	// 	T defData;
+	// 	T data;
+	//
+	// 	constexpr UniformStructWrapper() noexcept = default;
+	//
+	// 	template <typename... Args>
+	// 		requires requires(Args&&... args){
+	// 			T{std::forward<Args>(args)...};
+	// 		}
+	// 	explicit constexpr UniformStructWrapper(Args&&... args) noexcept : defData{std::forward<Args>(args)...}, data{defData}{}
+	//
+	// 	template <typename... Args>
+	// 		requires requires(T t, Args&&... args){
+	// 			t = {std::forward<Args>(args)...};
+	// 		}
+	// 	constexpr void set(Args&&... args) noexcept{
+	// 		data = {args...};
+	// 	}
+	//
+	// 	constexpr void setDef() noexcept{
+	// 		data = defData;
+	// 	}
+	// };
 
 	template <typename WT, typename ...Args>
 		requires requires{

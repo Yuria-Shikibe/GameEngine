@@ -6,7 +6,7 @@ module ;
 
 export module Core.Camera;
 
-import Concepts;
+import ext.Concepts;
 import Graphic.Viewport;
 import Graphic.Resizeable;
 import Graphic.Viewport.Viewport_OrthoRect;
@@ -19,7 +19,12 @@ import std;
 using namespace Geom;
 
 export namespace Core{
+	//TODO poor design
+	//TODO 3D support maybe in the future?
 	class Camera2D final : public OS::ApplicationListener, public Graphic::ResizeableInt {
+	public:
+		static constexpr float MaximumScale = 5.0f;
+		static constexpr float MinimumScale = 0.2f;
 	protected:
 		Matrix3D worldToScreen{};
 		Matrix3D screenToWorld{};
@@ -32,13 +37,11 @@ export namespace Core{
 		float scale{1.0f};
 		float targetScale{1.0f};
 
-		float minScale = std::log(0.2f);
-		float maxScale = std::log(3.0f);
+		float minScale = std::log(MinimumScale);
+		float maxScale = std::log(MaximumScale);
 
 	public:
 		Camera2D() = default;
-
-		~Camera2D() override = default;
 
 		void resize(const int w, const int h) override { // NOLINT(*-make-member-function-const)
 			screenSize.setSize(w, h);
@@ -56,12 +59,16 @@ export namespace Core{
 			return *viewport;
 		}
 
-		[[nodiscard]] OrthoRectFloat& getViewportRect() const {
+		[[nodiscard]] const OrthoRectFloat& getViewportRect() const {
 			return viewport->getPorjectedBound();
 		}
 
-		void trans(const float x, const float y) const {
+		void move(const float x, const float y) const {
 			viewport->getPosition().add(x, y);
+		}
+
+		void move(const Geom::Vec2 vec2) const {
+			viewport->getPosition().add(vec2);
 		}
 
 		[[nodiscard]] Geom::Vec2 screenCenter() const {
@@ -107,7 +114,7 @@ export namespace Core{
 			this->worldToScreen = worldToScreen;
 		}
 
-		[[nodiscard]] Matrix3D& getScreenToWorld() {
+		[[nodiscard]] Matrix3D& getScreenToWorld() noexcept {
 			return screenToWorld;
 		}
 

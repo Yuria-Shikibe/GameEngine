@@ -30,8 +30,8 @@ import UI.Root;
 import UI.Styles;
 import UI.Palette;
 import Core.Renderer;
-import Ctrl.Constants;
-import Ctrl.ControlCommands;
+import OS.Ctrl.Bind.Constants;
+import OS.Ctrl.ControlCommands;
 
 import Font.GlyphArrangement;
 
@@ -94,8 +94,6 @@ export namespace Test{
 
 			Ctrl::registerCommands(Core::input);
 			OS::registerListener(Core::uiRoot);
-
-			Core::input->registerSubInput(Core::uiRoot->uiInput.get());
 		});
 
 		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
@@ -236,8 +234,8 @@ export namespace Test{
 					shader->setUniformer([&self](const GL::Shader& s){
 						s.setTexture2D("texArray", self.getTexture());
 						s.setMat3("view", *self.getProjection());
-						// s.setMat3("localToWorld", self.getLocalToWorld());
-						s.setMat3("localToWorld", Geom::MAT3_IDT);
+						s.setMat3("localToWorld", self.getLocalToWorld());
+						// s.setMat3("localToWorld", Geom::MAT3_IDT);
 					});
 
 					return shader;

@@ -20,8 +20,9 @@ namespace Colors = Graphic::Colors;
 
 namespace Game::ChamberUtil{
 	using ChamberColorRef = Graphic::Color;
-	[[nodiscard]] ChamberTile parseColor(const ChamberColorRef& color, Geom::Point2 pos){
-		return ChamberFactory::genEmptyTile(pos);
+	template <typename T>
+	[[nodiscard]] ChamberTile<T> parseColor(const ChamberColorRef& color, Geom::Point2 pos){
+		return ChamberFactory<T>::genEmptyTile(pos);
 	}
 }
 
@@ -34,8 +35,8 @@ export namespace Game::ChamberUtil{
 	constexpr ChamberColorRef invalid = Colors::BLACK;
 	constexpr ChamberColorRef placed = Colors::WHITE;
 
-
-	[[nodiscard]] Graphic::Pixmap saveToPixmap(const ChamberFrame& frame){
+	template <typename ET>
+	[[nodiscard]] Graphic::Pixmap saveToPixmap(const ChamberFrame<ET>& frame){
 		const Geom::OrthoRectInt bound = frame.getTiledBound();
 
 		Graphic::Pixmap map{bound.getWidth(), bound.getHeight()};
@@ -48,14 +49,15 @@ export namespace Game::ChamberUtil{
 		return map;
 	}
 
-	[[nodiscard]] ChamberFrame genFrameFromPixmap(const Graphic::Pixmap& map, const Geom::Point2 offset = {}){
-		ChamberFrame frame{};
+	template <typename ET>
+	[[nodiscard]] ChamberFrame<ET> genFrameFromPixmap(const Graphic::Pixmap& map, const Geom::Point2 offset = {}){
+		ChamberFrame<ET> frame{};
 
 		map.each([&frame, offset](const Graphic::Pixmap& pixmap, const int x, const int y){
 			const auto color = pixmap.get(x, y);
 			if(color.equalRelaxed(nullRef))return;
 
-			frame.insert(parseColor(pixmap.get(x, y), offset + Geom::Point2{x, y}));
+			frame.insert(parseColor<ET>(pixmap.get(x, y), offset + Geom::Point2{x, y}));
 		});
 
 		return frame;

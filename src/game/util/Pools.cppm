@@ -2,7 +2,7 @@ module;
 
 export module Game.Pool;
 
-import Concepts;
+import ext.Concepts;
 export import ext.Container.ObjectPoolGroup;
 import ext.RuntimeException;
 import std;

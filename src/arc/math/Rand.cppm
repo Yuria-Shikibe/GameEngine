@@ -3,7 +3,7 @@ module;
 export module Math.Rand;
 
 import std;
-import Concepts;
+import ext.Concepts;
 
 export namespace Math {
 	/**

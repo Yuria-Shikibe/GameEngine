@@ -7,7 +7,6 @@
 
 #include "../src/code-gen/ReflectData_Builtin.hpp"
 #include "src/arc/util/ReflectionUtil.hpp"
-#include "src/arc/util/ReflectionUtil.hpp"
 
 import std;
 import std.compat;
@@ -18,7 +17,7 @@ import UI.Align;
 
 import Core.Platform;
 import OS.File;
-import Concepts;
+import ext.Concepts;
 import ext.Container.ObjectPool;
 import Event;
 import StackTrace;
@@ -63,8 +62,8 @@ import Core.Input;
 import Core.Camera;
 import Core.Renderer;
 
-import Ctrl.ControlCommands;
-import Ctrl.Constants;
+import OS.Ctrl.ControlCommands;
+import OS.Ctrl.Bind.Constants;
 import Core.Batch.Batch_Sprite;
 
 import Assets.Graphic;
@@ -133,49 +132,54 @@ import ext.StaticReflection;
 import ext.ReflectData;
 
 import Core.IO.JsonIO;
+import ext.SpecIOSummary;
 
 using namespace Graphic;
 using namespace GL;
 using Geom::Vec2;
 
 
-struct TestChamberFactory : Game::ChamberFactory{
+
+struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 	struct TestChamberData : Game::ChamberMetaDataBase{
 		Vec2 targetPos{};
 		float reload{};
 	};
 
 
-	struct TestChamberTrait : Game::ChamberTraitFallback<TestChamberData>{
+	struct TestChamberTrait : Game::ChamberTraitFallback<EntityType, TestChamberData>{
 		float reloadTime{};
 
-		void update(Game::Chamber* chamber, TraitDataType& data, const float delta) const{
-			chamber->update(delta);
+		void update(Game::Chamber<EntityType>* chamber, EntityType& entity, TraitDataType& data,
+		            const float delta) const{
+			chamber->update(delta, entity);
 			data.reload += delta;
 			if(data.reload > reloadTime){
 				data.reload = 0;
 			}
 		}
 
-		void draw(const Game::Chamber* chamber, const TraitDataType& data) const{
-			Graphic::Draw::Line::rectOrtho(chamber->getChamberBound());
+		void draw(const Game::Chamber<EntityType>* chamber, const EntityType& entity, const TraitDataType& data) const{
+			Draw::setZ(entity.zLayer);
+			Graphic::Draw::rectOrtho<&Core::BatchGroup::world>(Draw::globalState.defaultSolidTexture, chamber->getChamberBound());
 		}
 	} baseTraitTest;
 
 
 	template <Concepts::Derived<TestChamberTrait> Trait = TestChamberTrait>
-	using ChamberType = Game::ChamberVariant<typename Trait::TraitDataType, TestChamberTrait>;
+	using ChamberType = Game::ChamberVariant<EntityType, typename Trait::TraitDataType, TestChamberTrait>;
 
-	std::unique_ptr<Game::Chamber> genChamber() const override{
+	std::unique_ptr<Game::Chamber<EntityType>> genChamber() const override{
 		return std::make_unique<ChamberType<>>(baseTraitTest);
 	}
 };
 
 REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
+
 std::stringstream sstream{};
-std::unique_ptr<Game::ChamberFrameTrans> chamberFrame{};
-std::unique_ptr<Game::ChamberFactory> testFactory{std::make_unique<TestChamberFactory>()};
+std::unique_ptr<Game::ChamberFrameTrans<Game::SpaceCraft>> chamberFrame{};
+std::unique_ptr<Game::ChamberFactory<Game::SpaceCraft>> testFactory{std::make_unique<TestChamberFactory>()};
 
 void setupUITest(){
 	const auto HUD = new UI::Table{};
@@ -189,7 +193,7 @@ void setupUITest(){
 	HUD->add<UI::Table>([](UI::Table& label){
 		   label.add<UI::ScrollPane>([](UI::ScrollPane& pane){
 			   pane.setItem<UI::Label>([](UI::Label& label){
-				   label.setText([](){
+				   label.setText([]{
 					   sstream.str("");
 					   sstream << "$<scl#[0.55]>(" << std::fixed << std::setprecision(2) << Core::camera->
 						   getPosition().x << ", " <<
@@ -202,9 +206,11 @@ void setupUITest(){
 					   return std::move(sstream).str();
 				   });
 
+				   label.setEmptyDrawer();
 				   label.setFillparentX();
 				   label.usingGlyphHeight = true;
 			   });
+			   pane.setEmptyDrawer();
 			   // pane.setItem<UI::Elem>([](UI::Elem& area){
 			   // 	area.setWidth(1000);
 			   // 	area.setFillparentY();
@@ -378,8 +384,9 @@ void setupUITest(){
 				   area.setMaxTextLength(1000);
 
 				   area.getGlyphLayout()->setSCale(0.75f);
-				   area.setText("Test\n123123123\nsadaDSAda");
+				   area.setText("Test\n123123123\nsadaDSAda\n");
 			   });
+			   pane.setEmptyDrawer();
 		   }).fillParent();
 	   })
 	   .setAlign(Align::top_right)
@@ -395,12 +402,11 @@ void setupUITest(){
 	   .setAlign(Align::Mode::bottom_right)
 	   .setSizeScale(0.3f, 0.15f)
 	   .setMargin(10, 0, 10, 0);
-
 }
 
 void setupCtrl(){
-	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press, []{
-		auto transed = chamberFrame->getWorldToLocal(Core::camera->getScreenToWorld() * Core::renderer->getNormalized(Core::input->getCursorPos()));
+	Core::input.binds.registerBind(Ctrl::Mouse::_2, Ctrl::Act::Press, []{
+		const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
 
 		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
 		Geom::OrthoRectInt bound{pos, 3, 3};
@@ -410,15 +416,15 @@ void setupCtrl(){
 		}
 	});
 
-	Core::input->registerMouseBind(Ctrl::MOUSE_BUTTON_3, Ctrl::Act_Press, []{
-		auto transed = chamberFrame->getWorldToLocal(Core::camera->getScreenToWorld() * Core::renderer->getNormalized(Core::input->getCursorPos()));
+	Core::input.binds.registerBind(Ctrl::Mouse::_3, Ctrl::Act::Press, []{
+		const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
 
 		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
 
 		chamberFrame->getChambers().erase(pos, true);
 	});
 
-	Core::input->registerKeyBind(Ctrl::KEY_S, Ctrl::Act_Press, Ctrl::Mode_Ctrl, []{
+	Core::input.binds.registerBind(Ctrl::Key::S, Ctrl::Act::Press, Ctrl::Mode::Ctrl, []{
 		std::jthread jthread([](){
 			OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
 			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
@@ -429,7 +435,7 @@ void setupCtrl(){
 	});
 
 	//
-	// Core::input->registerKeyBind(Ctrl::KEY_F1, Ctrl::Act_Press, [&]{
+	// Core::input->registerKeyBind(Ctrl::Key::F1, Ctrl::Act_Act::Press, [&]{
 	// 	const OS::File tgt{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
 	//
 	// 	const auto pixmap = Game::ChamberUtil::saveToPixmap(chamberFrame->getChambers());
@@ -438,7 +444,7 @@ void setupCtrl(){
 	// });
 
 
-	Core::input->registerKeyBind(Ctrl::KEY_F, Ctrl::Act_Continuous, []{
+	Core::input.binds.registerBind(Ctrl::Key::F, Ctrl::Act::Continuous, []{
 		static ext::Timer<> timer{};
 
 		timer.run(12, OS::updateDeltaTick(), []{
@@ -452,7 +458,7 @@ void setupCtrl(){
 				const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
 				ptr->trait = &Game::Content::basicBulletType;
 				ptr->trans.vec.set(Core::camera->getPosition());
-				ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input->getCursorPos());
+				ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input.getCursorPos());
 
 				ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80.0f * i));
 
@@ -466,12 +472,12 @@ void setupCtrl(){
 		});
 	});
 
-	Core::input->registerMouseBind(
-		Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
-		Ctrl::Mode_Shift
+	Core::input.binds.registerBind(
+		Ctrl::Mouse::_2, Ctrl::Act::Press,
+		Ctrl::Mode::Shift
 	  , []{
 			Game::EntityManage::realEntities.quadTree->intersectPoint(
-				Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input->getCursorPos())),
+				Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input.getCursorPos())),
 				[](decltype(Game::EntityManage::realEntities)::ValueType* entity){
 					entity->controller->selected = !entity->controller->selected;
 					Game::core->overlayManager->registerSelected(
@@ -514,11 +520,10 @@ void genRandomEntities(){
 	ptr->activate();
 	ptr->chambers.operator=(std::move(*chamberFrame));
 	ptr->chamberTrans.vec.x = 85;
-	chamberFrame = std::make_unique<Game::ChamberFrameTrans>();
+	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
 }
 
 void setupBaseDraw(){
-
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
 		Core::uiRoot->drawCursor();
@@ -534,11 +539,9 @@ void setupBaseDraw(){
 		Game::core->drawBeneathUI(e.renderer);
 		Graphic::Batch::flush();
 	});
-
 }
 
 int main(const int argc, char* argv[]){
-
 	//Init
 	::Test::init(argc, argv);
 
@@ -546,7 +549,7 @@ int main(const int argc, char* argv[]){
 
 	::Test::setupAudioTest();
 
-	chamberFrame = std::make_unique<Game::ChamberFrameTrans>();
+	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
 
 	if(true){
 		Game::core->overlayManager->activate();
@@ -556,33 +559,39 @@ int main(const int argc, char* argv[]){
 		Game::core->overlayManager->deactivate();
 	}
 
-	{
+	auto loadChamber = []{
 		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
 		OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
 
 
 		if constexpr(false){
 			auto pixmap_ = Graphic::Pixmap{pixmap};
-			chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap(pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
+			chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap<Game::SpaceCraft>(
+				pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
 
 			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
 
 			fi.writeString(std::format("{:nf0}", jval));
-		}else{
+		} else{
 			ext::json::Json json{fi.readString()};
 
 			ext::json::getValueTo(chamberFrame->getChambers(), json.getData());
 		}
-	}
+	};
+
+	loadChamber();
 
 	// UI Test
 	setupUITest();
 
 	setupCtrl();
 
-	genRandomEntities();
+	// genRandomEntities();
 
 	setupBaseDraw();
+
+	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	loadChamber();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
@@ -620,9 +629,6 @@ int main(const int argc, char* argv[]){
 
 		Game::core->effectManager->render();
 
-		// auto* region = Core::assetsManager->getAtlas().find("base-pester");
-		// //auto* region1 = Core::assetsManager->getAtlas().find("test-collapser");
-
 		Graphic::Batch::flush<BatchWorld>();
 
 		GL::setDepthMask(false);
@@ -651,6 +657,8 @@ int main(const int argc, char* argv[]){
 	});
 
 	chamberFrame->updateChamberFrameData();
+	chamberFrame->setLocalTrans({});
+	chamberFrame->getTransformMat().scale(10.0f, 10.0f);
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
 		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
@@ -661,42 +669,32 @@ int main(const int argc, char* argv[]){
 
 		Graphic::Batch::blend<>();
 		//
-		// chamberFrame->setLocalTrans({{3000, 1200}, 45});
-		//
-		// chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
-		// ::Game::Draw::chamberFrame(*chamberFrame);
-		//
-		// {
-		// 	[[maybe_unused]] Core::BatchGuard_L2W batchGuard{
-		// 			*Core::batchGroup.overlay, chamberFrame->getTransformMat()
-		// 		};
-		//
-		// 	auto transed = Core::renderer->getNormalized(Core::input->getCursorPos());
-		// 	transed *= Core::camera->getScreenToWorld();
-		// 	auto rawCpy = transed;
-		//
-		// 	transed = chamberFrame->getWorldToLocal(transed);
-		//
-		// 	const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-		// 	Geom::OrthoRectInt bound{pos, 3, 3};
-		//
-		// 	if(const auto finded = chamberFrame->getChambers().find(pos)){
-		// 		Draw::color(Colors::LIGHT_GRAY);
-		// 		Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
-		// 	}
-		//
-		// 	if(chamberFrame->getChambers().placementValid(bound)){
-		// 		Draw::color(Colors::PALE_GREEN);
-		// 	} else{
-		// 		Draw::color(Colors::RED_DUSK);
-		// 	}
-		//
-		// 	Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
-		// }
-		//
-		// Draw::rectPoint(chamberFrame->getLocalTrans().vec, 6);
-		// Draw::Line::line(rawCpy, Core::camera->getPosition());
+		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
+		::Game::Draw::chamberFrameTile(*chamberFrame, Core::renderer, true);
 
+		{
+			[[maybe_unused]] Core::BatchGuard_L2W batchGuard{
+					*Core::batchGroup.overlay, chamberFrame->getTransformMat()
+				};
+
+			auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
+
+			const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
+			Geom::OrthoRectInt bound{pos, 3, 3};
+
+			if(const auto finded = chamberFrame->getChambers().find(pos)){
+				Draw::color(Colors::LIGHT_GRAY);
+				Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
+			}
+
+			if(chamberFrame->getChambers().placementValid(bound)){
+				Draw::color(Colors::PALE_GREEN);
+			} else{
+				Draw::color(Colors::RED_DUSK);
+			}
+
+			Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
+		}
 
 		Graphic::Batch::blend();
 
@@ -746,4 +744,3 @@ int main(const int argc, char* argv[]){
 
 	return 0;
 }
-

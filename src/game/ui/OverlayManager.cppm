@@ -15,7 +15,7 @@ import Graphic.Trail;
 import Font.GlyphArrangement;
 import Assets.Graphic;
 
-import Ctrl.Constants;
+import OS.Ctrl.Bind.Constants;
 
 import ext.Timer;
 import ext.Encoding;
@@ -35,42 +35,42 @@ export namespace Game {
 		bool assigningRoute = false;
 
 		OverlayManager(){
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press,
-				Ctrl::Mode_Shift,
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_1, Ctrl::Act::Press,
+				Ctrl::Mode::Shift,
 			[this] {
 				if(activated)assignTarget();
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press,
-				Ctrl::Mode_Shift | Ctrl::Mode_Ctrl,
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_1, Ctrl::Act::Press,
+				Ctrl::Mode::Ctrl_Shift,
 			[this] {
 				if(activated)assignRoute();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_ESCAPE, Ctrl::Act_Press,
+			Core::input.binds.registerBind(
+				Ctrl::Key::Esc, Ctrl::Act::Press,
 			[this] {
 				if(activated)releaseSelected();
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,
-				Ctrl::Mode_Shift | Ctrl::Mode_Ctrl,
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_2, Ctrl::Act::Press,
+				Ctrl::Mode::Ctrl_Shift,
 			[this] {
 				if(activated)removeRoute();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_ENTER, Ctrl::Act_Press,
+			Core::input.binds.registerBind(
+				Ctrl::Key::Enter, Ctrl::Act::Press,
 			[this] {
 				if(activated)assignRouteEnd();
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_3, Ctrl::Act_Press,
-				Ctrl::Mode_Shift,
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_3, Ctrl::Act::Press,
+				Ctrl::Mode::Shift,
 			[this] {
 				if(activated)assignTurretTarget();
 			});
@@ -84,7 +84,7 @@ export namespace Game {
 		ext::Timer<count> timer{};
 
 		[[nodiscard]] UI::CursorDrawabe& getCursor() const{
-			if(Core::input->isPressedKey(Ctrl::KEY_LEFT_SHIFT)){
+			if(Core::input.binds.isPressedKey(Ctrl::Key::Shift_Left)){
 				return UI::getCursor(UI::CursorType::select);
 			}
 

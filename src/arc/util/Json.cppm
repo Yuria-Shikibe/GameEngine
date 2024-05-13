@@ -8,7 +8,7 @@ import std;
 import ext.Heterogeneous;
 import ext.Encoding;
 import ext.StringParse;
-import MetaProgramming;
+import ext.MetaProgramming;
 
 using namespace ext::string;
 

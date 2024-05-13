@@ -385,7 +385,7 @@ export namespace GL {
 			f(*this);
 		}
 
-		[[nodiscard]] const std::function<void(const Shader&)>& getDrawer() const {
+		[[nodiscard]] const std::function<void(const Shader&)>& getUniformSetter() const {
 			return uniformSetter;
 		}
 

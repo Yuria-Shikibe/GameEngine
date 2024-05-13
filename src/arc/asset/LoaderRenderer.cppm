@@ -45,7 +45,7 @@ export namespace Assets {
 			: Renderer(w, h), loader(loader) {
 			defaultMat = Graphic::Batch::getPorj();
 
-			GL::setStencilOperation(GL::Operation::KEEP, GL::Operation::KEEP, GL::Operation::REPLACE);
+			GL::setStencilOperation(GL::StencilOperation::KEEP, GL::StencilOperation::KEEP, GL::StencilOperation::REPLACE);
 
 			lastThreshold = Assets::PostProcessors::bloom->threshold;
 			Assets::PostProcessors::bloom->threshold = 0.0f;
@@ -56,7 +56,7 @@ export namespace Assets {
 			Graphic::Batch::endShader(false);
 
 			GL::bindFrameBuffer(GL_FRAMEBUFFER);
-			GL::setStencilOperation(GL::Operation::REPLACE, GL::Operation::REPLACE, GL::Operation::REPLACE);
+			GL::setStencilOperation(GL::StencilOperation::REPLACE, GL::StencilOperation::REPLACE, GL::StencilOperation::REPLACE);
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 
@@ -115,6 +115,7 @@ export namespace Assets {
 				x - preBlockWidth + slideLineSize, y + stroke + slideLineSize
 			);
 
+			[[maybe_unused]] GL::UniformGuard guard{Shaders::slideLineShaderAngle, -135.0f};
 			Graphic::Batch::beginShader(Assets::Shaders::sildeLines, true);
 			Draw::Line::setLineStroke(stroke);
 			Draw::color(Colors::GRAY);

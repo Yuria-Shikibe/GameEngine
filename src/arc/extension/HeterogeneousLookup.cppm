@@ -5,7 +5,7 @@
 export module ext.Heterogeneous;
 
 import std;
-import MetaProgramming;
+import ext.MetaProgramming;
 
 namespace ext{
 	struct StringEqualComparator{

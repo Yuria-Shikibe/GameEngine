@@ -3,10 +3,13 @@ export module UI.Scene;
 export import UI.Table;
 
 import std;
+import Core.Input;
 
 export namespace UI{
 	class Scene : public UI::Table{
 	public:
+		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
+
 		[[nodiscard]] std::string_view getSceneName() const {
 			return name;
 		}

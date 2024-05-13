@@ -112,18 +112,18 @@ export namespace Game {
 
 			const auto dest = nextDest();
 
-			expectedVelocity.set(dest - curTrans.vec).normalize().scl(15);
+			expectedVelocity.set(dest - curTrans.vec).setLength(30);
 
 			if(translatory){
 
-			}else{
+			}else if(moveActivated()){
 				expectedFaceAngle = expectedMoveAngle();
 			}
 
 			if(Math::Angle::angleDst(curTrans.rot, expectedFaceAngle) > 0.005f){
 				activateRotate();
 			}else{
-				deactivateRotate();
+				completeRotate();
 			}
 
 			if(moveActivated()){
@@ -153,13 +153,14 @@ export namespace Game {
 		}
 
 		void completeMove(){
-			destination = curTrans.vec;
+			destination = curTrans.vec + expectedVelocity * 2;
 			clearRoute();
 			deactivateMove();
 		}
 
 		void completeRotate(){
-			enableRotateCommand = false;
+			expectedFaceAngle = curTrans.rot;
+			deactivateRotate();
 		}
 
 		void clearRoute(){

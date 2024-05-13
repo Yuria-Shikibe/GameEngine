@@ -23,14 +23,23 @@ UI::Root::Root(): tooltipManager{this}{
 
 	rootDialog.content.setRoot(this);
 
+	pressedMouseButtons.fill(Ctrl::Mode::Disable);
+
 	OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::platform->window->implHandle);
+
+	Core::input.registerSubInput(&uiInput);
 }
+
+UI::Root::~Root(){
+	Core::input.eraseSubInput(&uiInput);
+}
+
 
 void UI::Root::drawCursor() const{
 	using namespace Graphic;
 	const auto& cursor = getCursor(currentCursorType);
 
-	if(Core::input->cursorInbound()){
+	if(Core::input.cursorInbound()){
 		Draw::mixColor();
 		Draw::color(Colors::WHITE);
 		Batch::beginPorj(Geom::MAT3_IDT);
@@ -45,7 +54,7 @@ void UI::Root::drawCursor() const{
 }
 
 void UI::Root::update(const float delta){
-	cursorPos = uiInput->getCursorPos();
+	cursorPos = Core::input.getCursorPos();
 	if(currentScene == nullptr)return;
 
 	updateCurrentFocus();
@@ -90,13 +99,13 @@ void UI::Root::determinShiftFocus(Widget* newFocus){
 
 	if(newFocus == nullptr){
 		if(currentCursorFocus != nullptr){
-			if(currentCursorFocus->shouldDropFocusAtCursorQuitBound() || pressedMouseButtons.none()){
+			if(currentCursorFocus->shouldDropFocusAtCursorQuitBound() || noMousePress()){
 				setEnter(nullptr, currentCursorFocus->isQuietInteractable());
 			}
 		}
 	} else{
 		if(currentCursorFocus != nullptr){
-			if(pressedMouseButtons.none()){
+			if(noMousePress()){
 				setEnter(newFocus, newFocus->isQuietInteractable());
 			}
 		} else{
@@ -108,6 +117,7 @@ void UI::Root::determinShiftFocus(Widget* newFocus){
 void UI::Root::resize(const int w, const int h){
 	width = static_cast<float>(w);
 	height = static_cast<float>(h);
+
 	if(currentScene){
 		currentScene->setSize(width, height);
 		currentScene->changed(ChangeSignal::notifyAll);
@@ -143,115 +153,109 @@ void UI::Root::render_HoverTable() const{
 	tooltipManager.render();
 }
 
-void UI::Root::onDoubleClick(const int id, int mode){
+void UI::Root::onDoubleClick(const int id, const int mode){
 	if(currentCursorFocus == nullptr) return;
-	doubleClickAction.set(cursorPos, id);
+
+	doubleClickAction.set(cursorPos, id, mode);
 	currentCursorFocus->getInputListener().fire(doubleClickAction);
 }
 
-void UI::Root::onPress(const int id, int mode){
+void UI::Root::onPress(const int id, const int mode){
 	if(currentCursorFocus == nullptr) return;
-	pressAction.set(cursorPos, id);
+
+	pressAction.set(cursorPos, id, mode);
 	cursorPressedBeginPos = cursorPos;
 	currentCursorFocus->getInputListener().fire(pressAction);
 	pressedMouseButtons[id] = true;
 }
 
-void UI::Root::onRelease(const int id, int mode){
+void UI::Root::onRelease(const int id, const int mode){
 	if(currentCursorFocus == nullptr){
-		pressedMouseButtons[id] = false;
+		Ctrl::Mode::setDisabled(pressedMouseButtons[id]);
 		return;
 	}
-	releaseAction.set(cursorPos, id);
+
+	releaseAction.set(cursorPos, id, mode);
 	currentCursorFocus->getInputListener().fire(releaseAction);
-	pressedMouseButtons[id] = false;
+	Ctrl::Mode::setDisabled(pressedMouseButtons[id]);
 }
 
 void UI::Root::onScroll() const{
 	if(currentScrollFocused == nullptr) return;
+
 	scrollAction.set(mouseScroll);
 	currentScrollFocused->getInputListener().fire(scrollAction);
 }
 
-void UI::Root::disable(){
-	isHidden = true;
-}
-
-void UI::Root::enable(){
-	isHidden = false;
-}
-
-bool UI::Root::onDrag(const int id, int mode) const{
-	return pressedMouseButtons[id] && currentCursorFocus != nullptr;
-}
 
 void UI::Root::onDragUpdate() const{
 	if(currentCursorFocus == nullptr) return;
-	for(int i = 0; i < Ctrl::MOUSE_BUTTON_COUNT; ++i){
+
+	for(int i = 0; i < Ctrl::Mouse::Count; ++i){
 		dragAction.begin = cursorPressedBeginPos;
 		dragAction.end = cursorPos;
 
 		if(onDrag(i)){
-			dragAction.set(cursorVel, i);
+			dragAction.set(cursorVel, i, pressedMouseButtons[i]);
 			currentCursorFocus->getInputListener().fire(dragAction);
 		}
 	}
 }
 
 bool UI::Root::keyDown(const int code, const int action, const int mode) const{
-	return uiInput->keyGroup.get(code, action, mode);
+	return uiInput.registerList.get(code, action, mode);
 }
 
-void UI::Root::registerCtrl() const{
-	uiInput->registerKeyBind({{Ctrl::KEY_BACKSPACE, Ctrl::Act_Press}, {Ctrl::KEY_BACKSPACE, Ctrl::Act_Repeat}}, [this]{
+void UI::Root::registerCtrl(){
+	uiInput.registerBind({{Ctrl::Key::Backspace, Ctrl::Act::Press}, {Ctrl::Key::Backspace, Ctrl::Act::Repeat}}, [this]{
 		if(textInputListener){
 			textInputListener->informBackSpace(0);
 		}
 	});
 
-	uiInput->registerKeyBind({{Ctrl::KEY_DELETE, Ctrl::Act_Press}, {Ctrl::KEY_DELETE, Ctrl::Act_Repeat}}, [this]{
+	uiInput.registerBind({{Ctrl::Key::Delete, Ctrl::Act::Press}, {Ctrl::Key::Delete, Ctrl::Act::Repeat}}, [this]{
 		if(textInputListener){
 			textInputListener->informDelete(0);
 		}
 	});
 
-	uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl}}, [this]{
+	uiInput.registerBind({{Ctrl::Key::Z, Ctrl::Act::Press, Ctrl::Mode::Ctrl}, {Ctrl::Key::Z, Ctrl::Act::Repeat, Ctrl::Mode::Ctrl}}, [this]{
 		if(textInputListener){
 			textInputListener->informDo();
 		}
 	});
 
-	uiInput->registerKeyBind({{Ctrl::KEY_ENTER, Ctrl::Act_Press}, {Ctrl::KEY_ENTER, Ctrl::Act_Repeat}}, [this]{
+	uiInput.registerBind({{Ctrl::Key::Enter, Ctrl::Act::Press}, {Ctrl::Key::Enter, Ctrl::Act::Repeat}}, [this]{
 		if(textInputListener){
 			textInputListener->informEnter(0);
 		}
 	});
 
-	uiInput->registerKeyBind({{Ctrl::KEY_Z, Ctrl::Act_Press, Ctrl::Mode_Ctrl_Shift}, {Ctrl::KEY_Z, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl_Shift}}, [this]{
+	uiInput.registerBind({{Ctrl::Key::Z, Ctrl::Act::Press, Ctrl::Mode::Ctrl_Shift}, {Ctrl::Key::Z, Ctrl::Act::Repeat, Ctrl::Mode::Ctrl_Shift}}, [this]{
 		if(textInputListener){
 			textInputListener->informUndo();
 		}
 	});
 
-	uiInput->registerKeyBind(Ctrl::KEY_A, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+	uiInput.registerBind(Ctrl::Key::A, Ctrl::Act::Press, Ctrl::Mode::Ctrl, [this]{
 		if(textInputListener){
 			textInputListener->informSelectAll();
 		}
 	});
 
-	uiInput->registerKeyBind(Ctrl::KEY_C, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+	uiInput.registerBind(Ctrl::Key::C, Ctrl::Act::Press, Ctrl::Mode::Ctrl, [this]{
 		if(textInputListener){
 			Core::platform->setClipboard(textInputListener->getClipboardCopy());
 		}
 	});
 
-	uiInput->registerKeyBind({{Ctrl::KEY_V, Ctrl::Act_Press, Ctrl::Mode_Ctrl}, {Ctrl::KEY_V, Ctrl::Act_Repeat, Ctrl::Mode_Ctrl}}, [this]{
+	uiInput.registerBind({{Ctrl::Key::V, Ctrl::Act::Press, Ctrl::Mode::Ctrl}, {Ctrl::Key::V, Ctrl::Act::Repeat, Ctrl::Mode::Ctrl}}, [this]{
 		if(textInputListener){
 			textInputListener->informClipboardPaste(Core::platform->getClipboard());
 		}
 	});
 
-	uiInput->registerKeyBind(Ctrl::KEY_X, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this]{
+	uiInput.registerBind(Ctrl::Key::X, Ctrl::Act::Press, Ctrl::Mode::Ctrl, [this]{
 		if(textInputListener){
 			Core::platform->setClipboard(textInputListener->getClipboardClip());
 		}

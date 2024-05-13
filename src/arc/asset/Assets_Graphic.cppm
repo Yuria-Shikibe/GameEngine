@@ -28,7 +28,7 @@ import Graphic.PostProcessor.PipeProcessor;
 import Graphic.PostProcessor;
 
 import GL.Shader.Manager;
-import GL.Shader.UniformWrapper;
+export import GL.Shader.UniformWrapper;
 import GL.Constants;
 
 import OS.File;

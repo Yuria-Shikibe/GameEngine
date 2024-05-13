@@ -1,5 +1,3 @@
-module;
-
 export module Assets.Sound;
 
 import <irrKlang.h>;

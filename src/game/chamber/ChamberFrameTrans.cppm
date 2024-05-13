@@ -20,12 +20,14 @@ export namespace Game{
 	 * @brief This frame should be workable on a async thread
 	 */
 	//TODO using template maybe, to support different types
+	template <typename Entity>
 	class ChamberFrameTrans{
 		static constexpr float ExtendSize{100};
+		using FrameType = ChamberFrame<Entity>;
 
 		Geom::Transform localTrans{};
-		ChamberFrame frameData{};
-		ChamberFrame::TileBrief drawable{};
+		ChamberFrame<Entity> frameData{};
+		typename FrameType::TileBrief drawable{};
 
 		/** @brief Local draw usage*/
 		Geom::Matrix3D transMat{};
@@ -37,7 +39,7 @@ export namespace Game{
 			frameBound = frameData.getBound();
 		}
 
-		[[nodiscard]] const Geom::Transform& getLocalTrans() const{ return localTrans; }
+		[[nodiscard]] Geom::Transform getLocalTrans() const{ return localTrans; }
 
 		void setLocalTrans(const Geom::Transform localTrans){
 			this->localTrans = localTrans;
@@ -45,16 +47,22 @@ export namespace Game{
 			transMat.setTranslation(localTrans);
 		}
 
+		template <bool noScale = true>
 		[[nodiscard]] Geom::Vec2 getWorldToLocal(const Geom::Vec2 worldPos) const noexcept{
-			return (worldPos - getLocalTrans().vec).rotate(-localTrans.rot);
+			if constexpr (noScale){
+				return (worldPos - getLocalTrans().vec).rotate(-localTrans.rot);
+			}else{
+				return Geom::Matrix3D{transMat}.inv() * worldPos;
+			}
 		}
 
 		[[nodiscard]] const Geom::Matrix3D& getTransformMat() const noexcept{return transMat;}
+		[[nodiscard]]  Geom::Matrix3D& getTransformMat() noexcept{return transMat;}
 
-		[[nodiscard]] ChamberFrame& getChambers(){ return frameData; }
+		[[nodiscard]] FrameType& getChambers(){ return frameData; }
 
-		[[nodiscard]] ChamberFrame::TileBrief& getDrawable() noexcept{ return drawable; }
-		[[nodiscard]] const ChamberFrame::TileBrief& getDrawable() const noexcept{ return drawable; }
+		[[nodiscard]] typename FrameType::TileBrief& getDrawable() noexcept{ return drawable; }
+		[[nodiscard]] const typename FrameType::TileBrief& getDrawable() const noexcept{ return drawable; }
 
 		Geom::QuadBox transformViewport(Geom::OrthoRectFloat viewport) const noexcept{
 			viewport.expand(ExtendSize / 2, ExtendSize / 2);
@@ -84,7 +92,7 @@ export namespace Game{
 
 			frameData.getQuadTree().intersectRegion(lastViewport, [](const auto& rect, const auto& quad){
 				return quad.overlapRough(rect) && quad.overlapExact(rect);
-			}, [this](const ChamberTile* tile, const Geom::QuadBox& view){
+			}, [this](const ChamberTile<Entity>* tile, const Geom::QuadBox& view){
 				if(tile->ownsChamber()){
 					drawable.owners.push_back(tile->chamber.get());
 				}
@@ -100,8 +108,8 @@ export namespace Game{
 
 		void update(const float delta){}
 
-		[[nodiscard]] constexpr const Geom::OrthoRectFloat& getFrameBound() const noexcept { return frameBound; }
+		[[nodiscard]] constexpr const auto& getFrameBound() const noexcept{ return frameBound; }
 
-		[[nodiscard]] constexpr const auto& getLastViewport() const noexcept { return lastViewport; }
+		[[nodiscard]] constexpr const auto& getLastViewport() const noexcept{ return lastViewport; }
 	};
 }

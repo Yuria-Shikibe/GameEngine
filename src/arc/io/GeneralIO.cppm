@@ -2,7 +2,7 @@ export module Core.IO.General;
 
 import std;
 import ext.DynamicBuffer;
-import MetaProgramming;
+import ext.MetaProgramming;
 
 export namespace Core::IO{
 	using BinDataType = unsigned char;

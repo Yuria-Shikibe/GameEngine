@@ -8,7 +8,7 @@ import Game.Entity.Collision;
 
 export import Game.UI.OverlayInterface;
 
-import Ctrl.Constants;
+import OS.Ctrl.Bind.Constants;
 import Assets.Graphic;
 import Graphic.Color;
 import Graphic.Draw;
@@ -92,8 +92,8 @@ export namespace Game{
 
 	public:
 		HitBoxEditor(){
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press,Ctrl::Mode_Shift, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_1, Ctrl::Act::Press,Ctrl::Mode::Shift, [this] {
 				if(!activated)return;
 				for (auto& val : allHitboxes | std::views::values){
 					if(val->hitBox.contains(mouseWorldPos) && !selected.contains(val.get())){
@@ -103,8 +103,8 @@ export namespace Game{
 				}
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_2, Ctrl::Act_Press,Ctrl::Mode_Shift, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_2, Ctrl::Act::Press,Ctrl::Mode::Shift, [this] {
 				if(!activated)return;
 				for (auto& val : allHitboxes | std::views::values){
 					if(val->hitBox.contains(mouseWorldPos) && selected.contains(val.get())){
@@ -114,8 +114,8 @@ export namespace Game{
 				}
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_A, Ctrl::Act_Press, Ctrl::Mode_Shift, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::A, Ctrl::Act::Press, Ctrl::Mode::Shift, [this] {
 					if(!activated)return;
 					auto ptr = create();
 					clearSelected();
@@ -124,124 +124,124 @@ export namespace Game{
 					allHitboxes.try_emplace(ptr->getID(), std::move(ptr));
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_A, Ctrl::Act_Press, Ctrl::Mode_NO_IGNORE, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::A, Ctrl::Act::Press, Ctrl::Mode::NoIgnore, [this] {
 					if(!activated)return;
 					selectAll();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_S, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::S, Ctrl::Act::Press, Ctrl::Mode::Ctrl, [this] {
 					if(!activated)return;
 					save();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_R, Ctrl::Act_Press, Ctrl::Mode_Ctrl, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::R, Ctrl::Act::Press, Ctrl::Mode::Ctrl, [this] {
 					if(!activated)return;
 					read();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_DELETE, Ctrl::Act_Press, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Delete, Ctrl::Act::Press, [this] {
 					if(!activated)return;
 					deleteSelected();
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press,
-				Ctrl::Mode_Ctrl, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_1, Ctrl::Act::Press,
+				Ctrl::Mode::Ctrl, [this] {
 					if(!activated)return;
 					if(!this->isBoxSelecting())boxSelectBegin();
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Release,[this] {
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_1, Ctrl::Act::Release,[this] {
 					if(!activated)return;
 					if(isBoxSelecting())boxSelectEnd();
 			});
 
-			Core::input->registerMouseBind(
-				Ctrl::MOUSE_BUTTON_1, Ctrl::Act_Press, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Mouse::_1, Ctrl::Act::Press, [this] {
 					if(!activated || !hasOp())return;
 					endOp();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_R, Ctrl::Act_Press, Ctrl::Mode_NO_IGNORE,[this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::R, Ctrl::Act::Press, Ctrl::Mode::NoIgnore,[this] {
 					if(!activated)return;
 					switchOp(Operation::rotate);
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_S, Ctrl::Act_Press, Ctrl::Mode_NO_IGNORE,[this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::S, Ctrl::Act::Press, Ctrl::Mode::NoIgnore,[this] {
 					if(!activated)return;
 					switchOp(Operation::scale);
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_G, Ctrl::Act_Press, Ctrl::Mode_NO_IGNORE, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::G, Ctrl::Act::Press, Ctrl::Mode::NoIgnore, [this] {
 					if(!activated)return;
 					switchOp(Operation::moveTrans);
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_R, Ctrl::Act_Press, Ctrl::Mode_Alt, [this]{
+			Core::input.binds.registerBind(
+				Ctrl::Key::R, Ctrl::Act::Press, Ctrl::Mode::Alt, [this]{
 					if(!activated) return;
 					if(selected.size() == 1)resetRotate();
 				});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_G, Ctrl::Act_Press, Ctrl::Mode_Alt, [this]{
+			Core::input.binds.registerBind(
+				Ctrl::Key::G, Ctrl::Act::Press, Ctrl::Mode::Alt, [this]{
 					if(!activated) return;
 					if(selected.size() == 1)resetTransMove();
 				});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_ESCAPE, Ctrl::Act_Press, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Esc, Ctrl::Act::Press, [this] {
 					if(!activated)return;
 					if(hasOp())switchOp(Operation::cancel);
 					else this->clearSelected();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_ENTER, Ctrl::Act_Press, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Enter, Ctrl::Act::Press, [this] {
 					if(!activated)return;
 					endOp();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_X, Ctrl::Act_Press, Ctrl::Mode_NO_IGNORE, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::X, Ctrl::Act::Press, Ctrl::Mode::NoIgnore, [this] {
 					if(!activated)return;
 					switchX();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_Y, Ctrl::Act_Press, Ctrl::Mode_NO_IGNORE, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Y, Ctrl::Act::Press, Ctrl::Mode::NoIgnore, [this] {
 					if(!activated)return;
 					switchY();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_X, Ctrl::Act_Press, Ctrl::Mode_Alt, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::X, Ctrl::Act::Press, Ctrl::Mode::Alt, [this] {
 					if(!activated)return;
 					flipX();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_BACKSPACE, Ctrl::Act_Press, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Backspace, Ctrl::Act::Press, [this] {
 					if(!activated)return;
 					clip();
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_LEFT_SHIFT, Ctrl::Act_Press, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Shift_Left, Ctrl::Act::Press, [this] {
 					if(!activated)return;
 					this->operationAccuracy = 0.075f;
 			});
 
-			Core::input->registerKeyBind(
-				Ctrl::KEY_LEFT_SHIFT, Ctrl::Act_Release, [this] {
+			Core::input.binds.registerBind(
+				Ctrl::Key::Shift_Left, Ctrl::Act::Release, [this] {
 					if(!activated)return;
 					this->operationAccuracy = 1.0f;
 			});

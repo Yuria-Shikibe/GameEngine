@@ -211,11 +211,11 @@ export namespace Core{
 			return {getDrawWidth(), getDrawHeight()};
 		}
 
-		[[nodiscard]] Geom::Vec2 getNormalized(const Geom::Vec2 p) const{
+		[[nodiscard]] Geom::Vec2 getNormalized(const Geom::Vec2 p) const noexcept{
 			return (p / getSize()).sub(0.5f, 0.5f).scl(2);
 		}
 
-		[[nodiscard]] Geom::Vec2& normalize(Geom::Vec2& p) const{
+		[[nodiscard]] Geom::Vec2& normalize(Geom::Vec2& p) const noexcept{
 			return p.div(getSize()).sub(0.5f, 0.5f).scl(2);
 		}
 	};

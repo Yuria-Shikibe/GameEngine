@@ -3,7 +3,7 @@ export module Math;
 import std;
 
 import SinTable;
-import Concepts;
+import ext.Concepts;
 import ext.RuntimeException;
 
 export namespace Math {
@@ -17,7 +17,7 @@ export namespace Math {
 	constexpr float pi        = PI, HALF_PI = PI / 2.0f;
 	constexpr double PI_EXACT = std::numbers::pi_v<double>; //3.14159265358979323846;
 	constexpr float PI2       = PI * 2.0f;
-	constexpr float E         = 2.7182818f;
+	constexpr float E         = std::numbers::e_v<float>;
 	constexpr float SQRT2     = std::numbers::sqrt2_v<float>;
 	constexpr float SQRT3     = std::numbers::sqrt3_v<float>;
 	/** multiply by this to convert from radians to degrees */
@@ -35,6 +35,7 @@ export namespace Math {
 
 	constexpr float RAD_FULL          = PI * 2;
 	constexpr float DEG_FULL          = 360.0f;
+	constexpr float DEG_HALF          = 180.0f;
 	constexpr float RAD_TO_INDEX      = SIN_COUNT / RAD_FULL;
 	constexpr float DEG_TO_INDEX      = SIN_COUNT / DEG_FULL;
 	constexpr int BIG_ENOUGH_INT      = 16 * 1024;
@@ -595,7 +596,7 @@ export namespace Math {
 	 * @param time [0, 1]
 	 */
 	template <typename T>
-	float sample(const std::span<T> values, float time) noexcept {
+	float spanLerp(const std::span<T> values, float time) noexcept {
 		time             = clamp(time);
 		const auto sizeF = static_cast<float>(values.size() - 1ull);
 
@@ -608,7 +609,7 @@ export namespace Math {
 	}
 
 	template <>
-	float sample<float>(const std::span<float> values, float time) noexcept {
+	float spanLerp<float>(const std::span<float> values, float time) noexcept {
 		time             = clamp(time);
 		const auto sizeF = static_cast<float>(values.size() - 1ull);
 
@@ -616,6 +617,19 @@ export namespace Math {
 
 		const auto cur  = static_cast<unsigned long long>(min(time * sizeF, sizeF));
 		const auto next = min(cur + 1ULL, values.size() - 1ULL);
+		const float mod = pos - static_cast<float>(cur);
+		return Math::lerp(values[cur], values[next], mod);
+	}
+
+	template <std::size_t size>
+	float spanLerp(const std::array<float, size>& values, float time) noexcept{
+		time = clamp(time);
+		const auto sizeF = static_cast<float>(values.size() - 1ull);
+
+		const float pos = time * sizeF;
+
+		const auto cur = static_cast<unsigned long long>(Math::clamp(time * sizeF, 0.0f, sizeF));
+		const auto next = Math::min(cur + 1ULL, values.size() - 1ULL);
 		const float mod = pos - static_cast<float>(cur);
 		return Math::lerp(values[cur], values[next], mod);
 	}
@@ -723,10 +737,21 @@ export namespace Math {
 	}
 
 	namespace Angle{
+		/**
+		 * @return Angle in [0, 360] degree
+		 */
 		[[nodiscard]] float getAngleInPi2(float a) noexcept {
 			a = Math::mod<float>(a, DEG_FULL);
 			if(a < 0)a += DEG_FULL;
 			return a;
+		}
+
+		/**
+		 * @return Angle in [-180, 180] degree
+		 */
+		[[nodiscard]] float getAngleInPi(float a) noexcept {
+			a = getAngleInPi2(a);
+			return a > DEG_HALF ? a - DEG_FULL : a;
 		}
 
 		[[nodiscard]] float forwardDistance(const float angle1, const float angle2) noexcept {

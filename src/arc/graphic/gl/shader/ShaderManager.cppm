@@ -3,6 +3,7 @@ module;
 export module GL.Shader.Manager;
 
 export import GL.Shader;
+export import ext.Owner;
 import ext.Async;
 import Assets.Loader;
 import std;
@@ -12,7 +13,7 @@ export namespace GL { //TODO this isn't a good namespace, I thought
 		std::vector<std::unique_ptr<GL::Shader>> shaders{};
 
 	public:
-		GL::Shader* registerShader(GL::Shader* shader) {
+		GL::Shader* registerShader(ext::Owner<GL::Shader*> shader) {
 			shaders.emplace_back(shader);
 			return shader;
 		}

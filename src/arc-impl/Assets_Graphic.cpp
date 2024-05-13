@@ -127,7 +127,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	frostedGlass = manager->registerShader(new Shader{shaderDir.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
 	frostedGlass->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
-		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.42f);
+		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.2f);
 	});
 
 	outline_ortho = manager->registerShader(new Shader{shaderDir, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
@@ -192,9 +192,10 @@ void Assets::PostProcessors::load(){
 	frostedGlass.reset(new Graphic::ShaderProcessor{Shaders::frostedGlass});
 	frostedGlass->setTargetState(GL::State::BLEND, false);
 
-	frostedGlassBlur.reset(new Graphic::PingPongProcessor{frostedGlass.get(), frostedGlass.get(), 1});
+	frostedGlassBlur.reset(new Graphic::PingPongProcessor{frostedGlass.get(), frostedGlass.get(), 2});
 	frostedGlassBlur->setScale(0.5f);
 	frostedGlassBlur->setTargetState(GL::State::BLEND, false);
+
 	bloom->blur.ping2pong = bloom->blur.pong2ping = frostedGlass.get();
 	bloom->blur.processTimes = 2;
 
@@ -211,7 +212,7 @@ void Assets::PostProcessors::load(){
 }
 
 void Assets::loadBasic() {
-	OS::FileTree& mainTree = *Core::rootFileTree;
+	OS::FileTree& mainTree = Core::rootFileTree;
 
 	assetsDir  = mainTree.findDir("assets");
 	shaderDir  = mainTree.findDir("shader");

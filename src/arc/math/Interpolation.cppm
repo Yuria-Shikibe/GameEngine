@@ -2,10 +2,39 @@ export module Math.Interpolation;
 
 import std;
 import Math;
-import Concepts;
+import ext.Concepts;
 
 //TODO uses constexpr program to enhance the effiency
 export namespace Math::Interp::Func{
+	// template <std::floating_point T, std::floating_point ...ArgT>
+	// [[nodiscard]] constexpr T linear_n(T progress, ArgT... args) noexcept{
+	// 	Math::ler
+	// }
+
+	template <std::floating_point T, std::floating_point ...ArgT>
+	[[nodiscard]] constexpr T cos_n(T progress, ArgT... args) noexcept{
+		std::array values{args...};
+
+		T result{0.0};
+		for (unsigned i = 0; i < sizeof...(ArgT); ++i) {
+			T weight = 0.5 * (1.0 - Math::cos(2.0 * Math::PI * progress / static_cast<T>(sizeof...(ArgT) - 1u)));
+			result += values[i] * weight;
+		}
+
+		return result;
+	}
+
+	template <std::floating_point T, std::size_t size>
+	[[nodiscard]] constexpr T cos_n(T progress, std::array<T, size> values) noexcept{
+		T result{0.0};
+		for (unsigned i = 0; i < values.size(); ++i) {
+			T weight = 0.5 * (1.0 - Math::cos(2.0 * Math::PI * progress / static_cast<T>(values.size() - 1u)));
+			result += values[i] * weight;
+		}
+
+		return result;
+	}
+
 	template <float power>
 	struct Pow{
 		float operator()(const float a) const{

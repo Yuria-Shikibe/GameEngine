@@ -20,7 +20,7 @@ export namespace Game{
 		bool activated{false};
 
 		void updateGlobal(float delta) override{
-			mousePos = Core::input->getCursorPos();
+			mousePos = Core::input.getCursorPos();
 			mousePosNormalized = Core::renderer->getNormalized(mousePos);
 			mouseWorldPos = Core::camera->getScreenToWorld(mousePosNormalized);
 		}

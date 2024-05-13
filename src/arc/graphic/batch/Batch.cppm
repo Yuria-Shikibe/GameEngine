@@ -184,7 +184,7 @@ export namespace Core{
 		void applyShader() const{
 			if(hasCustomShader()){
 				//TODO this is really dangerous!
-				customShader->applyDynamic(generalShader->getDrawer(), true);
+				customShader->applyDynamic(generalShader->getUniformSetter(), true);
 			}else{
 				generalShader->apply();
 			}
@@ -231,13 +231,13 @@ export namespace Core{
 
 		[[nodiscard]] explicit BatchGuard_Shader(Batch& batch, GL::Shader* shader) noexcept
 			: BatchGuard{batch}, originalShader{batch.getCustomShader()}{
-			batch.flush();
-			batch.setCustomShader(shader);
+			batch.getGeneralShader()->bind();
+			batch.getGeneralShader()->apply();
+			batch.switchCustomShader(shader);
 		}
 
 		~BatchGuard_Shader(){
-			batch.flush();
-			batch.setCustomShader(originalShader);
+			batch.switchCustomShader(originalShader);
 		}
 	};
 }

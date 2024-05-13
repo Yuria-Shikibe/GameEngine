@@ -1,6 +1,6 @@
 export module GL.Texture.TextureRegionRect;
 
-import Concepts;
+import ext.Concepts;
 import Geom.Rect_Orthogonal;
 export import GL.Texture.Texture2D;
 export import GL.Texture.TextureRegion;

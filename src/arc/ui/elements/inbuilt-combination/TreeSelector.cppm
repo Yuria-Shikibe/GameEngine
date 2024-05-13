@@ -9,7 +9,7 @@ export import UI.Button;
 export import UI.ScrollPane;
 export import UI.Label;
 export import ext.TreeStructure;
-import Concepts;
+import ext.Concepts;
 
 export namespace UI{
 	template <typename T, typename RepresentType = T*>

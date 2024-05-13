@@ -8,10 +8,10 @@ export import UI.Table;
 export import UI.Widget;
 import UI.Action.Actions;
 import UI.SeperateDrawable;
-import Concepts;
+import ext.Concepts;
 import Geom.Vector2D;
 import ext.Heterogeneous;
-import Concepts;
+import ext.Concepts;
 
 import std;
 

@@ -6,7 +6,7 @@ export module Game.Entity.Bullet;
 
 export import Game.Entity.RealityEntity;
 
-export import Game.Settings.DamageTrait;
+export import Game.Attributes.DamageTrait;
 
 import Game.Entity.EntityManager;
 import Game.Entity.Collision;

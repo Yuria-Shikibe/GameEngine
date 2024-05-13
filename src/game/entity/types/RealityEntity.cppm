@@ -2,7 +2,7 @@ module;
 
 export module Game.Entity.RealityEntity;
 
-import Concepts;
+import ext.Concepts;
 
 export import Game.Entity.BaseEntity;
 export import Game.Entity.PhysicsAttribute;
@@ -380,6 +380,10 @@ export namespace Game {
 
 		virtual bool processCollisionWithChildren() {
 			return false;
+		}
+
+		float getYawAngle() const noexcept{
+			return vel.vec.angle() - trans.rot;
 		}
 
 		//TODO abstract these to other classes

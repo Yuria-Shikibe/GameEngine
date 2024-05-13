@@ -10,14 +10,12 @@ export import UI.Flags;
 import std;
 import Font.GlyphArrangement;
 import Geom.Vector2D;
+import Geom.Rect_Orthogonal;
 import Graphic.Color;
 import Math;
-import Geom.QuadTreeBrief;
 import OS.TextInputListener;
 
-import Ctrl.Constants;
-
-import Graphic.Draw;
+import OS.Ctrl.Bind.Constants;
 
 import ext.Encoding;
 
@@ -430,8 +428,8 @@ export namespace UI{
 		void updateOperatrion(){
 			if(!isTextFocused())return;
 			if(
-				keyDown(Ctrl::KEY_RIGHT, Ctrl::Act_Press, Ctrl::Mode_IGNORE) ||
-				keyDown(Ctrl::KEY_RIGHT, Ctrl::Act_Repeat, Ctrl::Mode_IGNORE)
+				keyDown(Ctrl::Key::Right, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
+				keyDown(Ctrl::Key::Right, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)
 			){
 				for(auto& caret : carets){
 					++caret;
@@ -439,24 +437,24 @@ export namespace UI{
 				}
 			}
 
-			if(keyDown(Ctrl::KEY_LEFT, Ctrl::Act_Press, Ctrl::Mode_IGNORE) ||
-				keyDown(Ctrl::KEY_LEFT, Ctrl::Act_Repeat, Ctrl::Mode_IGNORE)){
+			if(keyDown(Ctrl::Key::Left, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
+				keyDown(Ctrl::Key::Left, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
 				for(auto& caret : carets){
 					--caret;
 					resetTime();
 				}
 			}
 
-			if(keyDown(Ctrl::KEY_DOWN, Ctrl::Act_Press, Ctrl::Mode_IGNORE) ||
-				keyDown(Ctrl::KEY_DOWN, Ctrl::Act_Repeat, Ctrl::Mode_IGNORE)){
+			if(keyDown(Ctrl::Key::Down, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
+				keyDown(Ctrl::Key::Down, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
 				for (auto& caret : carets){
 					caret.tryGotoBelowRow(glyphLayout.get());
 					resetTime();
 				}
 			}
 
-			if(keyDown(Ctrl::KEY_UP, Ctrl::Act_Press, Ctrl::Mode_IGNORE) ||
-				keyDown(Ctrl::KEY_UP, Ctrl::Act_Repeat, Ctrl::Mode_IGNORE)){
+			if(keyDown(Ctrl::Key::Up, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
+				keyDown(Ctrl::Key::Up, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
 				for (auto& caret : carets){
 					caret.tryGotoAboveRow(glyphLayout.get());
 					resetTime();
@@ -470,61 +468,7 @@ export namespace UI{
 			updateTextLayout();
 		}
 
-		void drawContent() const override{
-			Graphic::Draw::alpha();
-
-			if(!glyphLayout->empty()){
-				const Geom::Vec2 off = glyphLayout->getDrawOffset();
-
-				for (const auto & caret : carets){
-					unsigned curRow = caret.dataBegin ? caret.dataBegin->getRow() : std::numeric_limits<unsigned>::max();
-					Geom::Vec2 sectionBegin{caret.getDrawPos(false).scl(glyphLayout->getScale())};
-					Geom::Vec2 sectionEnd{};
-
-					for(auto data : std::span{caret.dataBegin, caret.dataEnd}){
-						if(sectionBegin.isNaN()){
-							sectionBegin = data.getBoundSrc().scl(glyphLayout->getScale());
-						}
-
-						sectionEnd = data.getBoundEnd().scl(glyphLayout->getScale());
-
-						if(curRow != data.getRow() || data.isEndRow()){
-							curRow = data.getRow();
-							Rect rect{};
-							if(data.isEndRow()){
-								curRow++;
-								sectionEnd.set(glyphLayout->getRawBound().getWidth(), data.getBoundEnd().y).scl(glyphLayout->getScale());
-							}
-							Graphic::Draw::color(caret.selectionColor, 0.65f);
-							Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
-							sectionBegin.setNaN();
-						}
-					}
-
-					Rect rect{};
-					sectionEnd.x = caret.getDrawPos().x * glyphLayout->getScale();
-					Graphic::Draw::color(caret.selectionColor, 0.65f);
-					Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
-				}
-
-				glyphLayout->render();
-			}
-
-
-			Graphic::Draw::color();
-			Graphic::Draw::Line::setLineStroke(2.0f);
-			if(isTextFocused() && Math::cycleStep<75, 40>(time)){
-				for (const auto & caret : carets){
-					Geom::Vec2 src = caret.getDrawPos() * glyphLayout->getScale() + glyphLayout->offset;
-					src.y -= glyphLayout->getDrawBound().getHeight();
-					Graphic::Draw::Line::line(src, {src.x, src.y + caret.getHeight() * glyphLayout->getScale()});
-				}
-			}
-
-			Graphic::Draw::tint(Graphic::Colors::RED, .65f);
-			Graphic::Draw::Line::setLineStroke(1.25f);
-			Graphic::Draw::Line::rectOrtho(glyphLayout->getDrawBound(), true, glyphLayout->offset);
-		}
+		void drawContent() const override;
 
 		//TODO append buffer to insert range
 		void informTextInput(const unsigned codepoint, int mods) override{
@@ -703,7 +647,7 @@ export namespace UI{
 			snapshots.emplace_front(glyphLayout->lastText, carets);
 
 			if(snapshots.front().carets.size() > 1){
-				throw std::exception{"wtf"};
+				throw std::exception{"Should Never Happen"};
 			}
 		}
 

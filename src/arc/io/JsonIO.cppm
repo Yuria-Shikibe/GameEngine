@@ -2,7 +2,7 @@ export module Core.IO.JsonIO;
 
 export import ext.Json;
 export import Core.IO.General;
-import MetaProgramming;
+import ext.MetaProgramming;
 import ext.Owner;
 import ext.Base64;
 import ext.StaticReflection;
@@ -55,7 +55,7 @@ export namespace Core::IO{
 		}
 
 		template <typename T>
-		static ext::Owner<T*> generate(const ext::json::JsonValue& jval) noexcept(std::same_as<void, T>){
+		[[nodiscard]] static ext::Owner<T*> generate(const ext::json::JsonValue& jval) noexcept(std::same_as<void, T>){
 			if(jval.is<ext::json::object>()){
 				auto& map = jval.asObject();
 				if(const auto itr = map.find(ext::json::keys::Typename); itr != map.end() && itr->second.is<ext::json::string>()){
@@ -67,7 +67,7 @@ export namespace Core::IO{
 		}
 
 		template <typename T>
-		static ext::Owner<T*> generate_noCheck(const ext::json::JsonValue& jval){
+		[[nodiscard]] static ext::Owner<T*> generate_noCheck(const ext::json::JsonValue& jval){
 			return static_cast<T*>(ext::reflect::tryConstruct(jval.asObject().at(ext::json::keys::Typename).as<ext::json::string>()));
 		}
 

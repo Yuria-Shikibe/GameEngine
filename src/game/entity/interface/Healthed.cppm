@@ -5,7 +5,7 @@ export module Game.Entity.Healthed;
 import Game.Entity;
 import std;
 
-import Game.Settings.DamageTrait;
+import Game.Attributes.DamageTrait;
 
 export namespace Game {
 	class Healthed{

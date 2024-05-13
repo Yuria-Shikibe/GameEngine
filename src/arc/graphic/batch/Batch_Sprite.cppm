@@ -11,7 +11,7 @@ import GL.Buffer.DataBuffer;
 import GL.VertexArray;
 import GL;
 
-import Concepts;
+import ext.Concepts;
 
 using namespace GL;
 

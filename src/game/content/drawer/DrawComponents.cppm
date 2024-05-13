@@ -14,7 +14,7 @@ import GL.Texture.TextureRegionRect;
 import Graphic.TextureAtlas;
 import Graphic.Draw;
 
-import Concepts;
+import ext.Concepts;
 
 import std;
 

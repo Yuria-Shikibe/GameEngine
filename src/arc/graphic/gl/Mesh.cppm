@@ -9,7 +9,7 @@ import std;
 export import GL.Buffer.DataBuffer;
 export import GL.VertexArray;
 
-import Concepts;
+import ext.Concepts;
 
 export namespace GL{
 	struct Mesh //TODO worth virtual ??

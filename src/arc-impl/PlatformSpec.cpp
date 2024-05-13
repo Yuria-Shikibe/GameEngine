@@ -38,24 +38,24 @@ void GLFW::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 
 void GLFW::mouseBottomCallBack(GLFWwindow* window, const int button, const int action, const int mods) {
 	// std::cout << button << " | " << action << '\n';
-	Core::input->informMouseAction(button, action, mods);
+	Core::input.informMouseAction(button, action, mods);
 }
 
 void GLFW::cursorPosCallback(GLFWwindow* window, const double xPos, const double yPos) {
-	Core::input->cursorMoveInform(static_cast<float>(xPos), static_cast<float>(Core::renderer->getHeight() - yPos));
+	Core::input.cursorMoveInform(static_cast<float>(xPos), static_cast<float>(Core::renderer->getHeight() - yPos));
 }
 
 void GLFW::cursorEnteredCallback(GLFWwindow* window, const int entered) {
-	Core::input->setInbound(entered);
+	Core::input.setInbound(entered);
 }
 
 void GLFW::scrollCallback(GLFWwindow* window, const double xOffset, const double yOffset) {
-	Core::input->setScrollOffset(static_cast<float>(xOffset), static_cast<float>(yOffset));
+	Core::input.setScrollOffset(static_cast<float>(xOffset), static_cast<float>(yOffset));
 }
 
 void GLFW::keyCallback(GLFWwindow* window, const int key, const int scanCode, const int action, const int mods) {
 	// std::cout << key << " | " << action << " | " << mods << std::endl;
-	if(key >= 0 && key < GLFW_KEY_LAST)Core::input->informKeyAction(key, scanCode, action, mods);
+	if(key >= 0 && key < GLFW_KEY_LAST)Core::input.informKeyAction(key, scanCode, action, mods);
 }
 
 void GLFW::monitorCallback(GLFWmonitor* monitor, int event) {

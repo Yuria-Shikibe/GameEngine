@@ -12,10 +12,18 @@ export import Game.ContentLoader;
 
 import std;
 
-import Core.Renderer;
+import Core;
+
+namespace FrameCore = ::Core;
 
 export namespace Game {
-	struct  Core : OS::ApplicationListener {
+	struct Core;
+
+	inline std::unique_ptr<Core> core{nullptr};
+
+	struct Core : OS::ApplicationListener {
+		FrameCore::InputBindGroup gameBinds{};
+
 		std::unique_ptr<ContentLoader> contentLoader{std::make_unique<ContentLoader>()};
 		//TODO
 		std::unique_ptr<OverlayManager> overlayManager{std::make_unique<OverlayManager>()};
@@ -25,6 +33,20 @@ export namespace Game {
 
 		[[nodiscard]] Core(){
 			pauseRestrictable = true;
+			FrameCore::input.registerSubInput(&gameBinds);
+			FrameCore::destructors.emplace_back(+[]{core.reset(nullptr);});
+		}
+
+		~Core() override{
+			FrameCore::input.eraseSubInput(&gameBinds);
+		}
+
+		void activeBinds() const{
+			FrameCore::Util::activeBinds(&gameBinds);
+		}
+
+		void deactiveBinds() const{
+			FrameCore::Util::deactiveBinds(&gameBinds);
 		}
 
 		void update(const float delta) override {
@@ -38,7 +60,7 @@ export namespace Game {
 			if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
 		}
 
-		virtual void drawAboveUI(::Core::Renderer* renderer) const{
+		virtual void drawAboveUI(FrameCore::Renderer* renderer) const{
 			if(overlayManager->activated){
 				overlayManager->drawAboveUI(renderer);
 			}
@@ -48,7 +70,7 @@ export namespace Game {
 			}
 		}
 
-		virtual void drawBeneathUI(::Core::Renderer* renderer) const{
+		virtual void drawBeneathUI(FrameCore::Renderer* renderer) const{
 			if(overlayManager->activated){
 				overlayManager->drawBeneathUI(renderer);
 			}
@@ -58,6 +80,4 @@ export namespace Game {
 			}
 		}
 	};
-
-	inline std::unique_ptr<Core> core{nullptr};
 }

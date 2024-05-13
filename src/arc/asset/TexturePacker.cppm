@@ -20,13 +20,10 @@ import OS.Handler;
 import Image.Svg;
 import ext.Heterogeneous;
 
-using Geom::OrthoRectInt;
-using namespace Graphic;
-
 export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
 	struct TextureRegionPackData{
-		OrthoRectInt bound{};
+		Geom::OrthoRectInt bound{};
 		GL::TextureRegionRect textureRegion{};
 		Graphic::Pixmap pixmap{};
 		OS::File sourceFile{};
@@ -88,6 +85,7 @@ export namespace Assets {
 
 				}
 
+				//TODO no if branch
 				//TODO global search
 			}
 
@@ -157,7 +155,7 @@ export namespace Assets {
 		PackState state{PackState::polling};
 
 	public:
-		OrthoRectInt texMaxBound{0, 0, 2048, 2048};
+		Geom::OrthoRectInt texMaxBound{0, 0, 2048, 2048};
 		std::string pageName{};
 
 		bool forcePack{false};
@@ -167,7 +165,7 @@ export namespace Assets {
 		const TexturePackPage* linkTarget = nullptr;
 
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
-			const OrthoRectInt& texMaxBound, const bool forcePack)
+			const Geom::OrthoRectInt& texMaxBound, const bool forcePack)
 			: cacheDir(cacheDir),
 			texMaxBound(texMaxBound),
 			pageName(pageName),
@@ -175,7 +173,7 @@ export namespace Assets {
 		}
 
 		[[nodiscard]] TexturePackPage(const std::string_view pageName, const OS::File& cacheDir,
-									  const OrthoRectInt& texMaxBound)
+									  const Geom::OrthoRectInt& texMaxBound)
 			: TexturePackPage(pageName, cacheDir, texMaxBound, false){
 		}
 
@@ -292,7 +290,7 @@ export namespace Assets {
 		}
 
 	protected:
-		static OrthoRectInt& transformBound(TextureRegionPackData* d) noexcept {
+		static Geom::OrthoRectInt& transformBound(TextureRegionPackData* d) noexcept {
 			return d->bound;
 		}
 
@@ -485,7 +483,7 @@ export namespace Assets {
 			packer.setMaxSize(texMaxBound.getWidth(), texMaxBound.getHeight());
 			packer.sortDatas();
 			packer.process();
-			const OrthoRectInt r = packer.getResultBound();
+			const Geom::OrthoRectInt r = packer.getResultBound();
 
 			//Move it
 			toMerge.emplace_back(std::move(packer.packed), r.getWidth(), r.getHeight(), currentID);

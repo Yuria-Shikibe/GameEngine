@@ -2,7 +2,7 @@
 // Created by Matrix on 2024/3/10.
 //
 
-export module Game.Settings.DamageTrait;
+export module Game.Attributes.DamageTrait;
 
 export namespace Game{
 	struct DamageTrait {

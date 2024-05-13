@@ -16,8 +16,8 @@ export namespace UI {
 		using Vector2D::x;
 		using Vector2D::y;
 
-		unsigned int buttonID{0};
-		unsigned int mode{0};
+		int buttonID{0};
+		int mode{0};
 
 		[[nodiscard]] MouseAction() = default;
 
@@ -26,14 +26,14 @@ export namespace UI {
 		}
 
 		void set(const float x, const float y, const int id) {
-			this->x = x;
-			this->y = y;
+			Geom::Vec2::set(x, y);
 			buttonID = id;
 		}
 
-		void set(const Geom::Vec2& pos, const int id) {
+		void set(const Geom::Vec2& pos, const int id, const int mode) {
 			Geom::Vec2::operator=(pos);
-			buttonID = id;
+			this->buttonID = id;
+			this->mode = mode;
 		}
 	};
 
@@ -45,10 +45,12 @@ export namespace UI {
 		}
 	};
 
+	/**
+	 * @brief it's (x, y) is for cursor velocity
+	 */
 	struct MouseActionDrag final : MouseAction  {
 		Geom::Vec2 begin{};
 		Geom::Vec2 end{};
-		// Geom::Vec2 relativeMove{};
 
 		[[nodiscard]] Geom::Vec2 getRelativeMove() const{
 			return end - begin;

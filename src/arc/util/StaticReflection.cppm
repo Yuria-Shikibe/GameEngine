@@ -1,7 +1,7 @@
 export module ext.StaticReflection;
 
-export import MetaProgramming;
-import Concepts;
+export import ext.MetaProgramming;
+import ext.Concepts;
 import std;
 import ext.Owner;
 

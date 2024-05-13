@@ -7,28 +7,31 @@ export module Game.Chamber.Frame;
 import std;
 export import Game.Chamber;
 import Geom.QuadTree;
-import Concepts;
+import ext.Concepts;
 import ext.RuntimeException;
 import Math;
 import ext.Algorithm;
 
-export namespace Game{
+namespace Game{
 	/**
 	 * @brief This frame should never be dynamic used! since insert or erase a new chamber cost too much time
 	 */
+	export
+	template <typename Entity>
 	class ChamberFrame{
-		[[nodiscard]] static Geom::Rect_Orthogonal<float> getBoundOf(const ChamberTile& ChamberTile){
+		[[nodiscard]] static Geom::OrthoRectFloat getBoundOf(const ChamberTile<Entity>& ChamberTile){
 			return ChamberTile.getChamberRealRegion();
 		}
 
 	public:
-		using Tile = ChamberTile;
-		using TreeType = Geom::QuadTree<Tile, float, &getBoundOf>;
+		using EntityType = Entity;
+		using Tile = ChamberTile<Entity>;
+		using TreeType = Geom::QuadTree<Tile, float, &ChamberFrame::getBoundOf>;
 
 		struct TileBrief{
-			std::vector<Game::Chamber*> owners{};
-			std::vector<const Game::ChamberTile*> invalids{};
-			std::vector<const Game::ChamberTile*> valids{};
+			std::vector<Game::Chamber<EntityType>*> owners{};
+			std::vector<const Tile*> invalids{};
+			std::vector<const Tile*> valids{};
 
 			bool dataValid{false};
 
@@ -41,7 +44,7 @@ export namespace Game{
 		};
 		
 	protected:
-		TileBrief mutable brief;
+		mutable TileBrief brief{};
 
 		Geom::OrthoRectFloat bound{};
 
@@ -60,7 +63,7 @@ export namespace Game{
 			}
 		}
 
-		bool shouldInsert(const ChamberTile& tile) const {
+		bool shouldInsert(const Tile& tile) const {
 			if(const auto finded = find(tile.pos)){
 				if(!tile.ownsChamber())return false;
 
@@ -180,7 +183,7 @@ export namespace Game{
 			return nullptr;
 		}
 
-		[[nodiscard]] Chamber* findChamber(const Geom::Point2 pos){
+		[[nodiscard]] Chamber<EntityType>* findChamber(const Geom::Point2 pos){
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
 				if(itr->second->ownsChamber())return itr->second->chamber.get();
 				if(itr->second->referenceTile)return itr->second->referenceTile->chamber.get();
@@ -188,7 +191,7 @@ export namespace Game{
 			return nullptr;
 		}
 
-		[[nodiscard]] const Chamber* findChamber(const Geom::Point2 pos) const{
+		[[nodiscard]] const Chamber<EntityType>* findChamber(const Geom::Point2 pos) const{
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
 				if(itr->second->ownsChamber())return itr->second->chamber.get();
 				if(itr->second->referenceTile)return itr->second->referenceTile->chamber.get();
@@ -216,7 +219,7 @@ export namespace Game{
 				}
 
 
-				const decltype(data)::iterator begin = itr;
+				const typename decltype(data)::iterator begin = itr;
 				auto end = begin;
 				std::advance(end, chamber->getChamberRegion().area());
 
@@ -362,12 +365,12 @@ export namespace Game{
 
 
 		/** @return [compliant not] */
-		auto getPartedTiles(Concepts::Invokable<bool(const ChamberTile&)> auto&& pred) const{
+		auto getPartedTiles(Concepts::Invokable<bool(const Tile&)> auto&& pred) const{
 			return ext::partBy(data, pred);
 		}
 
 		/** @return [compliant not] */
-		auto getPartedTiles(Concepts::Invokable<bool(const ChamberTile&)> auto&& pred){
+		auto getPartedTiles(Concepts::Invokable<bool(const Tile&)> auto&& pred){
 			return ext::partBy(data, pred);
 		}
 
@@ -382,56 +385,63 @@ export namespace Game{
 			boundSize.sclSize(1 / TileSize, 1 / TileSize);
 			return boundSize.round<int>();
 		}
+
+		struct JsonSrl{
+			static constexpr std::string_view InvalidTiles = "it";
+			static constexpr std::string_view OwnerTiles = "ot";
+
+			static void write(ext::json::JsonValue& jsonValue, const ChamberFrame& data){
+				auto& map = jsonValue.asObject();
+
+				ext::json::JsonValue owners{};
+				ext::json::JsonValue invalids{};
+				auto& ownersArray = owners.asArray();
+				auto& invalidsArray = invalids.asArray();
+
+				ownersArray.reserve(data.getData().size() / 3);
+				invalidsArray.reserve(data.getData().size() / 2);
+
+				for(const auto& chamberTile : data.getData()){
+					if(chamberTile.ownsChamber()){
+						ownersArray.push_back(ext::json::getJsonOf(chamberTile));
+						continue;
+					}
+
+					if(!chamberTile.valid()){
+						invalidsArray.push_back(ext::json::getJsonOf(chamberTile.pos));
+					}
+				}
+
+				map.insert_or_assign(OwnerTiles, std::move(owners));
+				map.insert_or_assign(InvalidTiles, std::move(invalids));
+			}
+
+			static void read(const ext::json::JsonValue& jsonValue, ChamberFrame& data){
+				auto& map = jsonValue.asObject();
+				auto& owners = map.at(OwnerTiles).asArray();
+
+				for(const auto& jval : owners){
+					auto tile = ext::json::getValueFrom<Tile>(jval);
+					data.insert(std::move(tile), false);
+				}
+
+				auto& invalids = map.at(InvalidTiles).asArray();
+
+				for(const auto& jval : invalids){
+					data.insert(Tile{ext::json::getValueFrom<Geom::Point2>(jval)}, false);
+				}
+
+				data.reTree();
+			}
+		};
 	};
+}
+
+namespace Game{
+	class SpaceCraft;
 }
 
 
 export
-	template <>
-	struct ::Core::IO::JsonSerializator<Game::ChamberFrame>{
-		static constexpr std::string_view InvalidTiles = "it";
-		static constexpr std::string_view OwnerTiles = "ot";
-		static void write(ext::json::JsonValue& jsonValue, const Game::ChamberFrame& data){
-			auto& map = jsonValue.asObject();
-
-			ext::json::JsonValue owners{};
-			ext::json::JsonValue invalids{};
-			auto& ownersArray = owners.asArray();
-			auto& invalidsArray = invalids.asArray();
-
-			ownersArray.reserve(data.getData().size() / 3);
-			invalidsArray.reserve(data.getData().size() / 2);
-
-			for (const auto & chamberTile : data.getData()){
-				if(chamberTile.ownsChamber()){
-					ownersArray.push_back(ext::json::getJsonOf(chamberTile));
-					continue;
-				}
-
-				if(!chamberTile.valid()){
-					invalidsArray.push_back(ext::json::getJsonOf(chamberTile.pos));
-				}
-			}
-
-			map.insert_or_assign(OwnerTiles, std::move(owners));
-			map.insert_or_assign(InvalidTiles, std::move(invalids));
-		}
-
-		static void read(const ext::json::JsonValue& jsonValue, Game::ChamberFrame& data){
-			auto& map = jsonValue.asObject();
-			auto& owners = map.at(OwnerTiles).asArray();
-
-			for (const auto & jval : owners){
-				auto tile = ext::json::getValueFrom<Game::ChamberTile>(jval);
-				data.insert(std::move(tile), false);
-			}
-
-			auto& invalids = map.at(InvalidTiles).asArray();
-
-			for (const auto & jval : invalids){
-				data.insert(Game::ChamberTile{ext::json::getValueFrom<Geom::Point2>(jval)}, false);
-			}
-
-			data.reTree();
-		}
-	};
+template <>
+struct ::Core::IO::JsonSerializator<Game::ChamberFrame<Game::SpaceCraft>> : Game::ChamberFrame<Game::SpaceCraft>::JsonSrl{};

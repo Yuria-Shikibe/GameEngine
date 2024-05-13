@@ -3,14 +3,12 @@ module Core;
 import ext.RuntimeException;
 import GL;
 import GL.Constants;
-import OS.KeyBind;
 import OS;
 import Geom.Vector2D;
 
 import std;
 
 using namespace Core;
-
 
 
 void Core::initMainWindow() {
@@ -31,13 +29,13 @@ void Core::initMainWindow() {
 
 void Core::initFileSystem() {
 #if defined(_DEBUG) && defined(ASSETS_DIR)
-	rootFileTree = std::make_unique<OS::FileTree>(ASSETS_DIR);
+	rootFileTree = OS::FileTree(ASSETS_DIR);
 #else
 	const auto dir = Core::platform->getProcessFileDir().subFile("resource");
 
 	std::cout << "Targeted Resource Root:" << dir.absolutePath() << std::endl;
 
-	rootFileTree = std::make_unique<OS::FileTree>(dir);
+	rootFileTree = OS::FileTree{dir};
 
 #endif
 	OS::crashFileGetter = std::bind(&Core::Log::generateCrashFilePath, log);
@@ -55,9 +53,8 @@ void Core::initCore(const std::function<void()>& initializer) {
 	}
 
 	{
-		if(!input)input = new Input{};
 		if(!camera)camera = new Camera2D{};
-		if(!log)log = new Log{rootFileTree->findDir("logs")};
+		if(!log)log = new Log{rootFileTree.findDir("logs")};
 	}
 
 	audio = new Core::Audio;
@@ -70,7 +67,7 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 
 	if(!batchGroup.overlay)throw ext::NullPointerException{"Empty Overlay Batch!"};
 
-	OS::registerListener(input);
+	OS::registerListener(&input);
 	OS::registerListener(camera);
 
 	assetsManager = new Assets::Manager{};
@@ -85,9 +82,12 @@ void Core::loadAssets() {
 }
 
 void Core::dispose() {
+	for (const auto & destructor : destructors){
+		destructor();
+	}
+
 	OS::clearListeners();
 
-	delete input;
 	delete camera;
 	delete renderer;
 
@@ -97,6 +97,8 @@ void Core::dispose() {
 	delete uiRoot;
 	delete bundle;
 	delete log;
+
+	new (&batchGroup) BatchGroup;
 
 	platform.reset();
 }

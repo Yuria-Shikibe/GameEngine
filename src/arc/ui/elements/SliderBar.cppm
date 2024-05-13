@@ -81,7 +81,7 @@ export namespace UI{
 				}
 
 				if(isClamped()){
-					moveBar(scrollSensitivity * slideSensitivity.normalizeToBase() * move.y);
+					moveBar(scrollSensitivity * slideSensitivity.normalizeToBase() * move.y * Geom::Vec2{-1, 1});
 				}else{
 					moveBar(move * scrollSensitivity);
 				}
