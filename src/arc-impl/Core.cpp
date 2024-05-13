@@ -95,7 +95,6 @@ void Core::dispose() {
 	delete assetsManager;
 	delete settings;
 	delete uiRoot;
-	delete bundle;
 	delete log;
 
 	new (&batchGroup) BatchGroup;

@@ -7,6 +7,10 @@ import Graphic.Draw;
 import ext.RuntimeException;
 import Core;
 
+void UI::Widget::passSound(const SoundSource sound) const{
+	root->handleSound(sound);
+}
+
 bool UI::Widget::layout_tryFillParent() {
 	if(parent) {
 		if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {

@@ -3,7 +3,6 @@ export module Assets.Manager;
 import Core.Renderer;
 import Assets.Loader;
 import Assets.TexturePacker;
-import Assets.Sound;
 import Assets.SoundLoader;
 import Graphic.TextureAtlas;
 import GL.Shader.Manager;

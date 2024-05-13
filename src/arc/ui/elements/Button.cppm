@@ -1,21 +1,23 @@
-//
-// Created by Matrix on 2024/3/29.
-//
+module;
 
 export module UI.Button;
 
 export import UI.Table;
 
+import <irrKlang.h>;
 import std;
 import ext.Concepts;
+import Assets.Sound;
 
 export namespace UI{
 	class Button : public Table{
 	protected:
 		bool triggerOnReleaseOnly{true};
 		std::function<void(Button&, bool)> call{};
+		Assets::Sounds::SoundSource defClickSound = Assets::Sounds::uiClick;
 
 		void trigger(const bool isButtonPressed){
+			if(isButtonPressed)passSound(defClickSound);
 			if(call){
 				if(triggerOnReleaseOnly){
 					if(!isButtonPressed)call(*this, isButtonPressed);

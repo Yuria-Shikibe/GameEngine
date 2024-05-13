@@ -562,6 +562,21 @@ export namespace Geom{
 		}
 
 		/**
+		 * @brief
+		 * @param signProv > 0: counterClockwise; < 0: clockWise; = 0: do nothing
+		 * @return
+		 */
+		template <Concepts::Number S>
+		constexpr Vector2D& rotateRT_with(const S signProv) noexcept requires std::is_signed_v<T> {
+			const int sign = Math::sign(signProv);
+			if(sign){
+				return this->set(y * sign, -x * sign);
+			}else [[unlikely]]{
+				return *this;
+			}
+		}
+
+		/**
 		 * \brief clockwise rotation
 		 */
 		constexpr Vector2D& rotateRT() noexcept requires std::is_signed_v<T> {
@@ -571,7 +586,7 @@ export namespace Geom{
 		/**
 		 * \brief counterclockwise rotation
 		 */
-		constexpr Vector2D& rotateRT_counterclockwise() noexcept requires std::is_signed_v<T> {
+		constexpr Vector2D& rotateRT_counterClockwise() noexcept requires std::is_signed_v<T> {
 			return this->set(y, -x);
 		}
 
@@ -668,6 +683,11 @@ export namespace Geom{
 
 	template <typename N>
 	constexpr Vector2D<N> norYVec2{0, 1};
+
+	template <typename N> constexpr Vector2D<N> left{-1, 0};
+	template <typename N> constexpr Vector2D<N> right{1, 0};
+	template <typename N> constexpr Vector2D<N> up{0, 1};
+	template <typename N> constexpr Vector2D<N> down{0, -1};
 
 	constexpr Vec2 ZERO{ 0, 0 };
 	constexpr Point2U ZERO_U{ 0u, 0u };

@@ -6,7 +6,7 @@ import ext.Async;
 import OS.File;
 import Assets.Loader;
 import ext.RuntimeException;
-import <irrKlang.h>;
+export import <irrKlang.h>;
 import std;
 
 using namespace irrklang;
@@ -39,7 +39,7 @@ export namespace Assets {
 
 		[[nodiscard]] ISoundSource* pullRequest(const OS::File& file){
 			const auto data = engine->getSoundSource(file.absolutePath().string().data());
-			if(!data) {
+			if(!data || !file.exist()) {
 				throw ext::RuntimeException{"Failed to load sound file: " + file.filename()};
 			}
 

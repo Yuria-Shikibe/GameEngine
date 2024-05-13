@@ -66,6 +66,7 @@ import OS.Ctrl.ControlCommands;
 import OS.Ctrl.Bind.Constants;
 import Core.Batch.Batch_Sprite;
 
+import Assets.Directories;
 import Assets.Graphic;
 import Graphic.Color;
 
@@ -108,6 +109,7 @@ import Game.Entity.SpaceCraft;
 import Game.Entity.Bullet;
 import Game.Entity.Collision;
 import Game.Entity.Turrets;
+import Game.Entity.Controller.Player;
 
 
 import Game.Content.Type.BasicBulletType;
@@ -120,6 +122,8 @@ import Game.Graphic.Draw;
 import Game.Chamber.Frame;
 import Game.Chamber.Util;
 import Game.Chamber.FrameTrans;
+
+import Game.Scene.MainMenu;
 
 import ext.Encoding;
 import ext.TreeStructure;
@@ -405,6 +409,19 @@ void setupUITest(){
 }
 
 void setupCtrl(){
+	Core::input.binds.registerBind(Ctrl::Key::Left, Ctrl::Act::Continuous, []{
+		Game::core->sendPlayerMoveAct(Geom::left<float>);
+	});
+	Core::input.binds.registerBind(Ctrl::Key::Right, Ctrl::Act::Continuous, []{
+		Game::core->sendPlayerMoveAct(Geom::right<float>);
+	});
+	Core::input.binds.registerBind(Ctrl::Key::Up, Ctrl::Act::Continuous, []{
+		Game::core->sendPlayerMoveAct(Geom::up<float>);
+	});
+	Core::input.binds.registerBind(Ctrl::Key::Down, Ctrl::Act::Continuous, []{
+		Game::core->sendPlayerMoveAct(Geom::down<float>);
+	});
+
 	Core::input.binds.registerBind(Ctrl::Mouse::_2, Ctrl::Act::Press, []{
 		const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
 
@@ -512,7 +529,7 @@ void genRandomEntities(){
 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
 	ptr->trans.vec.set(0, 0);
 	Game::EntityManage::add(ptr);
-	Game::read(OS::File{Assets::assetsDir.subFile(R"(hitbox\pester.hitbox)")}, ptr->hitBox);
+	Game::read(OS::File{Assets::Dir::assets.subFile(R"(hitbox\pester.hitbox)")}, ptr->hitBox);
 
 	ptr->vel.vec.set(0, 0);
 	ptr->setHealth(10000);
@@ -521,6 +538,7 @@ void genRandomEntities(){
 	ptr->chambers.operator=(std::move(*chamberFrame));
 	ptr->chamberTrans.vec.x = 85;
 	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	ptr->controller.reset(new Game::PlayerController{ptr.get()});
 }
 
 void setupBaseDraw(){
@@ -548,6 +566,8 @@ int main(const int argc, char* argv[]){
 	::Test::assetsLoad();
 
 	::Test::setupAudioTest();
+
+	Core::audio->engine->setSoundVolume(0.5f);
 
 	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
 
@@ -586,9 +606,15 @@ int main(const int argc, char* argv[]){
 
 	setupCtrl();
 
-	// genRandomEntities();
+	genRandomEntities();
 
 	setupBaseDraw();
+
+	Core::uiRoot->scenes.insert_or_assign(UI::Menu_Main, std::make_unique<Game::Scenes::MainMenu>());
+	Core::uiRoot->scenes.at(UI::Menu_Main)->setRoot(Core::uiRoot);
+
+	Core::uiRoot->switchScene(UI::Menu_Main);
+
 
 	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
 	loadChamber();
@@ -668,7 +694,7 @@ int main(const int argc, char* argv[]){
 		e.renderer->frameBegin(&multiSample);
 
 		Graphic::Batch::blend<>();
-		//
+		/*//
 		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
 		::Game::Draw::chamberFrameTile(*chamberFrame, Core::renderer, true);
 
@@ -695,6 +721,7 @@ int main(const int argc, char* argv[]){
 
 			Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
 		}
+		*/
 
 		Graphic::Batch::blend();
 

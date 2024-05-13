@@ -10,7 +10,7 @@ import :FocusInterface;
 import :Guard;
 
 export namespace Ctrl{
-	struct CameraControl2D : FocusInterface<Core::Camera2D*>::Type<>{
+	struct CameraControl2D : FocusData<Core::Camera2D*>{
 		Core::Camera2D* current{nullptr};
 		using Guard = Guard<CameraControl2D, &CameraControl2D::current>;
 
@@ -18,9 +18,12 @@ export namespace Ctrl{
 			this->current = focus;
 		}
 
-		void move(const Geom::Vec2 movement){
-			check();
-			current->move(movement);
+		void move(const Geom::Vec2 movement) const{
+			if(current)current->move(movement);
+		}
+
+		void set(const Geom::Vec2 pos) const{
+			if(current)current->setPosition(pos);
 		}
 
 		auto operator->() const{

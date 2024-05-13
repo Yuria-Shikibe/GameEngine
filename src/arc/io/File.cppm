@@ -241,11 +241,10 @@ namespace OS{
 
 		template <bool careDirs = false>
 		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
-			for(const auto& item : fs::directory_iterator(getPath())){
+			for(const auto& item : fs::recursive_directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
 				} else{
-					f.forAllSubs<careDirs>(consumer);
 					if constexpr (careDirs){
 						consumer(std::move(f));
 					}
@@ -255,11 +254,10 @@ namespace OS{
 
 		template <bool careDirs = false>
 		void allSubs(std::vector<File>& container) const{
-			for(const auto& item : fs::directory_iterator(getPath())){
+			for(const auto& item : fs::recursive_directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					container.emplace_back(std::move(f));
 				} else{
-					f.allSubs<careDirs>(container);
 					if constexpr(careDirs){
 						container.emplace_back(std::move(f));
 					}

@@ -8,14 +8,14 @@ using namespace GL;
 using namespace Graphic;
 
 void Assets::Shaders::loadPrimitive() {
-	blit = new Shader(shaderDir, "blit");
+	blit = new Shader(Dir::shader, "blit");
 	blit->setUniformer(+[](const Shader& shader) {
 		shader.setTexture2D("texture0", 0);
 		// shader.setTexture2D("texture1", 1);
 		// shader.setTexture2D("texture2", 2);
 	});
 
-	sildeLines = new Shader(shaderDir, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
+	sildeLines = new Shader(Dir::shader, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
 	sildeLines->setUniformer(+[](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
 		const float stroke = slideLineShaderDrawArgs.get<0>();
@@ -32,12 +32,12 @@ void Assets::Shaders::loadPrimitive() {
 		shader.setFloat("angle", slideLineShaderAngle.get<0>() + 45.0f);
 	});
 
-	threshold_light = new Shader(shaderDir, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
+	threshold_light = new Shader(Dir::shader, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
 	threshold_light->setUniformer(+[](const Shader& shader) {
 		shader.setTexture2D("u_texture", 0);
 	});
 
-	gaussian = new Shader(shaderDir, "gaussian-blur");
+	gaussian = new Shader(Dir::shader, "gaussian-blur");
 
 	//TODO dynamic apply
 	gaussian->setUniformer(+[](const Shader& shader) {
@@ -47,13 +47,13 @@ void Assets::Shaders::loadPrimitive() {
 		shader.setVec2("size", ~Core::renderer->getSize());
 	});
 
-	bloom = new Shader(shaderDir, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});
+	bloom = new Shader(Dir::shader, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});
 	bloom->setUniformer(+[](const Shader& shader) {
 		shader.setTexture2D("texture0", 0);
 		shader.setTexture2D("texture1", 1);
 	});
 
-	screenSpace = new Shader(shaderDir, "screenspace");
+	screenSpace = new Shader(Dir::shader, "screenspace");
 
 	blit->readSource();
 	blit->compile();
@@ -75,15 +75,15 @@ void Assets::Shaders::loadPrimitive() {
 }
 
 void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-parameter)
-	texPost = manager->registerShader(shaderDir, "tex-std");
+	texPost = manager->registerShader(Dir::shader, "tex-std");
 	texPost->setUniformer([]([[maybe_unused]] const Shader& shader) {});
 
-	stdPost = manager->registerShader(shaderDir, "std");
+	stdPost = manager->registerShader(Dir::shader, "std");
 	stdPost->setUniformer([]([[maybe_unused]] const Shader& shader) {
 		// GL::uniformColor(0, Graphic::Colors::WHITE);
 	});
 
-	gaussian_world = manager->registerShader(shaderDir, "gaussian-blur");
+	gaussian_world = manager->registerShader(Dir::shader, "gaussian-blur");
 	gaussian_world->setUniformer(+[](const Shader& shader) {
 		shader.setTexture2D("texture");
 		shader.setVec2("size", ~Core::renderer->getSize() * Core::camera->getScale());
@@ -91,7 +91,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 
 	});
 
-	coordAxis = manager->registerShader(shaderDir, "coordinate-axis");
+	coordAxis = manager->registerShader(Dir::shader, "coordinate-axis");
 	coordAxis->setUniformer([](const Shader& shader) {
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
@@ -100,14 +100,14 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setVec2("cameraPos", Core::camera->screenCenter());
 	});
 
-	filter = manager->registerShader(shaderDir, "filter");
+	filter = manager->registerShader(Dir::shader, "filter");
 	filter->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("tex");
 	});
 
-	world = manager->registerShader(shaderDir, "screenspace-world");
+	world = manager->registerShader(Dir::shader, "screenspace-world");
 
-	merge = manager->registerShader(shaderDir.subFile("world"), "merge");
+	merge = manager->registerShader(Dir::shader.subFile("world"), "merge");
 	merge->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texBase", 0);
 		shader.setTexture2D("texNormal", 1);
@@ -116,21 +116,21 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		// shader.setVec2("screenSizeInv", 1.0f / Core::renderer->getDrawWidth(), 1.0f / Core::renderer->getDrawHeight());
 	});
 
-	worldBloom = manager->registerShader(new Shader{shaderDir.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
-	mask = manager->registerShader(new Shader{shaderDir.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
+	worldBloom = manager->registerShader(new Shader{Dir::shader.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
+	mask = manager->registerShader(new Shader{Dir::shader.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
 	mask->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("srcTex", 0);
 		shader.setTexture2D("dstTex", 1);
 		shader.setTexture2D("maskTex", 2);
 	});
 
-	frostedGlass = manager->registerShader(new Shader{shaderDir.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
+	frostedGlass = manager->registerShader(new Shader{Dir::shader.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
 	frostedGlass->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.2f);
 	});
 
-	outline_ortho = manager->registerShader(new Shader{shaderDir, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
+	outline_ortho = manager->registerShader(new Shader{Dir::shader, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
 	outline_ortho->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("scaleInv", outlineArgs.get<2>());
@@ -138,7 +138,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setFloat("rot", outlineArgs.get<1>());
 	});
 
-	outline_sobel = manager->registerShader(new Shader{shaderDir, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
+	outline_sobel = manager->registerShader(new Shader{Dir::shader, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
 	outline_sobel->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("scaleInv", outlineArgs.get<2>());
@@ -213,28 +213,15 @@ void Assets::PostProcessors::load(){
 
 void Assets::loadBasic() {
 	OS::FileTree& mainTree = Core::rootFileTree;
-
-	assetsDir  = mainTree.findDir("assets");
-	shaderDir  = mainTree.findDir("shader");
-	textureDir = mainTree.findDir("texture");
-	fontDir    = mainTree.findDir("fonts");
-	soundDir   = mainTree.findDir("sounds");
-
-	texCacheDir = assetsDir.subFile("tex-cache");
-	texCacheDir.createDirQuiet();
-
-	screenshotDir = mainTree.findDir("screenshots"); //TODO move this to other places, it doesn't belong to assets!
-
-	textureTree.reDirect(textureDir);
+	
+	textureTree.reDirect(Dir::texture);
 	textureTree.buildFileTree(true);
 	textureTree.mapSubFiles([](const OS::File& file){
 		return file.stem();
 	});
 
-	Fonts::unicodeRefDir = assetsDir.subFile("unicode-ref");
-	if(!Fonts::unicodeRefDir.exist()){
-		Fonts::unicodeRefDir.createDirQuiet();
-	}
+	Fonts::unicodeRefDir = Dir::assets.subFile("unicode-ref");
+	patch(Fonts::unicodeRefDir);
 
 	// auto vec = textureTree.getFlatView() | std::ranges::views::keys | std::ranges::to<std::vector<std::string>>();
 	// std::ranges::sort(vec);

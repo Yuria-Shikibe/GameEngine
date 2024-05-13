@@ -2,6 +2,8 @@ module;
 
 export module UI.Widget;
 
+import <irrKlang.h>;
+
 export import UI.Flags;
 export import UI.Align;
 export import UI.Action;
@@ -17,6 +19,8 @@ import ext.RuntimeException;
 import std;
 
 export namespace UI {
+	using SoundSource = irrklang::ISoundSource*;
+
 	struct WidgetDrawer;
 	class Group;
 	class Table;
@@ -186,6 +190,8 @@ export namespace UI {
 		[[nodiscard]] bool isSleep() const{ return sleep; }
 
 		void setSleep(const bool sleep){ this->sleep = sleep; }
+
+		void passSound(SoundSource sound) const;
 
 		/**
 		 * @param elem Element To Fill This(it's parent)

@@ -268,7 +268,7 @@ export namespace Game {
 			if(relVel.isZero())return;
 
 			const Vec2 collisionNormalVec = -object->hitBox.getAvgEdgeNormal(data);//Geom::avgEdgeNormal(intersection, object->hitBox).normalize();
-			Vec2 collisionTangentVec = collisionNormalVec.copy().rotateRT_counterclockwise();
+			Vec2 collisionTangentVec = collisionNormalVec.copy().rotateRT_counterClockwise();
 
 			// collisionTangentVec.setZero();
 

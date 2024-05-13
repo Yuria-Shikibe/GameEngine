@@ -9,6 +9,7 @@ export import Game.UI.OverlayManager;
 export import Game.UI.HitBoxEditor;
 export import Graphic.Effect.Manager;
 export import Game.ContentLoader;
+export import Game.Entity.Controller.Player;
 
 import std;
 
@@ -31,6 +32,8 @@ export namespace Game {
 
 		std::unique_ptr<Graphic::EffectManager> effectManager{std::make_unique<Graphic::EffectManager>()};
 
+		PlayerController* playerController{nullptr};
+
 		[[nodiscard]] Core(){
 			pauseRestrictable = true;
 			FrameCore::input.registerSubInput(&gameBinds);
@@ -41,12 +44,24 @@ export namespace Game {
 			FrameCore::input.eraseSubInput(&gameBinds);
 		}
 
+		void sendPlayerMoveAct(const Geom::Vec2 vec2) const{
+			playerController->setMoveDirection(vec2);
+		}
+
 		void activeBinds() const{
 			FrameCore::Util::activeBinds(&gameBinds);
 		}
 
 		void deactiveBinds() const{
 			FrameCore::Util::deactiveBinds(&gameBinds);
+		}
+
+		void reBindPlayerController(PlayerController* controller){
+			if(controller && playerController){
+				throw ext::IllegalArguments{"Conflicted Player Controller Rebind!"};
+			}
+
+			playerController = controller;
 		}
 
 		void update(const float delta) override {

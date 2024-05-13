@@ -4,7 +4,9 @@ import std;
 
 import Core;
 
+import Assets.Directories;
 import Assets.Graphic;
+import Assets.Sound;
 import Assets.Loader;
 import Assets.LoaderRenderer;
 import Assets.TexturePacker;
@@ -23,7 +25,7 @@ void Assets::Manager::pullRequest() {
 	Assets::Fonts::loadPreivous(tempFontLoader.get());
 	Assets::Fonts::load(&fonts);
 
-	Assets::Sounds::load(Assets::soundDir, soundLoader);
+	Assets::Sounds::load(Assets::Dir::sound, soundLoader);
 
 	for(auto& page : atlas.getPages() | std::ranges::views::values) {
 		loader.push(&page);

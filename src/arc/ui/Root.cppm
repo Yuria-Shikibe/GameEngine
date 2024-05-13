@@ -111,7 +111,10 @@ export namespace UI{
 			if(const auto nextItr = scenes.find(sceneName); nextItr != scenes.end()){
 				currentScene->setVisible(false);
 				currentScene = nextItr->second.get();
-				if(currentScene)currentScene->setSize(width, height);
+				if(currentScene){
+					currentScene->setSize(width, height);
+					currentScene->setVisible(true);
+				}
 			}else{
 				//TODO throw maybe
 			}
@@ -276,6 +279,8 @@ export namespace UI{
 		constexpr void hide() noexcept{
 			isHidden = true;
 		}
+
+		void handleSound(SoundSource sound);
 
 	protected:
 		void inform(int keyCode, int action, int mods) override{}

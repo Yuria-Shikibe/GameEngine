@@ -262,6 +262,10 @@ void UI::Root::registerCtrl(){
 	});
 }
 
+void UI::Root::handleSound(const SoundSource sound){
+	Core::audio->play(sound);
+}
+
 void UI::Root::setEnter(Widget* elem, const bool quiet){
 	if(elem == currentCursorFocus) return;
 

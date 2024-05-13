@@ -6,6 +6,7 @@ import Game.Entity.EntityManager;
 import Game.Entity.Turrets;
 import Graphic.Color;
 import Graphic.Draw;
+import Graphic.Trail;
 import Math;
 import Math.Rand;
 
@@ -56,6 +57,8 @@ export namespace Game {
 		std::shared_ptr<Font::GlyphLayout> coordText = Font::obtainLayoutPtr();
 
 		std::vector<ext::ObjectPool<TurretEntity>::UniquePtr> turretEntities{};
+
+		std::vector<Graphic::Trail> trails{};
 
 		[[nodiscard]] SpaceCraft() = default;
 
@@ -109,13 +112,17 @@ export namespace Game {
 			RealityEntity::updateCollision(deltaTick);
 		}
 
+		//TODO bad design
 		void updateMovement(const float delta) override{
 			constexpr float maxAngularSpeed = angularVelocityLimit;
 			constexpr float maxAngularAccel = angularAccelerationLimit;
 
 			const float powerScale = trait->thrusterTrait.getPowerScale(getYawAngle());
 
+			// std::cout << controller->moveCommand.expectedVelocity << std::endl;
+
 			if(controller->moveCommand.rotateActivated()){
+
 				float angleDst = Math::Angle::angleDst(trans.rot, controller->moveCommand.expectedFaceAngle);
 				if(!Math::zero(angleDst, 0.5f)){
 					const float curAngularInertial = 0.5f * Math::sqr(this->vel.rot) / maxAngularAccel;
@@ -144,17 +151,21 @@ export namespace Game {
 			}
 
 			if(controller->moveCommand.moveActivated()){
-				const Vec2 dest = controller->moveCommand.nextDest();
-				if(controller->moveCommand.requiresMovement(dest)){
-					//TODO perform according to moveCommand.expected velocity
-					constexpr float tolerance = 20.0f;
-					auto dir = (dest - trans.vec);
+				if(controller->moveCommand.overrideControl){
+					accel.vec.approach(controller->moveCommand.expectedVelocity, delta * powerScale);
+				}else{
+					const Vec2 dest = controller->moveCommand.nextDest();
+					if(controller->moveCommand.requiresMovement(dest)){
+						//TODO perform according to moveCommand.expected velocity
+						constexpr float tolerance = 20.0f;
+						auto dir = (dest - trans.vec);
 
-					const float dst2 = dir.length2();
-					if(dst2 < Math::sqr(tolerance)){
-						accel.vec = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance))) * powerScale;
-					}else{
-						accel.vec.approach(dir.setLength2(2.25f), delta * powerScale);
+						const float dst2 = dir.length2();
+						if(dst2 < Math::sqr(tolerance)){
+							accel.vec = dir.setLength2(-1.5f * (1 - dst2 / Math::sqr(tolerance))) * powerScale;
+						}else{
+							accel.vec.approach(dir.setLength2(2.25f), delta * powerScale);
+						}
 					}
 				}
 			}

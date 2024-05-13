@@ -38,6 +38,8 @@ export namespace Game {
 
 		bool translatory{false};
 
+		bool overrideControl{false};
+
 		float positionTolerance{32.0f};
 
 		//Should This Be Queue? or uses this index mode
@@ -110,15 +112,19 @@ export namespace Game {
 		void updateCurrent(const Geom::Transform current) {
 			curTrans = current;
 
-			const auto dest = nextDest();
-
-			expectedVelocity.set(dest - curTrans.vec).setLength(30);
-
 			if(translatory){
 
 			}else if(moveActivated()){
 				expectedFaceAngle = expectedMoveAngle();
 			}
+
+			if(overrideControl)return;
+
+			const auto dest = nextDest();
+
+			expectedVelocity.set(dest - curTrans.vec).setLength(30);
+
+
 
 			if(Math::Angle::angleDst(curTrans.rot, expectedFaceAngle) > 0.005f){
 				activateRotate();
@@ -224,6 +230,10 @@ export namespace Game {
 		ReflectSensor* sensor{nullptr};
 
 		[[nodiscard]] explicit Controller(RealityEntity* const owner);
+
+		virtual bool selectable() const {
+			return true;
+		}
 
 		virtual bool isValidTo(const std::shared_ptr<RealityEntity>& entity) {
 			return true;

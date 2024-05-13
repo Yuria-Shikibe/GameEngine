@@ -118,6 +118,9 @@ export namespace Graphic{
             }
         }
 
+        /**
+         * @tparam Func void(CapPos, size, angle)
+         */
         template <Concepts::Invokable<void(
             Geom::Vec2, float, float //P1 size angle
         )> Func>

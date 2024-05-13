@@ -11,6 +11,7 @@ import OS.ApplicationListenerSetter;
 import Image;
 import Core;
 import Core.Batch.Batch_Sprite;
+import Assets.Directories;
 import Assets.Graphic;
 import Assets.Sound;
 import Assets.Loader;
@@ -54,11 +55,12 @@ export namespace Test{
 		ext::setFlipVertically_write(true);
 
 		Core::initCore();
+		Assets::loadDir();
 
 		Assets::loadBasic();
 
 		{
-			const Graphic::Pixmap appIcon{Assets::assetsDir.subFile("icon.png")};
+			const Graphic::Pixmap appIcon{Assets::Dir::assets.subFile("icon.png")};
 			Core::platform->window->setApplicationIcon(appIcon.data(), appIcon.getWidth(), appIcon.getHeight(),
 			                                           appIcon.Channels, 1);
 		}
@@ -109,7 +111,7 @@ export namespace Test{
 		Game::Content::Builtin::load_SpaceCraft(Game::core->contentLoader.get());
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadInit>([](const Assets::AssetsLoadInit& event){
-			OS::File cacheDir = Assets::fontDir.subFile("cache-load");
+			OS::File cacheDir = Assets::Dir::font.subFile("cache-load");
 			if(!cacheDir.exist()) cacheDir.createDirQuiet();
 			event.manager->getFontsManager_Load().rootCacheDir = cacheDir;
 			event.manager->getFontsManager_Load().texturePage = event.manager->getAtlas().registerPage(
@@ -117,7 +119,7 @@ export namespace Test{
 			event.manager->getFontsManager_Load().texturePage->setMargin(1);
 
 
-			cacheDir = Assets::fontDir.subFile("cache");
+			cacheDir = Assets::Dir::font.subFile("cache");
 			if(!cacheDir.exist()) cacheDir.createDirQuiet();
 			event.manager->getFontsManager().rootCacheDir = cacheDir;
 			event.manager->getFontsManager().texturePage = event.manager->getAtlas().registerPage("font", cacheDir);
@@ -125,33 +127,33 @@ export namespace Test{
 
 
 			{
-				Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::texCacheDir);
+				Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::Dir::texCache);
 				uiPage->forcePack = true;
-				Assets::textureDir.subFile("ui").forAllSubs([uiPage](OS::File&& file){
+				Assets::Dir::texture.subFile("ui").forAllSubs([uiPage](OS::File&& file){
 					uiPage->pushRequest(file);
 				});
 
-				Assets::assetsDir.subFile("svg\\icons").forAllSubs([uiPage](OS::File&& file){
+				Assets::Dir::assets.subFile("svg\\icons").forAllSubs([uiPage](OS::File&& file){
 					auto pixmap = ext::svgToBitmap(file, 48);
 					pixmap.mulWhite();
 					uiPage->pushRequest(file.stem(), std::move(pixmap));
 				});
 
-				Assets::textureDir.subFile("cursor").forAllSubs([uiPage](OS::File&& file){
+				Assets::Dir::texture.subFile("cursor").forAllSubs([uiPage](OS::File&& file){
 					uiPage->pushRequest(file);
 				});
 			}
 
 			{
 				Assets::TexturePackPage* mainPage = event.manager->getAtlas().registerPage(
-					MainPageName, Assets::texCacheDir);
-				mainPage->pushRequest("white-solid", Assets::textureDir.find("white.png"));
+					MainPageName, Assets::Dir::texCache);
+				mainPage->pushRequest("white-solid", Assets::Dir::texture.find("white.png"));
 				[[maybe_unused]] Assets::TexturePackPage* normalPage = event.manager->getAtlas().registerAttachmentPage(
 					"normal", mainPage);
 				Assets::TexturePackPage* lightPage = event.manager->getAtlas().
 				                                           registerAttachmentPage("light", mainPage);
-				lightPage->pushRequest("white-light", Assets::textureDir.find("white.light.png"));
-				mainPage->pushRequest("white-light", Assets::textureDir.find("transparent.png"));
+				lightPage->pushRequest("white-light", Assets::Dir::texture.find("white.light.png"));
+				mainPage->pushRequest("white-light", Assets::Dir::texture.find("transparent.png"));
 			}
 		});
 

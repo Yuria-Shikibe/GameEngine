@@ -44,7 +44,7 @@ export namespace Core{
 	/* 3.00% */
 	inline UI::Root* uiRoot = nullptr;
 	/* 0.00% */
-	inline Assets::Bundle* bundle = nullptr;
+	inline Assets::Bundle bundle{};
 	/* 30.00% */
 	inline Log* log = nullptr;
 

@@ -1,6 +1,6 @@
 export module Assets.Sound;
 
-import <irrKlang.h>;
+export import <irrKlang.h>;
 import Assets.SoundLoader;
 import OS.File;
 
@@ -10,6 +10,9 @@ export namespace Assets::Sounds{
 	using SoundSource = ISoundSource*;
 
 	SoundSource
+		uiClick,
+		uiClick2,
+
 		flak,
 		largeExplosion,
 		laser5
@@ -17,6 +20,12 @@ export namespace Assets::Sounds{
 
 	void load(const OS::File& dir, Assets::SoundLoader& loader) {
 		flak = loader.pullRequest(dir.subFile("flak.mp3"));
+		uiClick = loader.pullRequest(dir.subFile("ui-click.ogg"));
+		uiClick2 = loader.pullRequest(dir.subFile("ui-click-2.ogg"));
+		uiClick->setDefaultVolume(0.055f);
+		uiClick2->setDefaultVolume(0.065f);
+
+
 		largeExplosion = loader.pullRequest(dir.subFile("largeExplosion.ogg"));
 		laser5 = loader.pullRequest(dir.subFile("laser5.ogg"));
 	}

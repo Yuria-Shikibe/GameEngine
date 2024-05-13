@@ -1,9 +1,4 @@
-//
-// Created by Matrix on 2024/4/25.
-//
-
-#ifndef REFLECTDATA_BUILTIN_HPP
-#define REFLECTDATA_BUILTIN_HPP
+#pragma once
 
 #include "../src/arc/util/ReflectionUtil.hpp"
 
@@ -15,20 +10,17 @@ import Geom.Vector2D;
 import Geom.Transform;
 import Graphic.Color;
 
-struct Inner{
-	Geom::Transform trans{};
-};
-
-struct TestT{
-	Geom::Transform transform;
-
-	bool val;
-	Graphic::Color color;
-	Geom::Vec2 vec2;
-	Geom::Point2 point2;
-	Geom::OrthoRectFloat quadFloat{};
-	Geom::OrthoRectFloat quadFloat2{};
-};
+//
+// struct TestT{
+// 	Geom::Transform transform;
+//
+// 	bool val;
+// 	Graphic::Color color;
+// 	Geom::Vec2 vec2;
+// 	Geom::Point2 point2;
+// 	Geom::OrthoRectFloat quadFloat{};
+// 	Geom::OrthoRectFloat quadFloat2{};
+// };
 
 #define REG_VEC(type) \
 REFL_REGISTER_CLASS_DEF(Geom::Vector2D<type>);\
@@ -72,30 +64,23 @@ REFL_REGISTER_CLASS_DEF(Math::Section<int>);
 REFL_REGISTER_CLASS_DEF(Math::Section<unsigned int>);
 REFL_REGISTER_CLASS_DEF(Math::Section<float>);
 
-REFL_REGISTER_CLASS_DEF(TestT)
-REFL_REGISTER_FIELD_AS(TestT, transform, json)
-REFL_REGISTER_FIELD_DEF(TestT, val)
-REFL_REGISTER_FIELD_DEF(TestT, vec2)
-REFL_REGISTER_FIELD_DEF(TestT, color)
-REFL_REGISTER_FIELD_DEF(TestT, point2)
-REFL_REGISTER_FIELD_DEF(TestT, quadFloat)
-REFL_REGISTER_FIELD_DEF(TestT, quadFloat2)
-REFL_REGISTER_COMPLETION(TestT,
-	&TestT::transform,
-	&TestT::val,
-	&TestT::vec2,
-	&TestT::color,
-	&TestT::point2,
-	&TestT::quadFloat,
-	&TestT::quadFloat2)
+// REFL_REGISTER_CLASS_DEF(TestT)
+// REFL_REGISTER_FIELD_AS(TestT, transform, json)
+// REFL_REGISTER_FIELD_DEF(TestT, val)
+// REFL_REGISTER_FIELD_DEF(TestT, vec2)
+// REFL_REGISTER_FIELD_DEF(TestT, color)
+// REFL_REGISTER_FIELD_DEF(TestT, point2)
+// REFL_REGISTER_FIELD_DEF(TestT, quadFloat)
+// REFL_REGISTER_FIELD_DEF(TestT, quadFloat2)
+// REFL_REGISTER_COMPLETION(TestT,
+// 	&TestT::transform,
+// 	&TestT::val,
+// 	&TestT::vec2,
+// 	&TestT::color,
+// 	&TestT::point2,
+// 	&TestT::quadFloat,
+// 	&TestT::quadFloat2)
 
 REFL_REGISTER_FIELD_DEF(Geom::Transform, vec)
 REFL_REGISTER_FIELD_DEF(Geom::Transform, rot)
 REFL_REGISTER_COMPLETION(Geom::Transform, &Geom::Transform::vec, &Geom::Transform::rot)
-
-
-template <>
-struct ext::reflect::ClassField<Inner> :
-ext::reflect::ClassField<Inner, &Inner::trans>{};
-
-#endif //REFLECTDATA_BUILTIN_HPP

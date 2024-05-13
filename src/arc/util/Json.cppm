@@ -13,14 +13,23 @@ import ext.MetaProgramming;
 using namespace ext::string;
 
 namespace ext::json{
+
 	bool hasMeaning(const char c){
 		return !std::isspace(c);
 	}
 }
 
 export namespace ext::json{
+	bool notIgnore(const char c){
+		return c != '\n' && c != '\t';
+	}
+
+	class JsonValue;
+
 	using JsonInteger = std::int64_t;
 	using JsonFloat = std::double_t;
+	using Object = StringMap<JsonValue>;
+	using Array = std::vector<JsonValue>;
 
 	template <typename T>
 	using JsonScalarType = std::conditional_t<std::same_as<T, bool>, bool, std::conditional_t<std::is_floating_point_v<T>, JsonFloat, JsonInteger>>;
@@ -112,9 +121,6 @@ export namespace ext::json{
 #define TypeGroup std::nullptr_t, JsonInteger, JsonFloat, bool, std::string, Array, Object
 
 	public:
-		using Object = StringMap<JsonValue>;
-		using Array = std::vector<JsonValue>;
-
 		template <typename T>
 		static constexpr std::size_t typeIndex = uniqueTypeIndex_v<T, TypeGroup>;
 
@@ -626,8 +632,7 @@ export namespace ext::json{
 		}
 
 		constexpr void flattenString(){
-			strData = strData | std::ranges::views::filter([](const char c){ return c != '\n' && c != '\t'; }) | std::ranges::to<
-				std::string>();
+			std::erase_if(strData, std::not_fn(notIgnore));
 		}
 
 		void updateString(){
