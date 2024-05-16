@@ -17,6 +17,11 @@ export namespace Assets{
 		inline OS::File svg;
 		inline OS::File bundle;
 		inline OS::File sound;
+
+		inline OS::File data;
+		inline OS::File settings;
+
+		inline OS::File game;
 	}
 
 

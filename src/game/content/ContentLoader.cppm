@@ -29,13 +29,13 @@ export namespace Game{
 			requires requires{
 				new T{std::declval<std::string_view>()};
 			}
-		T* registerContent(const std::string_view name, Concepts::InvokeNullable<void(T*)> auto&& initilazer = nullptr){
+		T* registerContent(const std::string_view name, Concepts::InvokeNullable<void(T&)> auto&& initilazer = nullptr){
 			auto rst = contents.try_emplace(name, std::make_unique<T>(name));
 
 			if(rst.second){
 				T* t = static_cast<T*>(rst.first->second.get());
 				if constexpr (!std::same_as<decltype(initilazer), std::nullptr_t>){
-					initilazer(t);
+					initilazer(*t);
 				}
 
 				return t;

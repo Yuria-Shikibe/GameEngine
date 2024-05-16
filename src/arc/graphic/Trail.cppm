@@ -6,25 +6,56 @@ export module Graphic.Trail;
 
 import std;
 import Geom.Vector2D;
+import Geom.Rect_Orthogonal;
 import Math;
 import ext.Concepts;
+import Graphic.Color;
 
 export namespace Graphic{
     struct Trail {
         // static constexpr float minSpacingSqr = 36;
         using NodeType = std::pair<Geom::Vec2, float>;
+        using DataType = std::deque<NodeType>;
 
     protected:
-        std::deque<NodeType> points{};
+        DataType points{};
         Geom::Vec2 lastPos{};
         float lastAngle{-1};
         float lastwidth{};
-        size_t length{};
+        std::size_t length{};
 
     public:
-        explicit Trail(const size_t length)
-            : length(length){
+        /**
+         * @return Distance between head and tail
+         */
+        float getDst() const noexcept{
+            if(points.empty())return 0;
+            return lastPos.dst(points.front().first);
+        }
 
+        /**
+         * @brief Not accurate, but enough
+         */
+        Geom::OrthoRectFloat getBound() const noexcept{
+            if(points.empty())return {};
+            return Geom::OrthoRectFloat{}.setVert(lastPos, points.front().first);
+        }
+
+        struct DefDraw{
+            Graphic::Color src;
+            void operator()(Geom::Vec2, Geom::Vec2, Geom::Vec2, Geom::Vec2) const;
+        };
+
+        struct DefDraw_WithLerp{
+            Graphic::Color src, dst;
+            void operator()(Geom::Vec2, Geom::Vec2, Geom::Vec2, Geom::Vec2, //P1 P2 P3 P4
+                Math::Progress, Math::Progress) const;
+        };
+
+        [[nodiscard]] Trail() = default;
+
+        explicit Trail(const std::size_t length)
+            : length(length){
         }
 
         [[nodiscard]] float getWidth() const{
@@ -53,21 +84,27 @@ export namespace Graphic{
             }
         }
 
-        void clear(){
+        DataType getPoints() && noexcept{
+            return std::move(points);
+        }
+
+        void clear() noexcept{
             points.clear();
         }
 
-        [[nodiscard]] size_t size() const{
+        [[nodiscard]] std::size_t size() const noexcept{
             return points.size();
         }
 
-        [[nodiscard]] size_t maxSize() const{
+        [[nodiscard]] std::size_t maxSize() const noexcept{
             return length;
         }
 
-        void resize(const size_t length){
+        void resize(const std::size_t length) noexcept{
             this->length = length;
         }
+
+        [[nodiscard]] Geom::Vec2 getLastPos() const noexcept{ return lastPos; }
 
         template <typename Func, bool requiresProgress = true>
         requires
@@ -77,19 +114,21 @@ export namespace Graphic{
             )>)  || (!requiresProgress && Concepts::Invokable<Func, void(
                 Geom::Vec2, Geom::Vec2, Geom::Vec2, Geom::Vec2//P1 P2 P3 P4
             )>)
-        void each(const float width, Func&& comsumer) const{
+        void each(const float width, Func&& comsumer, const std::size_t drop = 0) const{
+            auto subRange = std::ranges::subrange{points.begin() + drop, points.end()};
+
             float lastAngle = this->lastAngle;
-            const size_t size = this->size();
+            const std::size_t size = subRange.size();
             const float drawSize = width / static_cast<float>(size);
 
-            for(int i = 0; i < size; ++i){
-                auto [pos1, w1] = points[i];
+            for(int i = 0; i < subRange.size(); ++i){
+                auto [pos1, w1] = subRange[i];
                 float w2{0};
                 Geom::Vec2 pos2{};
 
                 //last position is always lastX/Y/W
                 if(i < size - 1){
-                    std::tie(pos2, w2) = points[i + 1];
+                    std::tie(pos2, w2) = subRange[i + 1];
                 }else{
                     pos2 = lastPos;
                     w2 = lastwidth;
@@ -135,5 +174,4 @@ export namespace Graphic{
              }
          }
     };
-
 }

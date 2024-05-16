@@ -13,6 +13,8 @@ export namespace UI{
 	class Button : public Table{
 	protected:
 		bool triggerOnReleaseOnly{true};
+
+		//TODO keyCodeSupport
 		std::function<void(Button&, bool)> call{};
 		Assets::Sounds::SoundSource defClickSound = Assets::Sounds::uiClick;
 

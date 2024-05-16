@@ -26,13 +26,13 @@ export namespace ext::json{
 
 	class JsonValue;
 
-	using JsonInteger = std::int64_t;
-	using JsonFloat = std::double_t;
+	using Integer = std::int64_t;
+	using Float = std::double_t;
 	using Object = StringMap<JsonValue>;
 	using Array = std::vector<JsonValue>;
 
 	template <typename T>
-	using JsonScalarType = std::conditional_t<std::same_as<T, bool>, bool, std::conditional_t<std::is_floating_point_v<T>, JsonFloat, JsonInteger>>;
+	using JsonScalarType = std::conditional_t<std::same_as<T, bool>, bool, std::conditional_t<std::is_floating_point_v<T>, Float, Integer>>;
 
 	namespace keys{
 		/**
@@ -68,7 +68,7 @@ export namespace ext::json{
 			: exception{_Other}{}
 	};
 
-	inline JsonInteger parseInt(const std::string_view str, const int base = 10){
+	inline Integer parseInt(const std::string_view str, const int base = 10){
 		int& errno_ref = errno; // Nonzero cost, pay it once
 		const char* ptr = str.data();
 		char* endPtr{nullptr};
@@ -86,7 +86,7 @@ export namespace ext::json{
 		return _Ans;
 	}
 
-	inline JsonFloat parseFloat(const std::string_view str){
+	inline Float parseFloat(const std::string_view str){
 		int& errno_ref = errno; // Nonzero cost, pay it once
 		const char* ptr = str.data();
 		char* endPtr{nullptr};
@@ -118,7 +118,7 @@ export namespace ext::json{
 	using enum JsonValueTag;
 
 	class JsonValue{
-#define TypeGroup std::nullptr_t, JsonInteger, JsonFloat, bool, std::string, Array, Object
+#define TypeGroup std::nullptr_t, Integer, Float, bool, std::string, Array, Object
 
 	public:
 		template <typename T>
@@ -170,7 +170,7 @@ export namespace ext::json{
 		template <typename T>
 			requires validType<JsonScalarType<T>> && std::is_arithmetic_v<T>
 		void setData(const T val){
-			data = val;
+			data = static_cast<JsonScalarType<T>>(val);
 		}
 
 		template <JsonValueTag tag>
@@ -197,7 +197,7 @@ export namespace ext::json{
 			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
 		[[nodiscard]] constexpr decltype(auto) as(){
 			if constexpr (std::is_arithmetic_v<T>){
-				return std::get<JsonScalarType<T>>(data);
+				return static_cast<T>(std::get<JsonScalarType<T>>(data));
 			}else{
 				return std::get<T>(data);
 			}
@@ -207,7 +207,7 @@ export namespace ext::json{
 			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
 		[[nodiscard]] constexpr decltype(auto) as() const{
 			if constexpr (std::is_arithmetic_v<T>){
-				return std::get<JsonScalarType<T>>(data);
+				return static_cast<T>(std::get<JsonScalarType<T>>(data));
 			}else{
 				return std::get<T>(data);
 			}
@@ -394,7 +394,8 @@ export namespace ext::json{
 
 			if(colonPos == FailedPos || !(nameBegin < nameEnd && nameEnd < colonPos && colonPos < dataBegin && dataBegin
 				< dataEnd)){
-				throw IllegalJsonSegment{"Illegal Json Seg"};
+				asObject();
+				return {""};
 			}
 
 			const auto arg = view.substr(dataBegin, dataEnd - dataBegin);
@@ -409,6 +410,11 @@ export namespace ext::json{
 		 * @param view {<Begin -- View -- End>}
 		 */
 		void parseObject(const std::string_view view){
+			if(view.empty()){
+				asObject();
+				return;
+			}
+
 			const auto args = splitByComma(view.substr(1, view.size() - 2));
 
 			ext::StringMap<JsonValue> values(args.size());
@@ -481,7 +487,7 @@ export namespace ext::json{
 						c == 'e' ||
 						c == 'E';
 				})){
-				data.emplace<JsonFloat>(parseFloat(valueView));
+				data.emplace<Float>(parseFloat(valueView));
 
 				return;
 			}
@@ -489,18 +495,18 @@ export namespace ext::json{
 			if(frontChar == '0'){
 				if(valueView.size() >= 2){
 					switch(valueView[1]){
-						case 'x' : data.emplace<JsonInteger>(parseInt(valueView.substr(2), 16));
+						case 'x' : data.emplace<Integer>(parseInt(valueView.substr(2), 16));
 							break;
-						case 'b' : data.emplace<JsonInteger>(parseInt(valueView.substr(2), 2));
+						case 'b' : data.emplace<Integer>(parseInt(valueView.substr(2), 2));
 							break;
-						default : data.emplace<JsonInteger>(parseInt(valueView.substr(1), 8));
+						default : data.emplace<Integer>(parseInt(valueView.substr(1), 8));
 							break;
 					}
 				} else{
-					data.emplace<JsonInteger>(0);
+					data.emplace<Integer>(0);
 				}
 			} else{
-				data.emplace<JsonInteger>(parseInt(valueView));
+				data.emplace<Integer>(parseInt(valueView));
 			}
 		}
 

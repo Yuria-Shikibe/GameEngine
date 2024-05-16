@@ -53,6 +53,7 @@ import Assets.Manager;
 import Assets.Effects;
 import Assets.Sound;
 import Assets.Bundle;
+import Assets.Ctrl;
 import Core.Settings;
 import Core.Log;
 
@@ -108,13 +109,15 @@ import Game.Entity.RealityEntity;
 import Game.Entity.SpaceCraft;
 import Game.Entity.Bullet;
 import Game.Entity.Collision;
-import Game.Entity.Turrets;
+import Game.Entity.Turret;
+import Game.Entity.Controller.AI;
 import Game.Entity.Controller.Player;
 
 
 import Game.Content.Type.BasicBulletType;
 import Game.Content.Type.Turret.BasicTurretType;
 import Game.Content.Builtin.SpaceCrafts;
+import Game.Content.Builtin.Turrets;
 
 import Game.Graphic.CombinePostProcessor;
 import Game.Graphic.Draw;
@@ -142,7 +145,7 @@ using namespace Graphic;
 using namespace GL;
 using Geom::Vec2;
 
-
+import SideTemp;
 
 struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 	struct TestChamberData : Game::ChamberMetaDataBase{
@@ -165,7 +168,8 @@ struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 
 		void draw(const Game::Chamber<EntityType>* chamber, const EntityType& entity, const TraitDataType& data) const{
 			Draw::setZ(entity.zLayer);
-			Graphic::Draw::rectOrtho<&Core::BatchGroup::world>(Draw::globalState.defaultSolidTexture, chamber->getChamberBound());
+			Graphic::Draw::rectOrtho<&Core::BatchGroup::world>(Draw::globalState.defaultSolidTexture,
+			                                                   chamber->getChamberBound());
 		}
 	} baseTraitTest;
 
@@ -181,16 +185,63 @@ struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
 
+//TODO temp global static mut should be remove
+bool drawDebug{false};
 std::stringstream sstream{};
 std::unique_ptr<Game::ChamberFrameTrans<Game::SpaceCraft>> chamberFrame{};
 std::unique_ptr<Game::ChamberFactory<Game::SpaceCraft>> testFactory{std::make_unique<TestChamberFactory>()};
+
+namespace GameCtrl{
+	::Ctrl::Operation moveLeft{"move-left", OS::KeyBind(::Ctrl::Key::A, ::Ctrl::Act::Continuous, +[]{
+		Game::core->sendPlayerMoveAct(Geom::left<float>);
+	})};
+
+	::Ctrl::Operation moveRight{"move-right", OS::KeyBind(::Ctrl::Key::D, ::Ctrl::Act::Continuous, +[]{
+		Game::core->sendPlayerMoveAct(Geom::right<float>);
+	})};
+
+	::Ctrl::Operation moveForward{"move-up", OS::KeyBind(::Ctrl::Key::W, ::Ctrl::Act::Continuous, +[]{
+		Game::core->sendPlayerMoveAct(Geom::up<float>);
+	})};
+
+	::Ctrl::Operation moveBack{"move-down", OS::KeyBind(::Ctrl::Key::S, ::Ctrl::Act::Continuous, +[] {
+		Game::core->sendPlayerMoveAct(Geom::down<float>);
+	})};
+
+	::Ctrl::Operation shoot_rls{"shoot-rls", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Release, +[] {
+		if(Game::core->playerController){
+			Game::core->playerController->shoot = false;
+		}
+	})};
+
+	::Ctrl::Operation shoot_prs{"shoot-prs", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Press, +[] {
+		if(Game::core->playerController){
+			Game::core->playerController->shoot = true;
+		}
+	}), {shoot_rls.name}};
+
+
+	::Ctrl::Operation moveTrans_rls{"move-trans-rls", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Release, +[] {
+		if(Game::core->playerController){
+			Game::core->playerController->moveCommand.translatory = false;
+		}
+	})};
+
+	::Ctrl::Operation moveTrans_prs{"move-trans-prs", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Press, +[] {
+		if(Game::core->playerController){
+			Game::core->playerController->moveCommand.translatory = true;
+		}
+	}), {moveTrans_rls.name}};
+
+
+}
 
 void setupUITest(){
 	const auto HUD = new UI::Table{};
 
 	Core::uiRoot->currentScene->transferElem(HUD).fillParent().setAlign(Align::center);
 
-	HUD->setRelativeLayoutFormat(false);
+	HUD->setLayoutByRelative(false);
 	HUD->setBorderZero();
 	HUD->setDrawer(&UI::emptyDrawer);
 
@@ -227,101 +278,105 @@ void setupUITest(){
 
 
 	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::Table>([](UI::Table& t){
-			   t.selfMaskOpacity = 0.0f;
-			   t.setBorderZero();
-			   t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
-			   for(int i = 0; i < 8; ++i){
-				   t.add<UI::Button>([i](UI::Button& button){
-					   button.setCall([i](UI::Button& b, bool){
-						   b.buildTooltip();
-					   });
+		   table.add<UI::ProgressBar>([](UI::ProgressBar& bar){
+			   bar.progressGetter = []{
+				   if(Game::core->playerController){
+					   return Game::core->playerController->getOwner()->getHealthRatio();
+				   }
+				   return 0.0f;
+			   };
 
-					   button.setTooltipBuilder({
-							   .followTarget = UI::TooltipFollowTarget::parent,
-							   .minHoverTime = UI::DisableAutoTooltip,
-							   .followTargetAlign = Align::Mode::bottom_left,
-							   .builder = [i](UI::Table& hint){
-								   // hint.setMinimumSize({600, 300});
-								   hint.setCellAlignMode(Align::Mode::top_left);
-								   hint.add<UI::Label>([i](UI::Label& label){
-									   label.usingGlyphHeight = label.usingGlyphWidth = true;
-									   label.setText(
-										   std::format("<Hint Hover Table>\nButton$<sub>$<c#PALE_GREEN>{}$<\\sub>", i));
-									   label.getGlyphLayout()->setSCale(0.65f);
-									   label.setEmptyDrawer();
-									   label.getBorder().expand(4.0f);
-								   }).expand().endLine();
-								   hint.add<UI::Button>([i](UI::Button& button){
-									   button.setCall([i](UI::Button&, bool){
-										   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
-											   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
-												   const OS::File src{
-														   R"(D:\projects\GameEngine\properties\resource\assets)"
-													   };
-												   selector.gotoFile(src, false);
-											   }).fillParent().setAlign(Align::Mode::top_center);
-										   });
-									   });
-									   button.setTooltipBuilder({
-											   .followTarget = UI::TooltipFollowTarget::parent,
-											   .followTargetAlign = Align::Mode::center_right,
-											   .tooltipSrcAlign = Align::Mode::center_left,
-											   .builder = [](UI::Table& hintInner){
-												   hintInner.setCellAlignMode(Align::Mode::top_left);
-												   hintInner.add<UI::Label>([](UI::Label& label){
-													   label.usingGlyphHeight = label.usingGlyphWidth = true;
-													   label.setText(std::format(
-														   "<Hover Table>$<sub>$<c#PALE_GREEN>{}$<\\sub>", "Nesting"));
-													   label.getGlyphLayout()->setSCale(0.65f);
-													   label.setEmptyDrawer();
-													   label.getBorder().expand(4.0f);
-												   }).expand().endLine();
-											   }
-										   });
-								   }).setHeight(120.0f).expandY().fillParentX();
-								   hint.PointCheck = 180;
-							   }
-						   });
+			   bar.PointCheck = 12;
+
+			   bar.setTooltipBuilder({
+					   .followTarget = UI::TooltipFollowTarget::parent,
+					   .followTargetAlign = Align::Mode::bottom_center,
+					   .tooltipSrcAlign = Align::Mode::top_center,
+					   .builder = [&bar](UI::Table& hint){
+						   // hint.setMinimumSize({600, 300});
+						   hint.setCellAlignMode(Align::Mode::top_left);
+						   hint.add<UI::Label>([&bar](UI::Label& label){
+							   label.usingGlyphHeight = label.usingGlyphWidth = true;
+							   label.setText([&bar]{
+								   return std::format(
+									   "$<c#GRAY>Hit Point: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%",
+									   bar.getDrawProgress() * 100.0f);
+							   });
+							   label.getGlyphLayout()->setSCale(0.55f);
+							   label.setEmptyDrawer();
+							   label.getBorder().expand(2.0f);
+						   }).expand().endLine();
+					   }
 				   });
-			   }
-		   }).fillParent();
+		   });
+		   // table.add<UI::Table>([](UI::Table& t){
+		   // t.selfMaskOpacity = 0.0f;
+		   // t.setBorderZero();
+		   // t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
+		   //  for(int i = 0; i < 8; ++i){
+		   //   t.add<UI::Button>([i](UI::Button& button){
+		   //    button.setCall([i](UI::Button& b, bool){
+		   // 	   b.buildTooltip();
+		   //    });
+		   //
+		   //    button.setTooltipBuilder({
+		   // 		   .followTarget = UI::TooltipFollowTarget::parent,
+		   // 		   .minHoverTime = UI::DisableAutoTooltip,
+		   // 		   .followTargetAlign = Align::Mode::bottom_left,
+		   // 		   .builder = [i](UI::Table& hint){
+		   // 			   // hint.setMinimumSize({600, 300});
+		   // 			   hint.setCellAlignMode(Align::Mode::top_left);
+		   // 			   hint.add<UI::Label>([i](UI::Label& label){
+		   // 				   label.usingGlyphHeight = label.usingGlyphWidth = true;
+		   // 				   label.setText(
+		   // 					   std::format("<Hint Hover Table>\nButton$<sub>$<c#PALE_GREEN>{}$<\\sub>", i));
+		   // 				   label.getGlyphLayout()->setSCale(0.65f);
+		   // 				   label.setEmptyDrawer();
+		   // 				   label.getBorder().expand(4.0f);
+		   // 			   }).expand().endLine();
+		   // 			   hint.add<UI::Button>([i](UI::Button& button){
+		   // 				   button.setCall([i](UI::Button&, bool){
+		   // 					   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
+		   // 						   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
+		   // 							   const OS::File src{
+		   // 									   R"(D:\projects\GameEngine\properties\resource\assets)"
+		   // 								   };
+		   // 							   selector.gotoFile(src, false);
+		   // 						   }).fillParent().setAlign(Align::Mode::top_center);
+		   // 					   });
+		   // 				   });
+		   // 				   button.setTooltipBuilder({
+		   // 						   .followTarget = UI::TooltipFollowTarget::parent,
+		   // 						   .followTargetAlign = Align::Mode::center_right,
+		   // 						   .tooltipSrcAlign = Align::Mode::center_left,
+		   // 						   .builder = [](UI::Table& hintInner){
+		   // 							   hintInner.setCellAlignMode(Align::Mode::top_left);
+		   // 							   hintInner.add<UI::Label>([](UI::Label& label){
+		   // 								   label.usingGlyphHeight = label.usingGlyphWidth = true;
+		   // 								   label.setText(std::format(
+		   // 									   "<Hover Table>$<sub>$<c#PALE_GREEN>{}$<\\sub>", "Nesting"));
+		   // 								   label.getGlyphLayout()->setSCale(0.65f);
+		   // 								   label.setEmptyDrawer();
+		   // 								   label.getBorder().expand(4.0f);
+		   // 							   }).expand().endLine();
+		   // 						   }
+		   // 					   });
+		   // 			   }).setHeight(120.0f).expandY().fillParentX();
+		   // 			   hint.PointCheck = 180;
+		   // 		   }
+		   // 	   });
+		   //   });
+		   //  }
+		   // }).fillParent();
 
-		   table.add<UI::Table>([](UI::Table& t){
-			   t.setEmptyDrawer();
-			   auto& slider = t.add<UI::SliderBar>([](UI::SliderBar& s){
-				   s.setClampedOnHori();
-			   }).fillParent().endLine().as<UI::SliderBar>();
-
-			   t.add<UI::ProgressBar>([&slider](UI::ProgressBar& bar){
-				   bar.progressGetter = [&slider]{
-					   return slider.getProgress().x;
-				   };
-
-				   bar.PointCheck = 12;
-
-				   bar.setTooltipBuilder({
-						   .followTarget = UI::TooltipFollowTarget::parent,
-						   .followTargetAlign = Align::Mode::bottom_center,
-						   .tooltipSrcAlign = Align::Mode::top_center,
-						   .builder = [&bar](UI::Table& hint){
-							   // hint.setMinimumSize({600, 300});
-							   hint.setCellAlignMode(Align::Mode::top_left);
-							   hint.add<UI::Label>([&bar](UI::Label& label){
-								   label.usingGlyphHeight = label.usingGlyphWidth = true;
-								   label.setText([&bar]{
-									   return std::format(
-										   "$<c#GRAY>Progress: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%",
-										   bar.getDrawProgress() * 100.0f);
-								   });
-								   label.getGlyphLayout()->setSCale(0.55f);
-								   label.setEmptyDrawer();
-								   label.getBorder().expand(2.0f);
-							   }).expand().endLine();
-						   }
-					   });
-			   });
-		   }).fillParent().setPad({.left = 2.0f});
+		   // table.add<UI::Table>([](UI::Table& t){
+		   //  t.setEmptyDrawer();
+		   //  auto& slider = t.add<UI::SliderBar>([](UI::SliderBar& s){
+		   //   s.setClampedOnHori();
+		   //  }).fillParent().endLine().as<UI::SliderBar>();
+		   //
+		   //
+		   // }).fillParent().setPad({.left = 2.0f});
 	   })
 	   .setAlign(Align::Mode::top_left)
 	   .setSizeScale(0.4f, 0.08f)
@@ -329,19 +384,53 @@ void setupUITest(){
 	   .setMargin(10, 0, 0, 0);
 
 
-	HUD->transferElem(new UI::Table{})
+	HUD->add<UI::Table>([](UI::Table& table){
+		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+			   pane.setEmptyDrawer();
+			   pane.setFillparent();
+			   pane.setItem<UI::Table>([](UI::Table& menu){
+				   menu.setEmptyDrawer();
+				   menu.add<UI::Button>([](UI::Button& button){
+					   button.add<UI::Label>([](UI::Label& label){
+						   label.setTextAlign(Align::Mode::center);
+						   label.setEmptyDrawer();
+						   label.setTextScl(0.75f);
+
+						   label.setText(label.getBundleEntry("sync-camera"));
+					   }).setHeight(60);
+					   button.setCall([](auto&, bool){
+						   Game::core->cameraLock = !Game::core->cameraLock;
+					   });
+					   button.setActivatedChecker([]{
+						   return Game::core->cameraLock;
+					   });
+				   }).wrapY().endLine().setPad({.bottom = 10.0f});
+
+				   menu.add<UI::Button>([](UI::Button& button){
+					   button.add<UI::Label>([](UI::Label& label){
+						   label.setTextAlign(Align::Mode::center);
+						   label.setEmptyDrawer();
+						   label.setTextScl(0.75f);
+
+						   label.setText(label.getBundleEntry("draw-debug"));
+					   }).setHeight(60);
+					   button.setCall([](auto&, bool){
+						   drawDebug = !drawDebug;
+					   });
+					   button.setActivatedChecker([]{
+						   return drawDebug;
+					   });
+				   }).wrapY().endLine();
+			   });
+		   });
+	   })
 	   .setAlign(Align::Mode::top_left)
-	   .setSizeScale(0.1f, 0.6f)
+	   .setSizeScale(0.15f, 0.6f)
 	   .setSrcScale(0.0f, 0.2f)
 	   .setMargin(0, 0, 10, 10);
 
 
-	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::Widget>();
-		   table.lineFeed();
-		   table.add<UI::Widget>();
-		   table.add<UI::Widget>();
-	   })
+	HUD->add<UI::Table>([](UI::Table& table){})
 	   .setAlign(Align::Mode::bottom_left)
 	   .setSizeScale(0.25f, 0.2f)
 	   .setMargin(0, 10, 10, 10);
@@ -388,7 +477,7 @@ void setupUITest(){
 				   area.setMaxTextLength(1000);
 
 				   area.getGlyphLayout()->setSCale(0.75f);
-				   area.setText("Test\n123123123\nsadaDSAda\n");
+				   area.setText("Input Test\n");
 			   });
 			   pane.setEmptyDrawer();
 		   }).fillParent();
@@ -409,47 +498,51 @@ void setupUITest(){
 }
 
 void setupCtrl(){
-	Core::input.binds.registerBind(Ctrl::Key::Left, Ctrl::Act::Continuous, []{
-		Game::core->sendPlayerMoveAct(Geom::left<float>);
-	});
-	Core::input.binds.registerBind(Ctrl::Key::Right, Ctrl::Act::Continuous, []{
-		Game::core->sendPlayerMoveAct(Geom::right<float>);
-	});
-	Core::input.binds.registerBind(Ctrl::Key::Up, Ctrl::Act::Continuous, []{
-		Game::core->sendPlayerMoveAct(Geom::up<float>);
-	});
-	Core::input.binds.registerBind(Ctrl::Key::Down, Ctrl::Act::Continuous, []{
-		Game::core->sendPlayerMoveAct(Geom::down<float>);
-	});
+	Assets::Ctrl::gameGroup = Ctrl::OperationGroup{Assets::Ctrl::gameGroup.getName(), {
+		GameCtrl::moveLeft,
+		GameCtrl::moveRight,
+		GameCtrl::moveForward,
+		GameCtrl::moveBack,
 
-	Core::input.binds.registerBind(Ctrl::Mouse::_2, Ctrl::Act::Press, []{
-		const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
+		GameCtrl::shoot_prs,
+		GameCtrl::shoot_rls,
+		GameCtrl::moveTrans_prs,
+		GameCtrl::moveTrans_rls,
+	}};
+	//TODO unsafe
+	Assets::Ctrl::gameGroup.loadInstruction(Core::bundle);
+	Assets::Ctrl::gameGroup.targetGroup = &Game::core->gameBinds;
+	Assets::Ctrl::gameGroup.applyToTarget();
 
-		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-		Geom::OrthoRectInt bound{pos, 3, 3};
-
-		if(chamberFrame->getChambers().placementValid(bound)){
-			chamberFrame->getChambers().insert(testFactory->genChamberTile(bound));
-		}
-	});
-
-	Core::input.binds.registerBind(Ctrl::Mouse::_3, Ctrl::Act::Press, []{
-		const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
-
-		const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-
-		chamberFrame->getChambers().erase(pos, true);
-	});
-
-	Core::input.binds.registerBind(Ctrl::Key::S, Ctrl::Act::Press, Ctrl::Mode::Ctrl, []{
-		std::jthread jthread([](){
-			OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
-			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
-			fi.writeString(std::format("{:nf0}", jval));
-		});
-
-		jthread.detach();
-	});
+	//
+	// Core::input.binds.registerBind(Ctrl::Mouse::_2, Ctrl::Act::Press, []{
+	// 	const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
+	//
+	// 	const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
+	// 	Geom::OrthoRectInt bound{pos, 3, 3};
+	//
+	// 	if(chamberFrame->getChambers().placementValid(bound)){
+	// 		chamberFrame->getChambers().insert(testFactory->genChamberTile(bound));
+	// 	}
+	// });
+	//
+	// Core::input.binds.registerBind(Ctrl::Mouse::_3, Ctrl::Act::Press, []{
+	// 	const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
+	//
+	// 	const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
+	//
+	// 	chamberFrame->getChambers().erase(pos, true);
+	// });
+	//
+	// Core::input.binds.registerBind(Ctrl::Key::S, Ctrl::Act::Press, Ctrl::Mode::Ctrl, []{
+	// 	std::jthread jthread([](){
+	// 		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
+	// 		ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
+	// 		fi.writeString(std::format("{:nf0}", jval));
+	// 	});
+	//
+	// 	jthread.detach();
+	// });
 
 	//
 	// Core::input->registerKeyBind(Ctrl::Key::F1, Ctrl::Act_Act::Press, [&]{
@@ -460,85 +553,47 @@ void setupCtrl(){
 	// 	pixmap.write(tgt, true);
 	// });
 
-
-	Core::input.binds.registerBind(Ctrl::Key::F, Ctrl::Act::Continuous, []{
-		static ext::Timer<> timer{};
-
-		timer.run(12, OS::updateDeltaTick(), []{
-			Core::audio->play(Assets::Sounds::laser5);
-			Geom::RectBox box{};
-			box.setSize(180, 12);
-			box.offset = box.sizeVec2;
-			box.offset.mul(-0.5f);
-
-			for(int i = -3; i <= 3; ++i){
-				const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
-				ptr->trait = &Game::Content::basicBulletType;
-				ptr->trans.vec.set(Core::camera->getPosition());
-				ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input.getCursorPos());
-
-				ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80.0f * i));
-
-				ptr->vel.vec.set(320, 0).rotate(ptr->trans.rot);
-				Game::EntityManage::add(ptr);
-				ptr->hitBox.init(box);
-				ptr->physicsBody.inertialMass = 100;
-				ptr->damage.materialDamage.fullDamage = 100;
-				ptr->activate();
-			}
-		});
-	});
-
-	Core::input.binds.registerBind(
-		Ctrl::Mouse::_2, Ctrl::Act::Press,
-		Ctrl::Mode::Shift
-	  , []{
-			Game::EntityManage::realEntities.quadTree->intersectPoint(
-				Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input.getCursorPos())),
-				[](decltype(Game::EntityManage::realEntities)::ValueType* entity){
-					entity->controller->selected = !entity->controller->selected;
-					Game::core->overlayManager->registerSelected(
-						std::dynamic_pointer_cast<Game::RealityEntity>(std::move(entity->obtainSharedSelf())));
-				});
-		});
-}
-
-void genRandomEntities(){
-	// Math::Rand rand = Math::globalRand;
-	// for(int i = 0; i < 300; ++i) {
-	// 	Geom::RectBox box{};
-	// 	box.setSize(rand.random(40, 1200), rand.random(40, 1200));
-	// 	box.rotation = rand.random(360);
-	// 	box.offset = box.sizeVec2;
-	// 	box.offset.mul(-0.5f);
 	//
-	// 	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-	// 	ptr->trans.rot  = rand.random(360.0f);
-	// 	ptr->trans.pos.set(rand.range(20000), rand.range(20000));
-	// 	Game::EntityManage::add(ptr);
-	// 	ptr->hitBox.init(box);
-	// 	ptr->setHealth(500);
-	// 	ptr->physicsBody.inertialMass = rand.random(0.5f, 1.5f) * box.sizeVec2.length();
-	// 	ptr->velocity.set(1, 0).rotate(rand.random(360));
-	// 	ptr->activate();
+	// Core::input.binds.registerBind(Ctrl::Key::F, Ctrl::Act::Continuous, []{
+	// 	static ext::Timer<> timer{};
 	//
-	// 	ptr->init();
-	// 	ptr->setTurretType(&Game::Content::baseTurret);
-	// }
+	// 	timer.run(12, OS::updateDeltaTick(), []{
+	// 		Core::audio->play(Assets::Sounds::laser5);
+	// 		Geom::RectBox box{};
+	// 		box.setSize(180, 12);
+	// 		box.offset = box.sizeVec2;
+	// 		box.offset.mul(-0.5f);
+	//
+	// 		for(int i = -3; i <= 3; ++i){
+	// 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
+	// 			ptr->trait = &Game::Content::basicBulletType;
+	// 			ptr->trans.vec.set(Core::camera->getPosition());
+	// 			ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input.getCursorPos());
+	//
+	// 			ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80.0f * i));
+	//
+	// 			ptr->vel.vec.set(320, 0).rotate(ptr->trans.rot);
+	// 			Game::EntityManage::add(ptr);
+	// 			ptr->hitBox.init(box);
+	// 			ptr->physicsBody.inertialMass = 100;
+	// 			ptr->damage.materialDamage.fullDamage = 100;
+	// 			ptr->activate();
+	// 		}
+	// 	});
+	// });
 
-	const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();
-	ptr->trans.vec.set(0, 0);
-	Game::EntityManage::add(ptr);
-	Game::read(OS::File{Assets::Dir::assets.subFile(R"(hitbox\pester.hitbox)")}, ptr->hitBox);
-
-	ptr->vel.vec.set(0, 0);
-	ptr->setHealth(10000);
-	ptr->init(Game::Content::Builtin::test);
-	ptr->activate();
-	ptr->chambers.operator=(std::move(*chamberFrame));
-	ptr->chamberTrans.vec.x = 85;
-	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
-	ptr->controller.reset(new Game::PlayerController{ptr.get()});
+	// Core::input.binds.registerBind(
+	// 	Ctrl::Mouse::_2, Ctrl::Act::Press,
+	// 	Ctrl::Mode::Shift
+	//   , []{
+	// 		Game::EntityManage::realEntities.quadTree->intersectPoint(
+	// 			Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input.getCursorPos())),
+	// 			[](decltype(Game::EntityManage::realEntities)::ValueType* entity){
+	// 				entity->controller->selected = !entity->controller->selected;
+	// 				Game::core->overlayManager->registerSelected(
+	// 					std::dynamic_pointer_cast<Game::RealityEntity>(std::move(entity->obtainSharedSelf())));
+	// 			});
+	// 	});
 }
 
 void setupBaseDraw(){
@@ -606,12 +661,9 @@ int main(const int argc, char* argv[]){
 
 	setupCtrl();
 
-	genRandomEntities();
-
 	setupBaseDraw();
 
-	Core::uiRoot->scenes.insert_or_assign(UI::Menu_Main, std::make_unique<Game::Scenes::MainMenu>());
-	Core::uiRoot->scenes.at(UI::Menu_Main)->setRoot(Core::uiRoot);
+	Core::uiRoot->registerScene<Game::Scenes::MainMenu>(UI::Menu_Main);
 
 	Core::uiRoot->switchScene(UI::Menu_Main);
 
@@ -622,7 +674,7 @@ int main(const int argc, char* argv[]){
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
 
-	// GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 3};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 9, 3};
 	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
 
 	Game::CombinePostProcessor merger{
@@ -630,11 +682,11 @@ int main(const int argc, char* argv[]){
 			Assets::Shaders::merge
 		};
 	// merger.blur.setScale(0.5f);
-	merger.blur.setProcessTimes(6);
+	merger.blur.setProcessTimes(4);
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
-	// Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
+	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
 
 	Game::EntityManage::init();
@@ -643,6 +695,7 @@ int main(const int argc, char* argv[]){
 	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
 		Core::Renderer& renderer = *event.renderer;
 		renderer.frameBegin(acceptBuffer1);
+		renderer.frameBegin(worldFrameBuffer);
 
 		acceptBuffer1.clearColor(Graphic::Colors::BLACK);
 
@@ -661,11 +714,13 @@ int main(const int argc, char* argv[]){
 		GL::disable(GL::Test::DEPTH);
 
 		GL::Blendings::Normal.apply();
+		renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
 		renderer.frameEnd(merger);
 	});
 
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
+		if(!drawDebug)return;
 		// event.renderer->effectBuffer.bind();
 		event.renderer->frameBegin(&frameBuffer);
 
@@ -755,6 +810,7 @@ int main(const int argc, char* argv[]){
 	while(!Core::platform->shouldExit()){
 		OS::update();
 
+		Core::audio->setListenerPosition(Core::camera->getPosition().x, Core::camera->getPosition().y);
 		Core::renderer->draw();
 
 		Core::platform->pollEvents();

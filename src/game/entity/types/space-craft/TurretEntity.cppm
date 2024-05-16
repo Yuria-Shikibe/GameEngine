@@ -2,7 +2,7 @@
 // Created by Matrix on 2024/1/4.
 //
 
-export module Game.Entity.Turrets;
+export module Game.Entity.Turret;
 
 export import Game.Entity.RealityEntity;
 
@@ -19,6 +19,7 @@ export namespace Game{
 
 	struct TurretTrait {
 		virtual ~TurretTrait() = default;
+
 		/**
 		 * @brief In Degree
 		 */
@@ -43,6 +44,7 @@ export namespace Game{
 		virtual void update(TurretEntity* turret) const = 0;
 
 		virtual void draw(const TurretEntity* turret) const = 0;
+		virtual void drawDebug(const TurretEntity* turret) const;
 
 		virtual void shoot(TurretEntity* turret, RealityEntity* shooter) const = 0;
 
@@ -136,9 +138,16 @@ export namespace Game{
 			return 0.35f + 0.65f * getHealthRatio();
 		}
 
+		[[nodiscard]] Geom::Vec2 getTargetPos() const{ return targetPosition; }
+
 		void activateFiring(){
 			quitBattle = false;
 			firing = true;
+		}
+
+		void deactivateFiring(){
+			quitBattle = true;
+			firing = false;
 		}
 
 		[[nodiscard]] bool shouldReload() const{
@@ -150,7 +159,7 @@ export namespace Game{
 		}
 
 		void drawDebug() const override{
-			draw();
+			trait->drawDebug(this);
 		}
 
 		void init() override{

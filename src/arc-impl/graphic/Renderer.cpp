@@ -11,7 +11,9 @@ import Core;
 import Geom.Matrix3D;
 import UI.SeperateDrawable;
 
-void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask) {
+using namespace Graphic;
+
+void Core::Renderer::frameBegin(GL::FrameBuffer* frameBuffer, const bool resize, const Graphic::Color& initColor, GLbitfield mask) {
 	if (contextFrameBuffer == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
 
 	Graphic::Batch::flush();
@@ -36,8 +38,8 @@ void Core::Renderer::frameBegin(FrameBuffer* frameBuffer, bool resize, const Col
 	glClear(mask);
 }
 
-void Core::Renderer::frameEnd(const ::std::function<void(FrameBuffer*, FrameBuffer*)>& func) {
-	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+void Core::Renderer::frameEnd(const ::std::function<void(GL::FrameBuffer*, GL::FrameBuffer*)>& func) {
+	GL::FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
 	Graphic::Batch::flush();
 
@@ -46,8 +48,8 @@ void Core::Renderer::frameEnd(const ::std::function<void(FrameBuffer*, FrameBuff
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
-void Core::Renderer::frameEnd(const PostProcessor* processor) {
-	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+void Core::Renderer::frameEnd(const Graphic::PostProcessor* processor) {
+	GL::FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
 	Graphic::Batch::flush();
 
@@ -56,8 +58,8 @@ void Core::Renderer::frameEnd(const PostProcessor* processor) {
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
-void Core::Renderer::frameEnd(const Shader* shader){
-	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+void Core::Renderer::frameEnd(const GL::Shader* shader){
+	GL::FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 	Graphic::Batch::flush();
 
 	contextFrameBuffer->getColorAttachments().front()->active(0);
@@ -67,19 +69,19 @@ void Core::Renderer::frameEnd(const Shader* shader){
 }
 
 void Core::Renderer::frameEnd() {
-	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+	GL::FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 
 	Graphic::Batch::flush();
 
 	contextFrameBuffer->getColorAttachments().front()->active(0);
-	contextFrameBuffer->bind(FrameBuffer::READ);
+	contextFrameBuffer->bind(GL::FrameBuffer::READ);
 	Graphic::Frame::blit(beneathFrameBuffer);
 
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
 void Core::Renderer::frameEnd_Quiet(){
-	FrameBuffer* beneathFrameBuffer = frameBufferFallback();
+	GL::FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 	Graphic::Batch::flush();
 
 	contextFrameBuffer = beneathFrameBuffer;
@@ -89,7 +91,7 @@ void Core::Renderer::frameEnd_Quiet(){
 
 
 void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
-	Graphic::Blendings::Normal.apply();
+	GL::Blendings::Normal.apply();
 
 	uiBlurMask.bind();
 	uiBlurMask.clearColor();
@@ -123,7 +125,7 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 //TODO merge these two function
 
 void Core::Renderer::renderUI() {
-
+	if(Core::uiRoot->isHidden)return;
 	const Geom::Matrix3D* mat = Graphic::Batch::getPorj();
 	Core::batchGroup.overlay->setProjection(Core::uiRoot->getPorj());
 

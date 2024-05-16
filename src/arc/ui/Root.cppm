@@ -2,7 +2,6 @@ module;
 
 export module UI.Root;
 
-import std;
 import ext.Concepts;
 import ext.Container.ObjectPool;
 
@@ -10,7 +9,6 @@ import Geom.Matrix3D;
 
 export import UI.Flags;
 export import UI.TooltipManager;
-export import UI.Dialog;
 import UI.SeperateDrawable;
 
 import OS.Ctrl.Bind.Constants;
@@ -19,10 +17,16 @@ import OS.ApplicationListener;
 import OS.TextInputListener;
 import OS.InputListener;
 
-import UI.Widget;
-import UI.Scene;
-import Core.Input;
+export import UI.Dialog;
+export import UI.Widget;
+export import UI.Scene;
+
+import OS.Ctrl.Bind;
 import ext.Heterogeneous;
+import Assets.Bundle;
+
+import std;
+
 
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{
@@ -40,8 +44,12 @@ export namespace UI{
 		mutable CurosrExbound exboundAction{};
 
 		Geom::Matrix3D projection{};
+		ext::StringMap<std::unique_ptr<Scene>> scenes{};
+
+		void setRootOf(Widget* widget);
 
 	public:
+		Assets::Bundle uiBasicBundle{};
 		TooltipManager tooltipManager{};
 		Dialog rootDialog{};
 
@@ -70,31 +78,57 @@ export namespace UI{
 		//TODO directly use InputArea instead?
 		//redundant virtual
 		OS::TextInputListener* textInputListener{nullptr};
-
-		ext::StringMap<std::unique_ptr<Scene>> scenes{};
+		OS::InputListener* inputListener{nullptr};
 
 		Scene* currentScene{nullptr};
 
-		Core::InputBindGroup uiInput{};
+		OS::InputBindGroup uiInput{};
 
 		CursorType currentCursorType = CursorType::regular;
 
 		float cursorStrandedTime{0.0f};
 		float cursorInBoundTime{0.0f};
 
+		[[nodiscard]] const ext::StringMap<std::unique_ptr<Scene>>& getScenes() const{ return scenes; }
+
 		[[nodiscard]] constexpr bool noMousePress() const noexcept{
 			return std::ranges::all_of(pressedMouseButtons, Ctrl::Mode::isDisabled);
 		}
 
-		void showDialog(std::shared_ptr<Dialog>&& dialog){
+		template <Concepts::Derived<Scene> T, typename  ...Args>
+		void registerScene(const std::string_view name, Args&& ...args){
+			std::unique_ptr<Scene> ptr = std::make_unique<T>(std::forward<Args>(args) ...);
+			setRootOf(ptr.get());
+			ptr->setSize(width, height);
+			ptr->build();
+
+			scenes.insert_or_assign(name, std::move(ptr));
+		}
+
+		void eraseScene(const std::string_view name){
+			scenes.erase(name);
+		}
+
+		UI::Dialog* handleDialog(std::shared_ptr<Dialog>&& dialog){
 			releaseFocus();
+
 			tooltipManager.dropCurrentAt(nullptr, dialog->isFillScreen());
+			setRootOf(&dialog->content);
+			const auto ptr = dialog.get();
+			ptr->build();
 			rootDialog.findFirstShowingDialogNode()->appendDialog(std::move(dialog));
+
+			return ptr;
+		}
+
+		template <Concepts::Derived<UI::Dialog> Dy>
+		void showDialog(const bool fillScreen = true){
+			this->handleDialog(std::make_shared<Dy>(fillScreen, this));
 		}
 
 		template <Concepts::Invokable<void(UI::Table&)> Builder>
 		void showDialog(const bool fillScreen, Builder&& func){
-			this->showDialog(std::make_shared<Dialog>(fillScreen, std::forward<Builder>(func)));
+			this->handleDialog(std::make_shared<Dialog>(fillScreen, this, std::forward<Builder>(func)));
 		}
 
 		template <Concepts::Invokable<void(UI::Table&)> Builder>
@@ -103,8 +137,8 @@ export namespace UI{
 		}
 
 		template <Concepts::Invokable<void(UI::Dialog&)> InitFunc>
-		void showDialog(InitFunc&& func){
-			this->showDialog(std::make_shared<Dialog>(std::forward<InitFunc>(func)));
+		void showDialog(const bool fillScreen, InitFunc&& func){
+			this->handleDialog(std::make_shared<Dialog>(fillScreen, this, std::forward<InitFunc>(func)));
 		}
 
 		void switchScene(const std::string_view sceneName){
@@ -224,6 +258,21 @@ export namespace UI{
 		}
 
 		/**
+		 * @return true if Quit Happens
+		 */
+		bool quitTopDialog(){
+			if(auto* last = rootDialog.findFirstShowingDialogNode(); last != &rootDialog){
+				if(last->content.onEsc()){
+					if(last->tryEsc())last->destroy();
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		/**
 		 * @return true if there is nothing can do
 		 */
 		bool onEsc(){
@@ -232,15 +281,7 @@ export namespace UI{
 				return false;
 			}
 
-			if(auto* last = rootDialog.findFirstShowingDialogNode(); last != &rootDialog){
-				if(last->content.onEsc()){
-					last->destroy();
-				}
-
-				return false;
-			}
-
-			return true;
+			return !quitTopDialog();
 		}
 
 		//TODO mode support
@@ -283,7 +324,11 @@ export namespace UI{
 		void handleSound(SoundSource sound);
 
 	protected:
-		void inform(int keyCode, int action, int mods) override{}
+		void inform(int keyCode, int action, int mods) override{
+			if(inputListener){
+				inputListener->inform(keyCode, action, mods);
+			}
+		}
 
 		void setEnter(Widget* elem, bool quiet = false);
 

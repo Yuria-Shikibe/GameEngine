@@ -457,14 +457,17 @@ export namespace Geom{
 		}
 
 		void clear(){
-			topLeft.reset(nullptr);
-			topRight.reset(nullptr);
-			bottomLeft.reset(nullptr);
-			bottomRight.reset(nullptr);
+			{
+				std::lock_guard guard{subTreelock};
+				topLeft.reset(nullptr);
+				topRight.reset(nullptr);
+				bottomLeft.reset(nullptr);
+				bottomRight.reset(nullptr);
+			}
 
 			currentSize = 0;
-
 			leaf = true;
+			std::lock_guard guard{containerlock};
 			rectangles.clear();
 		}
 
@@ -478,6 +481,7 @@ export namespace Geom{
 
 			leaf = true;
 			currentSize = 0;
+			std::lock_guard guard{containerlock};
 			rectangles.clear();
 		}
 
@@ -501,8 +505,7 @@ export namespace Geom{
 				topRight->setBoundary(tr);
 				bottomLeft->setBoundary(bl);
 				bottomRight->setBoundary(br);
-			}
-			{
+			}else{
 				topLeft = std::make_unique<QuadTree>(tl, maximumItemCount, interscetRoughFunc, interscetExactFunc,
 				                                     interscetPointFunc);
 				topRight = std::make_unique<QuadTree>(tr, maximumItemCount, interscetRoughFunc, interscetExactFunc,

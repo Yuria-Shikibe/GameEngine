@@ -9,6 +9,7 @@ export namespace UI{
 	constexpr std::string_view Menu_Main = "main-menu";
 	constexpr std::string_view Menu_Game = "main-game";
 	constexpr std::string_view Menu_Settings = "main-settings";
+	constexpr std::string_view In_Game = "in-game";
 
 	class Scene : public UI::Table{
 	public:

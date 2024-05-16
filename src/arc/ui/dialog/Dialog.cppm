@@ -1,7 +1,3 @@
-//
-// Created by Matrix on 2024/3/31.
-//
-
 export module UI.Dialog;
 
 export import UI.Table;
@@ -41,19 +37,25 @@ export namespace UI{
 			: fillScreen{fillScreen}{
 		}
 
-		explicit Dialog(const bool fillScreen, Concepts::Invokable<void(UI::Table&)> auto&& func)
+		explicit Dialog(const bool fillScreen, UI::Root* root)
 			: Dialog{fillScreen}{
+			content.setRoot(root);
+		}
+
+		explicit Dialog(const bool fillScreen, UI::Root* root, Concepts::Invokable<void(UI::Table&)> auto&& func)
+			: Dialog{fillScreen, root}{
 			this->build(std::forward<decltype(func)>(func));
 			content.changed(ChangeSignal::notifyAll);
 		}
 
-		explicit Dialog(Concepts::Invokable<void(UI::Table&)> auto&& func)
-			: Dialog{true, std::forward<decltype(func)>(func)}{}
-
-		explicit Dialog(Concepts::Invokable<void(UI::Dialog&)> auto&& func){
+		explicit Dialog(const bool fillScreen, UI::Root* root, Concepts::Invokable<void(UI::Dialog&)> auto&& func)
+			: Dialog{fillScreen, root}{
 			func(*this);
 			content.changed(ChangeSignal::notifyAll);
 		}
+
+		explicit Dialog(Concepts::Invokable<void(UI::Table&)> auto&& func)
+			: Dialog{true, nullptr, std::forward<decltype(func)>(func)}{}
 
 		[[nodiscard]] Dialog* findFirstHiddenDialogNode(){
 			if(!showing || !hasChild()){
@@ -122,6 +124,8 @@ export namespace UI{
 		void build(Concepts::Invokable<void(UI::Table&)> auto&& func){
 			func(content);
 		}
+
+		virtual void build(){}
 
 		[[nodiscard]] UI::Table& getContent(){ return content; }
 
@@ -196,6 +200,13 @@ export namespace UI{
 			}else if(hasChild()){
 				childDialog->drawBase();
 			}
+		}
+
+		/**
+		 * @return true if Esc is allowed
+		 */
+		virtual bool tryEsc(){
+			return true;
 		}
 
 		void resize();

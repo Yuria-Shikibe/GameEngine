@@ -22,10 +22,6 @@ namespace UI{
 	struct SeperateDrawable;
 }
 
-
-using namespace GL;
-using namespace Graphic;
-
 export namespace Core{
 	class Renderer;
 }
@@ -64,9 +60,9 @@ export namespace Event{
 }
 
 export namespace Core{
-	class Renderer : public ResizeableInt{
+	class Renderer : public Graphic::ResizeableInt{
 	protected:
-		std::vector<ResizeableInt*> synchronizedSizedObjects{};
+		std::vector<Resizeable*> synchronizedSizedObjects{};
 
 		int width{200}, height{200};
 		Event::EventManager drawControlHook{
@@ -88,9 +84,9 @@ export namespace Core{
 		Graphic::Mask uiBlurMask{};
 
 
-		FrameBuffer* contextFrameBuffer = nullptr;
+		GL::FrameBuffer* contextFrameBuffer = nullptr;
 
-		std::stack<FrameBuffer*> frameStack{};
+		std::stack<GL::FrameBuffer*> frameStack{};
 
 		[[nodiscard]] Renderer(const int w, const int h):
 			defaultFrameBuffer{w, h}, uiPostBuffer{w, h}, effectBuffer{w, h}{
@@ -136,29 +132,29 @@ export namespace Core{
 		}
 
 
-		virtual void frameBegin(FrameBuffer* frameBuffer, bool resize, const Color& initColor, GLbitfield mask);
+		virtual void frameBegin(GL::FrameBuffer* frameBuffer, bool resize, const Graphic::Color& initColor, GLbitfield mask);
 
-		void frameBegin(FrameBuffer* frameBuffer){
-			frameBegin(frameBuffer, false, Colors::CLEAR);
+		void frameBegin(GL::FrameBuffer* frameBuffer){
+			frameBegin(frameBuffer, false, Graphic::Colors::CLEAR);
 		}
 
-		void frameBegin(FrameBuffer& frameBuffer){
-			frameBegin(&frameBuffer, false, Colors::CLEAR);
+		void frameBegin(GL::FrameBuffer& frameBuffer){
+			frameBegin(&frameBuffer, false, Graphic::Colors::CLEAR);
 		}
 
-		void frameBegin(FrameBuffer* frameBuffer, const bool resize, const Color& initColor){
+		void frameBegin(GL::FrameBuffer* frameBuffer, const bool resize, const Graphic::Color& initColor){
 			frameBegin(frameBuffer, resize, initColor, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		}
 
 		//TODO lambda support?
 
-		virtual void frameEnd(const std::function<void(FrameBuffer*, FrameBuffer*)>& func);
+		virtual void frameEnd(const std::function<void(GL::FrameBuffer*, GL::FrameBuffer*)>& func);
 
-		virtual void frameEnd(const PostProcessor* processor);
+		virtual void frameEnd(const Graphic::PostProcessor* processor);
 
 		virtual void frameEnd(const GL::Shader* shader);
 
-		void frameEnd(const PostProcessor& processor){
+		void frameEnd(const Graphic::PostProcessor& processor){
 			frameEnd(&processor);
 		}
 
@@ -192,8 +188,8 @@ export namespace Core{
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
-		virtual FrameBuffer* frameBufferFallback(){
-			FrameBuffer* frame = frameStack.top();
+		virtual GL::FrameBuffer* frameBufferFallback(){
+			GL::FrameBuffer* frame = frameStack.top();
 			frameStack.pop();
 
 			return frame;
@@ -215,7 +211,7 @@ export namespace Core{
 			return (p / getSize()).sub(0.5f, 0.5f).scl(2);
 		}
 
-		[[nodiscard]] Geom::Vec2& normalize(Geom::Vec2& p) const noexcept{
+		Geom::Vec2& normalize(Geom::Vec2& p) const noexcept{
 			return p.div(getSize()).sub(0.5f, 0.5f).scl(2);
 		}
 	};

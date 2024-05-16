@@ -216,6 +216,8 @@ export namespace Game {
 		std::unique_ptr<Controller> fallbackController{nullptr};
 
 	public:
+		//TODO TEMP!!
+		bool shoot{false};
 		/**
 		 * \brief
 		 * What should this entity to do.
@@ -224,6 +226,10 @@ export namespace Game {
 		 */
 		std::vector<std::unique_ptr<Objective>> objectives{};
 
+		std::weak_ptr<RealityEntity> getOwnerWeakPtr() const;
+		RealityEntity* getOwner() const{
+			return owner;
+		}
 		/**
 		 * \brief TODO should this sustain in here?
 		 */

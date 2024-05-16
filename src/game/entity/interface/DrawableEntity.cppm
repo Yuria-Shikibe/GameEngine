@@ -16,7 +16,7 @@ export namespace Game {
 	public:
 		~DrawableEntity() override = default;
 
-		[[nodiscard]] virtual const Geom::OrthoRectFloat& getDrawBound() const{
+		[[nodiscard]] virtual Geom::OrthoRectFloat getDrawBound() const{
 			static constexpr Geom::OrthoRectFloat EmptyBound = {};
 			return EmptyBound;
 		}
@@ -42,7 +42,7 @@ export namespace Game {
 	public:
 		Geom::OrthoRectFloat expectedDrawRegion{};
 
-		[[nodiscard]] const Geom::OrthoRectFloat& getDrawBound() const override {
+		[[nodiscard]] Geom::OrthoRectFloat getDrawBound() const override {
 			return expectedDrawRegion;
 		}
 

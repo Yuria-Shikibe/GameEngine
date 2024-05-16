@@ -145,15 +145,15 @@ export namespace UI {
 		void setItem(Concepts::Invokable<void(T&)> auto&& func) {
 			auto ptr = std::make_unique<T>();
 
-			if constexpr (!std::same_as<decltype(func), std::nullptr_t>) {
-				func(*ptr);
-			}
-
-			ptr->setFillparentX(fillX);
-			ptr->setFillparentY(fillY);
-
 			children.clear();
 			this->addChildren(std::move(ptr));
+
+			getItem()->setFillparentX(fillX);
+			getItem()->setFillparentY(fillY);
+
+			if constexpr (!std::same_as<decltype(func), std::nullptr_t>) {
+				func(static_cast<T&>(*getItem()));
+			}
 		}
 
 		//BUG this has bug when resized !

@@ -13,8 +13,6 @@ import GL;
 
 import ext.Concepts;
 
-using namespace GL;
-
 export namespace Core{
 
 	template <GLsizei vertGroupSize = GL::VERT_GROUP_SIZE_LAYOUT, GLsizei maxVertSize = 8192 * 2>
@@ -22,7 +20,7 @@ export namespace Core{
 	class SpriteBatch : public Batch
 	{
 	public:
-		static constexpr auto quadGroupSize = vertGroupSize * QUAD_GROUP_COUNT;
+		static constexpr auto quadGroupSize = vertGroupSize * GL::QUAD_GROUP_COUNT;
 		static constexpr auto maxDataSize = maxVertSize * vertGroupSize;
 		static constexpr auto maxIndexSize = maxVertSize * GL::ELEMENTS_QUAD_LENGTH;
 
@@ -36,7 +34,7 @@ export namespace Core{
 
 			for(int i = 0; i < maxVertSize; i++){
 				for(int j = 0; j < ELEM_LEN; ++j){
-					arr[j + i * ELEM_LEN] = data[j] + i * QUAD_GROUP_COUNT;
+					arr[j + i * ELEM_LEN] = data[j] + i * GL::QUAD_GROUP_COUNT;
 				}
 			}
 
@@ -49,8 +47,8 @@ export namespace Core{
 			index = 0;
 		}
 
-		SpriteBatch(Concepts::Invokable<Shader*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(AttributeLayout&)> auto&& layouter){
-			mesh = std::make_unique<Mesh>([&layouter, this](Mesh& mesh){
+		SpriteBatch(Concepts::Invokable<GL::Shader*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(GL::AttributeLayout&)> auto&& layouter){
+			mesh = std::make_unique<GL::Mesh>([&layouter, this](GL::Mesh& mesh){
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size(), GL_STATIC_DRAW);
 				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
 
@@ -62,7 +60,7 @@ export namespace Core{
 			generalShader = shader(*this);
 		}
 
-		explicit SpriteBatch(auto&& shader) : SpriteBatch(shader, [](AttributeLayout& layout){
+		explicit SpriteBatch(auto&& shader) : SpriteBatch(shader, [](GL::AttributeLayout& layout){
 			layout.addFloat(2);
 			layout.addFloat(2);
 			layout.addFloat(4);
@@ -93,7 +91,7 @@ export namespace Core{
 			index = 0;
 		}
 
-		void post(const Texture* texture, float* vertices, const int offset, const int count) override{
+		void post(const GL::Texture* texture, float* vertices, const int offset, const int count) override{
 			if(lastTexture != texture){
 				flush();
 				lastTexture = texture;

@@ -89,7 +89,8 @@ export namespace Core{
 			);
 			if (!engine)throw ext::RuntimeException{"Failed To Initialize irrklang!"};
 			engine->setSoundVolume(0.75f);
-
+			engine->setDefault3DSoundMinDistance(500);
+			engine->setDefault3DSoundMaxDistance(20000);
 		}
 
 		~Audio() {

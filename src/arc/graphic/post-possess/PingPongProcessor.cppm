@@ -86,9 +86,10 @@ export namespace Graphic {
 			ping.clear();
 			pong.clear();
 
-			toProcess->getColorAttachments().at(port.inPort)->active(0);
+			// toProcess->getColorAttachments().at(port.inPort)->active(0);
 
-			Frame::blit(&ping);
+			Frame::blitCopy(toProcess, port.inPort, &ping, 0);
+			// Frame::blit(&ping);
 		}
 
 		void endProcess(FrameBuffer* target) const override {

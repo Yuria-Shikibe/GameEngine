@@ -5,4 +5,5 @@ void UI::Group::modifyAddedChildren(Widget* elem) {
 	elem->setParent(this);
 	changed(ChangeSignal::notifyAll);
 	elem->setRoot(root);
+	notifyLayoutChanged();
 }

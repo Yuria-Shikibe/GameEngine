@@ -335,8 +335,8 @@ export namespace Game{
 
 		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
 			return std::accumulate(hitBoxGroup.begin(), hitBoxGroup.end(),
-				0.0f, [mass, scale, lengthRadiusRatio](const float val, const BoxStateData& pair){
-				return val + pair.original.getRotationalInertia(mass, scale, lengthRadiusRatio) * pair.relaTrans.vec.length2();
+				1.0f, [mass, scale, lengthRadiusRatio](const float val, const BoxStateData& pair){
+				return val + pair.original.getRotationalInertia(mass, scale, lengthRadiusRatio) + mass * pair.relaTrans.vec.length2();
 			});
 		}
 

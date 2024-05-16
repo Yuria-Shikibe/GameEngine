@@ -12,10 +12,12 @@ export import Geom.Vector2D;
 export import Geom.Rect_Orthogonal;
 export import Graphic.Color;
 export import Math;
+export import OS.Ctrl.Operation;
+
 import ext.StaticReflection;
 import ext.Base64;
 import ext.RuntimeException;
-
+import ext.Heterogeneous;
 
 #define IO___FLATTEN_FUNC2(x,y) x##y
 
@@ -140,12 +142,19 @@ namespace Core::IO{
 			jsonValue.setData<std::string>(static_cast<std::string>(data));
 		}
 
-		static void read(const ext::json::JsonValue& jsonValue, Graphic::Color& data){
-			throw ext::IllegalArguments{"Read data to view should never happens"};
-		}
+		static void read(const ext::json::JsonValue& jsonValue, std::string_view& data) = delete;
 	};
 
+	template <>
+	struct JsonSerializator<std::string>{
+		static void write(ext::json::JsonValue& jsonValue, const std::string& data){
+			jsonValue.setData(data);
+		}
 
+		static void read(const ext::json::JsonValue& jsonValue, std::string& data){
+			data = jsonValue.as<std::string>();
+		}
+	};
 
 	template <std::ranges::sized_range Cont>
 		requires !std::is_pointer_v<std::ranges::range_value_t<Cont>> && Core::IO::jsonSerializable<
@@ -204,6 +213,91 @@ namespace Core::IO{
 					data.insert_or_assign(std::move(k), std::move(v));
 				}
 			}
+		}
+	};
+
+	template <typename V, bool overwirte = false>
+		requires !std::is_pointer_v<V> && std::is_default_constructible_v<V>
+	struct JsonSrlContBase_string_map{
+		//OPTM using array instead of object to be the KV in json?
+		static void write(ext::json::JsonValue& jsonValue, const ext::StringMap<V>& data){
+			auto& val = jsonValue.asArray();
+			val.reserve(data.size());
+
+			for(auto& [k, v] : data){
+				ext::json::JsonValue jval{};
+				jval.asObject();
+				jval.append(ext::json::keys::Key, ext::json::getJsonOf(k));
+				jval.append(ext::json::keys::Value, ext::json::getJsonOf(v));
+				val.push_back(std::move(jval));
+			}
+		}
+
+		static void read(const ext::json::JsonValue& jsonValue, ext::StringMap<V>& data){
+			if(auto* ptr = jsonValue.tryGetValue<ext::json::array>()){
+				data.reserve(ptr->size());
+
+				for(const auto& jval : *ptr){
+					auto& pair = jval.asObject();
+
+					if constexpr (overwirte){
+						V* d = data.tryFind(pair.at(ext::json::keys::Key).as<std::string>());
+						if(d){
+							ext::json::getValueTo(*d, pair.at(ext::json::keys::Value));
+						}
+					}else{
+						std::string k{};
+						V v{};
+						ext::json::getValueTo(k, pair.at(ext::json::keys::Key));
+						ext::json::getValueTo(v, pair.at(ext::json::keys::Value));
+
+						data.insert_or_assign(std::move(k), std::move(v));
+					}
+
+				}
+			}
+		}
+	};
+
+	template <>
+		struct JsonSerializator<Ctrl::Operation>{
+		static void write(ext::json::JsonValue& jsonValue, const Ctrl::Operation& data){
+			jsonValue.asObject();
+			jsonValue.append("full", static_cast<ext::json::Integer>(data.customeBind.getFullKey()));
+			jsonValue.append("ignore", data.customeBind.isIgnoreMode());
+
+		}
+
+		static void read(const ext::json::JsonValue& jsonValue, Ctrl::Operation& data){
+			auto& map = jsonValue.asObject();
+			if(const auto val = map.tryFind("full")){
+				auto [k, a, m] = Ctrl::getSeperatedKey(val->as<int>());
+				data.setCustom(k, m);
+			}
+
+			if(const auto val = map.tryFind("ignore")){
+				data.customeBind.setIgnoreMode(val->as<bool>());
+			}
+		}
+	};
+
+	template <>
+		struct JsonSerializator<Ctrl::OperationGroup>{
+		using UmapIO = JsonSrlContBase_string_map<Ctrl::Operation, true>;
+
+		static void write(ext::json::JsonValue& jsonValue, const Ctrl::OperationGroup& data){
+			ext::json::JsonValue bindsData{};
+
+			UmapIO::write(bindsData, data.getBinds());
+
+			jsonValue.asObject();
+			jsonValue.append("binds", bindsData);
+		}
+
+		static void read(const ext::json::JsonValue& jsonValue, Ctrl::OperationGroup& data){
+			const ext::json::JsonValue* bindsData = jsonValue.asObject().tryFind("binds");
+
+			if(bindsData)UmapIO::read(*bindsData, data.getBinds());
 		}
 	};
 }

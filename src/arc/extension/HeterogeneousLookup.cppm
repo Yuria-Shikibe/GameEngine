@@ -7,7 +7,8 @@ export module ext.Heterogeneous;
 import std;
 import ext.MetaProgramming;
 
-namespace ext{
+export namespace ext::transparent{
+
 	struct StringEqualComparator{
 		using is_transparent = void;
 		bool operator()(const std::string_view a, const std::string_view b) const noexcept {
@@ -115,21 +116,21 @@ export namespace ext{
 
 
 	template <typename V>
-	class StringMap : public std::unordered_map<std::string, V, StringHasher, StringEqualComparator>{
+	class StringMap : public std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{
 	private:
-		using SelfType = std::unordered_map<std::string, V, StringHasher, StringEqualComparator>;
+		using SelfType = std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>;
 	public:
 		StringMap() = default;
 
-		explicit StringMap(typename std::unordered_map<std::string, V, StringHasher, StringEqualComparator>::size_type _Buckets)
-			: std::unordered_map<std::string, V, StringHasher, StringEqualComparator>{_Buckets}{}
+		explicit StringMap(typename std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>::size_type _Buckets)
+			: std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{_Buckets}{}
 
 		explicit StringMap(const std::initializer_list<std::pair<const std::string, V>>& _Ilist)
-			: std::unordered_map<std::string, V, StringHasher, StringEqualComparator>{_Ilist}{}
+			: std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{_Ilist}{}
 
 		StringMap(const std::initializer_list<std::pair<const std::string, V>>& _Ilist,
-		          typename std::unordered_map<std::string, V, StringHasher, StringEqualComparator>::size_type _Buckets)
-			: std::unordered_map<std::string, V, StringHasher, StringEqualComparator>{_Ilist, _Buckets}{}
+		          typename std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>::size_type _Buckets)
+			: std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{_Ilist, _Buckets}{}
 
 		V& at(const std::string_view key){
 			return this->find(key)->second;
@@ -137,6 +138,20 @@ export namespace ext{
 
 		const V& at(const std::string_view key) const {
 			return this->find(key)->second;
+		}
+
+		V* tryFind(const std::string_view key){
+			if(const auto itr = this->find(key); itr != this->end()){
+				return &itr->second;
+			}
+			return nullptr;
+		}
+
+		const V* tryFind(const std::string_view key) const {
+			if(const auto itr = this->find(key); itr != this->end()){
+				return &itr->second;
+			}
+			return nullptr;
 		}
 
 		using SelfType::insert_or_assign;
@@ -149,13 +164,13 @@ export namespace ext{
 	};
 
 	template <typename T, typename Deleter = std::default_delete<T>>
-	using UniquePtrHashMap = std::unordered_map<std::unique_ptr<T, Deleter>, UniqueHasher<T, Deleter>, UniquePtrEqualer<T, Deleter>>;
+	using UniquePtrHashMap = std::unordered_map<std::unique_ptr<T, Deleter>, transparent::UniqueHasher<T, Deleter>, transparent::UniquePtrEqualer<T, Deleter>>;
 
 	template <typename T, typename Deleter = std::default_delete<T>>
-	using UniquePtrSet = std::unordered_set<std::unique_ptr<T, Deleter>, UniqueHasher<T, Deleter>, UniquePtrEqualer<T, Deleter>>;
+	using UniquePtrSet = std::unordered_set<std::unique_ptr<T, Deleter>, transparent::UniqueHasher<T, Deleter>, transparent::UniquePtrEqualer<T, Deleter>>;
 
 	template <typename V>
-	using StringMultiMap = std::unordered_multimap<std::string, V, StringHasher, StringEqualComparator>;
+	using StringMultiMap = std::unordered_multimap<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>;
 
 	template <typename T, auto T::* ptr>
 	using HashSet_ByMember = std::unordered_set<T, MemberHasher<T, ptr>, MemberEqualTo<T, ptr>>;

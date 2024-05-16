@@ -84,7 +84,7 @@ export namespace Game {
 		ext::Timer<count> timer{};
 
 		[[nodiscard]] UI::CursorDrawabe& getCursor() const{
-			if(Core::input.binds.isPressedKey(Ctrl::Key::Shift_Left)){
+			if(Core::input.binds.isPressedKey(Ctrl::Key::Left_Shift)){
 				return UI::getCursor(UI::CursorType::select);
 			}
 
@@ -147,6 +147,8 @@ export namespace Game {
 			}
 
 			Draw::color(Colors::RED_DUSK);
+			Draw::Line::setLineStroke(3);
+
 			for(auto& realityEntity : selected){
 				for (auto turretTarget : realityEntity->controller->turretTargets){
 					Draw::Line::square(turretTarget.x, turretTarget.y, 32, 45);

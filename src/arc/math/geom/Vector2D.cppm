@@ -515,6 +515,16 @@ export namespace Geom{
 			return *this;
 		}
 
+		constexpr Vector2D& flipX() noexcept {
+			x = -x;
+			return *this;
+		}
+
+		constexpr Vector2D& flipY() noexcept {
+			y = -y;
+			return *this;
+		}
+
 		Vector2D& clamp(const T min, const T max) noexcept {
 			const T len2 = length2();
 			if (len2 == 0) [[unlikely]] return *this;  // NOLINT(clang-diagnostic-float-equal)
@@ -688,6 +698,11 @@ export namespace Geom{
 	template <typename N> constexpr Vector2D<N> right{1, 0};
 	template <typename N> constexpr Vector2D<N> up{0, 1};
 	template <typename N> constexpr Vector2D<N> down{0, -1};
+
+	template <typename N> constexpr Vector2D<N> front{1, 0};
+	template <typename N> constexpr Vector2D<N> back{-1, 0};
+	template <typename N> constexpr Vector2D<N> sideL{0, 1};
+	template <typename N> constexpr Vector2D<N> sideR{0, -1};
 
 	constexpr Vec2 ZERO{ 0, 0 };
 	constexpr Point2U ZERO_U{ 0u, 0u };

@@ -563,7 +563,7 @@ export namespace Geom{
 			return this->shrink(margin, margin);
 		}
 
-		[[nodiscard]] constexpr Rect_Orthogonal copy() noexcept{
+		[[nodiscard]] constexpr Rect_Orthogonal copy() const noexcept{
 			return *this;
 		}
 

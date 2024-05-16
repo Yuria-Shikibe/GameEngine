@@ -65,6 +65,7 @@ export namespace Graphic{
 		}
 
 		void render() const{
+			//TODO effect viewport clip
 			for(auto& effect : activatedEffects){
 				effect->render();
 			}

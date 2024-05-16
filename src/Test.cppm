@@ -13,6 +13,7 @@ import Core;
 import Core.Batch.Batch_Sprite;
 import Assets.Directories;
 import Assets.Graphic;
+import Assets.Ctrl;
 import Assets.Sound;
 import Assets.Loader;
 import Assets.TexturePacker;
@@ -37,8 +38,16 @@ import OS.Ctrl.ControlCommands;
 import Font.GlyphArrangement;
 
 import Game.Core;
+import Game.Content.Builtin.Turrets;
 import Game.Content.Builtin.SpaceCrafts;
+import Game.Pool;
+import Game.Entity.Collision;
+import Game.Entity.Controller;
+import Game.Entity.Controller.Player;
+import Game.Entity.Controller.AI;
 
+import Core.IO.Specialized;
+import Core.IO.JsonIO;
 import ext.Encoding;
 import Image.Svg;
 
@@ -96,6 +105,7 @@ export namespace Test{
 
 			Ctrl::registerCommands(Core::input);
 			OS::registerListener(Core::uiRoot);
+
 		});
 
 		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
@@ -103,12 +113,33 @@ export namespace Test{
 		Graphic::Frame::rawMesh = Assets::Meshes::raw;
 		Graphic::Frame::blitter = Assets::Shaders::blit;
 
+		Core::bundle.load(Assets::Dir::bundle.subFile("bundle.zh_cn.json"), Assets::Dir::bundle.subFile("bundle.def.json"));
+		Core::uiRoot->uiBasicBundle.load(Assets::Dir::bundle.subFile("ui.def.json"), Assets::Dir::bundle.subFile("ui.def.json"));
+
 		Game::core = std::make_unique<Game::Core>();
 		OS::registerListener(Game::core.get());
+
+		ext::json::Json json{Assets::Dir::settings.subFile("ctrl.json").readString()};
+		ext::json::getValueTo(Assets::Ctrl::basicGroup, json.getData());
+
+		Core::destructors.push_back([]{
+			Assets::Dir::settings.subFile("ctrl.json").writeString(std::format("{:1}", ext::json::getJsonOf(Assets::Ctrl::basicGroup)));
+		});
+
+		Core::destructors.push_back([]{
+			Game::EntityManage::realEntities.clear();
+			Game::EntityManage::drawables.clear();
+			Game::EntityManage::entities.clear();
+			Game::Pools::entityPoolGroup.clear();
+			Game::core.reset();
+		});
+
+		Assets::Ctrl::load();
 	}
 
 	void assetsLoad(){
 		Game::Content::Builtin::load_SpaceCraft(Game::core->contentLoader.get());
+		Game::Content::Builtin::load_Turrets(Game::core->contentLoader.get());
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadInit>([](const Assets::AssetsLoadInit& event){
 			OS::File cacheDir = Assets::Dir::font.subFile("cache-load");
@@ -133,7 +164,14 @@ export namespace Test{
 					uiPage->pushRequest(file);
 				});
 
-				Assets::Dir::assets.subFile("svg\\icons").forAllSubs([uiPage](OS::File&& file){
+				Assets::Dir::svg.subFile("binds").forAllSubs([uiPage](OS::File&& file){
+					if(file.extension() != ".svg")return;
+
+					auto pixmap = ext::svgToBitmap(file, 64);
+					uiPage->pushRequest(file.stem(), std::move(pixmap));
+				});
+
+				Assets::Dir::svg.subFile("icons").forAllSubs([uiPage](OS::File&& file){
 					auto pixmap = ext::svgToBitmap(file, 48);
 					pixmap.mulWhite();
 					uiPage->pushRequest(file.stem(), std::move(pixmap));
@@ -172,7 +210,6 @@ export namespace Test{
 
 			auto lightRegion = event.manager->getAtlas().find("base-white-light");
 			Graphic::Draw::globalState.defaultLightTexture = lightRegion;
-
 
 
 			const_cast<GL::TextureRegionRect*>(lightRegion)->shrinkEdge(15.0f);
@@ -310,6 +347,11 @@ export namespace Test{
 					data.context.currentColor = data.context.fallbackColor;
 				}
 			};
+		});
+
+		//Misc
+		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPost>([](const auto& event){
+			Assets::Ctrl::basicGroup.loadInstruction(Core::bundle);
 		});
 
 		//Majority Load

@@ -31,6 +31,10 @@ export namespace Game {
 			this->health = health;
 		}
 
+		[[nodiscard]] float getHealthMaximum() const{ return healthMaximum; }
+
+		void setHealthMaximum(const float healthMaximum){ this->healthMaximum = healthMaximum; }
+
 		virtual void dealMend(const float val) noexcept{
 			health += val;
 		}

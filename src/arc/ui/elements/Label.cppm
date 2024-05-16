@@ -104,9 +104,13 @@ export namespace UI {
 			updateGlyphPosition();
 		}
 
-		void setWrap(const bool wrapX = true, const bool wrapY = true){
-			usingGlyphHeight = wrapY;
+		constexpr void setWrap(const bool wrapX = true, const bool height = true) noexcept{
+			usingGlyphHeight = height;
 			usingGlyphWidth = wrapX;
+		}
+
+		void setTextScl(const float scl = 1.0f) const{
+			glyphLayout->setSCale(scl);
 		}
 
 		void update(float delta) override {

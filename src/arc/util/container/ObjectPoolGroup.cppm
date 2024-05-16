@@ -96,5 +96,9 @@ export namespace ext{
 		T* obtainRaw(){
 			return getPool<T>().obtainRaw();
 		}
+
+		void clear() noexcept{
+			pools.clear();
+		}
 	};
 }

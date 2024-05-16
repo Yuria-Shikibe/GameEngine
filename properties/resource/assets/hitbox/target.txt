@@ -1,1 +1,0 @@
-D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox

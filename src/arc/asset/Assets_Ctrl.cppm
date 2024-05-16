@@ -10,37 +10,107 @@ export import OS.Ctrl.Operation;
 export import OS.Ctrl.Bind;
 export import OS;
 
+import ext.Heterogeneous;
+
 namespace Assets::Ctrl{
-	using namespace ::Ctrl;
-	using namespace ::Core;
-}
+	float baseCameraMoveSpeed = 60;
+	float fastCameraMoveSpeed = 300;
+	bool disableMove = false;
+	float cameraMoveSpeed = baseCameraMoveSpeed;
 
-export namespace Assets::Ctrl{
-	inline float baseCameraMoveSpeed = 60;
-	inline float fastCameraMoveSpeed = 300;
-	inline float cameraMoveSpeed = baseCameraMoveSpeed;
-
-	Operation cameraMoveLeft{"cmove-left", OS::KeyBind(Key::A, Act::Continuous, +[]{
-		Core::focus.camera->move(-cameraMoveSpeed * OS::delta(), 0);
+	::Ctrl::Operation cameraMoveLeft{"cmove-left", OS::KeyBind(::Ctrl::Key::Left, ::Ctrl::Act::Continuous, +[]{
+		if(!disableMove)Core::focus.camera->move(-cameraMoveSpeed * OS::delta(), 0);
 	})};
 
-	Operation cameraMoveRight{"cmove-right", OS::KeyBind(Key::D, Act::Continuous, +[]{
-		Core::focus.camera->move( cameraMoveSpeed * OS::delta(), 0);
+	::Ctrl::Operation cameraMoveRight{"cmove-right", OS::KeyBind(::Ctrl::Key::Right, ::Ctrl::Act::Continuous, +[]{
+		if(!disableMove)Core::focus.camera->move( cameraMoveSpeed * OS::delta(), 0);
 	})};
 
-	Operation cameraMoveUp{"cmove-up", OS::KeyBind(Key::W, Act::Continuous, +[]{
-		Core::focus.camera->move(0,  cameraMoveSpeed * OS::delta());
+	::Ctrl::Operation cameraMoveUp{"cmove-up", OS::KeyBind(::Ctrl::Key::Up, ::Ctrl::Act::Continuous, +[]{
+		if(!disableMove)Core::focus.camera->move(0,  cameraMoveSpeed * OS::delta());
 	})};
 
-	Operation cameraMoveDown{"cmove-down", OS::KeyBind(Key::S, Act::Continuous, +[] {
-		Core::focus.camera->move(0, -cameraMoveSpeed * OS::delta());
+	::Ctrl::Operation cameraMoveDown{"cmove-down", OS::KeyBind(::Ctrl::Key::Down, ::Ctrl::Act::Continuous, +[] {
+		if(!disableMove)Core::focus.camera->move(0, -cameraMoveSpeed * OS::delta());
 	})};
 
-	Operation boostCamera_Press{"cmrboost-prs", OS::KeyBind(Key::Shift_Left, Act::Press, +[] {
-		cameraMoveSpeed = fastCameraMoveSpeed;
+	::Ctrl::Operation cameraTeleport{"cmove-telp", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::DoubleClick, +[] {
+		if(Core::uiRoot->cursorCaptured()) return;
+		Core::camera->setPosition(Core::Util::getMouseToWorld());
 	})};
 
-	Operation boostCamera_Release{"cmrboost-prs", OS::KeyBind(Key::Shift_Left, Act::Release, +[] {
+	::Ctrl::Operation cameraLock{"cmove-lock", OS::KeyBind(::Ctrl::Key::M, ::Ctrl::Act::Press, +[] {
+		disableMove = !disableMove;
+	})};
+
+	::Ctrl::Operation boostCamera_Release{"cmrboost-rls", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Release, +[] {
 		cameraMoveSpeed = baseCameraMoveSpeed;
 	})};
+
+	::Ctrl::Operation boostCamera_Press{"cmrboost-prs", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Press, +[] {
+		cameraMoveSpeed = fastCameraMoveSpeed;
+	}), {boostCamera_Release.name}};
+
+	::Ctrl::Operation pause{"pause", OS::KeyBind(::Ctrl::Key::P, ::Ctrl::Act::Press, +[] {
+		OS::setPause(!OS::isPaused());
+	})};
+
+	::Ctrl::Operation hideUI{"ui-hide", OS::KeyBind(::Ctrl::Key::H, ::Ctrl::Act::Press, +[] {
+		if(Core::uiRoot->isHidden){
+			Core::uiRoot->show();
+		} else{
+			Core::uiRoot->hide();
+		}
+	})};
+
+	::Ctrl::Operation shoot{"shoot", OS::KeyBind(::Ctrl::Key::F, ::Ctrl::Act::Continuous, +[] {
+
+	})};
+
+	export{
+		OS::InputBindGroup mainControlGroup{};
+
+		::Ctrl::OperationGroup basicGroup{
+				"basic-group", {
+					::Ctrl::Operation{cameraMoveLeft},
+					::Ctrl::Operation{cameraMoveRight},
+					::Ctrl::Operation{cameraMoveUp},
+					::Ctrl::Operation{cameraMoveDown},
+					::Ctrl::Operation{boostCamera_Press},
+					::Ctrl::Operation{boostCamera_Release},
+
+					::Ctrl::Operation{cameraLock},
+					::Ctrl::Operation{cameraTeleport},
+
+					::Ctrl::Operation{pause},
+					::Ctrl::Operation{hideUI},
+				}
+			};
+
+		::Ctrl::OperationGroup gameGroup{"game-group"};
+
+		ext::StringMap<::Ctrl::OperationGroup*> allGroups{
+			{basicGroup.getName(), &basicGroup},
+			{gameGroup.getName(), &gameGroup}
+		};
+
+		ext::StringMap<OS::InputBindGroup*> relatives{};
+
+		void apply(){
+			mainControlGroup.clearAllBinds();
+
+			for (auto group : allGroups | std::ranges::views::values){
+				for (const auto & bind : group->getBinds() | std::ranges::views::values){
+					mainControlGroup.registerBind(OS::InputBind{bind.customeBind});
+				}
+			}
+		}
+
+		void load(){
+			Core::focus.camera.current = Core::focus.camera.fallback = Core::camera;
+			Core::input.registerSubInput(&mainControlGroup);
+			basicGroup.targetGroup = &mainControlGroup;
+			apply();
+		}
+	}
 }

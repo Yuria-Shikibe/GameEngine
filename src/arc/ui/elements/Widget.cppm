@@ -8,6 +8,7 @@ export import UI.Flags;
 export import UI.Align;
 export import UI.Action;
 export import UI.CursorType;
+export import UI.Align;
 import UI.SeperateDrawable;
 import Event;
 import Math;
@@ -15,6 +16,7 @@ import Geom.Vector2D;
 import Graphic.Color;
 import Geom.Rect_Orthogonal;
 import ext.RuntimeException;
+import Assets.Bundle;
 
 import std;
 
@@ -27,6 +29,7 @@ export namespace UI {
 	class Root;
 
 	constexpr float DisableAutoTooltip = -1.0f;
+	constexpr float DefTooltipHoverTime = 25.0f;
 
 	struct TooltipBuilder{
 		enum struct FollowTarget : unsigned char{
@@ -36,7 +39,7 @@ export namespace UI {
 		};
 
 		FollowTarget followTarget{FollowTarget::none};
-		float minHoverTime{25.0f};
+		float minHoverTime{DefTooltipHoverTime};
 		bool useStaticTime{true};
 		bool autoRelease{true};
 		Geom::Vec2 offset{};
@@ -150,6 +153,7 @@ export namespace UI {
 		std::function<bool()> visibilityChecker{nullptr};
 		std::function<bool()> disableChecker{nullptr};
 		std::function<bool()> activatedChecker{nullptr};
+		std::function<void()> appendUpdator{nullptr};
 
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
 
@@ -221,6 +225,10 @@ export namespace UI {
 
 		[[nodiscard]] bool isFillParentY() const {
 			return fillParentY;
+		}
+
+		constexpr void notifyLayoutChanged() const noexcept{
+			layoutChanged = true;
 		}
 
 		virtual void layout() {
@@ -452,6 +460,7 @@ export namespace UI {
 			if(visibilityChecker)setVisible(visibilityChecker());
 			if(disableChecker)setDisabled(disableChecker());
 			if(activatedChecker)setActivated(activatedChecker());
+			if(appendUpdator) [[unlikely]] appendUpdator();
 
 			float actionDelta = delta;
 
@@ -505,14 +514,14 @@ export namespace UI {
 
 		bool isCursorInbound() const;
 
-		void setFocusedKey(bool focus) const;
+		void setFocusedKey(bool focus);
 
 		void setFocusedScroll(bool focus);
 
 		void releaseAllFocus() const;
 
 		virtual CursorType getCursorType() const{
-			if(touchDisabled()){
+			if(touchbility != TouchbilityFlags::enabled){
 				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
 			}else{
 				return tooltipbuilder ? CursorType::clickable_tip : CursorType::clickable;
@@ -557,6 +566,9 @@ export namespace UI {
 		}
 
 		void buildTooltip();
+
+		[[nodiscard]] std::string_view getBundleEntry(std::string_view key, bool fromUICategory = true) const;
+		[[nodiscard]] Assets::Bundle& getBundles(bool fromUICategory = true) const;
 
 	protected:
 		virtual void childrenCheck(const Widget* ptr) {

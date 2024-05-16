@@ -4,11 +4,12 @@
 
 export module Game.Entity.Controller.Player;
 
+import Game.Entity.RealityEntity;
 export import Game.Entity.Controller;
 import Math;
+import Core;
 
 export namespace Game{
-	class RealityEntity;
 	class PlayerController : public Controller{
 		static constexpr float QuiteBig = 10000;
 
@@ -29,9 +30,9 @@ export namespace Game{
 
 			currentMoveCommands = currentMoveCommands.sign() * QuiteBig;
 
-			if(usingOrthoMove){
+			if(moveCommand.translatory){
 				if(!currentMoveCommands.isZero(0.005f)){
-					moveCommand.expectedVelocity = currentMoveCommands;
+					moveCommand.expectedVelocity = currentMoveCommands.rotate(moveCommand.curTrans.rot - 90);
 					moveCommand.activateMove();
 					moveCommand.activateRotate();
 				} else{
@@ -59,6 +60,9 @@ export namespace Game{
 				}
 			}
 
+			turretTargets.clear();
+			turretTargets.push_back(Core::Util::getMouseToWorld());
+			getOwner()->targetUpdated();
 
 			currentMoveCommands.setZero();
 		}

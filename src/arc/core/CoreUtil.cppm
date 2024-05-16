@@ -21,11 +21,11 @@ export namespace Core::Util{
 		Core::input.binds.deactivate();
 	}
 
-	void activeBinds(const InputBindGroup* binds){
+	void activeBinds(const OS::InputBindGroup* binds){
 		Core::input.activeBinds(binds);
 	}
 
-	void deactiveBinds(const InputBindGroup* binds){
+	void deactiveBinds(const OS::InputBindGroup* binds){
 		Core::input.deactiveBinds(binds);
 	}
 }

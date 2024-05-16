@@ -104,9 +104,8 @@ export namespace Game {
 		}
 
 		virtual void postRemove(T* entity) {
-			removeLock.lock();
+			std::lock_guard lk{removeLock};
 			toRemove.insert(entity);
-			removeLock.unlock();
 		}
 
 		void postRemovePrimitive(::Game::Entity* entity) override {

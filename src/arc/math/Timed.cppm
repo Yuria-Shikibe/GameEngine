@@ -17,8 +17,8 @@ export namespace Math{
 		template <bool autoClamp = false>
 		constexpr void set(const float time, const float lifetime){
 			if constexpr (autoClamp){
-				this->lifetime = Math::max(lifetime, 0.0f);
-				this->time = Math::clamp(time, 0.0f, lifetime);
+				this->lifetime = max(lifetime, 0.0f);
+				this->time = clamp(time, 0.0f, lifetime);
 			}else{
 				this->lifetime = lifetime;
 				this->time = time;
@@ -27,9 +27,18 @@ export namespace Math{
 		}
 
 		template <bool autoClamp = false>
+		void update(const float delta){
+			time += delta;
+
+			if constexpr (autoClamp){
+				time = clamp(time, 0.0f, lifetime);
+			}
+		}
+
+		template <bool autoClamp = false>
 		[[nodiscard]] constexpr float get() const{
 			if constexpr (autoClamp){
-				return Math::clamp(time / lifetime);
+				return clamp(time / lifetime);
 			}
 
 			return time / lifetime;
@@ -60,7 +69,7 @@ export namespace Math{
 		}
 
 		[[nodiscard]] float getSlope() const{
-			return Math::slope(get());
+			return slope(get());
 		}
 	};
 }

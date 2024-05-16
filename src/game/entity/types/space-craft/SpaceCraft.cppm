@@ -3,7 +3,7 @@ export module Game.Entity.SpaceCraft;
 import Game.Entity.RealityEntity;
 
 import Game.Entity.EntityManager;
-import Game.Entity.Turrets;
+import Game.Entity.Turret;
 import Graphic.Color;
 import Graphic.Draw;
 import Graphic.Trail;
@@ -30,6 +30,8 @@ export namespace Game {
 	class SpaceCraft;
 
 	struct SpaceCraftTrait {
+		float maximumSpeed = 5.0f;
+
 		ThrusterTrait thrusterTrait{};
 		virtual ~SpaceCraftTrait() = default;
 		virtual void init(SpaceCraft* entity) const = 0;
@@ -62,7 +64,7 @@ export namespace Game {
 
 		[[nodiscard]] SpaceCraft() = default;
 
-		void init(const SpaceCraftTrait* const trait){
+		void initTrait(const SpaceCraftTrait* const trait){
 			this->trait = trait;
 
 			// init();
@@ -77,13 +79,14 @@ export namespace Game {
 			const int turrets = rand.random(2, 5);
 
 			turretEntities.reserve(turrets);
-
-			for(int i = 0; i < turrets; ++i){
-				turretEntities.push_back(EntityManage::obtainUnique<TurretEntity>());
-			}
-
-			for(const auto& turret : turretEntities){
-				turret->relativePosition.add(rand.range(40.0f), rand.range(40.0f));
+			int gend = 0;
+			while(gend < turrets){
+				Geom::Vec2 randPos{rand.range(100.0f), rand.range(100.0f)};
+				if(hitBox.contains(randPos + trans.vec)){
+					gend++;
+					turretEntities.push_back(EntityManage::obtainUnique<TurretEntity>());
+					turretEntities.back()->relativePosition += randPos;
+				}
 			}
 		}
 
@@ -94,11 +97,18 @@ export namespace Game {
 		}
 
 		void acceptTurretTargets() const{
-			if(controller->turretTargets.empty())return;
-			for(const auto& turret : turretEntities){
-				turret->setTargetPosition(controller->turretTargets.front());
-				turret->activateFiring();
+			if(controller->turretTargets.empty()){
+				for(const auto& turret : turretEntities){
+					turret->deactivateFiring();
+				}
+			}else{
+				for(const auto& turret : turretEntities){
+					turret->setTargetPosition(controller->turretTargets.front());
+					if(controller->shoot)turret->activateFiring();
+					else turret->deactivateFiring();
+				}
 			}
+
 		}
 
 		void targetUpdated() override{
@@ -173,7 +183,7 @@ export namespace Game {
 			accel.vec.clampMax(accelerationLimit * powerScale);
 			accel.rot = Math::clampRange(accel.rot, angularAccelerationLimit);
 
-			{
+			if(accel.vec.isZero()){
 				//TODO pre global force field process.
 				//TODO drag should be applied by things like a global force field.
 				vel.rot = Math::lerp(vel.rot, 0, 0.0075f * delta);
@@ -185,7 +195,7 @@ export namespace Game {
 			vel.rot += accel.rot * delta;
 
 			vel.rot = Math::clampRange(vel.rot, angularVelocityLimit);
-			vel.vec.clampMax(speedLimit * powerScale);
+			vel.vec.clampMax(trait->maximumSpeed * powerScale);
 
 			trans.vec.mulAdd(vel.vec, delta);
 
@@ -242,6 +252,10 @@ export namespace Game {
 		void draw() const override {
 			trait->draw(this);
 			Game::Draw::chamberFrame(*this, chambers);
+
+			for(auto& turretEntity : turretEntities){
+				turretEntity->draw();
+			}
 		}
 
 		void drawDebug() const override {

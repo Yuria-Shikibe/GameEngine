@@ -140,7 +140,7 @@ export namespace Graphic{
         }
 
         void fill(const Color color) const{
-            std::fill_n(reinterpret_cast<ColorBits*>(bitmapData.get()), pixelSize(), color.argb8888());
+            std::fill_n(reinterpret_cast<ColorBits*>(bitmapData.get()), pixelSize(), color.rgba());
         }
 
         DataType& operator [](const size_t index){
@@ -249,11 +249,11 @@ export namespace Graphic{
         }
 
         void set(const int index, const Graphic::Color& color) const{
-            setRaw(index, color.argb8888());
+            setRaw(index, color.rgba8888());
         }
 
         void set(const int x, const int y, const Graphic::Color& color) const{
-            setRaw(x, y, color.argb8888());
+            setRaw(x, y, color.rgba8888());
         }
 
         [[nodiscard]] ColorBits getRaw(const int index) const {
@@ -267,7 +267,7 @@ export namespace Graphic{
 
         [[nodiscard]] Graphic::Color get(const int index) const {
             Color color{};
-            return color.argb8888(getRaw(index));
+            return color.rgba8888(getRaw(index));
         }
 
         [[nodiscard]] Graphic::Color get(const int x, const int y) const {

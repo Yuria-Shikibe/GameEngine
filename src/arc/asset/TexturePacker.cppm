@@ -22,6 +22,7 @@ import ext.Heterogeneous;
 
 export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
+
 	struct TextureRegionPackData{
 		Geom::OrthoRectInt bound{};
 		GL::TextureRegionRect textureRegion{};

@@ -127,7 +127,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	frostedGlass = manager->registerShader(new Shader{Dir::shader.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
 	frostedGlass->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texture", 0);
-		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.2f);
+		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.0f);
 	});
 
 	outline_ortho = manager->registerShader(new Shader{Dir::shader, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});

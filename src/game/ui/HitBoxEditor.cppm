@@ -9,7 +9,7 @@ import Game.Entity.Collision;
 export import Game.UI.OverlayInterface;
 
 import OS.Ctrl.Bind.Constants;
-import Assets.Graphic;
+import Assets.Directories;
 import Graphic.Color;
 import Graphic.Draw;
 
@@ -51,8 +51,6 @@ export namespace Game{
 
 	//TODO impl undo
 	class HitBoxEditor : public Game::OverlayInterface{
-		OS::File storeFile{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\pester.hitbox)"};
-
 		Game::IDType lastQuadID = 0;
 		std::unordered_set<HitboxEntity*> selected{};
 		std::unordered_map<Game::IDType, std::unique_ptr<HitboxEntity>> allHitboxes{};
@@ -235,13 +233,13 @@ export namespace Game{
 			});
 
 			Core::input.binds.registerBind(
-				Ctrl::Key::Shift_Left, Ctrl::Act::Press, [this] {
+				Ctrl::Key::Left_Shift, Ctrl::Act::Press, [this] {
 					if(!activated)return;
 					this->operationAccuracy = 0.075f;
 			});
 
 			Core::input.binds.registerBind(
-				Ctrl::Key::Shift_Left, Ctrl::Act::Release, [this] {
+				Ctrl::Key::Left_Shift, Ctrl::Act::Release, [this] {
 					if(!activated)return;
 					this->operationAccuracy = 1.0f;
 			});
@@ -505,7 +503,7 @@ export namespace Game{
 		}
 
 		void save(){
-			const OS::File file{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\target.txt)"};
+			const OS::File file{Assets::Dir::game.subFile(R"(hitbox\target.txt)")};
 
 			std::filesystem::path path = file.readString();
 
@@ -529,7 +527,7 @@ export namespace Game{
 		void read(){
 			allHitboxes.clear();
 			
-			const OS::File file{R"(D:\projects\GameEngine\properties\resource\assets\hitbox\target.txt)"};
+			const OS::File file{Assets::Dir::game.subFile(R"(hitbox\target.txt)")};
 
 			std::ifstream reader{file.readString(), std::ios::binary | std::ios::in};
 

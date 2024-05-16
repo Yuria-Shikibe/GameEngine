@@ -2,6 +2,13 @@ module Game.Entity.Controller;
 
 import Game.Entity.RealityEntity;
 
+std::weak_ptr<Game::RealityEntity> Game::Controller::getOwnerWeakPtr() const{
+	if(owner){
+		return {std::static_pointer_cast<Game::RealityEntity>(owner->obtainSharedSelf())};
+	}
+	return std::weak_ptr<Game::RealityEntity>{};
+}
+
 Game::Controller::Controller(RealityEntity* const owner): owner(owner){
 	owner->assignController();
 }

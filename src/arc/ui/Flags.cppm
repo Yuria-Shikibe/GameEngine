@@ -16,7 +16,7 @@ export namespace UI {
 		using Vector2D::x;
 		using Vector2D::y;
 
-		int buttonID{0};
+		int key{0};
 		int mode{0};
 
 		[[nodiscard]] MouseAction() = default;
@@ -27,12 +27,12 @@ export namespace UI {
 
 		void set(const float x, const float y, const int id) {
 			Geom::Vec2::set(x, y);
-			buttonID = id;
+			key = id;
 		}
 
 		void set(const Geom::Vec2& pos, const int id, const int mode) {
 			Geom::Vec2::operator=(pos);
-			this->buttonID = id;
+			this->key = id;
 			this->mode = mode;
 		}
 	};

@@ -28,9 +28,9 @@ export namespace Graphic{
 		virtual ~EffectDrawer() = default;
 		virtual void operator()(Effect& effect) const = 0;
 
-		EffectDrawer() = default;
+		constexpr EffectDrawer() = default;
 
-		explicit EffectDrawer(const float defaultLifetime)
+		constexpr explicit EffectDrawer(const float defaultLifetime)
 			: defLifetime(defaultLifetime){}
 
 		Effect* suspendOn(EffectManager* manager) const;
@@ -86,13 +86,29 @@ export namespace Graphic{
 
 		Effect* set(const Geom::Transform trans, const Color color = Colors::WHITE, const float lifetime = DefLifetime, std::any&& additonalData = {}){
 			if(lifetime > 0.0f){
-				progress.set(0.0f, lifetime);
+				progress.lifetime = lifetime;
+			}else{
+				if(drawer)progress.lifetime = drawer->defLifetime;
 			}
 
 			this->trans = trans;
 			this->color = color;
 			this->additionalData = std::move(additonalData);
 
+			return this;
+		}
+
+		Effect* setLifetime(const float lifetime = DefLifetime){
+			if(lifetime > 0.0f){
+				progress.lifetime = lifetime;
+			}else{
+				if(drawer)progress.lifetime = drawer->defLifetime;
+			}
+			return this;
+		}
+
+		Effect* setColor(const Color& color = Colors::WHITE){
+			this->color = color;
 			return this;
 		}
 

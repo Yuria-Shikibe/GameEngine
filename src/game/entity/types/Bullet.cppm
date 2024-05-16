@@ -14,6 +14,9 @@ import Game.Entity.Collision;
 import Graphic.TextureAtlas;
 import OS.File;
 import Geom.Vector2D;
+import Graphic.Trail;
+
+import ext.Timer;
 
 import Math.Timed;
 
@@ -23,7 +26,9 @@ export namespace Game{
 	struct BulletTrait {
 		DamageComposition initDamage{};
 		float maximumLifetime{60.0f};
-		float initSpeed{20.0f};
+		float initSpeed{200.0f};
+
+		float trailUpdateSpacing = 1.0f;
 
 		virtual ~BulletTrait() = default;
 
@@ -48,7 +53,9 @@ export namespace Game{
 
 		}
 
-
+		virtual float getMaximumRange(){
+			return 0;
+		}
 	};
 
 	class Bullet : public Game::RealityEntity {
@@ -59,10 +66,20 @@ export namespace Game{
 
 		DamageComposition damage{};
 
+		ext::Timer<> timer{};
+		Graphic::Trail trail{20};
+
 		Game::RealityEntity* shooter{nullptr};
 
 		bool removeable{false};
 	public:
+
+		float getTrailLifetime() const{
+			const float velo = vel.vec.length();
+			const float dst = trail.getDst();
+			if(velo == 0.0f) [[unlikely]] return dst * 5.0f;
+			return dst / velo;
+		}
 
 		void activate() override{
 			RealityEntity::activate();
@@ -86,6 +103,47 @@ export namespace Game{
 			removeable = true;
 		}
 
+		void updateMovement(const float delta) override{
+			accel.vec.clampMax(accelerationLimit);
+			accel.rot = Math::clampRange(accel.rot, angularAccelerationLimit);
+
+			{
+				//TODO pre global force field process.
+				//TODO drag should be applied by things like a global force field.
+				vel.rot = Math::lerp(vel.rot, 0, 0.005f * delta);
+				vel.vec.lerp(Geom::ZERO, 0.005f * delta);
+			}
+
+			//Loacl process
+			vel.vec.mulAdd(accel.vec, delta);
+			vel.rot += accel.rot * delta;
+
+			vel.rot = Math::clampRange(vel.rot, angularVelocityLimit);
+			vel.vec.clampMax(speedLimit);
+
+			trans.vec.mulAdd(vel.vec, delta);
+
+			if(controller->moveCommand.rotateActivated()){
+				trans.rot = Math::Angle::moveToward_signed(
+					trans.rot, controller->moveCommand.expectedFaceAngle,
+					vel.rot * delta, 2.0f * delta, [this]{
+						vel.rot = 0;
+					});
+			}else{
+				trans.rot += vel.rot * delta;
+			}
+
+			trans.rot = Math::Angle::getAngleInPi2(trans.rot);
+
+			accel.setZero();
+
+			updateHitbox(delta);
+		}
+
+		void updateEnd(){
+			trail.update(trans.vec.x, trans.vec.y);
+		}
+
 		void update(const float dt) override{
 			if(removeable){
 				deactivate();
@@ -94,6 +152,18 @@ export namespace Game{
 
 			RealityEntity::update(dt);
 
+			life.time += dt;
+			if(life.time >= life.lifetime){
+				life.time = life.lifetime;
+				removeable = true;
+				despawn();
+			}
+
+			timer.run(trait->trailUpdateSpacing, dt, [this]{
+				trail.update(trans.vec.x, trans.vec.y);
+			});
+
+
 			if(trait->despawnable(*this))despawn();
 		}
 
@@ -101,8 +171,15 @@ export namespace Game{
 
 		}
 
+		Geom::OrthoRectFloat getDrawBound() const override{
+			const auto trailBound = trail.getBound();
+			if(trailBound.area() == 0)return maxBound;
+			return maxBound.copy().expandBy(trailBound);
+		}
+
 		void despawn(){
 			removeable = true;
+			updateEnd();
 			trait->despawn(*this);
 		}
 
@@ -122,11 +199,10 @@ export namespace Game{
 		}
 	};
 
-
-
 	void BulletTrait::onShoot(Bullet& bullet) const{
 		bullet.damage = initDamage;
 		bullet.life.lifetime = maximumLifetime;
+		bullet.vel.vec.setLength(initSpeed);
 	}
 
 	bool BulletTrait::despawnable(const Bullet& bullet) const{

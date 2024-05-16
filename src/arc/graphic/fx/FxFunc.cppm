@@ -11,7 +11,6 @@ export import Math.Interpolation;
 export import Geom.Transform;
 
 export namespace Graphic{
-	using Geom::Vec2;
 	using SeedType = Math::Rand::SeedType;
 
 	struct FxParam{
@@ -25,10 +24,10 @@ export namespace Graphic{
 	void splashVec(
 		const SeedType seed,
 		const FxParam& param,
-		Concepts::Invokable<void(Vec2, Math::Rand&)> auto&& pred){
+		Concepts::Invokable<void(Geom::Vec2, Math::Rand&)> auto&& pred){
 
 		Math::Rand rand{seed};
-		Vec2 curVec{};
+		Geom::Vec2 curVec{};
 
 		for(int i = 0; i < param.count; ++i){
 			curVec.setPolar(
@@ -42,7 +41,7 @@ export namespace Graphic{
 	void splashOut(const SeedType seed, const float subScale, const FxParam& param, Concepts::Invokable<void(Math::Rand&, Geom::Transform, float)> auto&& pred){
 		Math::Rand rand{seed};
 		Math::Rand rand2{};
-		Vec2 vec2{};
+		Geom::Vec2 vec2{};
 
 		for(int current = 0; current < param.count; current++){
 			const float sBegin = rand.random(1 - subScale);

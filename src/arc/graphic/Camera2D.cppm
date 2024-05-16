@@ -122,7 +122,7 @@ export namespace Core{
 			this->screenToWorld = screenToWorld;
 		}
 
-		[[nodiscard]] Vec2& getPosition() const {
+		[[nodiscard]] Vec2 getPosition() const {
 			return viewport->getCenter();
 		}
 

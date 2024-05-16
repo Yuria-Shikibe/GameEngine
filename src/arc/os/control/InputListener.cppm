@@ -1,5 +1,3 @@
-module;
-
 export module OS.InputListener;
 
 export namespace OS {
@@ -7,6 +5,6 @@ export namespace OS {
 	public:
 		virtual ~InputListener() = default;
 
-		virtual void inform(int keyCode, int action, int mods) = 0;
+		virtual void inform(int key, int action, int mods) = 0;
 	};
 }

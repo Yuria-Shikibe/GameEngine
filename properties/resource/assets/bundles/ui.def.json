@@ -1,0 +1,30 @@
+{
+  "test-UTF8" : "UTF8 中文测试",
+  "built-in-ver-desc" : "内建版本号",
+  "built-in-ver" : "课设 Temp-0.0.1",
+  "main-test" : "测试主菜单",
+  "about" : "关于",
+  "game" : "内建游戏测试",
+  "settings" : "设置",
+  "ctrl-settings" : "控制设置",
+  "settings-entry" : {
+    "bind" : "按键绑定设置"
+  },
+  "binding-ctrl" : "$<c#PALE_GREEN>等待绑定...",
+  "apply" : "应用",
+
+
+  "press" : "按下",
+  "release" : "松开",
+  "repeat" : "长按",
+  "double" : "双击",
+  "continuous" : "按下",
+  "unavailable" : "$<scl#[3.0]>$<c#GRAY>$<alp#[0.25]>N/A",
+  "exit" : "退出",
+  "yes" : "是",
+  "no" : "否",
+  "bind-no-confirm-warn" : "有新的绑定尚未应用，确定要退出吗",
+  "back-to-main-menu" : "返回主菜单",
+  "sync-camera" : "同步摄像机",
+  "draw-debug" : "绘制调试信息"
+}

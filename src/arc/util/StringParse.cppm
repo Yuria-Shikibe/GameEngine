@@ -117,7 +117,7 @@ export namespace ext::string{
 			const auto noSpaceBegin = newView.find_first_not_of(' ');
 			const auto noSpaceEnd = newView.find_last_not_of(' ') + 1;
 
-			if(noSpaceBegin == noSpaceEnd) continue;
+			if(noSpaceBegin == noSpaceEnd || noSpaceBegin == FailedPos) continue;
 
 
 			splited.push_back(newView.substr(noSpaceBegin, noSpaceEnd - noSpaceBegin));

@@ -4,7 +4,7 @@
 
 export module Game.Content.Drawer.TurretDrawer;
 
-export import Game.Entity.Turrets;
+export import Game.Entity.Turret;
 export import Game.Content.Drawer.DrawComponents;
 
 import std;

@@ -35,6 +35,8 @@ export namespace Game{
 		Geom::QuadBox lastViewport{};
 
 	public:
+		[[nodiscard]] ChamberFrameTrans() = default;
+
 		void updateChamberFrameData(){
 			frameBound = frameData.getBound();
 		}

@@ -1,6 +1,6 @@
 export module Game.Content.Type.Turret.BasicTurretType;
 
-export import Game.Entity.Turrets;
+export import Game.Entity.Turret;
 
 import Graphic.Draw;
 import Graphic.Color;
@@ -21,29 +21,35 @@ export namespace Game::Content{
 
 	struct BasicTurretType : TurretTrait, Game::ContentTrait{
 		std::unique_ptr<Game::Drawer::DrawComponent<TurretEntity>> drawer{nullptr}; //I believe drawers should be unique!
+		BulletTrait* bulletTrait{&basicBulletTypeSlow};
+
+		[[nodiscard]] explicit BasicTurretType(const std::string_view& name)
+			: ContentTrait{name}{}
 
 		void update(TurretEntity* turret) const override{
 
 		}
 
 		void draw(const TurretEntity* turret) const override{
-			Graphic::Draw::color(Graphic::Colors::RED_DUSK);
-			Graphic::Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->trans.rot);
+			// Graphic::Draw::color(Graphic::Colors::RED_DUSK);
+			// Graphic::Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->trans.rot);
+
+			if(drawer)drawer->draw({Drawer::PartTrans{turret->trans, turret->zLayer}, {.lifetimeProgress = 1.0f}}, turret);
 		}
 
 		void shoot(TurretEntity* turret, RealityEntity* shooter) const override{
-			Core::audio->play(Assets::Sounds::laser5);
+			Core::audio->play(Assets::Sounds::laser5, turret->trans.vec.x, turret->trans.vec.y, shooter->zLayer);
 			Geom::RectBox box{};
-			box.setSize(180, 12);
+			box.setSize(150, 10);
 			box.offset = box.sizeVec2;
 			box.offset.mul(-0.5f);
 
 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
-			ptr->trait = &Game::Content::basicBulletType;
+			ptr->trait = bulletTrait;
 			ptr->trans.rot = turret->trans.rot;
 			ptr->trans.vec = turret->trans.vec;
 
-			ptr->vel.vec.setPolar(ptr->trans.rot, 320);
+			ptr->vel.vec.setPolar(ptr->trans.rot, 1);
 			ptr->hitBox.init(box);
 			ptr->physicsBody.inertialMass = 100;
 			ptr->damage.materialDamage.fullDamage = 100;
@@ -58,5 +64,5 @@ export namespace Game::Content{
 
 			if(drawer)drawer->pullLoadRequest(atlas, searchTree, std::move(prefix));
 		}
-	} baseTurret;
+	} baseTurret{""};
 }

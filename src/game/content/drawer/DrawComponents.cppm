@@ -119,7 +119,7 @@ export namespace Game::Drawer{
 		MultiDrawer() = default;
 
 		explicit MultiDrawer(const std::string_view groupName, std::initializer_list<std::unique_ptr<DrawComponent<T>>> drawers, Concepts::InvokeNullable<void(MultiDrawer*)> auto&& func = nullptr) :
-			DrawComponent<T>(groupName), drawers(std::move(drawers))
+			DrawComponent<T>(groupName), drawers(drawers)
 		{
 			if constexpr (!std::same_as<decltype(func), std::nullptr_t>){
 				func(this);

@@ -14,6 +14,7 @@ export import Game.Entity.Controller.Player;
 import std;
 
 import Core;
+import OS.Ctrl.Bind;
 
 namespace FrameCore = ::Core;
 
@@ -23,7 +24,7 @@ export namespace Game {
 	inline std::unique_ptr<Core> core{nullptr};
 
 	struct Core : OS::ApplicationListener {
-		FrameCore::InputBindGroup gameBinds{};
+		OS::InputBindGroup gameBinds{};
 
 		std::unique_ptr<ContentLoader> contentLoader{std::make_unique<ContentLoader>()};
 		//TODO
@@ -33,11 +34,11 @@ export namespace Game {
 		std::unique_ptr<Graphic::EffectManager> effectManager{std::make_unique<Graphic::EffectManager>()};
 
 		PlayerController* playerController{nullptr};
+		bool cameraLock{true};
 
 		[[nodiscard]] Core(){
 			pauseRestrictable = true;
 			FrameCore::input.registerSubInput(&gameBinds);
-			FrameCore::destructors.emplace_back(+[]{core.reset(nullptr);});
 		}
 
 		~Core() override{
@@ -45,7 +46,7 @@ export namespace Game {
 		}
 
 		void sendPlayerMoveAct(const Geom::Vec2 vec2) const{
-			playerController->setMoveDirection(vec2);
+			if(playerController)playerController->setMoveDirection(vec2);
 		}
 
 		void activeBinds() const{
@@ -64,6 +65,10 @@ export namespace Game {
 			playerController = controller;
 		}
 
+		void reBindPlayerController(std::nullptr_t){
+			playerController = nullptr;
+		}
+
 		void update(const float delta) override {
 			//TODO async
 			EntityManage::update(delta);
@@ -73,6 +78,10 @@ export namespace Game {
 		void updateGlobal(const float delta) override{
 			if(overlayManager->activated)overlayManager->updateGlobal(delta);
 			if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
+
+			if(cameraLock && playerController){
+				FrameCore::camera->setPosition(FrameCore::camera->getPosition().lerp(playerController->moveCommand.curTrans.vec, 0.05f));
+			}
 		}
 
 		virtual void drawAboveUI(FrameCore::Renderer* renderer) const{

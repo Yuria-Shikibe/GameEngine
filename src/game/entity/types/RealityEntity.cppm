@@ -164,7 +164,7 @@ export namespace Game {
 			return ang;
 		}
 
-		[[nodiscard]] const Geom::OrthoRectFloat& getDrawBound() const override {
+		[[nodiscard]] Geom::OrthoRectFloat getDrawBound() const override {
 			return maxBound;
 		}
 

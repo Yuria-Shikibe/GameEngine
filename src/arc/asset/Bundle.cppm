@@ -1,7 +1,3 @@
-//
-// Created by Matrix on 2023/11/22.
-//
-
 module ;
 
 export module Assets.Bundle;
@@ -22,10 +18,12 @@ export namespace Assets{
 	class Bundle{
 	public:
 		static constexpr std::string_view Loacle = "loacle";
+		static constexpr std::string_view NotFound = "???Not_Found???";
 	private:
 		std::vector<BundleLoadable*> bundleRequesters{};
 
 		ext::json::JsonValue currentBundle{};
+		ext::json::JsonValue fallbackBundle{};
 		std::locale currentLocal{};
 
 		static std::vector<std::string_view> getKeyCategory(const std::string_view key){
@@ -55,46 +53,17 @@ export namespace Assets{
 			return map;
 		}
 
-	public:
-		[[nodiscard]] Bundle(){
-			currentBundle.asObject();
-		}
-
-		[[nodiscard]] explicit Bundle(const OS::File& file){
-			load(file);
-		}
-
-		ext::json::Object& getBundles() {
-			return currentBundle.asObject();
-		}
-
-		const ext::json::Object& getBundles() const {
-			return currentBundle.asObject();
-		}
-
-		void load(ext::json::JsonValue&& jsonValue){
-			currentBundle = std::move(jsonValue);
-			currentBundle.asObject();
-			for (const auto bundleRequester : bundleRequesters){
-				bundleRequester->loadBundle(this);
-			}
-		}
-
-		void load(const OS::File& file){
+		static ext::json::JsonValue loadFile(const OS::File& file){
 			const auto str = file.readString([](std::string& line){
 				return std::erase_if(line, std::not_fn(ext::json::notIgnore));
 			});
 
 			ext::json::JsonValue jval{};
 			jval.parseObject(str);
-			load(std::move(jval));
+			return jval;
 		}
 
-		[[nodiscard]] std::string_view find(const std::string_view key, const std::string_view def) const{
-			auto dir = getKeyCategory(key);
-
-			auto* last = &getBundles();
-
+		static std::optional<std::string_view> find(const std::vector<std::string_view>& dir, const ext::json::Object* last){
 			if(dir.size() > 1){
 				for(auto cates : std::ranges::subrange{dir.begin(), dir.end() - 1}){
 					if(const auto itr = last->find(cates); itr != last->end()){
@@ -112,7 +81,93 @@ export namespace Assets{
 					return *data;
 				}
 			}
-			return def;
+
+			return std::nullopt;
+		}
+
+	public:
+		[[nodiscard]] Bundle(){
+			currentBundle.asObject();
+		}
+
+		[[nodiscard]] explicit Bundle(const OS::File& file){
+			load(file);
+		}
+
+		template <ext::json::JsonValue Bundle::* ptr = &Bundle::currentBundle>
+		ext::json::Object& getBundles() {
+			return (this->*ptr).asObject();
+		}
+
+		template <ext::json::JsonValue Bundle::* ptr = &Bundle::currentBundle>
+		const ext::json::Object& getBundles() const {
+			return (this->*ptr).asObject();
+		}
+
+		void loadFallback(ext::json::JsonValue&& jsonValue){
+			fallbackBundle = std::move(jsonValue);
+			fallbackBundle.asObject();
+		}
+
+		void load(ext::json::JsonValue&& jsonValue){
+			currentBundle = std::move(jsonValue);
+			currentBundle.asObject();
+			for (const auto bundleRequester : bundleRequesters){
+				bundleRequester->loadBundle(this);
+			}
+		}
+
+		void loadFallback(const OS::File& file){
+			loadFallback(loadFile(file));
+		}
+
+		void load(const OS::File& file){
+			load(loadFile(file));
+		}
+
+		void load(const OS::File& target, const OS::File& fallback){
+			load(target);
+			loadFallback(fallback);
+		}
+
+		[[nodiscard]] std::string_view find(const std::initializer_list<std::string_view> keyWithConstrains, const std::string_view def) const{
+			std::vector<std::string_view> flat{};
+			flat.reserve(keyWithConstrains.size());
+
+			for (const auto key : keyWithConstrains){
+				auto dir = getKeyCategory(key);
+				if(dir.empty())continue;
+				flat.append_range(dir);
+			}
+
+			auto* last = &currentBundle.asObject();
+
+			auto rst = find(flat, last);
+
+			if(!rst){
+				last = &fallbackBundle.asObject();
+				rst = find(flat, last);
+			}
+
+			return rst.value_or(def);
+		}
+
+		[[nodiscard]] std::string_view find(const std::initializer_list<std::string_view> keyWithConstrains) const{
+			return find(keyWithConstrains, NotFound);
+		}
+
+		[[nodiscard]] std::string_view find(const std::string_view key, const std::string_view def) const{
+			auto dir = getKeyCategory(key);
+			auto* last = &currentBundle.asObject();
+
+			auto rst = find(dir, last);
+
+			if(!rst){
+				last = &fallbackBundle.asObject();
+				rst = find(dir, last);
+			}
+
+			return rst.value_or(def);
 		}
 
 		[[nodiscard]] std::string_view find(const std::string_view key) const{

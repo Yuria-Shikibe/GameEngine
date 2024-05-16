@@ -93,9 +93,9 @@ void UI::Widget::callRemove() {
 	}
 }
 
-void UI::Widget::setFocusedKey(const bool focus) const {
+void UI::Widget::setFocusedKey(const bool focus){
 	if(!isFocusedKeyInput() && !focus)return;
-	this->root->currentInputFocused = focus ? const_cast<Widget*>(this)  : nullptr;
+	this->root->currentInputFocused = focus ? this : nullptr;
 }
 
 void UI::Widget::setFocusedScroll(const bool focus){
@@ -146,6 +146,7 @@ void UI::Widget::releaseAllFocus() const {
 	if(isCursorInbound())root->currentCursorFocus = nullptr;
 }
 
+
 bool UI::Widget::keyDown(const int code, const int action, const int mode) const{
 	return root->keyDown(code, action, mode);
 }
@@ -153,4 +154,16 @@ bool UI::Widget::keyDown(const int code, const int action, const int mode) const
 void UI::Widget::buildTooltip(){
 	if(!root)return;
 	updateHoverTableHandle(root->tooltipManager.tryObtain(this));
+}
+
+std::string_view UI::Widget::getBundleEntry(const std::string_view key, const bool fromUICategory) const{
+	return getBundles(fromUICategory)[key];
+}
+
+Assets::Bundle& UI::Widget::getBundles(const bool fromUICategory) const{
+	if(root && fromUICategory){
+		return root->uiBasicBundle;
+	}else{
+		return Core::bundle;
+	}
 }

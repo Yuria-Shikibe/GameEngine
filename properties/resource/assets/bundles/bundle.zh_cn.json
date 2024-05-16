@@ -1,6 +1,66 @@
 {
-  "testProfile" : "12345",
-  "blocks" : {
-	"test" : "asdasd"
+  "control-bind" : {
+	"group" : {
+	  "basic-group" : {
+		"name" : "基础操控"
+	  },
+
+	  "game-group" : {
+		"name" : "游戏操控"
+	  }
+	},
+
+	"basic-group" : {
+	  "cmove-left" : {
+		"name" : "摄像机左移"
+	  },
+	  "cmove-right" : {
+		"name" : "摄像机右移"
+	  },
+	  "cmove-up" : {
+		"name" : "摄像机上移"
+	  },
+	  "cmove-down" : {
+		"name" : "摄像机下移"
+	  },
+	  "cmove-lock" : {
+		"name" : "锁定摄像机"
+	  },
+	  "cmove-telp" : {
+		"name" : "重定位摄像机",
+		"desc" : "快速移动摄像机到光标位置"
+	  },
+	  "ui-hide" : {
+		"name" : "$<c#LIGHT_GRAY>显示/隐藏$<c#[]>UI"
+	  },
+	  "pause" : {
+		"name" : "$<c#LIGHT_GRAY>暂停/恢复$<c#[]>帧更新"
+	  },
+	  "cmrboost-prs" : {
+		"name" : "摄像机提速",
+		"desc" : "在按下对应按键时提供加快摄像机移动速度的效果"
+	  }
+	},
+
+	"game-group" : {
+	  "move-left" : {
+		"name" : "左移/左转"
+	  },
+	  "move-right" : {
+		"name" : "右移/右转"
+	  },
+	  "move-up" : {
+		"name" : "上/前移"
+	  },
+	  "move-down" : {
+		"name" : "下/后移"
+	  },
+	  "shoot-prs" : {
+		"name" : "$<c#LIGHT_GRAY>开启/关闭$<c#[]>射击"
+	  },
+	  "move-trans-prs" : {
+		"name" : "$<c#LIGHT_GRAY>暂停/恢复$<c#[]>平动"
+	  }
+	}
   }
 }

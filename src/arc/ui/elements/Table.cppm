@@ -44,7 +44,7 @@ export namespace UI {
 
 		[[nodiscard]] bool isRelativeLayoutFormat() const{ return relativeLayoutFormat; }
 
-		void setRelativeLayoutFormat(const bool relativeLayoutFormat){
+		void setLayoutByRelative(const bool relativeLayoutFormat){
 			this->relativeLayoutFormat = relativeLayoutFormat;
 		}
 
@@ -63,27 +63,19 @@ export namespace UI {
 			return elemLayoutMaxCount.x;
 		}
 
-		template <Concepts::Derived<Widget> T>
-		LayoutCell& add(const int depth = std::numeric_limits<int>::max()) {
+		template <Concepts::Derived<Widget> T, Concepts::InvokeNullable<void(T&)> Func = std::nullptr_t>
+		LayoutCell& add(Func&& func = nullptr, const unsigned depth = std::numeric_limits<unsigned>::max()) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
 
-			return cell;
-		}
-
-		template <Concepts::Derived<Widget> T>
-		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func, const int depth = std::numeric_limits<int>::max()) {
-			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
-			cell.applyLayout(defaultCellLayout);
-
-			if constexpr (!std::same_as<decltype(func), std::nullptr_t>) {
+			if constexpr (!std::same_as<Func, std::nullptr_t>) {
 				func(cell.as<T>());
 			}
 
 			return cell;
 		}
 
-		LayoutCell& transferElem(Widget* elem, const size_t depth = std::numeric_limits<size_t>::max()) { // NOLINT(*-non-const-parameter)
+		LayoutCell& transferElem(Widget* elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
 			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
 		}
@@ -100,6 +92,11 @@ export namespace UI {
 			});
 
 			toRemove.clear();
+		}
+
+		void clearChildrenInstantly() override{
+			Group::clearChildrenInstantly();
+			cells.clear();
 		}
 
 		void lineFeed() {

@@ -122,7 +122,7 @@ export namespace UI {
 			}
 		}
 
-		void clearChildrenInstantly(){
+		virtual void clearChildrenInstantly(){
 			children.clear();
 		}
 

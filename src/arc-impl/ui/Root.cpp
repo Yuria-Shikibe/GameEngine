@@ -6,12 +6,16 @@ import std;
 import Core;
 import OS.ApplicationListenerSetter;
 
+void UI::Root::setRootOf(Widget* widget){
+	widget->setRoot(this);
+}
+
 UI::Root::Root(): tooltipManager{this}{
-	currentScene = scenes.try_emplace("default", std::make_unique<Scene>()).first->second.get();
+	currentScene = scenes.try_emplace(std::string(UI::In_Game), std::make_unique<Scene>()).first->second.get();
 	// NOLINT(*-use-equals-default)
 	currentScene->setSrc(0.0f, 0.0f);
 	currentScene->setAbsSrc(Geom::ZERO);
-	currentScene->setRelativeLayoutFormat(false);
+	currentScene->setLayoutByRelative(false);
 	currentScene->setTouchbility(TouchbilityFlags::childrenOnly);
 	currentScene->setRoot(this);
 	currentScene->PointCheck = 100;
@@ -28,10 +32,15 @@ UI::Root::Root(): tooltipManager{this}{
 	OS::setInputMode_Cursor(OS::CursorMode::hidden, Core::platform->window->implHandle);
 
 	Core::input.registerSubInput(&uiInput);
+	Core::input.inputKeyListeners.push_back(this);
+	Core::input.inputMouseListeners.push_back(this);
 }
 
 UI::Root::~Root(){
 	Core::input.eraseSubInput(&uiInput);
+
+	std::erase(Core::input.inputKeyListeners, this);
+	std::erase(Core::input.inputMouseListeners, this);
 }
 
 

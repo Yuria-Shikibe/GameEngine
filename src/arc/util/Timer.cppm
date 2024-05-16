@@ -14,7 +14,7 @@ export namespace ext{
 	 * @tparam size Interval Chennals
 	 */
 	template <size_t size = 1>
-		requires requires{ size > 0; }
+		requires requires{ requires size > 0; }
 	class Timer {
 		std::array<float, size> reloads{};
 

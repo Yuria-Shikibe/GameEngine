@@ -229,6 +229,7 @@ export namespace Assets{
 			Font::registerParserableFont("jfsL-R", josefinSans_Regular_Large);
 
 			Font::registerParserableFont("tele", telegrama);
+			Font::registerParserableFont("srch", sourceHan_SC_SB);
 
 
 			telegrama->setDefErrorFallback(::Assets::Textures::error);

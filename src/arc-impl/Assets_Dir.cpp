@@ -29,6 +29,15 @@ void Assets::loadDir(){
 
 	texCache = assets.subFile("tex-cache");
 	patch(texCache);
+
+	game = assets.subFile("game");
+	patch(game);
+
+	data = mainTree.findDir("resource").subFile("data");
+	patch(data);
+
+	settings = data.subFile("settings");
+	patch(settings);
 	//
 	// screenshot = mainTree.find("screenshots"); //TODO move this to other places, it doesn't belong to assets!
 	// patch(texCache);
