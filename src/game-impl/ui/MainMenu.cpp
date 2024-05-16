@@ -1,5 +1,6 @@
 module Game.Scene.MainMenu;
 
+import UI.InputArea;
 import UI.Root;
 import SideTemp;
 
@@ -69,12 +70,13 @@ void Game::Scenes::MainMenu::build(){
 										dialog.content.setLayoutByRelative(false);
 										dialog.content.setEmptyDrawer();
 										dialog.content.add<UI::Table>([](UI::Table& t){
-											t.add<UI::Label>([](UI::Label& label){
-												label.setText("$<font#jfs-B>Src: $<font#srch>https://github.com/Yuria-Shikibe/GameEngine");
+											t.add<UI::InputArea>([](UI::InputArea& label){
+												label.setText("Src: https://github.com/Yuria-Shikibe/GameEngine\n");
 												label.setEmptyDrawer();
+												label.getGlyphLayout()->setSCale(0.4f);
 												label.setFillparentX();
-												label.setTextScl(0.6f);
 												label.setWrap();
+												label.setBorder(4.0f);
 											}).setMargin(4.0f).wrapY().endLine();
 											t.add<UI::Table>(func);
 										}).setSizeScale(0.4f, 0.2f).setAlign(Align::Mode::center);

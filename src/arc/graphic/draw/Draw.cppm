@@ -687,6 +687,12 @@ export namespace Graphic{
 					);
 				}
 			}
+
+			template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
+			void circle(const float x, const float y, const float radius,
+					  const Color inner = globalState.contextColor, const Color exter = globalState.contextColor){
+				poly<batchPtr>(x, y, getCircleVerts(radius), radius, 0, inner, exter);
+			}
 		}
 
 		namespace Line{

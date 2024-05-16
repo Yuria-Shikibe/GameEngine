@@ -191,50 +191,68 @@ std::stringstream sstream{};
 std::unique_ptr<Game::ChamberFrameTrans<Game::SpaceCraft>> chamberFrame{};
 std::unique_ptr<Game::ChamberFactory<Game::SpaceCraft>> testFactory{std::make_unique<TestChamberFactory>()};
 
+
 namespace GameCtrl{
-	::Ctrl::Operation moveLeft{"move-left", OS::KeyBind(::Ctrl::Key::A, ::Ctrl::Act::Continuous, +[]{
-		Game::core->sendPlayerMoveAct(Geom::left<float>);
-	})};
+	::Ctrl::Operation moveLeft{
+			"move-left", OS::KeyBind(::Ctrl::Key::A, ::Ctrl::Act::Continuous, +[]{
+				Game::core->sendPlayerMoveAct(Geom::left<float>);
+			})
+		};
 
-	::Ctrl::Operation moveRight{"move-right", OS::KeyBind(::Ctrl::Key::D, ::Ctrl::Act::Continuous, +[]{
-		Game::core->sendPlayerMoveAct(Geom::right<float>);
-	})};
+	::Ctrl::Operation moveRight{
+			"move-right", OS::KeyBind(::Ctrl::Key::D, ::Ctrl::Act::Continuous, +[]{
+				Game::core->sendPlayerMoveAct(Geom::right<float>);
+			})
+		};
 
-	::Ctrl::Operation moveForward{"move-up", OS::KeyBind(::Ctrl::Key::W, ::Ctrl::Act::Continuous, +[]{
-		Game::core->sendPlayerMoveAct(Geom::up<float>);
-	})};
+	::Ctrl::Operation moveForward{
+			"move-up", OS::KeyBind(::Ctrl::Key::W, ::Ctrl::Act::Continuous, +[]{
+				Game::core->sendPlayerMoveAct(Geom::up<float>);
+			})
+		};
 
-	::Ctrl::Operation moveBack{"move-down", OS::KeyBind(::Ctrl::Key::S, ::Ctrl::Act::Continuous, +[] {
-		Game::core->sendPlayerMoveAct(Geom::down<float>);
-	})};
+	::Ctrl::Operation moveBack{
+			"move-down", OS::KeyBind(::Ctrl::Key::S, ::Ctrl::Act::Continuous, +[]{
+				Game::core->sendPlayerMoveAct(Geom::down<float>);
+			})
+		};
 
-	::Ctrl::Operation shoot_rls{"shoot-rls", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Release, +[] {
-		if(Game::core->playerController){
-			Game::core->playerController->shoot = false;
-		}
-	})};
+	::Ctrl::Operation shoot_rls{
+			"shoot-rls", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Release, +[]{
+				if(Game::core->playerController){
+					Game::core->playerController->shoot = false;
+				}
+			})
+		};
 
-	::Ctrl::Operation shoot_prs{"shoot-prs", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Press, +[] {
-		if(Game::core->playerController){
-			Game::core->playerController->shoot = true;
-		}
-	}), {shoot_rls.name}};
-
-
-	::Ctrl::Operation moveTrans_rls{"move-trans-rls", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Release, +[] {
-		if(Game::core->playerController){
-			Game::core->playerController->moveCommand.translatory = false;
-		}
-	})};
-
-	::Ctrl::Operation moveTrans_prs{"move-trans-prs", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Press, +[] {
-		if(Game::core->playerController){
-			Game::core->playerController->moveCommand.translatory = true;
-		}
-	}), {moveTrans_rls.name}};
+	::Ctrl::Operation shoot_prs{
+			"shoot-prs", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Press, +[]{
+				if(Game::core->playerController){
+					Game::core->playerController->shoot = true;
+				}
+			}),
+			{shoot_rls.name}
+		};
 
 
+	::Ctrl::Operation moveTrans_rls{
+			"move-trans-rls", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Release, +[]{
+				if(Game::core->playerController){
+					Game::core->playerController->moveCommand.translatory = false;
+				}
+			})
+		};
+
+	::Ctrl::Operation moveTrans_prs{
+			"move-trans-prs", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Press, +[]{
+				if(Game::core->playerController){
+					Game::core->playerController->moveCommand.translatory = true;
+				}
+			}),
+			{moveTrans_rls.name}
+		};
 }
+
 
 void setupUITest(){
 	const auto HUD = new UI::Table{};
@@ -394,7 +412,9 @@ void setupUITest(){
 					   button.add<UI::Label>([](UI::Label& label){
 						   label.setTextAlign(Align::Mode::center);
 						   label.setEmptyDrawer();
-						   label.setTextScl(0.75f);
+						   label.setTextScl(0.65f);
+						   label.setFillparentX();
+						   label.setWrap();
 
 						   label.setText(label.getBundleEntry("sync-camera"));
 					   }).setHeight(60);
@@ -410,7 +430,9 @@ void setupUITest(){
 					   button.add<UI::Label>([](UI::Label& label){
 						   label.setTextAlign(Align::Mode::center);
 						   label.setEmptyDrawer();
-						   label.setTextScl(0.75f);
+						   label.setTextScl(0.65f);
+						   label.setFillparentX();
+						   label.setWrap();
 
 						   label.setText(label.getBundleEntry("draw-debug"));
 					   }).setHeight(60);
@@ -498,17 +520,19 @@ void setupUITest(){
 }
 
 void setupCtrl(){
-	Assets::Ctrl::gameGroup = Ctrl::OperationGroup{Assets::Ctrl::gameGroup.getName(), {
-		GameCtrl::moveLeft,
-		GameCtrl::moveRight,
-		GameCtrl::moveForward,
-		GameCtrl::moveBack,
+	Assets::Ctrl::gameGroup = Ctrl::OperationGroup{
+			Assets::Ctrl::gameGroup.getName(), {
+				GameCtrl::moveLeft,
+				GameCtrl::moveRight,
+				GameCtrl::moveForward,
+				GameCtrl::moveBack,
 
-		GameCtrl::shoot_prs,
-		GameCtrl::shoot_rls,
-		GameCtrl::moveTrans_prs,
-		GameCtrl::moveTrans_rls,
-	}};
+				GameCtrl::shoot_prs,
+				GameCtrl::shoot_rls,
+				GameCtrl::moveTrans_prs,
+				GameCtrl::moveTrans_rls,
+			}
+		};
 	//TODO unsafe
 	Assets::Ctrl::gameGroup.loadInstruction(Core::bundle);
 	Assets::Ctrl::gameGroup.targetGroup = &Game::core->gameBinds;
@@ -634,27 +658,29 @@ int main(const int argc, char* argv[]){
 		Game::core->overlayManager->deactivate();
 	}
 
-	auto loadChamber = []{
-		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
-		OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
+	// auto loadChamber = []{
+	// 	OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
+	// 	OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
+	//
+	//
+	// 	if constexpr(false){
+	// 		auto pixmap_ = Graphic::Pixmap{pixmap};
+	// 		chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap<Game::SpaceCraft>(
+	// 			pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
+	//
+	// 		ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
+	//
+	// 		fi.writeString(std::format("{:nf0}", jval));
+	// 	} else{
+	// 		auto str = fi.quickRead();
+	//
+	// 		ext::json::Json json{fi.readString()};
+	//
+	// 		ext::json::getValueTo(chamberFrame->getChambers(), json.getData());
+	// 	}
+	// };
 
-
-		if constexpr(false){
-			auto pixmap_ = Graphic::Pixmap{pixmap};
-			chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap<Game::SpaceCraft>(
-				pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
-
-			ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
-
-			fi.writeString(std::format("{:nf0}", jval));
-		} else{
-			ext::json::Json json{fi.readString()};
-
-			ext::json::getValueTo(chamberFrame->getChambers(), json.getData());
-		}
-	};
-
-	loadChamber();
+	// loadChamber();
 
 	// UI Test
 	setupUITest();
@@ -669,7 +695,7 @@ int main(const int argc, char* argv[]){
 
 
 	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
-	loadChamber();
+	// loadChamber();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
@@ -720,7 +746,7 @@ int main(const int argc, char* argv[]){
 
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
-		if(!drawDebug)return;
+		if(!drawDebug) return;
 		// event.renderer->effectBuffer.bind();
 		event.renderer->frameBegin(&frameBuffer);
 

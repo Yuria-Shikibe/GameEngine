@@ -31,11 +31,11 @@ export namespace UI {
 			Font::defGlyphParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : expectedWidth, textChanged);
 			glyphLayout->setAlign(Align::Mode::bottom_left);
 			textChanged = false;
-			if(usingGlyphHeight){
+			if(usingGlyphHeight && !fillParentY){
 				setHeight(border.getHeight() + glyphLayout->getDrawBound().getHeight());
 			}
 
-			if(usingGlyphWidth){
+			if(usingGlyphWidth && !fillParentX){
 				setWidth(border.getWidth() + glyphLayout->getDrawBound().getWidth());
 			}
 		}
@@ -104,8 +104,8 @@ export namespace UI {
 			updateGlyphPosition();
 		}
 
-		constexpr void setWrap(const bool wrapX = true, const bool height = true) noexcept{
-			usingGlyphHeight = height;
+		constexpr void setWrap(const bool wrapX = true, const bool wrapY = true) noexcept{
+			usingGlyphHeight = wrapY;
 			usingGlyphWidth = wrapX;
 		}
 
@@ -137,7 +137,6 @@ export namespace UI {
 		void layout() override{
 			textChanged = true;
 			updateTextLayout();
-
 			updateGlyphPosition();
 
 			Widget::layout();

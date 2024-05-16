@@ -99,6 +99,7 @@ export namespace Game{
 			if(removeable)return;
 
 			trait->hit(*this, *object, intersection);
+			updateEnd();
 			object->dealDamage(damage);
 			removeable = true;
 		}

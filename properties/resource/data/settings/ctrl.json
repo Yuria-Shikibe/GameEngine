@@ -3,28 +3,28 @@
   {
    "$k" : "cmove-up",
    "$v" : {
-    "full" : 196873,
+    "full" : 196695,
     "ignore" : true
 }
    },
   {
    "$k" : "cmove-left",
    "$v" : {
-    "full" : 196871,
+    "full" : 196673,
     "ignore" : true
 }
    },
   {
    "$k" : "cmove-right",
    "$v" : {
-    "full" : 196870,
+    "full" : 196676,
     "ignore" : true
 }
    },
   {
    "$k" : "cmove-down",
    "$v" : {
-    "full" : 196872,
+    "full" : 196691,
     "ignore" : true
 }
    },

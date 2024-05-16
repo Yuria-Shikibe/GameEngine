@@ -54,13 +54,8 @@ export namespace Assets{
 		}
 
 		static ext::json::JsonValue loadFile(const OS::File& file){
-			const auto str = file.readString([](std::string& line){
-				return std::erase_if(line, std::not_fn(ext::json::notIgnore));
-			});
-
-			ext::json::JsonValue jval{};
-			jval.parseObject(str);
-			return jval;
+			ext::json::Json jval{file.quickRead()};
+			return jval.getData();
 		}
 
 		static std::optional<std::string_view> find(const std::vector<std::string_view>& dir, const ext::json::Object* last){

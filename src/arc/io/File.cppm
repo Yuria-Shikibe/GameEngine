@@ -288,6 +288,17 @@ namespace OS{
 			return std::move(file_contents).str();
 		}
 
+		[[nodiscard]] std::string quickRead() const{
+			std::ifstream file_stream(getPath(), std::ios::binary | std::ios::ate);
+			if(!file_stream.is_open()) return "";
+
+			auto length = file_stream.tellg();
+			file_stream.seekg(std::ios::beg);
+			std::string str(length, 0);
+			file_stream.read(str.data(), length);
+			return str;
+		}
+
 		void writeByte(Concepts::Invokable<void(const std::ofstream&)> auto&& func){
 			if(std::ofstream ofStream(absolutePath(), std::ios::binary); ofStream.is_open()){
 				func(ofStream);

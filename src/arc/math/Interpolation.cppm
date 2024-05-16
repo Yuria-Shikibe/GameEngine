@@ -402,6 +402,10 @@ export namespace Math::Interp{
 	constexpr auto bounce = Func::Bounce<4>();
 	constexpr auto bounceIn = Func::BounceIn<4>();
 	constexpr auto bounceOut = Func::BounceOut<4>();
+
+	float operator |(const float val, Concepts::Invokable<float(float)> auto&& interp){
+		return interp(val);
+	}
 }
 
 export namespace Math::DiffApproach{
@@ -418,6 +422,4 @@ export namespace Math::DiffApproach{
 	};
 }
 
-export float operator |(const float val, Concepts::Invokable<float(float)> auto&& interp){
-	return interp(val);
-}
+

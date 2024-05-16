@@ -37,6 +37,7 @@ export namespace Game {
 		virtual void init(SpaceCraft* entity) const = 0;
 		virtual void update(SpaceCraft* entity) const = 0;
 		virtual void draw(const SpaceCraft* entity) const = 0;
+		virtual void onKill(const SpaceCraft* entity) const = 0;
 	};
 
 	/**
@@ -233,7 +234,7 @@ export namespace Game {
 			}
 
 			if(health < 0){
-				deactivate();
+				onKill();
 			}
 
 			for(const auto& turretEntity : turretEntities){
@@ -243,6 +244,11 @@ export namespace Game {
 
 		[[nodiscard]] bool selectable() const noexcept override{
 			return true;
+		}
+
+		void onKill(){
+			trait->onKill(this);
+			deactivate();
 		}
 
 		void assignController() const override{

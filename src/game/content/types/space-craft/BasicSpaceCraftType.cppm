@@ -9,6 +9,8 @@ export import Game.Content.Drawer.DrawComponents;
 export import Game.Content.ContentType;
 
 import std;
+import Assets.Effects;
+import Game.Core;
 
 export namespace Game::Content{
 	struct BasicSpaceCraftType : SpaceCraftTrait, Game::ContentTrait{
@@ -37,6 +39,11 @@ export namespace Game::Content{
 			prefix.append(name);
 
 			if(drawer)drawer->pullLoadRequest(atlas, searchTree, std::move(prefix));
+		}
+
+		void onKill(const SpaceCraft* entity) const override{
+			Assets::Effects::explode->suspendOn(Game::core->effectManager.get())->
+						set({entity->trans.vec, 300}, Graphic::Colors::RED_DUSK);
 		}
 	};
 }

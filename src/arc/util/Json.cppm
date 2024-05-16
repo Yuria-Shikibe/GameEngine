@@ -21,7 +21,7 @@ namespace ext::json{
 
 export namespace ext::json{
 	bool notIgnore(const char c){
-		return c != '\n' && c != '\t';
+		return c != '\n' && c != '\t' && c != '\r';
 	}
 
 	class JsonValue;

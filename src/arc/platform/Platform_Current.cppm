@@ -207,9 +207,9 @@ export namespace Core{
 			// glfw windowMain creation
 
 			//TODO setting check whether to apply fullscreen at the initialization
-			implHandle = glfwCreateWindow(800, 800, appName.data(), nullptr, nullptr);
+			implHandle = glfwCreateWindow(1920, 1080, appName.data(), nullptr, nullptr);
 
-			lastScreenBound.setSize(800, 800);
+			lastScreenBound.setSize(1920, 1080);
 			resetMonitor(glfwGetPrimaryMonitor());
 
 			// renderer = new Renderer();
