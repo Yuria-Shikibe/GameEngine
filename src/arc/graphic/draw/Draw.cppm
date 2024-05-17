@@ -361,7 +361,9 @@ export namespace Graphic{
 			return {static_cast<TextureState>(globalState)};
 		}
 
-
+		const GL::TextureRegionRect* getContextTexture() noexcept{
+			return globalState.contextTexture;
+		}
 
 		const GL::TextureRegionRect* getDefaultTexture() noexcept{
 			return globalState.defaultTexture;

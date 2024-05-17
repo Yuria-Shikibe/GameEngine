@@ -13,6 +13,7 @@ import Graphic.Draw;
 import Graphic.Trail;
 
 import Game.Graphic.Draw;
+import ext.Guard;
 
 export import Game.Delay;
 
@@ -56,10 +57,12 @@ export namespace Game::Content{
 			using namespace Graphic;
 			namespace Draw = Graphic::Draw;
 
+			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
+				{Draw::globalState, Draw::globalState.defaultLightTexture};
 			bullet.trail.each(trailWidth, Graphic::Trail::DefDraw_WithLerp(trailBegin, trailEnd));
 
 			Draw::color(effectColor);
-			Game::Draw::hitbox(bullet.hitBox);
+			Game::Draw::hitbox<Graphic::BatchWorld>(bullet.hitBox);
 		}
 
 		void despawn(Bullet& bullet) const override{

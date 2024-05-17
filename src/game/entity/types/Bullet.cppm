@@ -28,7 +28,8 @@ export namespace Game{
 		float maximumLifetime{60.0f};
 		float initSpeed{200.0f};
 
-		float trailUpdateSpacing = 1.0f;
+		float trailUpdateSpacing = 0.5f;
+		std::size_t trailLength = 20;
 
 		virtual ~BulletTrait() = default;
 
@@ -98,8 +99,10 @@ export namespace Game{
 		void overrideCollisionTo(Game::RealityEntity* object, const Geom::Vec2 intersection) override{
 			if(removeable)return;
 
-			trait->hit(*this, *object, intersection);
 			updateEnd();
+			trail.update(intersection.x, intersection.y);
+
+			trait->hit(*this, *object, intersection);
 			object->dealDamage(damage);
 			removeable = true;
 		}

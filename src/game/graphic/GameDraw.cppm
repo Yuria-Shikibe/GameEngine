@@ -7,9 +7,9 @@ import Game.Chamber.Frame;
 import Game.Chamber;
 
 import Core.BatchGroup;
+import Core;
 
 export import Graphic.Draw;
-export import Core;
 export import GL.Shader.UniformWrapper;
 export import Assets.Graphic;
 
@@ -17,15 +17,19 @@ namespace Game::Draw{
 	namespace Draw = Graphic::Draw;
 	namespace Colors = Graphic::Colors;
 
-	export void hitbox(const ::Game::HitBox& hitBox){
+	export
+	template <std::unique_ptr<Core::Batch> Core::BatchGroup::* ptr = Graphic::BatchOverlay>
+	void hitbox(const ::Game::HitBox& hitBox){
 		for(const auto& data : hitBox.hitBoxGroup){
-			Graphic::Draw::quad(Graphic::Draw::getDefaultTexture(),
+			Graphic::Draw::quad<ptr>(Graphic::Draw::getContextTexture(),
 			                    data.original.v0, data.original.v1, data.original.v2, data.original.v3);
 		}
 	}
 
-	export void hitbox(const ::Geom::QuadBox& hitBox){
-		Graphic::Draw::quad(Graphic::Draw::getDefaultTexture(),
+	export
+	template <std::unique_ptr<Core::Batch> Core::BatchGroup::* ptr = Graphic::BatchOverlay>
+	void hitbox(const ::Geom::QuadBox& hitBox){
+		Graphic::Draw::quad<ptr>(Graphic::Draw::getContextTexture(),
 		                    hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
 	}
 

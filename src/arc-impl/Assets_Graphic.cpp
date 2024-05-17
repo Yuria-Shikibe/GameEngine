@@ -221,7 +221,7 @@ void Assets::loadBasic() {
 	});
 
 	Fonts::unicodeRefDir = Dir::assets.subFile("unicode-ref");
-	patch(Fonts::unicodeRefDir);
+	Dir::patch(Fonts::unicodeRefDir);
 
 	// auto vec = textureTree.getFlatView() | std::ranges::views::keys | std::ranges::to<std::vector<std::string>>();
 	// std::ranges::sort(vec);

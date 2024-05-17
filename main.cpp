@@ -276,6 +276,8 @@ void setupUITest(){
 						   Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{},
 						   &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
 
+					   sstream << "\n$<c#PALE_GREEN>Score: " << Game::score * 10;
+
 					   return std::move(sstream).str();
 				   });
 
@@ -452,17 +454,17 @@ void setupUITest(){
 	   .setMargin(0, 0, 10, 10);
 
 
-	HUD->add<UI::Table>([](UI::Table& table){})
-	   .setAlign(Align::Mode::bottom_left)
-	   .setSizeScale(0.25f, 0.2f)
-	   .setMargin(0, 10, 10, 10);
-
-
-	HUD->transferElem(new UI::Table{})
-	   .setAlign(Align::Mode::bottom_left)
-	   .setSizeScale(0.075f, 0.2f)
-	   .setSrcScale(0.25f, 0.0f)
-	   .setMargin(10, 0, 10, 10);
+	// HUD->add<UI::Table>([](UI::Table& table){})
+	//    .setAlign(Align::Mode::bottom_left)
+	//    .setSizeScale(0.25f, 0.2f)
+	//    .setMargin(0, 10, 10, 10);
+	//
+	//
+	// HUD->transferElem(new UI::Table{})
+	//    .setAlign(Align::Mode::bottom_left)
+	//    .setSizeScale(0.075f, 0.2f)
+	//    .setSrcScale(0.25f, 0.0f)
+	//    .setMargin(10, 0, 10, 10);
 
 
 	{
@@ -470,23 +472,21 @@ void setupUITest(){
 
 		pane->setItem<UI::Table>([](UI::Table& rt){
 			rt.setSize(400, 900);
-			rt.setFillparentX();
-
-			rt.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-				pane.setItem<UI::Table>([](UI::Table& paneT){
-					paneT.setHeight(600);
-					paneT.setFillparentX();
-
-					paneT.add<UI::Widget>();
-					paneT.lineFeed();
-					paneT.add<UI::Widget>();
-					paneT.add<UI::Widget>();
-				});
-			});
-			// rt->add(new UI::Elem);
-			rt.lineFeed();
-			rt.transferElem(new UI::Widget{});
-			rt.transferElem(new UI::Widget{});
+			// rt.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+			// 	pane.setItem<UI::Table>([](UI::Table& paneT){
+			// 		paneT.setHeight(600);
+			// 		paneT.setFillparentX();
+			//
+			// 		paneT.add<UI::Widget>();
+			// 		paneT.lineFeed();
+			// 		paneT.add<UI::Widget>();
+			// 		paneT.add<UI::Widget>();
+			// 	});
+			// });
+			// // rt->add(new UI::Elem);
+			// rt.lineFeed();
+			// rt.transferElem(new UI::Widget{});
+			// rt.transferElem(new UI::Widget{});
 		});
 
 		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
@@ -508,15 +508,15 @@ void setupUITest(){
 	   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
 	   .setMargin(10, 0, 10, 0);
 	//
-	HUD->transferElem(new UI::Table{})
-	   .setAlign(Align::top_right)
-	   .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
-	   .setMargin(10, 10, 10, 0);
+	// HUD->transferElem(new UI::Table{})
+	//    .setAlign(Align::top_right)
+	//    .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
+	//    .setMargin(10, 10, 10, 0);
 	//
-	HUD->add<UI::Table>([](UI::Table& table){})
-	   .setAlign(Align::Mode::bottom_right)
-	   .setSizeScale(0.3f, 0.15f)
-	   .setMargin(10, 0, 10, 0);
+	// HUD->add<UI::Table>([](UI::Table& table){})
+	//    .setAlign(Align::Mode::bottom_right)
+	//    .setSizeScale(0.3f, 0.15f)
+	//    .setMargin(10, 0, 10, 0);
 }
 
 void setupCtrl(){

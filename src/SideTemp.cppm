@@ -19,9 +19,10 @@ import Math.Rand;
 
 export namespace Test{
 	void genRandomEntities(){
+		Game::score = 0;
 		Game::EntityManage::clear();
 		Math::Rand rand = Math::globalRand;
-		for(int i = 0; i < 100; ++i) {
+		for(int i = 0; i < 300; ++i) {
 
 
 			const auto ptr = Game::EntityManage::obtain<Game::SpaceCraft>();

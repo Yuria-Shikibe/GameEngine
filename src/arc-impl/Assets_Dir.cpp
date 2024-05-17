@@ -27,7 +27,11 @@ void Assets::loadDir(){
 	bundle = assets.subFile("bundles");
 	patch(bundle);
 
-	texCache = assets.subFile("tex-cache");
+
+	cache = mainTree.findDir("resource").subFile("cache");
+	patch(cache);
+
+	texCache = cache.subFile("tex-atlas");
 	patch(texCache);
 
 	game = assets.subFile("game");

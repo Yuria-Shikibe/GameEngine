@@ -7,12 +7,12 @@ export module OS.Ctrl:CameraControl;
 export import Core.Camera;
 export import Geom.Vector2D;
 import :FocusInterface;
-import :Guard;
+import ext.Guard;
 
 export namespace Ctrl{
 	struct CameraControl2D : FocusData<Core::Camera2D*>{
 		Core::Camera2D* current{nullptr};
-		using Guard = Guard<CameraControl2D, &CameraControl2D::current>;
+		using Guard = ext::Guard<CameraControl2D, &CameraControl2D::current>;
 
 		void switchFocus(Core::Camera2D* focus){
 			this->current = focus;

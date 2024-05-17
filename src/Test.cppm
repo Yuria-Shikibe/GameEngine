@@ -142,7 +142,7 @@ export namespace Test{
 		Game::Content::Builtin::load_Turrets(Game::core->contentLoader.get());
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadInit>([](const Assets::AssetsLoadInit& event){
-			OS::File cacheDir = Assets::Dir::font.subFile("cache-load");
+			OS::File cacheDir = Assets::Dir::cache.subFile("font-load");
 			if(!cacheDir.exist()) cacheDir.createDirQuiet();
 			event.manager->getFontsManager_Load().rootCacheDir = cacheDir;
 			event.manager->getFontsManager_Load().texturePage = event.manager->getAtlas().registerPage(
@@ -150,7 +150,7 @@ export namespace Test{
 			event.manager->getFontsManager_Load().texturePage->setMargin(1);
 
 
-			cacheDir = Assets::Dir::font.subFile("cache");
+			cacheDir = Assets::Dir::cache.subFile("font");
 			if(!cacheDir.exist()) cacheDir.createDirQuiet();
 			event.manager->getFontsManager().rootCacheDir = cacheDir;
 			event.manager->getFontsManager().texturePage = event.manager->getAtlas().registerPage("font", cacheDir);

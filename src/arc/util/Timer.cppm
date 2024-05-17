@@ -24,8 +24,13 @@ export namespace ext{
 		constexpr Timer() = default;
 
 		template <size_t Index = 0, bool Strict = false>
-			requires requires {Index < size;}
+			requires requires { requires Index < size;}
 		void run(const float spacing, const float delta, Concepts::Invokable<void()> auto&& func){
+			if(spacing == 0.0f){
+				func();
+				return;
+			}
+
 			auto& reload = reloads[Index];
 			reload += delta;
 
@@ -43,7 +48,7 @@ export namespace ext{
 		}
 
 		template <size_t Index = 0>
-			requires requires {Index < size;}
+			requires requires { requires Index < size;}
 		constexpr bool getValid(const float spacing, const float delta = 0){
 			auto& reload = reloads[Index];
 			reload += delta;
@@ -57,7 +62,7 @@ export namespace ext{
 		}
 
 		template <size_t Index = 0>
-			requires requires {Index < size;}
+			requires requires { requires Index < size;}
 		[[nodiscard]] constexpr bool isValid(const float spacing) const{
 			return reloads[Index] > spacing;
 		}

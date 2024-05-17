@@ -529,7 +529,7 @@ export namespace Font{
 	};
 
 	class FontManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
-	public:
+	public: //TODO no public
 		bool quickInit = false;
 		std::vector<std::unique_ptr<FontFlags>> flags{};
 		Event::CycleSignalManager fontLoadListeners{};
@@ -556,7 +556,7 @@ export namespace Font{
 			return atlas != nullptr;
 		}
 
-	protected:
+	private:
 		void loadFont(FontFlags& params) const{
 			const std::string fontFullName = params.fullname();
 
@@ -754,7 +754,6 @@ export namespace Font{
 			//Load End
 		}
 
-	public:
 		std::unique_ptr<FontAtlas> getManager() && {
 			return std::move(atlas);
 		}
