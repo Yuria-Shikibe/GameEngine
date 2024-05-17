@@ -19,11 +19,11 @@ import std;
 export namespace UI{
 	class ControlBindTable : public Table, public OS::InputListener{
 
-		void buildSignle(UI::Table& toBuild, Ctrl::Operation& operation){
-			toBuild.add<UI::Table>([&](UI::Table& table){
+		void buildSignle(Table& toBuild, Ctrl::Operation& operation){
+			toBuild.add<Table>([&](Table& table){
 				table.setEmptyDrawer();
 				table.setLayoutByRelative(false);
-				table.add<UI::Label>([&](UI::Label& label){
+				table.add<Label>([&](Label& label){
 					label.setEmptyDrawer();
 					label.setText(operation.instruction.name);
 					label.setWrap();
@@ -31,8 +31,8 @@ export namespace UI{
 					label.getBorder().left = 15;
 				}).setAlign(Align::Mode::left).setSizeScale(0.4f, 1.0f);
 
-				table.add<UI::Button>([&operation, this](UI::Button& button){
-					button.setCall([&operation, this](UI::Button& b, bool){
+				table.add<Button>([&operation, this](Button& button){
+					button.setCall([&operation, this](Button& b, bool){
 						beginBind(&b, &operation);
 						ignoreNext = true;
 					});
@@ -48,7 +48,7 @@ export namespace UI{
 					};
 				}).setAlign(Align::Mode::right).setSizeScale(0.45f, 1.0f);
 
-				table.add<UI::Label>([&operation, this](UI::Label& label){
+				table.add<Label>([&operation, this](Label& label){
 					label.setText(label.getBundleEntry(Ctrl::ActNames[operation.defaultBind.state()]));
 					label.setTextAlign(Align::Mode::center);
 					label.setTextScl(0.65f);
@@ -56,9 +56,9 @@ export namespace UI{
 
 				if(operation.instruction.hasDesc()){
 					table.setTooltipBuilder({
-						.followTarget = UI::TooltipFollowTarget::cursor,
-						.builder = [&](UI::Table& hint){
-							hint.add<UI::Label>([&](UI::Label& label){
+						.followTarget = TooltipFollowTarget::cursor,
+						.builder = [&](Table& hint){
+							hint.add<Label>([&](Label& label){
 								label.setWrap();
 								label.setText(operation.instruction.desc);
 								label.getGlyphLayout()->setSCale(0.65f);
@@ -72,7 +72,7 @@ export namespace UI{
 			}).setHeight(75.0f).setPad({.bottom = 3, .top = 3}).endLine();
 		}
 
-		void beginBind(UI::Button* button, Ctrl::Operation* operation);
+		void beginBind(Button* button, Ctrl::Operation* operation);
 
 		void endBind();
 
@@ -84,9 +84,9 @@ export namespace UI{
 		Button* currentButton{nullptr};
 
 		static void buildBindInfo(Button& button, Ctrl::Operation& operation){
-			button.add<UI::Label>([&operation](UI::Label& label){
+			button.add<Label>([&operation](Label& label){
 				auto modes = Ctrl::getModesStr(operation.customeBind.mode());
-				auto key = UI::Fmt::keyType(Ctrl::KeyNames[operation.customeBind.getKey()]);
+				auto key = Fmt::keyType(Ctrl::KeyNames[operation.customeBind.getKey()]);
 				auto full = modes | std::ranges::views::join | std::ranges::to<std::string>();
 
 				if(modes.empty() || operation.customeBind.isIgnoreMode()){
@@ -106,26 +106,17 @@ export namespace UI{
 			// 	button.color = UI::Pal::RED_DUSK;
 			// }else
 			if(operation.hasCustomData()){
-				button.color = UI::Pal::PALE_GREEN;
+				button.color = Pal::PALE_GREEN;
 			}else{
-				button.color = UI::Pal::WHITE;
+				button.color = Pal::WHITE;
 			}
 		}
-	public:
-		~ControlBindTable() override{endBind();}
 
-		void applyBind(){
-			tempOperations.applyToTarget();
-			srcGroup->operator=(tempOperations);
-		}
-
-		void build(Ctrl::OperationGroup& group){
-			tempOperations = group;
-			srcGroup = &group;
-
-			add<UI::ScrollPane>([this](UI::ScrollPane& pane){
+		void buildCur(){
+			clearChildrenInstantly();
+			add<ScrollPane>([this](ScrollPane& pane){
 				pane.setEmptyDrawer();
-				pane.setItem<UI::Table>([this](UI::Table& menu){
+				pane.setItem<Table>([this](Table& menu){
 					menu.setEmptyDrawer();
 
 					auto range = tempOperations.getShownBinds()
@@ -139,22 +130,50 @@ export namespace UI{
 				});
 			}).fillParentY().setAlign(Align::Mode::top_center).endLine();
 
-			add<UI::Table>([this](UI::Table& table){
+			add<Table>([this](Table& table){
 				table.setEmptyDrawer();
 
-				table.add<UI::Button>([this](UI::Button& pane){
+				table.add<Button>([this](Button& pane){
 					pane.setCall([this](auto&, bool){
 						applyBind();
 					});
 
-					pane.add<UI::Label>([](UI::Label& label){
+					pane.add<Label>([](Label& label){
 						label.setTextAlign(Align::Mode::center);
 						label.setText(label.getBundleEntry("apply"));
 						label.getGlyphLayout()->setSCale(0.65f);
 						label.setEmptyDrawer();
 					}).fillParent();
-				}).setSizeScale(0.5f, 1.0f).setAlign(Align::Mode::center);
+				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Mode::right);
+
+				table.add<Button>([this](Button& pane){
+					pane.setCall([this](auto&, bool){
+						tempOperations.setDef();
+						buildCur();
+					});
+
+					pane.add<Label>([](Label& label){
+						label.setTextAlign(Align::Mode::center);
+						label.setText(label.getBundleEntry("apply-def"));
+						label.getGlyphLayout()->setSCale(0.65f);
+						label.setEmptyDrawer();
+					}).fillParent();
+				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Mode::left);
 			}).setHeight(60.0f).setAlign(Align::Mode::top_center);
+		}
+	public:
+		~ControlBindTable() override{endBind();}
+
+		void applyBind(){
+			tempOperations.applyToTarget();
+			srcGroup->operator=(tempOperations);
+		}
+
+		void build(Ctrl::OperationGroup& group){
+			tempOperations = group;
+			srcGroup = &group;
+
+			buildCur();
 		}
 
 		[[nodiscard]] bool bindChanged() const{

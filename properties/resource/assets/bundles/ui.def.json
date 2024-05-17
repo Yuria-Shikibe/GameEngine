@@ -12,6 +12,7 @@
   },
   "binding-ctrl" : "$<c#PALE_GREEN>等待绑定...",
   "apply" : "应用",
+  "apply-def" : "使用默认",
 
 
   "press" : "按下",

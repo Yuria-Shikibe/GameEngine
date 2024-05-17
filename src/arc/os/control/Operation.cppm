@@ -253,6 +253,12 @@ export namespace Ctrl{
 			binds.insert_or_assign(operation.name, operation);
 		}
 
+		void setDef(){
+			for (auto & bind : binds | std::views::values){
+				bind.setDef();
+			}
+		}
+
 		bool applyToTarget(){
 			if(!targetGroup)return false;
 
@@ -260,7 +266,6 @@ export namespace Ctrl{
 			targetGroup->clearAllBinds();
 
 			for (const auto & bind : binds | std::views::values){
-
 				targetGroup->registerBind(OS::InputBind{bind.customeBind});
 			}
 
