@@ -4,7 +4,7 @@
 本人学号162320129
 
 ## 模块关系总览（.svg）
-![svg_img](D:\projects\GameEngine\doc\Core_Module_Relations.svg)
+![svg_img](D:\projects\GameEngine\doc-export\Core_Module_Relations.svg)
 
 
 # What will this project about and be
