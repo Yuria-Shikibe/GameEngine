@@ -55,7 +55,6 @@ void Game::Scenes::MainMenu::build(){
 						label.setText(label.getBundleEntry("main-test"));
 					}).expandY().setPad({.bottom = 150}).endLine();
 
-
 					std::vector<std::pair<std::string_view, std::function<void(UI::Button&, bool)>>>
 						tempTestBuilders{
 								{"game", [](const UI::Button& b, bool){

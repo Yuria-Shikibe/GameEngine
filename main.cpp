@@ -638,7 +638,24 @@ void setupBaseDraw(){
 	});
 }
 
-int main(const int argc, char* argv[]){
+int main(){
+	OS::File file{R"(D:\projects\GameEngine\src)"};
+	OS::File exportFile{R"(D:\projects\GameEngine\doc\export.txt)"};
+
+	std::ostringstream ss{};
+
+	file.forAllSubs([&](OS::File f){
+		ss << (f.filename() | std::ranges::views::transform([](const char c){return static_cast<char>(std::toupper(c));}) | std::ranges::to<std::string>()) << " BEGIN \n";
+		ss << f.readString();
+		ss << '\n';
+		ss << (f.filename() | std::ranges::views::transform([](const char c){return static_cast<char>(std::toupper(c));}) | std::ranges::to<std::string>()) << " END \n";
+		ss << '\n';
+	});
+
+	exportFile.writeString(std::move(ss).str());
+}
+
+int main_(const int argc, char* argv[]){
 	//Init
 	::Test::init(argc, argv);
 
