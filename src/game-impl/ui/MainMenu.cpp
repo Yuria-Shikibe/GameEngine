@@ -73,7 +73,7 @@ void Game::Scenes::MainMenu::build(){
 											t.add<UI::InputArea>([](UI::InputArea& label){
 												label.setText("Src: https://github.com/Yuria-Shikibe/GameEngine\n");
 												label.setEmptyDrawer();
-												label.getGlyphLayout()->setSCale(0.4f);
+												label.getGlyphLayout()->setSCale(0.45f);
 												label.setFillparentX();
 												label.setWrap();
 												label.setBorder(4.0f);

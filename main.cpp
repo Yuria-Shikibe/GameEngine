@@ -771,6 +771,7 @@ int main(const int argc, char* argv[]){
 		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
 		Graphic::Mesh::meshEnd(true);
 
+		if(!drawDebug) return;
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 

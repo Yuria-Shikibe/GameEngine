@@ -17,6 +17,8 @@ message(STATUS "Type: ${CMAKE_BUILD_TYPE}")
 
 message(STATUS "Using Generator : ${CMAKE_CXX_COMPILER_ID}")
 
+set(CMAKE_BUILD_PARALLEL_LEVEL 12)
+
 #find msvc dir, totally mess
 set(MSVC_DIR ${CMAKE_CXX_COMPILER})
 get_filename_component(MSVC_DIR ${MSVC_DIR} DIRECTORY)
