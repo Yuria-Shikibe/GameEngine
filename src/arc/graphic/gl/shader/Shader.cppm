@@ -10,6 +10,7 @@ import OS.File;
 import ext.RuntimeException;
 
 import Geom.Vector2D;
+import Geom.Vector3D;
 import Geom.Matrix3D;
 import GL.Texture;
 import GL.Uniform;
@@ -341,10 +342,47 @@ export namespace GL {
 		}
 
 		// ------------------------------------------------------------------------
+		void setUint(const std::string_view name, const unsigned value) const {
+			if(const auto location = getLocation(name); location >= 0){
+				glUniform1ui(location, value);
+			}
+		}
+
+		// ------------------------------------------------------------------------
 		void setFloat(const std::string_view name, const float value) const {
 			if(const auto location = getLocation(name); location >= 0){
 				glUniform1f(location, value);
 			}
+		}
+
+		// ------------------------------------------------------------------------
+		void setFloat3Arr(const std::string_view name, const float value[], const std::size_t count) const {
+			auto* info = uniformInfoMap.tryFind(name);
+			if(!info)return;
+			if(count > info->count){
+				throw ext::ArrayIndexOutOfBound{std::format("Cannot Accept Size Larger Than GPU Allocated Size :{} > {}", count, info->count)};
+			}
+			glUniform3fv(info->location, count, value);
+		}
+
+		// ------------------------------------------------------------------------
+		void setVec2Arr(const std::string_view name, const Geom::Vec2 value[], const std::size_t count) const {
+			auto* info = uniformInfoMap.tryFind(name);
+			if(!info)return;
+			if(count > info->count){
+				throw ext::ArrayIndexOutOfBound{std::format("Cannot Accept Size Larger Than GPU Allocated Size :{} > {}", count, info->count)};
+			}
+			glUniform2fv(info->location, count, reinterpret_cast<const GLfloat*>(value));
+		}
+
+		// ------------------------------------------------------------------------
+		void setVec3Arr(const std::string_view name, const Geom::Vector3D<float> value[], const std::size_t count) const {
+			auto* info = uniformInfoMap.tryFind(name);
+			if(!info)return;
+			if(count > info->count){
+				throw ext::ArrayIndexOutOfBound{std::format("Cannot Accept Size Larger Than GPU Allocated Size :{} > {}", count, info->count)};
+			}
+			glUniform3fv(info->location, count, reinterpret_cast<const GLfloat*>(value));
 		}
 
 		// ------------------------------------------------------------------------

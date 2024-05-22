@@ -55,7 +55,7 @@ export namespace Game::Drawer{
 	};
 
 	[[nodiscard]] PartTrans getCompPos(const BaseEntity* entity){
-		return PartTrans{entity->trans, entity->zLayer};
+		return PartTrans{entity->trans, 0};
 	}
 
 	struct DrawProgress{

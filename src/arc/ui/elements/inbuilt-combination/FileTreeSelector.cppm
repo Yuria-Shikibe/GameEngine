@@ -107,10 +107,11 @@ export namespace UI{
 					}
 				});
 
-				inner.setTooltipBuilder({
+				auto pixmap = ext::platform::getThumbnail(file);
+
+				if(pixmap.valid())inner.setTooltipBuilder({
 					.followTarget = TooltipBuilder::FollowTarget::cursor,
-					.builder = [file](Table& hint){
-						auto pixmap = ext::platform::getThumbnail(file);
+					.builder = [pixmap = std::move(pixmap)](Table& hint){
 
 						if(pixmap.valid()){
 							auto drawable = std::make_unique<UniqueRegionDrawable>(

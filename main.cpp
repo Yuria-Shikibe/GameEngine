@@ -1,4 +1,5 @@
-#include <Windows.h>
+
+#include <glad/glad.h>
 
 #include "src/application_head.h"
 
@@ -308,6 +309,8 @@ void setupUITest(){
 
 			   bar.PointCheck = 12;
 
+			   bar.setEmptyDrawer();
+
 			   bar.setTooltipBuilder({
 					   .followTarget = UI::TooltipFollowTarget::parent,
 					   .followTargetAlign = Align::Mode::bottom_center,
@@ -388,7 +391,7 @@ void setupUITest(){
 		   //   });
 		   //  }
 		   // }).fillParent();
-
+		   //
 		   // table.add<UI::Table>([](UI::Table& t){
 		   //  t.setEmptyDrawer();
 		   //  auto& slider = t.add<UI::SliderBar>([](UI::SliderBar& s){
@@ -467,46 +470,46 @@ void setupUITest(){
 	//    .setMargin(10, 0, 10, 10);
 
 
-	{
-		auto pane = new UI::ScrollPane{};
+	// {
+	// 	auto pane = new UI::ScrollPane{};
+	//
+	// 	pane->setItem<UI::Table>([](UI::Table& rt){
+	// 		rt.setSize(400, 900);
+	// 		// rt.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+	// 		// 	pane.setItem<UI::Table>([](UI::Table& paneT){
+	// 		// 		paneT.setHeight(600);
+	// 		// 		paneT.setFillparentX();
+	// 		//
+	// 		// 		paneT.add<UI::Widget>();
+	// 		// 		paneT.lineFeed();
+	// 		// 		paneT.add<UI::Widget>();
+	// 		// 		paneT.add<UI::Widget>();
+	// 		// 	});
+	// 		// });
+	// 		// // rt->add(new UI::Elem);
+	// 		// rt.lineFeed();
+	// 		// rt.transferElem(new UI::Widget{});
+	// 		// rt.transferElem(new UI::Widget{});
+	// 	});
+	//
+	// 	HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
+	// }
 
-		pane->setItem<UI::Table>([](UI::Table& rt){
-			rt.setSize(400, 900);
-			// rt.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-			// 	pane.setItem<UI::Table>([](UI::Table& paneT){
-			// 		paneT.setHeight(600);
-			// 		paneT.setFillparentX();
-			//
-			// 		paneT.add<UI::Widget>();
-			// 		paneT.lineFeed();
-			// 		paneT.add<UI::Widget>();
-			// 		paneT.add<UI::Widget>();
-			// 	});
-			// });
-			// // rt->add(new UI::Elem);
-			// rt.lineFeed();
-			// rt.transferElem(new UI::Widget{});
-			// rt.transferElem(new UI::Widget{});
-		});
-
-		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
-	}
-
-	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-			   pane.setItem<UI::InputArea, false, false>([](UI::InputArea& area){
-				   area.usingGlyphWidth = area.usingGlyphHeight = true;
-				   area.setMaxTextLength(1000);
-
-				   area.getGlyphLayout()->setSCale(0.75f);
-				   area.setText("Input Test\n");
-			   });
-			   pane.setEmptyDrawer();
-		   }).fillParent();
-	   })
-	   .setAlign(Align::top_right)
-	   .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
-	   .setMargin(10, 0, 10, 0);
+	// HUD->add<UI::Table>([](UI::Table& table){
+	// 	   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
+	// 		   pane.setItem<UI::InputArea, false, false>([](UI::InputArea& area){
+	// 			   area.usingGlyphWidth = area.usingGlyphHeight = true;
+	// 			   area.setMaxTextLength(1000);
+	//
+	// 			   area.getGlyphLayout()->setSCale(0.75f);
+	// 			   area.setText("Input Test\n");
+	// 		   });
+	// 		   pane.setEmptyDrawer();
+	// 	   }).fillParent();
+	//    })
+	//    .setAlign(Align::top_right)
+	//    .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
+	//    .setMargin(10, 0, 10, 0);
 	//
 	// HUD->transferElem(new UI::Table{})
 	//    .setAlign(Align::top_right)
@@ -638,28 +641,14 @@ void setupBaseDraw(){
 	});
 }
 
-int main(){
-	OS::File file{R"(D:\projects\GameEngine\src)"};
-	OS::File exportFile{R"(D:\projects\GameEngine\doc\export.txt)"};
-
-	std::ostringstream ss{};
-
-	file.forAllSubs([&](OS::File f){
-		ss << (f.filename() | std::ranges::views::transform([](const char c){return static_cast<char>(std::toupper(c));}) | std::ranges::to<std::string>()) << " BEGIN \n";
-		ss << f.readString();
-		ss << '\n';
-		ss << (f.filename() | std::ranges::views::transform([](const char c){return static_cast<char>(std::toupper(c));}) | std::ranges::to<std::string>()) << " END \n";
-		ss << '\n';
-	});
-
-	exportFile.writeString(std::move(ss).str());
-}
-
-int main_(const int argc, char* argv[]){
+int main(const int argc, char* argv[]){
 	//Init
 	::Test::init(argc, argv);
 
 	::Test::assetsLoad();
+	::Test::setupUITest_Old();
+
+	::Test::genRandomEntities();
 
 	::Test::setupAudioTest();
 
@@ -717,8 +706,8 @@ int main_(const int argc, char* argv[]){
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 9, 3};
-	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 3};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 4};
+	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 4};
 
 	Game::CombinePostProcessor merger{
 			Assets::PostProcessors::blurX_World.get(), Assets::PostProcessors::blurY_World.get(),
@@ -726,6 +715,7 @@ int main_(const int argc, char* argv[]){
 		};
 	// merger.blur.setScale(0.5f);
 	merger.blur.setProcessTimes(4);
+	merger.setTargetState(GL::State::BLEND, true);
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
@@ -735,31 +725,8 @@ int main_(const int argc, char* argv[]){
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
 	//
-	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
-		Core::Renderer& renderer = *event.renderer;
-		renderer.frameBegin(acceptBuffer1);
-		renderer.frameBegin(worldFrameBuffer);
 
-		acceptBuffer1.clearColor(Graphic::Colors::BLACK);
-
-		GL::enable(GL::Test::DEPTH);
-		GL::setDepthFunc(GL::Func::GEQUAL);
-		GL::setDepthMask(true);
-
-		Game::EntityManage::drawables.setViewport(Core::camera->getViewport().getPorjectedBound());
-		Game::EntityManage::render();
-
-		Game::core->effectManager->render();
-
-		Graphic::Batch::flush<BatchWorld>();
-
-		GL::setDepthMask(false);
-		GL::disable(GL::Test::DEPTH);
-
-		GL::Blendings::Normal.apply();
-		renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
-		renderer.frameEnd(merger);
-	});
+	// GL::Blendings::Disable.apply(worldFrameBuffer.getID());
 
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
@@ -780,14 +747,50 @@ int main_(const int argc, char* argv[]){
 		// event.renderer->contextFrameBuffer->bind();
 	});
 
+	// glDepthRangef(Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);
+	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
+		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
+		Graphic::Mesh::meshEnd(true);
+
+		acceptBuffer1.getColorAttachments().at(3)->setScale(GL::nearest, GL::nearest);
+
+		Core::Renderer& renderer = *event.renderer;
+
+		GL::enable(GL::Test::DEPTH);
+		GL::setDepthMask(true);
+		renderer.frameBegin(acceptBuffer1);
+		renderer.frameBegin(worldFrameBuffer);
+
+		// acceptBuffer1.clearColor(Graphic::Colors::BLACK, 2);
+		// acceptBuffer1.clearColor(Graphic::Colors::WHITE, 1);
+		acceptBuffer1.clearColor(Graphic::Colors::WHITE, 3);
+
+		GL::setDepthFunc(GL::Func::GEQUAL);
+
+		GL::Blendings::Normal.apply();
+		// GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+		Game::EntityManage::drawables.setViewport(Core::camera->getViewport());
+		Game::EntityManage::render();
+
+		Game::core->effectManager->render();
+
+		Graphic::Batch::flush<BatchWorld>();
+
+		GL::disable(GL::Test::DEPTH);
+		GL::setDepthMask(false);
+
+		// GL::Blendings::Disable.apply();
+		renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
+		renderer.frameEnd(merger);
+		// GL::Blendings::Normal.apply();
+
+	});
+
 	chamberFrame->updateChamberFrameData();
 	chamberFrame->setLocalTrans({});
 	chamberFrame->getTransformMat().scale(10.0f, 10.0f);
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
-		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
-		Graphic::Mesh::meshEnd(true);
-
 		if(!drawDebug) return;
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);

@@ -9,18 +9,6 @@ import std;
 export namespace Geom {
 	template <Concepts::Number T>
 	struct Vector3D {
-		[[nodiscard]] constexpr Vector3D(const T x, const T y, const T z)
-			: x(x),
-			y(y),
-			z(z) {
-		}
-
-		[[nodiscard]] constexpr Vector3D(const T x, const T y) : Vector3D(x, y, 0) {
-			// std::size()
-		}
-
-		[[nodiscard]] constexpr Vector3D() = default;
-
 		T x = 0, y = 0, z = 0;
 
 		using PassType = Concepts::ParamPassType<Vector3D, sizeof(T) * 3>;

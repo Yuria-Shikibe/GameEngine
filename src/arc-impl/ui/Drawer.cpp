@@ -80,6 +80,10 @@ void UI::UIStyle::drawBackground(const Widget* elem) const{
 	baseMask.draw(elem, elem->selfMaskOpacity * elem->maskOpacity, elem->getBound().setSrc(elem->getAbsSrc()));
 }
 
+void UI::UIStyle::drawBackground(const Geom::OrthoRectFloat rect) const{
+	baseMask.draw(nullptr, 1, rect);
+}
+
 void UI::StyleDrawer::applyToElem(Widget* elem) {
 	elem->setBorder(style->margin);
 

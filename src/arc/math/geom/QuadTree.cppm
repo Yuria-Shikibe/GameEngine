@@ -472,16 +472,18 @@ export namespace Geom{
 		}
 
 		void clearItemsOnly(){
-			if(!isLeaf()){
+			std::scoped_lock lk{containerlock, subTreelock};
+			const bool _isLeaf = leaf.load();
+			leaf = true;
+			currentSize = 0;
+
+			if(!_isLeaf){
 				topLeft->clearItemsOnly();
 				topRight->clearItemsOnly();
 				bottomLeft->clearItemsOnly();
 				bottomRight->clearItemsOnly();
 			}
 
-			leaf = true;
-			currentSize = 0;
-			std::lock_guard guard{containerlock};
 			rectangles.clear();
 		}
 

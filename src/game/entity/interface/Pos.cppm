@@ -13,7 +13,7 @@ export namespace Game {
 		Geom::Transform vel{};
 		Geom::Transform accel{};
 
-		float zLayer{3};
+		float zLayer{30};
 
 		~PosedEntity() override = default;
 

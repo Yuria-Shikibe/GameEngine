@@ -21,5 +21,5 @@ void main(){
     src = mix(src, vec4(mixColor.rgb, src.a), mixColor.a);
     src *= srcColor;
 
-    FragColor = vec4(mix(dst, src, mask.a));
+    FragColor = vec4(mix(dst, vec4(src.rgb * mask.rgb, src.a), mask.a));
 }

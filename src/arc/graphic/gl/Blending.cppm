@@ -6,6 +6,7 @@ import GL.Constants;
 import GL;
 
 export namespace GL{
+	//TODO is virtual necessary??
 	struct Blending
 	{
 		GLenum src{}, dst{}, srcAlpha{}, dstAlpha{};

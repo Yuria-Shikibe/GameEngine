@@ -5,6 +5,7 @@
 export module Assets.Ctrl;
 
 export import Core;
+import UI.Screen;
 export import OS.Ctrl.Bind.Constants;
 export import OS.Ctrl.Operation;
 export import OS.Ctrl.Bind;
@@ -19,24 +20,29 @@ namespace Assets::Ctrl{
 	float cameraMoveSpeed = baseCameraMoveSpeed;
 
 	::Ctrl::Operation cameraMoveLeft{"cmove-left", OS::KeyBind(::Ctrl::Key::Left, ::Ctrl::Act::Continuous, +[]{
-		if(!disableMove)Core::focus.camera->move(-cameraMoveSpeed * OS::delta(), 0);
+		if(!disableMove)Core::focus.camera.move({-cameraMoveSpeed * OS::delta(), 0});
 	})};
 
 	::Ctrl::Operation cameraMoveRight{"cmove-right", OS::KeyBind(::Ctrl::Key::Right, ::Ctrl::Act::Continuous, +[]{
-		if(!disableMove)Core::focus.camera->move( cameraMoveSpeed * OS::delta(), 0);
+		if(!disableMove)Core::focus.camera.move({cameraMoveSpeed * OS::delta(), 0});
 	})};
 
 	::Ctrl::Operation cameraMoveUp{"cmove-up", OS::KeyBind(::Ctrl::Key::Up, ::Ctrl::Act::Continuous, +[]{
-		if(!disableMove)Core::focus.camera->move(0,  cameraMoveSpeed * OS::delta());
+		if(!disableMove)Core::focus.camera.move({0,  cameraMoveSpeed * OS::delta()});
 	})};
 
 	::Ctrl::Operation cameraMoveDown{"cmove-down", OS::KeyBind(::Ctrl::Key::Down, ::Ctrl::Act::Continuous, +[] {
-		if(!disableMove)Core::focus.camera->move(0, -cameraMoveSpeed * OS::delta());
+		if(!disableMove)Core::focus.camera.move({0, -cameraMoveSpeed * OS::delta()});
 	})};
 
 	::Ctrl::Operation cameraTeleport{"cmove-telp", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::DoubleClick, +[] {
-		if(Core::uiRoot->cursorCaptured()) return;
-		Core::camera->setPosition(Core::Util::getMouseToWorld());
+		if(Core::uiRoot->cursorCaptured()){
+			if(auto* screen = dynamic_cast<UI::Screen*>(Core::uiRoot->currentCursorFocus)){
+				Core::focus.camera.set(Core::Util::getMouseToWorld(screen->getCamera(), screen->getBound()));
+			}
+		}else{
+			Core::focus.camera.set(Core::Util::getMouseToWorld());
+		}
 	})};
 
 	::Ctrl::Operation cameraLock{"cmove-lock", OS::KeyBind(::Ctrl::Key::M, ::Ctrl::Act::Press, +[] {
@@ -59,7 +65,7 @@ namespace Assets::Ctrl{
 		if(Core::uiRoot->isHidden){
 			Core::uiRoot->show();
 		} else{
-			Core::uiRoot->hide();
+			if(!Core::uiRoot->hasTextFocus())Core::uiRoot->hide();
 		}
 	})};
 
@@ -108,6 +114,7 @@ namespace Assets::Ctrl{
 
 		void load(){
 			Core::focus.camera.current = Core::focus.camera.fallback = Core::camera;
+
 			Core::input.registerSubInput(&mainControlGroup);
 			basicGroup.targetGroup = &mainControlGroup;
 			apply();

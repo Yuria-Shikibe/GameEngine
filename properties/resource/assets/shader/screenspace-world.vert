@@ -12,14 +12,10 @@ out vec2 texCoord;
 out vec4 v_mixColor;
 out vec4 v_srcColor;
 
-out float depth;
-
 void main()
 {
 	v_mixColor = mixColor;
 	v_srcColor = scrColor;
 	texCoord = tex;
 	gl_Position = vec4((view * localToWorld * vec3(pos.rg, 1.0)).xy, pos.b, 1.0f);
-
-	depth = pos.b;
 }

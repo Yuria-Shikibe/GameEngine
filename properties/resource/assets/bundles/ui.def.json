@@ -5,6 +5,7 @@
   "main-test" : "测试主菜单",
   "about" : "关于",
   "game" : "内建游戏测试",
+  "ui-test" : "内建$<font#srch>UI测试",
   "settings" : "设置",
   "ctrl-settings" : "控制设置",
   "settings-entry" : {

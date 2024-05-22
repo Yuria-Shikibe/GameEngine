@@ -18,8 +18,8 @@ import Geom.Matrix3D;
 
 using namespace GL;
 
-export namespace Core{
-	class Batch
+namespace Core{
+	export class Batch
 	{
 	protected:
 		std::unique_ptr<Mesh> mesh = nullptr;
@@ -211,7 +211,7 @@ export namespace Core{
 	/**
 	 * @brief L2W --- Local Coordinate To World Transformation Matrix(2D)
 	 */
-	struct BatchGuard_L2W : BatchGuard{
+	export struct BatchGuard_L2W : BatchGuard{
 		const Geom::Matrix3D originalMat{};
 
 		[[nodiscard]] explicit BatchGuard_L2W(Batch& batch, const Geom::Matrix3D& mat)
@@ -226,7 +226,39 @@ export namespace Core{
 		}
 	};
 
-	struct BatchGuard_Shader : BatchGuard{
+	/**
+	 * @brief L2W --- Local Coordinate To World Transformation Matrix(2D)
+	 */
+	export struct BatchGuard_Proj : BatchGuard{
+		Geom::Matrix3D current{};
+		const Geom::Matrix3D* originalMat{};
+
+		[[nodiscard]] explicit BatchGuard_Proj(Batch& batch, Concepts::Invokable<void(Geom::Matrix3D&)> auto&& modifier)
+			: BatchGuard{batch}, originalMat{batch.getProjection()}{
+			batch.flush();
+			modifier(current);
+			batch.setProjection(&current);
+		}
+
+		[[nodiscard]] explicit BatchGuard_Proj(Batch& batch)
+			: BatchGuard{batch}, originalMat{batch.getProjection()}{
+			batch.flush();
+			batch.setProjection(&current);
+		}
+
+		[[nodiscard]] BatchGuard_Proj(Batch& batch, const Geom::Matrix3D& mat)
+			: BatchGuard{batch}, current{mat}, originalMat{batch.getProjection()}{
+			batch.flush();
+			batch.setProjection(&current);
+		}
+
+		~BatchGuard_Proj(){
+			batch.flush();
+			batch.setProjection(originalMat);
+		}
+	};
+
+	export struct BatchGuard_Shader : BatchGuard{
 		GL::Shader* originalShader{nullptr};
 
 		[[nodiscard]] explicit BatchGuard_Shader(Batch& batch, GL::Shader* shader) noexcept

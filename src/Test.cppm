@@ -186,11 +186,12 @@ export namespace Test{
 				Assets::TexturePackPage* mainPage = event.manager->getAtlas().registerPage(
 					MainPageName, Assets::Dir::texCache);
 				mainPage->pushRequest("white-solid", Assets::Dir::texture.find("white.png"));
+				mainPage->setMargin(2);
 				[[maybe_unused]] Assets::TexturePackPage* normalPage = event.manager->getAtlas().registerAttachmentPage(
 					"normal", mainPage);
 				Assets::TexturePackPage* lightPage = event.manager->getAtlas().
-				                                           registerAttachmentPage("light", mainPage);
-				lightPage->pushRequest("white-light", Assets::Dir::texture.find("white.light.png"));
+				registerAttachmentPage("light", mainPage);
+				lightPage->pushRequest("white-light", Assets::Dir::texture.find("white.png"));
 				mainPage->pushRequest("white-light", Assets::Dir::texture.find("transparent.png"));
 			}
 		});
@@ -210,8 +211,6 @@ export namespace Test{
 
 			auto lightRegion = event.manager->getAtlas().find("base-white-light");
 			Graphic::Draw::globalState.defaultLightTexture = lightRegion;
-
-
 			const_cast<GL::TextureRegionRect*>(lightRegion)->shrinkEdge(15.0f);
 
 			for(auto& texture : event.manager->getAtlas().getPage("ui").getTextures()){

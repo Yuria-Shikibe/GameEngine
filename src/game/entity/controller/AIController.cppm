@@ -1,7 +1,7 @@
 export module Game.Entity.Controller.AI;
 
 export import Game.Entity.Controller;
-import Game.Core;
+// import Game.Core;
 import Game.Entity.RealityEntity;
 
 export namespace Game{
@@ -12,14 +12,14 @@ export namespace Game{
 
 		void findTarget() override{
 			turretTargets.clear();
-			if(Game::core->playerController){
-				if(Game::core->playerController->moveCommand.curTrans.vec.dst(owner->trans.vec) < 4000){
-					shoot = true;
-					turretTargets.push_back(Game::core->playerController->moveCommand.curTrans.vec);
-				}else{
-					shoot = false;
-				}
-			}
+			// if(Game::core->playerController){
+			// 	if(Game::core->playerController->moveCommand.curTrans.vec.dst(owner->trans.vec) < 4000){
+			// 		shoot = true;
+			// 		turretTargets.push_back(Game::core->playerController->moveCommand.curTrans.vec);
+			// 	}else{
+			// 		shoot = false;
+			// 	}
+			// }
 		}
 
 		void update() override{

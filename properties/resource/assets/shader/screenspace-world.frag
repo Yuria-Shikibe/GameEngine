@@ -2,8 +2,6 @@
 
 uniform sampler2DArray texArray;
 
-in float depth;
-
 in vec4 v_srcColor;
 in vec2 texCoord;
 in vec4 v_mixColor;
@@ -11,6 +9,7 @@ in vec4 v_mixColor;
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 NormalColor;
 layout (location = 2) out vec4 LightColor;
+layout (location = 3) out vec4 DataCoord;
 
 layout (depth_less) out float gl_FragDepth;
 
@@ -24,10 +23,10 @@ void main()
 	float invDepth = 1 - gl_FragCoord.z;
 
 	if(v_srcColor.a < 0.0033 || invDepth < gl_FragDepth)discard;
-	vec4 baseColor = texture(texArray, vec3(texCoord, 0.0f));
-	vec4 normalColor = texture(texArray, vec3(texCoord, 1.0f));
-	vec4 lightColor = texture(texArray, vec3(texCoord, 2.0f));
 
+	vec4 baseColor = texture(texArray, vec3(texCoord, 0.0f));
+	vec4 norColor = texture(texArray, vec3(texCoord, 1.0f));
+	vec4 lightColor = texture(texArray, vec3(texCoord, 2.0f));
 
 	lightColor = v_srcColor * mix(lightColor, vec4(v_mixColor.rgb, lightColor.a), v_mixColor.a);
 
@@ -38,8 +37,14 @@ void main()
 	}
 
 	FragColor = baseColor;
-	NormalColor.rgb = normalColor.rgb;
-	LightColor = mix(vec4(0.0f, 0.0f, 0.0f, 1.0f), lightColor, lightColor.a);
+
+	NormalColor = vec4(norColor.rgb, baseColor.a);
+	LightColor = vec4(mix(vec3(0.0f), lightColor.rgb, lightColor.a), 1.0);
+
+	DataCoord.a = step(0.95f, baseColor.a);
+	DataCoord.x = gl_FragCoord.z;
+	DataCoord.y = lightColor.a;
+
 	//Dont care the normal texture map's color, using the alpha channel as the z data;
-	NormalColor.a = gl_FragCoord.z;
+//	FragColor = vec4(vec3(gl_FragCoord.z), baseColor.a);
 }

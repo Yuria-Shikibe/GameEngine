@@ -80,6 +80,8 @@ export namespace UI { //TODO bullshit virtual
 		void drawElem(const Widget* elem) const;
 
 		void drawBackground(const Widget* elem) const;
+
+		void drawBackground(Geom::OrthoRectFloat rect) const;
 	};
 
 	struct WidgetDrawer {
@@ -90,6 +92,8 @@ export namespace UI { //TODO bullshit virtual
 		virtual void drawStyle(const UI::Widget* elem) const = 0;
 
 		virtual void drawBackground(const UI::Widget* elem) const{}
+
+		virtual void drawBackground(Geom::OrthoRectFloat rect){}
 
 		virtual void applyToElem(Widget* elem) {
 		}
@@ -110,6 +114,10 @@ export namespace UI { //TODO bullshit virtual
 
 		void drawStyle(const UI::Widget* elem) const override {
 			if(style)style->drawElem(elem);
+		}
+
+		void drawBackground(const Geom::OrthoRectFloat rect) override{
+			if(style)style->drawBackground(rect);
 		}
 
 		void applyToElem(Widget* elem) override;

@@ -22,16 +22,16 @@ bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 	}
 
 	if(scaleRelativeToParentX){
-		item->bound.setWidth(width * getHoriScale());
+		item->setWidth(width * getHoriScale());
 	}
 
 	if(scaleRelativeToParentY){
-		item->bound.setHeight(height * getVertScale());
+		item->setHeight(height * getVertScale());
 	}
 
 
 	//TODO uses validsize instead
-	item->bound.setSize(
+	item->setSize(
 		Math::clampPositive(item->getWidth() - getMarginHori()),
 		Math::clampPositive(item->getHeight() - getMarginVert())
 	);
@@ -41,7 +41,7 @@ bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 		item->setMaximumSize(currentSize);
 	}
 
-	item->changed(ChangeSignal::notifySubs);
+	item->changed(ChangeSignal::notifySubs, ChangeSignal::notifyParentOnly);
 	item->layout();
 
 	return allocatedBound.getSize() != originalSize;

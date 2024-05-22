@@ -3,7 +3,7 @@ export module UI.Scene;
 export import UI.Table;
 
 import std;
-import Core.Input;
+import OS.Ctrl.Bind;
 
 export namespace UI{
 	constexpr std::string_view Menu_Main = "main-menu";
@@ -13,7 +13,13 @@ export namespace UI{
 
 	class Scene : public UI::Table{
 	public:
-		std::unique_ptr<Core::Input> uiInput{std::make_unique<Core::Input>()};
+		[[nodiscard]] Scene() = default;
+
+		[[nodiscard]] explicit Scene(std::string&& name){
+			this->name = std::move(name);
+		}
+
+		std::unique_ptr<OS::InputBindGroup> uiInput{};
 
 		[[nodiscard]] std::string_view getSceneName() const {
 			return name;

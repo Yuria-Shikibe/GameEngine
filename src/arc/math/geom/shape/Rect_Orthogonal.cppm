@@ -436,6 +436,14 @@ export namespace Geom{
 			return *this;
 		}
 
+		template <Concepts::Number N>
+		constexpr Rect_Orthogonal& scl(const typename Vector2D<N>::PassType scl) noexcept{
+			(void)this->template sclPos<N, N>(scl.x, scl.y);
+			(void)this->template sclSize<N, N>(scl.x, scl.y);
+
+			return *this;
+		}
+
 		constexpr void set(const T srcx, const T srcy, const T width, const T height) noexcept{
 			srcX = srcx;
 			srcY = srcy;

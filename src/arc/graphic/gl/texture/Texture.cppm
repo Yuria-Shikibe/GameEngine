@@ -20,6 +20,7 @@ export namespace GL{
 		filterMin              = GL_TEXTURE_MIN_FILTER,
 		wrap_U                 = GL_TEXTURE_WRAP_S,
 		wrap_V                 = GL_TEXTURE_WRAP_T,
+		clamp_to_edge          = GL_CLAMP_TO_EDGE,
 		//...
 	};
 
@@ -78,7 +79,7 @@ export namespace GL{
 			glTextureParameteri(nameID, GL_TEXTURE_MAG_FILTER, upScale);
 		}
 
-		void setWrap(const GLint clamp = GL_CLAMP_TO_EDGE) const{
+		void setWrap(const GLint clamp = GL::clamp_to_edge) const{
 			glTextureParameteri(nameID, GL_TEXTURE_WRAP_S, clamp);
 			glTextureParameteri(nameID, GL_TEXTURE_WRAP_T, clamp);
 		}

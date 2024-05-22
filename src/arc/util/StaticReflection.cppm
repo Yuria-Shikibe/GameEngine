@@ -92,6 +92,7 @@ export namespace ext::reflect{
 	private:
 		[[deprecated("Field Missing Srl Info")]] static constexpr void warningSrl(){};
 		static constexpr int checkSrl{[]() constexpr {
+			// ReSharper disable once CppDeprecatedEntity
 			if constexpr (!requires{ FieldInfo<ptr>::srlType; })warningSrl();
 			return 0;
 		}()};

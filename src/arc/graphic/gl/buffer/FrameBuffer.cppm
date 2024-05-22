@@ -63,6 +63,7 @@ export namespace GL{
 
 			for(const auto& texture : attachmentsColor){
 				texture->setParameters(GL::linear, GL::linear);
+				texture->setWrap(GL::clamp_to_edge);
 			}
 
 			if(!check()){
@@ -119,7 +120,7 @@ export namespace GL{
 			glDrawBuffers(count, ALL_COLOR_ATTACHMENTS.data());
 		}
 
-		void enableDrawAt(const int id = 1) const {
+		void enableDrawAt(const int id = 0) const {
 			glDrawBuffer(id + GL_COLOR_ATTACHMENT0);
 		}
 
@@ -150,6 +151,7 @@ export namespace GL{
 
 			for(const auto& texture : attachmentsColor){
 				texture->setParameters(GL::linear, GL::linear);
+				texture->setWrap(GL::clamp_to_edge);
 			}
 
 			if(renderBuffer)renderBuffer->resize(w, h);

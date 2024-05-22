@@ -170,6 +170,7 @@ export namespace Game{
 			setTrait(trait);
 			trait->init(this);
 			this->parent = parent;
+			zLayer = parent->zLayer;
 
 			init();
 		}

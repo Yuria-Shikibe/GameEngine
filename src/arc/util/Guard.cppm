@@ -1,7 +1,3 @@
-//
-// Created by Matrix on 2024/5/12.
-//
-
 export module ext.Guard;
 
 import ext.MetaProgramming;

@@ -3,6 +3,11 @@ module Game.Scene.MainMenu;
 import UI.InputArea;
 import UI.Root;
 import SideTemp;
+import UI.Screen;
+import Core;
+import Graphic.Draw;
+import Assets.Graphic;
+import OS;
 
 void func(UI::Table& table){
 	table.setEmptyDrawer();
@@ -63,6 +68,10 @@ void Game::Scenes::MainMenu::build(){
 
 									::Test::genRandomEntities();
 								}},
+								{"ui-test", [](const UI::Button& b, bool){
+										UI::Root* root = b.getRoot();
+										root->switchScene("Test");
+									}},
 								{"about", [](const UI::Button& b, bool){
 									UI::Root* root = b.getRoot();
 									root->showDialog(true, [](UI::Dialog& dialog){
@@ -112,8 +121,30 @@ void Game::Scenes::MainMenu::build(){
 		.setAlign(Align::left).setSizeScale(0.2f, 1.0f)
 		.setMargin(0, 10, 0, 10).setSrcScale(0.075f, 0.0f);
 
+	screen = &add<UI::Screen>([](UI::Screen& table){
+
+		})
+		.setAlign(Align::left).setSizeScale(0.5f, 1.0f)
+		.setMargin(0, 10, 0, 10).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
+
 	add<UI::Table>(func)
 		.setAlign(Align::Mode::bottom_right)
 		.setSizeScale(0.7f, 0.15f)
 		.setMargin(0, 12, 0, 12);
+}
+
+void Game::Scenes::MainMenu::drawContent() const{
+	namespace Draw = Graphic::Draw;
+	Scene::drawContent();
+
+	screen->beginDraw(&Core::BatchGroup::overlay);
+
+	GL::UniformGuard _{Assets::Shaders::coordAxisArgs, &screen->getCamera()};
+	Graphic::Mesh::meshBegin(Assets::Meshes::coords);
+	Graphic::Mesh::meshEnd(true);
+
+	Draw::color(Graphic::Colors::WHITE);
+	Draw::rectOrtho(Draw::globalState.contextTexture, 0, 0, 100, 100);
+
+	screen->endDraw();
 }

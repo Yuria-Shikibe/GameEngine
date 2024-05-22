@@ -46,6 +46,7 @@ export namespace Ctrl{
 			if(Core::uiRoot->onEsc()){
 				if(auto* main = Core::uiRoot->getScenes().tryFind(UI::Menu_Main); !main || Core::uiRoot->currentScene == main->get())return;
 
+				//TODO Move these to other place
 				Core::uiRoot->showDialog(true, [](UI::Dialog& dialog){
 					dialog.content.setEmptyDrawer();
 					dialog.content.setLayoutByRelative(false);
@@ -102,66 +103,13 @@ export namespace Ctrl{
 				Core::uiRoot->mouseScroll.set(x, y);
 				Core::uiRoot->onScroll();
 			}else{
-				Core::camera->setTargetScale(Core::camera->getTargetScale() + y * 0.05f);
+				if(Core::focus.camera)Core::focus.camera->setTargetScale(Core::focus.camera->getTargetScale() + y * 0.05f);
 			}
 		});
 	}
 
 	void registerCommands(Core::Input& input){
 		registerUIBinds(input);
-
-
-		// NOLINT(*-non-const-parameter)
-		// input.binds.registerBind(OS::KeyBind(Key::A, Act::Continuous, +[]{
-		// 	Core::camera->move(-baseMoveSpeed * disableMoveScl * OS::delta(), 0);
-		// }));
-		// input.binds.registerBind(OS::KeyBind(Key::D, Act::Continuous, +[]{
-		// 	Core::camera->move(baseMoveSpeed * disableMoveScl * OS::delta(), 0);
-		// }));
-		// input.binds.registerBind(OS::KeyBind(Key::W, Act::Continuous, +[]{
-		// 	Core::camera->move(0, baseMoveSpeed * disableMoveScl * OS::delta());
-		// }));
-		// input.binds.registerBind(OS::KeyBind(Key::S, Act::Continuous, +[]{
-		// 	Core::camera->move(0, -baseMoveSpeed * disableMoveScl * OS::delta());
-		// }));
-		//
-		// input.binds.registerBind(Key::Left_Shift, Mode::Ignore,
-		//                             []{
-		// 	                            baseMoveSpeed = 300;
-		//                             },
-		//                             []{ baseMoveSpeed = 60; }
-		// );
-		//
-		// input.binds.registerBind(OS::KeyBind(Key::M, Act::Press, []{
-		// 	if(disableMoveScl < 1.0f){
-		// 		disableMoveScl = 1.0f;
-		// 	} else{
-		// 		disableMoveScl = 0.0f;
-		// 	}
-		// }));
-		//
-		// input.binds.registerBind(Mouse::LMB, Act::DoubleClick, []{
-		//
-		// 	if(Core::uiRoot->cursorCaptured()) return;
-		// 	auto pos = Core::input.getCursorPos();
-		// 	pos.div(Core::renderer->getWidth(), Core::renderer->getHeight()).scl(2.0f).sub(1.0f, 1.0f);
-		// 	pos *= Core::camera->getScreenToWorld();
-		//
-		// 	Core::camera->setPosition(pos);
-		// });
-		//
-		// input.binds.registerBind(Key::H, Act::Press, []{
-		// 	if(Core::uiRoot->isHidden){
-		// 		Core::uiRoot->show();
-		// 	} else{
-		// 		Core::uiRoot->hide();
-		// 	}
-		// });
-		//
-		//
-		// Core::input.binds.registerBind(Key::P, Act::Press, []{
-		// 	OS::setPause(!OS::isPaused());
-		// });
 
 		{
 			//TODO pack this into a class like screen shot manager

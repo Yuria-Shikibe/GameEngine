@@ -142,7 +142,7 @@ export namespace UI {
 		}
 
 		template <Concepts::Derived<Widget> T, bool fillX = true, bool fillY = false>
-		void setItem(Concepts::Invokable<void(T&)> auto&& func) {
+		T& setItem(Concepts::Invokable<void(T&)> auto&& func) {
 			auto ptr = std::make_unique<T>();
 
 			children.clear();
@@ -154,6 +154,8 @@ export namespace UI {
 			if constexpr (!std::same_as<decltype(func), std::nullptr_t>) {
 				func(static_cast<T&>(*getItem()));
 			}
+
+			return static_cast<T&>(*getItem());
 		}
 
 		//BUG this has bug when resized !

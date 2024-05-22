@@ -35,6 +35,10 @@ void UI::Widget::drawBase() const{
 	drawer->drawBackground(this);
 }
 
+void UI::Widget::drawBase(const Rect rect) const{
+	drawer->drawBackground(rect);
+}
+
 void UI::Widget::draw() const {
 	if(!visiable)return;
 
@@ -43,11 +47,12 @@ void UI::Widget::draw() const {
 	}
 
 
-	drawStyle();
 	Graphic::Draw::mixColor();
 	Graphic::Draw::color(color, color.a * maskOpacity * selfMaskOpacity);
 
 	drawContent();
+	drawStyle();
+
 	Graphic::Draw::color();
 }
 

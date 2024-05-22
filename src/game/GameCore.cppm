@@ -79,9 +79,9 @@ export namespace Game {
 			if(overlayManager->activated)overlayManager->updateGlobal(delta);
 			if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
 
-			if(cameraLock && playerController){
-				FrameCore::camera->setPosition(FrameCore::camera->getPosition().lerp(playerController->moveCommand.curTrans.vec, 0.05f));
-			}
+			// if(cameraLock && playerController){
+			// 	FrameCore::camera->setPosition(FrameCore::camera->getPosition().lerp(playerController->moveCommand.curTrans.vec, 0.05f));
+			// }
 		}
 
 		virtual void drawAboveUI(FrameCore::Renderer* renderer) const{

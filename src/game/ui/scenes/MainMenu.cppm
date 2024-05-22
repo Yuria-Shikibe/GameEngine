@@ -13,13 +13,17 @@ import UI.Label;
 import UI.ControlBindTable;
 
 import UI.Dialog.CtrlBind;
+import UI.Screen;
 import std;
 
 export namespace Game::Scenes{
 	class MainMenu : public ::UI::Scene{
+		UI::Screen* screen{};
 	public:
 		[[nodiscard]] MainMenu(){}
 
 		void build() override;
+
+		void drawContent() const override;
 	};
 }

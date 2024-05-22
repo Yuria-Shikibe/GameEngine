@@ -247,6 +247,7 @@ export namespace UI {
 		 * @brief Used to create blur effect, this is draw as a mask
 		 */
 		void drawBase() const override;
+		void drawBase(Rect rect) const;
 
 		void draw() const override;
 
@@ -356,28 +357,32 @@ export namespace UI {
 			changed(UI::ChangeSignal::notifyAll);
 		}
 
-		virtual void setWidth(float w) {
+		virtual bool setWidth(float w) {
 			w = clampTargetWidth(w);
-			if(Math::equal(bound.getWidth(), w))return;
+			if(Math::equal(bound.getWidth(), w))return false;
 			bound.setWidth(w);
 			changed(UI::ChangeSignal::notifyAll);
+			return true;
 		}
 
-		virtual void setHeight(float h) {
+		virtual bool setHeight(float h) {
 			h = clampTargetHeight(h);
-			if(Math::equal(bound.getHeight(), h))return;
+			if(Math::equal(bound.getHeight(), h))return false;
 			bound.setHeight(h);
 			changed(UI::ChangeSignal::notifyAll);
+			return true;
 		}
 
-		void setSize(const float w, const float h) {
-			setWidth(w);
-			setHeight(h);
-			changed(UI::ChangeSignal::notifyAll);
+		bool setSize(const float w, const float h) {
+			bool isChanged = false;
+			isChanged |= setWidth(w);
+			isChanged |= setHeight(h);
+			if(isChanged)changed(UI::ChangeSignal::notifyAll);
+			return isChanged;
 		}
 
-		void setSize(const float s) {
-			setSize(s, s);
+		bool setSize(const float s) {
+			return setSize(s, s);
 		}
 
 		virtual float getIdealWidth() const noexcept {return bound.getWidth();}
@@ -387,6 +392,8 @@ export namespace UI {
 		[[nodiscard]] constexpr Rect getBound() const noexcept {return bound;}
 
 		[[nodiscard]] constexpr Rect getValidBound() const noexcept {return {border.left, border.bottom, getValidWidth(), getValidHeight()};}
+
+		[[nodiscard]] constexpr Geom::Vec2 getValidSize() const noexcept {return {getValidWidth(), getValidHeight()};}
 
 		virtual void calAbsoluteSrc(Widget* parent) {
 			Geom::Vec2 vec = parent ? parent->absoluteSrc : Geom::ZERO;

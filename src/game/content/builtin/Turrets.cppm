@@ -17,9 +17,11 @@ export namespace Game::Content::Builtin{
 	void load_Turrets(Game::ContentLoader* loader){
 		test_pulseLaser = loader->registerContent<BasicTurretType>("ancient-pulse-laser", [](BasicTurretType& self){
 			self.reloadTime = 20.0f;
+
 			self.bulletTrait = &Game::Content::basicBulletType;
 			self.drawer = std::make_unique<Game::Drawer::TextureDrawer<Game::TurretEntity>>("",
 			[](Game::Drawer::TextureDrawer<Game::TurretEntity>* drawer){
+				// drawer->
 				// drawer->trans.vec.x = 100;
 			});
 		});

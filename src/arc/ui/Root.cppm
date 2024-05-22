@@ -105,6 +105,16 @@ export namespace UI{
 			scenes.insert_or_assign(name, std::move(ptr));
 		}
 
+		void registerScene(std::unique_ptr<Scene>&& scene){
+			auto name = std::string(scene->getSceneName());
+
+			setRootOf(scene.get());
+			scene->setSize(width, height);
+			scene->build();
+
+			scenes.insert_or_assign(std::move(name), std::move(scene));
+		}
+
 		void eraseScene(const std::string_view name){
 			scenes.erase(name);
 		}
@@ -235,6 +245,10 @@ export namespace UI{
 			this->textInputListener = listener;
 		}
 
+		[[nodiscard]] bool hasTextFocus() const noexcept{
+			return this->textInputListener != nullptr;
+		}
+
 		void resize(int w, int h) override;
 
 		[[nodiscard]] float getWidth() const{ return width; }
@@ -277,6 +291,7 @@ export namespace UI{
 		 */
 		bool onEsc(){
 			if(this->textInputListener){
+				textInputListener->informEscape(0, 0);
 				this->setTextFocus(nullptr);
 				return false;
 			}

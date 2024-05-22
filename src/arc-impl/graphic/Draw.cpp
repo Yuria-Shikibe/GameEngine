@@ -359,3 +359,7 @@ void Graphic::Overlay::vert_monochromeAll(float* vertices, const Color c, const 
 Graphic::BatchPtr& Graphic::getBatch(BatchPtr Core::BatchGroup::* batchPtr){
 	return Core::batchGroup.*batchPtr;
 }
+
+float Graphic::Draw::getNormalizedDepth(const float z){
+	return Math::curve(z, Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);//(1 / z - 1 / DepthNear) / (1 / DepthFar - 1 / DepthNear);
+}

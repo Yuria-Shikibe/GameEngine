@@ -13,6 +13,8 @@ import UI.SeperateDrawable;
 
 using namespace Graphic;
 
+//TODO should 'flush' at here?
+
 void Core::Renderer::frameBegin(GL::FrameBuffer* frameBuffer, const bool resize, const Graphic::Color& initColor, GLbitfield mask) {
 	if (contextFrameBuffer == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
 
@@ -33,9 +35,7 @@ void Core::Renderer::frameBegin(GL::FrameBuffer* frameBuffer, const bool resize,
 	contextFrameBuffer->enableDrawAll();
 
 	contextFrameBuffer->clearColorAll(initColor);
-	contextFrameBuffer->clearDepth();
-	glClearDepth(0.0f); //TODO why?????????
-	glClear(mask);
+	contextFrameBuffer->clearDepth(0.0f);
 }
 
 void Core::Renderer::frameEnd(const ::std::function<void(GL::FrameBuffer*, GL::FrameBuffer*)>& func) {
@@ -95,13 +95,11 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 
 	uiBlurMask.bind();
 	uiBlurMask.clearColor();
+
 	drawable->drawBase();
 	Graphic::Batch::flush();
-
-	// effectBuffer.clear();
 	Assets::PostProcessors::frostedGlassBlur->apply(contextFrameBuffer, &effectBuffer);
-	// Graphic::Frame::blitCopy(&effectBuffer, 0, contextFrameBuffer, 0);
-	// Assets::PostProcessors::c->apply();
+
 
 	effectBuffer.getTopTexture().active(0);
 	contextFrameBuffer->getTopTexture().active(1);
@@ -109,11 +107,8 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 
 	GL::disable(GL::State::BLEND);
 	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){
-		// shader.setColor("mixColor", Colors::CLEAR);
 		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::DARK_GRAY, 0.55f).setA(0.25f));
-		// shader.setColor("mixColor", Colors::GRAY);
 		shader.setColor("srcColor", Colors::GRAY.createLerp(Colors::DARK_GRAY, 0.35f).createLerp(Colors::AQUA_SKY, 0.125f));
-		// shader.setColor("srcColor", Colors::WHITE);
 	});
 	GL::enable(GL::State::BLEND);
 

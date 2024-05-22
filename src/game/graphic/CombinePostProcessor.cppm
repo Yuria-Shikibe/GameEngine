@@ -17,13 +17,14 @@ using namespace GL;
 export namespace Game{
 	class CombinePostProcessor : public ::Graphic::PostProcessor{
 	protected:
-		mutable GL::FrameBuffer temp{2, 2};
+		mutable GL::FrameBuffer temp{GL::FrameBuffer::RecommendedMinSize, GL::FrameBuffer::RecommendedMinSize};
 
 	public:
 		Graphic::PingPongProcessor blur{};
 
 		const GL::Shader* mergeShader{nullptr};
 		const GL::Shader* bloomShader{nullptr};
+		const GL::Shader* SSAObliter{nullptr};
 
 		CombinePostProcessor(Graphic::PostProcessor* const blurProcessor1, Graphic::PostProcessor* const blurProcessor2, const GL::Shader* mergeShader)
 			: blur(blurProcessor1, blurProcessor2, 3),
@@ -32,6 +33,7 @@ export namespace Game{
 			blur.port.inPort = 2;
 			blur.port.outPort = 0;
 			blur.setScale(0.75f);
+			// setTargetState(GL::State::BLEND, false);
 		}
 
 		void beginProcess() const override{

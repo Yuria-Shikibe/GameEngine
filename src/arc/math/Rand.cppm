@@ -1,12 +1,10 @@
-module;
-
 export module Math.Rand;
 
 import std;
-import ext.Concepts;
 
 export namespace Math {
 	/**
+	 * TODO adapt to std::random_generator
 	 * Impl XorShift Random
 	 * @author Inferno
 	 * @author davebaol
@@ -60,7 +58,7 @@ export namespace Math {
 			setState(seed0, seed1);
 		}
 		
-		constexpr size_t nextLong() {
+		constexpr std::size_t nextLong() {
 			SeedType s1       = this->seed0;
 			const SeedType s0 = this->seed1;
 			this->seed0       = s0;
@@ -90,10 +88,10 @@ export namespace Math {
 		 * @param n_exclusive the positive bound on the random number to be returned.
 		 * @return the next pseudo-random {long} value between {0} (inclusive) and {n} (exclusive).
 		 */
-		constexpr size_t nextLong(const size_t n_exclusive) {
+		constexpr std::size_t nextLong(const std::size_t n_exclusive) {
 			for(;;) {
-				const size_t bits  = nextLong() >> 1ull;
-				const size_t value = bits % n_exclusive;
+				const std::size_t bits  = nextLong() >> 1ull;
+				const std::size_t value = bits % n_exclusive;
 				if(bits >= value + (n_exclusive - 1)) return value;
 			}
 		}

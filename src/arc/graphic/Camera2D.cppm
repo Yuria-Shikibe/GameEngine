@@ -15,139 +15,167 @@ import OS.ApplicationListener;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import std;
-
-using namespace Geom;
+import Math.Rand;
+import Math;
 
 export namespace Core{
 	//TODO poor design
 	//TODO 3D support maybe in the future?
 	class Camera2D final : public OS::ApplicationListener, public Graphic::ResizeableInt {
 	public:
-		static constexpr float MaximumScale = 5.0f;
-		static constexpr float MinimumScale = 0.2f;
+		static constexpr float DefMaximumScale = 5.0f;
+		static constexpr float DefMinimumScale = 0.2f;
+		static constexpr float DefScaleSpeed = 0.095f;
+		static constexpr float ShakeActivateThreshold = 0.005f;
 	protected:
-		Matrix3D worldToScreen{};
-		Matrix3D screenToWorld{};
+		Geom::Matrix3D worldToScreen{};
+		Geom::Matrix3D screenToWorld{};
 
-		OrthoRectUInt screenSize{};
+		//TODO is a rect necessary??
+		Geom::Point2U screenSize{};
 
-		//TODO this viewport design is so bad!
-		std::unique_ptr<Graphic::Viewport<>> viewport{std::make_unique<Graphic::Viewport_OrthoRect>()};
+		Geom::Vec2 stablePos{};
+		Geom::OrthoRectFloat viewport{};
 
 		float scale{1.0f};
 		float targetScale{1.0f};
 
-		float minScale = std::log(MinimumScale);
-		float maxScale = std::log(MaximumScale);
+		float minScale = std::log(DefMinimumScale);
+		float maxScale = std::log(DefMaximumScale);
+
+		float shakeIntensity{0.0f};
+		float shakeCorrectionSpeed{0.05f};
+
+		Math::Rand rand{};
 
 	public:
 		Camera2D() = default;
 
-		void resize(const int w, const int h) override { // NOLINT(*-make-member-function-const)
-			screenSize.setSize(w, h);
+		void shake(const float intensity, const float  fadeSpeed) noexcept{
+			shakeIntensity = intensity;
+			shakeCorrectionSpeed = fadeSpeed;
 		}
 
-		[[nodiscard]] explicit Camera2D(Graphic::Viewport<>* viewport)
-			: viewport(viewport) {
+		void setScaleClamp(const float min, const float max) noexcept{
+			minScale = std::log(max);
+			maxScale = std::log(min);
 		}
 
-		void setViewport(Graphic::Viewport<>* viewport){
-			this->viewport.reset(viewport);
+		void resize(const int w, const int h) noexcept override { // NOLINT(*-make-member-function-const)
+			screenSize.set(w, h);
 		}
 
-		[[nodiscard]] Graphic::Viewport<>& getViewport() const {
-			return *viewport;
+		[[nodiscard]] const Geom::OrthoRectFloat& getViewport() const noexcept {
+			return viewport;
 		}
 
-		[[nodiscard]] const OrthoRectFloat& getViewportRect() const {
-			return viewport->getPorjectedBound();
+		void move(const float x, const float y) noexcept {
+			stablePos.add(x, y);
 		}
 
-		void move(const float x, const float y) const {
-			viewport->getPosition().add(x, y);
+		void move(const Geom::Vec2 vec2) noexcept {
+			stablePos.add(vec2);
 		}
 
-		void move(const Geom::Vec2 vec2) const {
-			viewport->getPosition().add(vec2);
+		[[nodiscard]] Geom::Vec2 getPosition() const noexcept {
+			return stablePos;
 		}
 
-		[[nodiscard]] Geom::Vec2 screenCenter() const {
-			return viewport->getCenter();
+		void setPosition(const Geom::Vec2& position) noexcept {
+			stablePos.set(position);
 		}
 
-		void setOrtho(float width, float height) const {
+		[[nodiscard]] Geom::Vec2 screenCenter() const noexcept{
+			return screenSize.as<float>() / 2.f;
+		}
+
+		void setOrtho(float width, float height) noexcept{
 			width /= scale;
 			height /= scale;
 
-			viewport->setOrtho(width, height);
+			viewport.setSize(width, height);
 		}
 
 		void update(const float delta) override {
-			setOrtho(static_cast<float>(screenSize.getWidth()), static_cast<float>(screenSize.getHeight()));
+			setOrtho(static_cast<float>(screenSize.x), static_cast<float>(screenSize.y));
 
 			scale = std::exp(std::lerp(
-				std::log(scale), std::log(targetScale), delta * 0.1f
+				std::log(scale), std::log(targetScale), delta * DefScaleSpeed
 			));
 
-			if(std::abs(scale - targetScale) < 0.00025f) {
+			viewport.setCenter(stablePos);
+
+			// if(!Math::zero(shakeIntensity, ShakeActivateThreshold)){
+			// 	auto randVec = Geom::Vec2{}.setPolar(rand.random(360.0f), rand.random(shakeIntensity));
+			//
+			// 	shakeIntensity = Math::approach(shakeIntensity, 0, shakeCorrectionSpeed * delta);
+			// 	viewport.move(randVec);
+			// }
+
+			if(Math::zero(scale - targetScale, 0.00025f)) {
 				scale = targetScale;
 			}
 
-			viewport->modify(worldToScreen);
+			worldToScreen.setOrthogonal(viewport.getSrcX(), viewport.getSrcY(), viewport.getWidth(), viewport.getHeight());
 
 			screenToWorld.set(worldToScreen).inv();
 		}
 
-		[[nodiscard]] Matrix3D& getWorldToScreen() {
+		[[nodiscard]] Geom::Matrix3D& getWorldToScreen() noexcept {
 			return worldToScreen;
 		}
 
-		[[nodiscard]] Vec2 getWorldToScreen(const Vec2 vec2) const {
+		[[nodiscard]] const Geom::Matrix3D& getWorldToScreen() const noexcept {
+			return worldToScreen;
+		}
+
+		[[nodiscard]] Geom::Vec2 getWorldToScreen(const Geom::Vec2 vec2) const noexcept{
 			return worldToScreen * vec2;
 		}
 
-		[[nodiscard]] Vec2 getScreenToWorld(const Vec2 vec2) const {
+		[[nodiscard]] Geom::Vec2 getScreenToWorld(const Geom::Vec2 vec2) const noexcept{
 			return screenToWorld * vec2;
 		}
 
-		void setWorldToScreen(const Matrix3D& worldToScreen) {
+		void setWorldToScreen(const Geom::Matrix3D& worldToScreen) noexcept{
 			this->worldToScreen = worldToScreen;
 		}
 
-		[[nodiscard]] Matrix3D& getScreenToWorld() noexcept {
+		[[nodiscard]] Geom::Matrix3D& getScreenToWorld() noexcept {
 			return screenToWorld;
 		}
 
-		void setScreenToWorld(const Matrix3D& screenToWorld) {
+		[[nodiscard]] const Geom::Matrix3D& getScreenToWorld() const  noexcept {
+			return screenToWorld;
+		}
+
+		void setScreenToWorld(const Geom::Matrix3D& screenToWorld) noexcept{
 			this->screenToWorld = screenToWorld;
 		}
 
-		[[nodiscard]] Vec2 getPosition() const {
-			return viewport->getCenter();
-		}
 
-		void setPosition(const Vec2& position) const {
-			viewport->getPosition() = position;
-		}
-
-		[[nodiscard]] float getScale() const {
+		[[nodiscard]] float getScale() const noexcept{
 			return scale;
 		}
 
-		void setScale(const float scale) {
+		void setScale(const float scale) noexcept{
 			this->scale = scale;
 		}
 
-		[[nodiscard]] float getTargetScale() const {
+		[[nodiscard]] float getTargetScale() const noexcept{
 			return std::log(targetScale);
 		}
 
-		void setTargetScale(const float targetScale) {
+		void setTargetScale(const float targetScale) noexcept{
 			this->targetScale = std::exp(std::clamp(targetScale, minScale, maxScale));
 		}
 
-		void setTargetScaleDef() {
-			this->targetScale = 1.0f;
+		void setTargetScaleDef() noexcept{
+			this->targetScale = std::exp(Math::clamp(0.0f, minScale, maxScale));
+		}
+
+		Geom::Vec2 getSize() const noexcept{
+			return screenSize.as<float>();
 		}
 	};
 }

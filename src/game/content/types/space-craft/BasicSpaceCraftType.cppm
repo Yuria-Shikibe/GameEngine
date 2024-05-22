@@ -32,7 +32,7 @@ export namespace Game::Content{
 		}
 
 		void draw(const SpaceCraft* entity) const override{
-			drawer->draw({Game::Drawer::getCompPos(entity), {.lifetimeProgress = 1.0f}}, entity);
+			drawer->draw({Drawer::PartTrans{entity->trans, 0}, {.lifetimeProgress = 1.0f}}, entity);
 		}
 
 		void pullLoadRequest(Graphic::TextureAtlas& atlas, const OS::FileTree& searchTree, std::string prefix) override{

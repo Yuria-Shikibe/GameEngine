@@ -316,7 +316,7 @@ export namespace Graphic{
 
 	namespace Draw{
 		constexpr float DepthNear = 1;
-		constexpr float DepthFar = 300;
+		constexpr float DepthFar = 50;
 
 		struct ColorState{
 			Color contextColor = Colors::WHITE;
@@ -369,9 +369,7 @@ export namespace Graphic{
 			return globalState.defaultTexture;
 		}
 
-		constexpr float getNormalizedDepth(const float z){
-			return (1 / z - 1 / DepthNear) / (1 / DepthFar - 1 / DepthNear);
-		}
+		float getNormalizedDepth(const float z);
 
 		void setZ(const float z){ globalState.contextNorZ = getNormalizedDepth(z); }
 

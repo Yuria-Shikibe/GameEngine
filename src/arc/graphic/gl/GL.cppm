@@ -322,6 +322,10 @@ export namespace GL {
         glStencilMask(mask);
     }
 
+    void clearCurrentFrameBuffer(const GLbitfield bits){
+        glClear(bits);
+    }
+
     void setStencilOperation(StencilOperation stencilFail, StencilOperation depthFail, StencilOperation pass){
         glStencilOp(static_cast<GLenum>(stencilFail), static_cast<GLenum>(depthFail), static_cast<GLenum>(pass));
     }
@@ -343,6 +347,14 @@ export namespace GL {
                 glBindFramebuffer(flag, id);
             }
         }
+    }
+
+    auto getCurFrameBuffer_Draw(){
+        return currentDrawFrameBufferID;
+    }
+
+    auto getCurFrameBuffer_Read(){
+        return currentReadFrameBufferID;
     }
 }
 

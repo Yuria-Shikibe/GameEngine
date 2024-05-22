@@ -382,11 +382,11 @@ export namespace UI{
 
 		Align::Mode textAlignMode{Align::Mode::top_left};
 
-		Font::TextString getTextCopy() const {
+		Font::TextString getText() const & {
 			return glyphLayout->lastText;
 		}
 
-		Font::TextString getTextMove() const && {
+		Font::TextString getText() const && {
 			return std::move(glyphLayout->lastText);
 		}
 
@@ -663,6 +663,19 @@ export namespace UI{
 
 		CursorType getCursorType() const override{
 			return CursorType::textInput;
+		}
+
+		bool onEsc() override{
+			if(carets.empty())return true;
+
+			setTextUnfocused();
+			carets.clear();
+
+			return true;
+		}
+
+		void informEscape(unsigned int codepoint, int mods) override{
+			onEsc();
 		}
 	};
 }

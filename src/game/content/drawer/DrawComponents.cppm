@@ -102,7 +102,7 @@ export namespace Game::Drawer{
 			this->passTrans(param, cur);
 
 			Draw::color(lightColor);
-			Draw::setZ(cur.zOffset);
+			Draw::setZ(cur.zOffset + entity->zLayer);
 			Draw::rect<BatchWorld>(mainRegion, cur, scl);
 		}
 	};

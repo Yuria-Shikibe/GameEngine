@@ -18,6 +18,10 @@ export namespace Ctrl{
 			this->current = focus;
 		}
 
+		void switchDef(){
+			this->current = fallback;
+		}
+
 		void move(const Geom::Vec2 movement) const{
 			if(current)current->move(movement);
 		}
@@ -28,6 +32,10 @@ export namespace Ctrl{
 
 		auto operator->() const{
 			return current;
+		}
+
+		explicit operator bool() const{
+			return current != nullptr;
 		}
 	};
 }

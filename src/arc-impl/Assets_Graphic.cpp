@@ -3,6 +3,8 @@ module Assets.Graphic;
 import Core;
 import OS;
 import std;
+import Geom.Vector3D;
+import Math.Rand;
 
 using namespace GL;
 using namespace Graphic;
@@ -95,9 +97,10 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	coordAxis->setUniformer([](const Shader& shader) {
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
-		shader.setFloat("scale",  Core::camera->getScale());
-		shader.setVec2("screenSize", Core::renderer->getDrawWidth(), Core::renderer->getDrawHeight());
-		shader.setVec2("cameraPos", Core::camera->screenCenter());
+		auto* camera = coordAxisArgs.get<0>() ? coordAxisArgs.get<0>() : Core::camera;
+		shader.setFloat("scale",  camera->getScale());
+		shader.setVec2("screenSize", camera->getSize());
+		shader.setVec2("cameraPos", camera->getPosition());
 	});
 
 	filter = manager->registerShader(Dir::shader, "filter");
@@ -107,12 +110,46 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 
 	world = manager->registerShader(Dir::shader, "screenspace-world");
 
-	merge = manager->registerShader(Dir::shader.subFile("world"), "merge");
+	merge = manager->registerShader(new Shader{Dir::shader.subFile("world"),{{ShaderType::frag, "merge"}, {ShaderType::vert, "blit"}}});
 	merge->setUniformer([](const Shader& shader) {
 		shader.setTexture2D("texBase", 0);
 		shader.setTexture2D("texNormal", 1);
 		shader.setTexture2D("texLight", 2);
-		shader.setTexture2D("bloom", 3);
+		shader.setTexture2D("texData", 3);
+		shader.setTexture2D("texBloom", 4);
+
+		constexpr auto roundNear = 8;
+		constexpr auto roundMid = 4;
+		constexpr auto roundFar = 4;
+		constexpr unsigned Size = roundNear + roundMid + roundFar;
+
+		const float cameraScale = Core::camera->getScale();
+		const unsigned kernalSize = Math::clamp(static_cast<unsigned>(Size * cameraScale), 8u, Size);
+		const auto scale = ~Core::renderer->getSize() * cameraScale;
+		shader.setVec2("scale", scale);
+
+		static constexpr std::array<Geom::Vector2D<float>, Size> smp = []() constexpr {
+			std::array<Geom::Vector2D<float>, Size> arr{};
+
+			for(int i = 0; i < roundNear; ++i){
+				arr[0 + i].setPolar(Math::DEG_FULL / roundNear * static_cast<float>(i), 0.2270270270f);
+			}
+
+			for(int i = 0; i < roundMid; ++i){
+				arr[roundNear + i].setPolar(Math::DEG_FULL / roundMid * static_cast<float>(i), 0.53062162162f);
+			}
+
+			for(int i = 0; i < roundFar; ++i){
+				arr[roundMid + roundNear + i].setPolar(Math::DEG_FULL / roundFar * static_cast<float>(i) + Math::DEG_FULL / roundFar / 2.f, 0.83062162162f);
+			}
+
+			return arr;
+		}();
+
+		shader.setVec2Arr("kernal[0]", smp.data(), Size);
+		shader.setUint("kernalSize", Size);
+
+
 		// shader.setVec2("screenSizeInv", 1.0f / Core::renderer->getDrawWidth(), 1.0f / Core::renderer->getDrawHeight());
 	});
 
@@ -198,14 +235,15 @@ void Assets::PostProcessors::load(){
 
 	bloom->blur.ping2pong = bloom->blur.pong2ping = frostedGlass.get();
 	bloom->blur.processTimes = 2;
+	bloom->setIntensity(0.95f, 1.15f);
 
 	blurX_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const Shader& shader) {
-		shader.setVec2("direction", Geom::Vec2{1.80f, 0});
+		shader.setVec2("direction", Geom::Vec2{1.45f, 0});
 	}});
 	blurX_World->setTargetState(GL::State::BLEND, false);
 
 	blurY_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const Shader& shader) {
-		shader.setVec2("direction", Geom::Vec2{0, 1.80f});
+		shader.setVec2("direction", Geom::Vec2{0, 1.45f});
 	}});
 	blurY_World->setTargetState(GL::State::BLEND, false);
 

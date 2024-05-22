@@ -195,7 +195,7 @@ export namespace Assets {
 			effectBuffer.bind();
 			glClear(GL_STENCIL_BUFFER_BIT);
 
-			GL::viewport(static_cast<int>(width), static_cast<int>(height));
+			GL::viewport(width, height);
 			drawMain();
 
 			const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();

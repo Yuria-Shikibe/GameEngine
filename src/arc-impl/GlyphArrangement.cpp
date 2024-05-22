@@ -372,7 +372,7 @@ void Font::initParser(const FontFlags* const defFont) {
 
 	//SubScript End
 	defGlyphParser->tokenParser->modifier["\\sub"] = [](unsigned, const Font::TextView command, const ModifierableData& data) {
-		ParserFunctions::setScl(data, data.context.currentScale * 0.65f);
+		ParserFunctions::resetScl(data);
 		data.context.offset.setZero();
 	};
 

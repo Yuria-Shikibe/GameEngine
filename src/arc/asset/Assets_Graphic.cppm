@@ -38,6 +38,11 @@ import OS.File;
 import std;
 import Math;
 
+namespace Core{
+	export class Camera2D;
+}
+
+
 /**
  * \brief Inbuilt Resources
  *
@@ -49,6 +54,9 @@ export namespace Assets{
 		inline GL::Shader* stdPost = nullptr;
 		inline GL::Shader* texPost = nullptr;
 		inline GL::Shader* screenSpace = nullptr;
+
+		/** @brief [Screen Size, Camera Pos]*/
+		inline GL::UniformTupleWrapper coordAxisArgs{static_cast<Core::Camera2D*>(nullptr)};
 		inline GL::Shader* coordAxis = nullptr;
 		inline GL::Shader* filter = nullptr;
 
@@ -120,6 +128,7 @@ export namespace Assets{
 			whiteTex = new GL::Texture2D{Dir::texture.find("white.png")};
 			error = Graphic::Pixmap{Dir::texture.find("error.png")};
 			whiteRegion = GL::TextureRegionRect{whiteTex};
+			whiteRegion.shrinkEdge(15.0f);
 		}
 
 		void dispose() {

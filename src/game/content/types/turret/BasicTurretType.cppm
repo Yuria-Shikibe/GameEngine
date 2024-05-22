@@ -22,6 +22,7 @@ export namespace Game::Content{
 	struct BasicTurretType : TurretTrait, Game::ContentTrait{
 		std::unique_ptr<Game::Drawer::DrawComponent<TurretEntity>> drawer{nullptr}; //I believe drawers should be unique!
 		BulletTrait* bulletTrait{&basicBulletTypeSlow};
+		float zOffset = -3.0f;
 
 		[[nodiscard]] explicit BasicTurretType(const std::string_view& name)
 			: ContentTrait{name}{}
@@ -34,7 +35,7 @@ export namespace Game::Content{
 			// Graphic::Draw::color(Graphic::Colors::RED_DUSK);
 			// Graphic::Draw::Fill::poly(turret->getX(), turret->getY(), 3, 32, turret->trans.rot);
 
-			if(drawer)drawer->draw({Drawer::PartTrans{turret->trans, turret->zLayer}, {.lifetimeProgress = 1.0f}}, turret);
+			if(drawer)drawer->draw({Drawer::PartTrans{turret->trans, zOffset}, {.lifetimeProgress = 1.0f}}, turret);
 		}
 
 		void shoot(TurretEntity* turret, RealityEntity* shooter) const override{
