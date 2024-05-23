@@ -33,11 +33,11 @@ export namespace Game {
 			this->trans.vec.y = y;
 		}
 
-		[[nodiscard]] virtual Geom::Vec2& getPos() {
+		[[nodiscard]] Geom::Vec2& getPosRef() {
 			return trans.vec;
 		}
 
-		[[nodiscard]] virtual Geom::Vec2 copyPos() const {
+		[[nodiscard]] Geom::Vec2 getPos() const {
 			return trans.vec;
 		}
 	};

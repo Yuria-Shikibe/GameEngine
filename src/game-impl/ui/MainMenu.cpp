@@ -18,7 +18,7 @@ void func(UI::Table& table){
 		label.setEmptyDrawer();
 		label.setFillparentX();
 		label.setTextAlign(Align::Mode::bottom_right);
-		label.usingGlyphHeight = true;
+		label.setWrap(false);
 	}).wrapY().setAlign(Align::Mode::bottom_right).endLine();
 
 	table.add<UI::Label>([](UI::Label& label){
@@ -31,7 +31,7 @@ void func(UI::Table& table){
 		label.setEmptyDrawer();
 		label.setFillparentX();
 		label.setTextAlign(Align::Mode::bottom_right);
-		label.usingGlyphHeight = true;
+		label.setWrap(false);
 	}).wrapY().setAlign(Align::Mode::bottom_right).endLine();
 
 	table.add<UI::Label>([](UI::Label& label){
@@ -40,7 +40,7 @@ void func(UI::Table& table){
 		label.setEmptyDrawer();
 		label.setFillparentX();
 		label.setTextAlign(Align::Mode::bottom_right);
-		label.usingGlyphHeight = true;
+		label.setWrap(false);
 	}).wrapY().setAlign(Align::Mode::bottom_right).endLine();
 }
 
@@ -124,7 +124,7 @@ void Game::Scenes::MainMenu::build(){
 	screen = &add<UI::Screen>([](UI::Screen& table){
 
 		})
-		.setAlign(Align::left).setSizeScale(0.5f, 1.0f)
+		.setAlign(Align::Mode::center_left).setSizeScale(0.3f, 0.5f)
 		.setMargin(0, 10, 0, 10).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
 
 	add<UI::Table>(func)

@@ -16,6 +16,7 @@ import std;
 import ext.Guard;
 
 export namespace Assets::Effects{
+	constexpr Graphic::EffectShake shake{};
 	/**
 	 * @brief Using rotation as width
 	 */
@@ -68,6 +69,7 @@ export namespace Assets::Effects{
 			           trail.size() * effect.progress.get());
 		}
 	};
+
 
 	Graphic::Effect* genTrailFade(Graphic::EffectManager* manager, Graphic::Trail&& points, const float width = 1.0f){
 		static constexpr EffectDrawer_TrailFade drawer{60.0f};
@@ -137,32 +139,41 @@ export namespace Assets::Effects{
 			          });
 		}),
 
-		explode = Graphic::makeEffect(120.0f, [](const Graphic::Effect& e){
-			using Math::Interp::operator|;
-			using namespace Graphic;
+		explode = Graphic::makeEffect(100.0f, 100.0f, [](const Graphic::Effect& e){
+			                              using Math::Interp::operator|;
+			                              using namespace Graphic;
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
+			                              [[maybe_unused]] ext::Guard<
+				                              Draw::TextureState, &Draw::TextureState::contextTexture> tf
+				                              {Draw::globalState, Draw::globalState.defaultLightTexture};
 
-			Draw::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
-			Draw::setZ(e.zOffset);
+			                              Draw::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
+			                              Draw::setZ(e.zOffset);
 
-			Draw::Line::setLineStroke(e.progress.getInv() * 7.f);
-			Draw::Line::circle<BatchWorld>(e.trans.vec.x, e.trans.vec.y,
-			                               e.progress.get(Math::Interp::pow3Out) * e.trans.rot * 1.4f);
+			                              Draw::Line::setLineStroke(e.progress.getInv() * 7.f);
+			                              Draw::Line::circle<BatchWorld>(e.trans.vec.x, e.trans.vec.y,
+			                                                             e.progress.get(Math::Interp::pow3Out) * e.trans
+			                                                             .rot * 1.4f);
 
-			splashVec(e.handle, {
-				          .count = 18, .progress = e.progress.get(Math::Interp::pow2Out),
-				          .radius = {e.trans.rot * 0.3f, e.trans.rot * 1.25f}
-			          },
-			          [&e](const Geom::Vec2 vec2, Math::Rand& rand){
-				          const auto pos = e.trans.vec + vec2;
-				          Draw::color(Colors::DARK_GRAY, Colors::GRAY, rand.random(0.1f, 0.5f));
-				          Draw::Fill::circle<BatchWorld>(pos.x, pos.y,
-				                                         (e.progress.getInv() | Math::Interp::pow2In) * rand.random(
-					                                         e.trans.rot * 0.2f, e.trans.rot * 0.6f) + 2.0f);
-			          });
-		});
+			                              splashVec(e.handle, {
+				                                        .count = 18, .progress = e.progress.get(Math::Interp::pow2Out),
+				                                        .radius = {e.trans.rot * 0.3f, e.trans.rot * 1.25f}
+			                                        },
+			                                        [&e](const Geom::Vec2 vec2, Math::Rand& rand){
+				                                        const auto [x, y] = e.trans.vec + vec2;
+				                                        Draw::color(Colors::DARK_GRAY, Colors::GRAY,
+				                                                    rand.random(0.1f, 0.5f));
+				                                        Draw::Fill::circle<BatchWorld>(x, y,
+					                                        (e.progress.getInv() | Math::Interp::pow2In) * rand.random(
+						                                        e.trans.rot * 0.2f, e.trans.rot * 0.6f) + 2.0f);
+			                                        });
+		                              }, [](const float clip, const Graphic::Effect& e){
+			                              return Geom::OrthoRectFloat{
+					                              Math::max(
+						                              clip, e.progress.get(Math::Interp::pow3Out) * e.trans.rot * 1.4f *
+						                              2.0f)
+				                              }.setCenter(e.trans.vec);
+		                              });
 
 	// EffectDrawer_Func<[](const Graphic::Effect& effect){
 	// 	Draw::color(Colors::WHITE, effect.color, effect.progress.getMargin(0.35f));

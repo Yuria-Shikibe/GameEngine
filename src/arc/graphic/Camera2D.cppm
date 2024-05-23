@@ -27,6 +27,7 @@ export namespace Core{
 		static constexpr float DefMinimumScale = 0.2f;
 		static constexpr float DefScaleSpeed = 0.095f;
 		static constexpr float ShakeActivateThreshold = 0.005f;
+		static constexpr float ShakeMinSpacing = 1 / 30.f;
 	protected:
 		Geom::Matrix3D worldToScreen{};
 		Geom::Matrix3D screenToWorld{};
@@ -46,14 +47,16 @@ export namespace Core{
 		float shakeIntensity{0.0f};
 		float shakeCorrectionSpeed{0.05f};
 
+		float shakeReload{};
+
 		Math::Rand rand{};
 
 	public:
 		Camera2D() = default;
 
-		void shake(const float intensity, const float  fadeSpeed) noexcept{
-			shakeIntensity = intensity;
-			shakeCorrectionSpeed = fadeSpeed;
+		void shake(const float intensity, const float fadeSpeed) noexcept{
+			shakeIntensity = Math::max(intensity, shakeIntensity);
+			shakeCorrectionSpeed = Math::max(0.1f, (shakeCorrectionSpeed + Math::ceilPositive(fadeSpeed)) * 0.5f);
 		}
 
 		void setScaleClamp(const float min, const float max) noexcept{
@@ -81,6 +84,10 @@ export namespace Core{
 			return stablePos;
 		}
 
+		[[nodiscard]] Geom::Vec2 getViewportCenter() const noexcept {
+			return viewport.getCenter();
+		}
+
 		void setPosition(const Geom::Vec2& position) noexcept {
 			stablePos.set(position);
 		}
@@ -105,12 +112,24 @@ export namespace Core{
 
 			viewport.setCenter(stablePos);
 
-			// if(!Math::zero(shakeIntensity, ShakeActivateThreshold)){
-			// 	auto randVec = Geom::Vec2{}.setPolar(rand.random(360.0f), rand.random(shakeIntensity));
-			//
-			// 	shakeIntensity = Math::approach(shakeIntensity, 0, shakeCorrectionSpeed * delta);
-			// 	viewport.move(randVec);
-			// }
+			if(!Math::zero(shakeIntensity, ShakeActivateThreshold)){
+				float shakeIntensityScl = .25f;
+				if(shakeReload >= ShakeMinSpacing){
+					shakeReload = 0;
+					shakeIntensityScl = 1.f;
+				}else{
+					shakeReload += delta;
+				}
+
+				auto randVec = Geom::Vec2{}.setPolar(rand.random(360.0f), rand.random(shakeIntensity));
+				const auto dstScl = Math::curve(randVec.dst(viewport.getCenter() - getPosition()) / shakeIntensity, 0.85f, 1.65f) * .35f;
+
+				randVec.scl((1 - dstScl) * shakeIntensityScl);
+
+				viewport.move(randVec);
+
+				shakeIntensity = Math::approach(shakeIntensity, 0, shakeCorrectionSpeed * delta);
+			}
 
 			if(Math::zero(scale - targetScale, 0.00025f)) {
 				scale = targetScale;

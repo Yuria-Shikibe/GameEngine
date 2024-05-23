@@ -42,8 +42,9 @@ export namespace Game::Content{
 		}
 
 		void onKill(const SpaceCraft* entity) const override{
-			Assets::Effects::explode->suspendOn(Game::core->effectManager.get())->
-						set({entity->trans.vec, 300}, Graphic::Colors::RED_DUSK);
+			Assets::Effects::explode->suspendOn()->set({entity->trans.vec, 300}, Graphic::Colors::RED_DUSK);
+
+			(void)Assets::Effects::shake.create(entity->getPos(), 100);
 		}
 	};
 }

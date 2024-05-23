@@ -100,7 +100,7 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		auto* camera = coordAxisArgs.get<0>() ? coordAxisArgs.get<0>() : Core::camera;
 		shader.setFloat("scale",  camera->getScale());
 		shader.setVec2("screenSize", camera->getSize());
-		shader.setVec2("cameraPos", camera->getPosition());
+		shader.setVec2("cameraPos", camera->getViewportCenter());
 	});
 
 	filter = manager->registerShader(Dir::shader, "filter");
@@ -118,8 +118,8 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setTexture2D("texData", 3);
 		shader.setTexture2D("texBloom", 4);
 
-		constexpr auto roundNear = 8;
-		constexpr auto roundMid = 4;
+		constexpr auto roundNear = 12;
+		constexpr auto roundMid = 8;
 		constexpr auto roundFar = 4;
 		constexpr unsigned Size = roundNear + roundMid + roundFar;
 
@@ -208,6 +208,8 @@ void Assets::PostProcessors::loadPrimitive(){
 	bloom.reset(
 		new Graphic::BloomProcessor{blurX.get(), blurY.get(), Shaders::bloom, Shaders::threshold_light}
 	);
+	bloom->setIntensity(0.95f, 1.15f);
+
 	// bloom->blur.setTargetState(GL::State::BLEND, false);
 
 
@@ -235,7 +237,8 @@ void Assets::PostProcessors::load(){
 
 	bloom->blur.ping2pong = bloom->blur.pong2ping = frostedGlass.get();
 	bloom->blur.processTimes = 2;
-	bloom->setIntensity(0.95f, 1.15f);
+	bloom->scale = 0.5f;
+	bloom->blur.setScale(0.5f);
 
 	blurX_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const Shader& shader) {
 		shader.setVec2("direction", Geom::Vec2{1.45f, 0});

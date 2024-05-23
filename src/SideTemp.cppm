@@ -32,7 +32,6 @@ import UI.FileTreeSelector;
 
 export namespace Test{
 	void genRandomEntities(){
-		Game::score = 0;
 		Game::EntityManage::clear();
 		Math::Rand rand = Math::globalRand;
 		for(int i = 0; i < 300; ++i) {
@@ -50,7 +49,7 @@ export namespace Test{
 			ptr->physicsBody.inertialMass = 500;
 			ptr->chambers.setLocalTrans(ptr->trans);
 			ptr->activate();
-			ptr->zLayer -= 10;
+			// ptr->zLayer -= 10;
 
 
 			ptr->init();
@@ -102,11 +101,11 @@ void setupUITest_Old(){
 	HUD->add<UI::Table>([&inputArea](UI::Table& table){
 		   table.add<UI::ScrollPane>([&inputArea](UI::ScrollPane& pane){
 			   inputArea = &pane.setItem<UI::InputArea, false, false>([](UI::InputArea& area){
-				   area.usingGlyphWidth = area.usingGlyphHeight = true;
-				   area.setMaxTextLength(1000);
+				   area.setWrap();
+				   area.setMaxTextLength(32);
 
 				   area.getGlyphLayout()->setSCale(0.75f);
-				   area.setText("O$<sub>2$<\\sub> + C =点燃=CO$<sub>2$<\\sub>");
+				   area.setText("");
 			   });
 			   pane.setEmptyDrawer();
 		   }).fillParent();
@@ -124,7 +123,7 @@ void setupUITest_Old(){
 
 				   label.setEmptyDrawer();
 				   label.setFillparentX();
-				   label.usingGlyphHeight = true;
+				   label.setWrap(false);
 			   });
 			   pane.setEmptyDrawer();
 		   });
@@ -152,7 +151,7 @@ void setupUITest_Old(){
 								   // hint.setMinimumSize({600, 300});
 								   hint.setCellAlignMode(Align::Mode::top_left);
 								   hint.add<UI::Label>([i](UI::Label& label){
-									   label.usingGlyphHeight = label.usingGlyphWidth = true;
+									   label.setWrap();
 									   label.setText(
 										   std::format("<Hint Hover Table>\nButton$<sub>$<c#PALE_GREEN>{}$<\\sub>", i));
 									   label.getGlyphLayout()->setSCale(0.65f);
@@ -174,7 +173,7 @@ void setupUITest_Old(){
 											   .builder = [](UI::Table& hintInner){
 												   hintInner.setCellAlignMode(Align::Mode::top_left);
 												   hintInner.add<UI::Label>([](UI::Label& label){
-													   label.usingGlyphHeight = label.usingGlyphWidth = true;
+													   label.setWrap();
 													   label.setText(std::format(
 														   "<Hover Table>$<sub>$<c#PALE_GREEN>{}$<\\sub>", "Nesting"));
 													   label.getGlyphLayout()->setSCale(0.65f);
@@ -212,7 +211,7 @@ void setupUITest_Old(){
 							   // hint.setMinimumSize({600, 300});
 							   hint.setCellAlignMode(Align::Mode::top_left);
 							   hint.add<UI::Label>([&bar](UI::Label& label){
-								   label.usingGlyphHeight = label.usingGlyphWidth = true;
+								   label.setWrap();
 								   label.setText([&bar]{
 									   return std::format(
 										   "$<c#GRAY>Progress: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%",

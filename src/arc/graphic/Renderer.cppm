@@ -81,7 +81,7 @@ export namespace Core{
 		GL::FrameBuffer defaultFrameBuffer{};
 		GL::FrameBuffer uiPostBuffer{};
 		GL::FrameBuffer effectBuffer{};
-		Graphic::Mask uiBlurMask{};
+		GL::FrameBuffer uiBlurMask{};
 
 
 		GL::FrameBuffer* contextFrameBuffer = nullptr;
@@ -89,7 +89,10 @@ export namespace Core{
 		std::stack<GL::FrameBuffer*> frameStack{};
 
 		[[nodiscard]] Renderer(const int w, const int h):
-			defaultFrameBuffer{w, h}, uiPostBuffer{w, h}, effectBuffer{w, h}{
+			defaultFrameBuffer{w, h, 1, false},
+		uiPostBuffer{w, h, 1, true},
+		effectBuffer{w, h, 1, true},
+		uiBlurMask{w, h, 1, false}{
 			contextFrameBuffer = &defaultFrameBuffer;
 
 			frameStack.push(contextFrameBuffer);

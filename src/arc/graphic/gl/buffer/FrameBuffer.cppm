@@ -43,17 +43,25 @@ export namespace GL{
 		static constexpr GLenum DRAW = GL_DRAW_FRAMEBUFFER;
 		static constexpr GLenum READ = GL_READ_FRAMEBUFFER;
 
-		FrameBuffer() : GLObject{GL_FRAMEBUFFER}{}
+		void init(const int w, const int h, const int colorAttachments = 1, const bool hasRenderBuffer = false){
+			if(nameID != 0){
+				glDeleteFramebuffers(1, &nameID);
+			}
 
-		FrameBuffer(const int w, const int h, const int colorAttachments = 1) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
 			glCreateFramebuffers(1, &nameID);
 
 			setColorAttachments<Texture2D>(colorAttachments);
-			setRenderBuffer<RenderBuffer>();
+			if(hasRenderBuffer)setRenderBuffer<RenderBuffer>();
 
 			for(const auto& texture : attachmentsColor){
 				texture->setParameters(GL::linear, GL::linear);
 			}
+		}
+
+		FrameBuffer() : GLObject{GL_FRAMEBUFFER}{}
+
+		FrameBuffer(const int w, const int h, const int colorAttachments = 1, const bool hasRenderBuffer = false) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
+			init(w, h, colorAttachments, hasRenderBuffer);
 		}
 
 		FrameBuffer(const int w, const int h, Concepts::Invokable<void(FrameBuffer&)> auto&& init) : GLObject{GL_FRAMEBUFFER}, width(w), height(h){
@@ -70,6 +78,12 @@ export namespace GL{
 				throw ext::IllegalArguments{"Invalid Frame Buffer!"};
 			}
 		}
+
+		[[nodiscard]] std::unique_ptr<RenderBuffer>& getRenderBuffer(){ return renderBuffer; }
+
+		[[nodiscard]] std::unique_ptr<DepthBuffer>& getAttachmentsDepth(){ return attachmentsDepth; }
+
+		[[nodiscard]] std::unique_ptr<Texture2D>& getAttachmentsStencil(){ return attachmentsStencil; }
 
 		template <Concepts::Derived<Texture2D> TexType, typename ...Args>
 		void setColorAttachments(const int colorAttachments = 1, Args... args) {

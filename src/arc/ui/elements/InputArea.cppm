@@ -4,7 +4,7 @@
 
 export module UI.InputArea;
 
-export import UI.Widget;
+export import UI.TextWidget;
 export import UI.Flags;
 
 import std;
@@ -22,23 +22,38 @@ import ext.Encoding;
 export namespace UI{
 	struct TextCursorDrawer;
 	struct TextCaret{
-		/** x for rows, y for columns*/
+		/** @brief for rows, y for columns*/
 		Geom::Point2U beginPos{};
 		Geom::Point2U endPos{};
-		Math::Section<int> stringIndexSnapshot{};
 
-		bool insertMode{};
-
-		Graphic::Color caretColor{Graphic::Colors::LIGHT_GRAY};
-		Graphic::Color selectionColor{Graphic::Colors::ROYAL};
-
-		//TODO should this thing here or in the area class?
-		TextCursorDrawer* drawer{};
-
-		using SeqType = std::vector<Font::GlyphDrawData>;
 		/** THIS MUST BE IN A CONTINIOUS SEQ*/
 		const Font::GlyphDrawData* dataBegin{};
 		const Font::GlyphDrawData* dataEnd{};
+		Math::Section<int> textSubrange{};
+
+		std::shared_ptr<Font::GlyphLayout> layout{};
+
+		//TODO necessary?
+		Graphic::Color caretColor{Graphic::Colors::WHITE};
+		Graphic::Color selectionColor{Graphic::Colors::ROYAL};
+
+		//TODO should this thing here or in the area class?
+		// TextCursorDrawer* drawer{};
+		// bool insertMode{};
+
+		using SeqType = std::vector<Font::GlyphDrawData>;
+
+
+		[[nodiscard]] TextCaret() = default;
+
+		[[nodiscard]] TextCaret(const Geom::Point2U& beginPos, const Geom::Point2U& endPos,
+		                        const std::shared_ptr<Font::GlyphLayout>& layout)
+			: beginPos{beginPos},
+			  endPos{endPos},
+			  layout{layout}{}
+
+		[[nodiscard]] explicit TextCaret(const std::shared_ptr<Font::GlyphLayout>& layout)
+			: layout{layout}{}
 
 		void draw() const;
 
@@ -55,10 +70,10 @@ export namespace UI{
 			std::swap(dataBegin, dataEnd);
 		}
 
-		[[nodiscard]] std::string getSectionText(const Font::GlyphLayout& glyphLayout) const{
-			auto [posBegin, posEnd] = getStrIndex();
+		[[nodiscard]] std::string getSectionText() const{
+			auto [posBegin, posEnd] = getSectionIndex();
 			if(posBegin != posEnd){
-				std::string str = glyphLayout.lastText.substr(posBegin, posEnd - posBegin);
+				std::string str = layout->lastText.substr(posBegin, posEnd - posBegin);
 				str.push_back(0);
 				return str;
 			}
@@ -77,7 +92,7 @@ export namespace UI{
 				}
 			}
 
-			return {};
+			return Geom::SNAN2;
 		}
 
 		[[nodiscard]] float getHeight(const bool end = true) const{
@@ -94,8 +109,8 @@ export namespace UI{
 			return 0;
 		}
 
-		[[nodiscard]] Math::Section<int> getStrIndex() const{
-			return stringIndexSnapshot;
+		[[nodiscard]] Math::Section<int> getSectionIndex() const{
+			return textSubrange;
 		}
 
 		void alignPos(){
@@ -103,7 +118,7 @@ export namespace UI{
 			if(dataEnd){endPos = dataEnd->layoutPos;}
 		}
 
-		void refreshDataPtr(const Font::GlyphLayout* layout){
+		void refreshDataPtr(){
 			dataBegin = layout->find(beginPos);
 			dataEnd = layout->find(endPos);
 
@@ -113,12 +128,12 @@ export namespace UI{
 				swapSentinal();
 			}
 
-			stringIndexSnapshot.from = dataBegin ? dataBegin->index : 0;
-			stringIndexSnapshot.to = dataEnd ? dataEnd->index : 0;
+			textSubrange.from = dataBegin ? dataBegin->index : 0;
+			textSubrange.to = dataEnd ? dataEnd->index : 0;
 		}
 
 		/**
-		 * @param toEnd true - Align to end | talse - align to begin
+		 * @param toEnd true - Align to end | false - align to begin
 		 */
 		void alignToSentinal(const bool toEnd){
 			if(toEnd){
@@ -144,6 +159,9 @@ export namespace UI{
 			return *this;
 		}
 
+		/**
+		 * @brief Do this at the tail of the text
+		 */
 		TextCaret& forceIncr(){
 			if(isRangeSelecting()){
 				alignToSentinal(true);
@@ -169,7 +187,7 @@ export namespace UI{
 			return *this;
 		}
 
-		TextCaret& tryGotoAboveRow(const Font::GlyphLayout* layout){
+		TextCaret& tryGotoAboveRow(){
 			Geom::Point2U pos = beginPos;
 			if(pos.y == 0)return *this;
 
@@ -186,7 +204,7 @@ export namespace UI{
 			return *this;
 		}
 
-		TextCaret& tryGotoBelowRow(const Font::GlyphLayout* layout){
+		TextCaret& tryGotoBelowRow(){
 			Geom::Point2U pos = beginPos;
 			pos.y++;
 
@@ -199,7 +217,7 @@ export namespace UI{
 		}
 
 		[[nodiscard]] bool valid() const{
-			return dataBegin != nullptr;
+			return dataBegin != nullptr && dataEnd != nullptr;
 		}
 	};
 
@@ -210,7 +228,7 @@ export namespace UI{
 	};
 
 	void TextCaret::draw() const{
-		drawer->operator()(this);
+		// drawer->operator()(this);
 	}
 
 	/*
@@ -226,37 +244,43 @@ export namespace UI{
 	 * TODO bound checks
 	 * TODO token highlight parser
 	 */
-	class InputArea : public UI::Widget, public OS::TextInputListener{
+	class InputArea : public UI::TextWidget, public OS::TextInputListener{
 	public:
-		struct BacktrackingData{ //TODO this is really a violent way to do/undo
+		struct SnapshotData{ //TODO this is really a violent way to do/undo
 			std::string text{};
 			std::vector<TextCaret> carets{};
 		};
 
 	protected:
-		int maxSnapshotSize = 100;
+		int maxSnapshotSize{64};
 		int maxTextByteLength{32};
 
-		std::deque<BacktrackingData> snapshots{};
+		std::deque<SnapshotData> snapshots{};
 		int currentSnapshotIndex{0};
 
-		static Geom::OrthoRectFloat getBound(const Font::GlyphDrawData& glyph){
-			return glyph.getBound();
-		}
-
-
-		Font::TextString hintText{};
+		Font::TextString hintText{""};
 		bool showingHintText{false};
 		float time{};
 
-		const Font::GlyphParser* defParser = Font::forwardParser.get();
 		std::vector<TextCaret> carets{};
 
-		std::shared_ptr<Font::GlyphLayout> glyphLayout = Font::obtainLayoutPtr();
-
-		bool textChanged = false;
-
 		std::u32string inputBuffer{};
+
+		[[nodiscard]] bool shouldShowHint() const noexcept{
+			return !hintText.empty() && carets.empty() && (showingHintText || empty());
+		}
+
+		void enableHint(){
+			if(showingHintText && getText() == hintText)return;
+			showingHintText = true;
+			setText(hintText);
+		}
+
+		void disableHint(){
+			if(!showingHintText)return;
+			showingHintText = false;
+			setText("");
+		}
 
 		void updateTextLayout(const bool forceUpdate = false) {
 			if(textChanged){
@@ -264,16 +288,10 @@ export namespace UI{
 				takeSnapshot();
 			}
 
-			defParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : getValidWidth(), textChanged || forceUpdate);
-			glyphLayout->setAlign(textAlignMode);
-			textChanged = false;
+			layoutText(forceUpdate);
 
-			if(usingGlyphHeight){
-				setHeight(border.getHeight() + glyphLayout->getDrawBound().getHeight());
-			}
-
-			if(usingGlyphWidth){
-				setWidth(border.getWidth() + glyphLayout->getDrawBound().getWidth());
+			for (auto& caret : carets){
+				caret.refreshDataPtr();
 			}
 		}
 
@@ -303,8 +321,10 @@ export namespace UI{
 				return caret.beginPos == beginPos && caret.endPos == endPos;
 			}))return;
 
-			carets.emplace_back(beginPos, endPos);
+			carets.emplace_back(beginPos, endPos, glyphLayout);
 			getLastestSnapshot().carets = carets;
+
+			updateHint();
 		}
 
 		Geom::Vec2 transToTreeSrc(Geom::Vec2 vec2) const {
@@ -316,47 +336,6 @@ export namespace UI{
 			return vec2;
 		}
 
-		void textUpdated() {
-			textChanged = true;
-		}
-
-
-
-	public:
-		bool usingGlyphHeight = false;
-		bool usingGlyphWidth = false;
-
-
-		InputArea(){
-			glyphLayout->lastText.reserve(400);
-
-			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
-				const auto begin = getLayoutPos(event.begin);
-				const auto end = getLayoutPos(event.end);
-				genTextSection(begin, end);
-			});
-
-			touchbility = TouchbilityFlags::enabled;
-		}
-
-		void setWrap(const bool wrapX = true, const bool wrapY = true){
-			usingGlyphHeight = wrapY;
-			usingGlyphWidth = wrapX;
-		}
-
-		[[nodiscard]] std::shared_ptr<Font::GlyphLayout>& getGlyphLayout(){
-			return glyphLayout;
-		}
-
-		void resetTime(){
-			time = 0;
-		}
-
-		[[nodiscard]] int getMaxTextLength() const{ return maxTextByteLength; }
-
-		void setMaxTextLength(const int maxTextLength){ this->maxTextByteLength = maxTextLength; }
-
-		//TODO use std::optional instead of {}?
 		[[nodiscard]] std::optional<Geom::Point2U> getLayoutPos(Geom::Vec2 caretPos) const {
 			if(glyphLayout->empty()){
 				return std::nullopt;
@@ -380,27 +359,51 @@ export namespace UI{
 			return std::nullopt;
 		}
 
-		Align::Mode textAlignMode{Align::Mode::top_left};
+		void updateHint(){
+			if(shouldShowHint()){
+				enableHint();
+			}else{
+				disableHint();
+			}
+		}
+	public:
 
-		Font::TextString getText() const & {
-			return glyphLayout->lastText;
+		InputArea(){
+			defParser = Font::forwardParser.get();
+
+			glyphLayout->lastText.reserve(400);
+
+			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
+				const auto begin = getLayoutPos(event.begin);
+				const auto end = getLayoutPos(event.end);
+				genTextSection(begin, end);
+			});
+
+			touchbility = TouchbilityFlags::enabled;
 		}
 
-		Font::TextString getText() const && {
-			return std::move(glyphLayout->lastText);
+		constexpr void resetTime() noexcept{
+			time = 0;
 		}
 
-		Font::TextString& getTextRef() const{
-			return glyphLayout->lastText;
+		[[nodiscard]] constexpr int getMaxTextLength() const noexcept{ return maxTextByteLength; }
+
+		constexpr void setMaxTextLength(const int maxTextLength) noexcept{
+			this->maxTextByteLength = maxTextLength;
 		}
 
-		Font::TextView getTextView() const {
-			return glyphLayout->lastText;
+		[[nodiscard]] bool isTextNearlyFull() const noexcept{
+			static constexpr auto UTF8_CharSize = 4;
+			return maxTextByteLength - getText().size() < UTF8_CharSize;
+		}
+
+		[[nodiscard]] bool isTextFull() const noexcept{
+			return getText().size() == maxTextByteLength;
 		}
 
 		void setText(const Font::TextView text) {
 			getTextRef() = text;
-			textUpdated();
+			setTextUpdated();
 		}
 
 		void update(const float delta) override {
@@ -416,10 +419,6 @@ export namespace UI{
 
 			if(layoutChanged) {
 				layout();
-			}
-
-			for (auto& caret : carets){
-				caret.refreshDataPtr(glyphLayout.get());
 			}
 
 			Widget::update(delta);
@@ -448,7 +447,7 @@ export namespace UI{
 			if(keyDown(Ctrl::Key::Down, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
 				keyDown(Ctrl::Key::Down, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
 				for (auto& caret : carets){
-					caret.tryGotoBelowRow(glyphLayout.get());
+					caret.tryGotoBelowRow();
 					resetTime();
 				}
 			}
@@ -456,16 +455,18 @@ export namespace UI{
 			if(keyDown(Ctrl::Key::Up, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
 				keyDown(Ctrl::Key::Up, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
 				for (auto& caret : carets){
-					caret.tryGotoAboveRow(glyphLayout.get());
+					caret.tryGotoAboveRow();
 					resetTime();
 				}
 			}
 		}
 
 		void layout() override{
-			Widget::layout();
-
+			setTextUpdated();
 			updateTextLayout();
+			updateGlyphPosition();
+
+			Widget::layout();
 		}
 
 		void drawContent() const override;
@@ -508,7 +509,7 @@ export namespace UI{
 			const auto forwardSize = std::ranges::count_if(text, ext::isUnicodeHead);
 
 			for (auto& caret : carets){
-				auto [begin, end] = caret.getStrIndex();
+				auto [begin, end] = caret.getSectionIndex();
 				if(begin != end){
 					glyphLayout->lastText.replace(glyphLayout->lastText.begin() + begin, glyphLayout->lastText.begin() + end, view);
 					caret.alignToSentinal(false);
@@ -526,7 +527,7 @@ export namespace UI{
 
 		void informBackSpace(int mode) override{
 			for (auto& caret : carets){
-				auto [posBegin, posEnd] = caret.getStrIndex();
+				auto [posBegin, posEnd] = caret.getSectionIndex();
 				if(posBegin != posEnd){
 					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + posBegin, glyphLayout->lastText.begin() + posEnd);
 					textChanged = true;
@@ -554,7 +555,7 @@ export namespace UI{
 
 		void informDelete(int mode) override{
 			for (auto& caret : carets){
-				auto [posBegin, posEnd] = caret.getStrIndex();
+				auto [posBegin, posEnd] = caret.getSectionIndex();
 				if(posBegin != posEnd){
 					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + posBegin, glyphLayout->lastText.begin() + posEnd);
 					textChanged = true;
@@ -568,7 +569,7 @@ export namespace UI{
 			}
 		}
 
-		void informEnter(int mods) override{
+		void informEnter(const int mods) override{
 			if(!glyphLayout->lastText.ends_with('\n')){
 				glyphLayout->lastText.push_back('\n');
 			}
@@ -594,7 +595,7 @@ export namespace UI{
 		std::string getClipboardCopy() override{
 			if(carets.empty())return {};
 			if(carets.size() == 1){
-				return carets.front().getSectionText(*glyphLayout);
+				return carets.front().getSectionText();
 			}else{
 				//TODO multi section return
 				return {};
@@ -605,9 +606,9 @@ export namespace UI{
 			if(carets.empty())return {};
 			if(carets.size() == 1){
 				auto& caret = carets.front();
-				auto [posBegin, posEnd] = caret.getStrIndex();
+				auto [posBegin, posEnd] = caret.getSectionIndex();
 				if(posBegin != posEnd){
-					auto str = caret.getSectionText(*glyphLayout);
+					auto str = caret.getSectionText();
 					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + posBegin, glyphLayout->lastText.begin() + posEnd);
 					textChanged = true;
 					caret.alignToSentinal(false);
@@ -630,7 +631,7 @@ export namespace UI{
 			resetTime();
 
 			for (auto& caret : this->carets){
-				caret.refreshDataPtr(glyphLayout.get());
+				caret.refreshDataPtr();
 			}
 		}
 
@@ -651,17 +652,15 @@ export namespace UI{
 			}
 		}
 
-		BacktrackingData& getLastestSnapshot(){
+		SnapshotData& getLastestSnapshot(){
 			return snapshots.front();
 		}
 
-		void calAbsoluteSrc(Widget* parent) override {
-			Widget::calAbsoluteSrc(parent);
-			glyphLayout->offset.set(absoluteSrc.x, absoluteSrc.y + bound.getHeight()).add(Align::getOffsetOf(textAlignMode, border));
-			// glyphLayout->offset.set(0, 300);
-		}
-
 		CursorType getCursorType() const override{
+			if(touchbility != TouchbilityFlags::enabled){
+				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
+			}
+
 			return CursorType::textInput;
 		}
 
@@ -671,11 +670,24 @@ export namespace UI{
 			setTextUnfocused();
 			carets.clear();
 
-			return true;
+			updateHint();
+
+			return false;
+		}
+
+		bool empty() const noexcept{
+			return getText().size() <= 1;
 		}
 
 		void informEscape(unsigned int codepoint, int mods) override{
 			onEsc();
 		}
+
+		[[nodiscard]] Font::TextString& getHintText(){ return hintText; }
+		[[nodiscard]] const Font::TextString& getHintText() const { return hintText; }
+
+		void setHintText(const Font::TextString& hintText){ this->hintText = hintText; }
+		void setHintText(Font::TextString&& hintText){ this->hintText = std::move(hintText); }
+		void setHintText(const Font::TextView hintText){ this->hintText = hintText; }
 	};
 }

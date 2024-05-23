@@ -11,23 +11,23 @@ import Game.ContentLoader;
 import std;
 
 export namespace Game::Content::Builtin{
-	Game::SpaceCraftTrait
+	SpaceCraftTrait
 		*test_pester{},
 		*test_macrophage{}
 	;
 
-	void load_SpaceCraft(Game::ContentLoader* loader){
+	void load_SpaceCraft(ContentLoader* loader){
 		test_pester = loader->registerContent<BasicSpaceCraftType>("pester", [](BasicSpaceCraftType& self){
 			self.maximumSpeed = 30.0f;
-			self.drawer = std::make_unique<Game::Drawer::TextureDrawer<Game::SpaceCraft>>("",
-			[](Game::Drawer::TextureDrawer<Game::SpaceCraft>* drawer){
+			self.drawer = std::make_unique<Drawer::TextureDrawer<SpaceCraft>>("",
+			[](Drawer::TextureDrawer<SpaceCraft>* drawer){
 				drawer->trans.vec.x = 100;
 			});
 		});
 
 		test_macrophage = loader->registerContent<BasicSpaceCraftType>("macrophage", [](BasicSpaceCraftType& self){
-			self.drawer = std::make_unique<Game::Drawer::TextureDrawer<Game::SpaceCraft>>("",
-			[](Game::Drawer::TextureDrawer<Game::SpaceCraft>* drawer){
+			self.drawer = std::make_unique<Drawer::TextureDrawer<SpaceCraft>>("",
+			[](Drawer::TextureDrawer<SpaceCraft>* drawer){
 				drawer->trans.vec.x = 100;
 			});
 		});

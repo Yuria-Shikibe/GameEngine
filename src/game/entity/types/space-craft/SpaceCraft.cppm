@@ -27,9 +27,6 @@ import Game.Chamber.FrameTrans;
 export import Game.Attributes.ThrusterTrait;
 
 export namespace Game {
-	//TODO remove temp static mut
-	inline unsigned score = 0;
-
 	class SpaceCraft;
 
 	struct SpaceCraftTrait {
@@ -252,7 +249,6 @@ export namespace Game {
 		void onKill(){
 			trait->onKill(this);
 			deactivate();
-			score++;
 		}
 
 		void assignController() const override{

@@ -80,8 +80,17 @@ export namespace UI {
 			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
 		}
 
+		constexpr LayoutCell* getCellOf(Widget* elem){
+			if(const auto itr = std::ranges::find(cells, elem, &LayoutCell::item); itr != cells.end()){
+				return itr.operator->();
+			}
+
+			return nullptr;
+		}
+
 		void removePosted() override {
 			//TODO the two itr should at the same position...
+
 			if(toRemove.empty() || children.empty())return;
 
 			std::erase_if(cells, [this](const decltype(cells)::value_type& cell) {

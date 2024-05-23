@@ -52,7 +52,7 @@ export namespace Game {
 	public:
 
 		//Physics Attribute
-		float collisionThickness = 0;
+		float collisionThickness = 1.0f;
 		PhysicsAttribute_Rigid physicsBody{};
 
 		std::unique_ptr<Controller> controller{std::make_unique<Controller>(this)};

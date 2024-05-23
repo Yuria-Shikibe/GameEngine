@@ -277,14 +277,12 @@ void setupUITest(){
 						   Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{},
 						   &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
 
-					   sstream << "\n$<c#PALE_GREEN>Score: " << Game::score * 10;
-
 					   return std::move(sstream).str();
 				   });
 
 				   label.setEmptyDrawer();
 				   label.setFillparentX();
-				   label.usingGlyphHeight = true;
+				   label.setWrap(false);
 			   });
 			   pane.setEmptyDrawer();
 			   // pane.setItem<UI::Elem>([](UI::Elem& area){
@@ -319,7 +317,7 @@ void setupUITest(){
 						   // hint.setMinimumSize({600, 300});
 						   hint.setCellAlignMode(Align::Mode::top_left);
 						   hint.add<UI::Label>([&bar](UI::Label& label){
-							   label.usingGlyphHeight = label.usingGlyphWidth = true;
+							   label.setWrap();
 							   label.setText([&bar]{
 								   return std::format(
 									   "$<c#GRAY>Hit Point: $<c#LIGHT_GRAY>{:.2f}$<scl#[0.75]>$<c#PALE_GREEN>%",
@@ -630,11 +628,6 @@ void setupBaseDraw(){
 		Graphic::Batch::flush();
 	});
 
-	::Core::renderer->getListener().on<Event::Draw_After>([&]([[maybe_unused]] const auto& e){
-		Game::core->effectManager->render();
-		Graphic::Batch::flush();
-	});
-
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->drawBeneathUI(e.renderer);
 		Graphic::Batch::flush();
@@ -706,8 +699,8 @@ int main(const int argc, char* argv[]){
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 4};
-	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 4};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 4, true};
+	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, true};
 
 	Game::CombinePostProcessor merger{
 			Assets::PostProcessors::blurX_World.get(), Assets::PostProcessors::blurY_World.get(),
@@ -721,6 +714,8 @@ int main(const int argc, char* argv[]){
 	Core::renderer->registerSynchronizedResizableObject(&frameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&worldFrameBuffer);
 	Core::renderer->registerSynchronizedResizableObject(&acceptBuffer1);
+
+	// multiSample.getRenderBuffer().reset();
 
 	Game::EntityManage::init();
 	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
@@ -772,7 +767,7 @@ int main(const int argc, char* argv[]){
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport());
 		Game::EntityManage::render();
 
-		Game::core->effectManager->render();
+		Game::core->effectManager->render(Core::camera->getViewport());
 
 		Graphic::Batch::flush<BatchWorld>();
 

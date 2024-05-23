@@ -2,6 +2,7 @@ module UI.InputArea;
 
 import Graphic.Draw;
 import UI.Root;
+import UI.Palette;
 
 bool UI::InputArea::isTextFocused() const{
 	return root->textInputListener == this;
@@ -17,6 +18,10 @@ void UI::InputArea::setTextUnfocused() const{
 
 void UI::InputArea::drawContent() const{
 	Graphic::Draw::alpha();
+
+	if(showingHintText){
+		Graphic::Draw::mixColor(UI::Pal::GRAY);
+	}
 
 	if(!glyphLayout->empty()){
 		const Geom::Vec2 off = glyphLayout->getDrawOffset();
@@ -56,13 +61,22 @@ void UI::InputArea::drawContent() const{
 	}
 
 
-	Graphic::Draw::color();
+	if(isTextFull()){
+		Graphic::Draw::mixColor(Pal::RED_DUSK);
+	}else if(isTextNearlyFull()){
+		Graphic::Draw::mixColor(Pal::KEY_WORD);
+	}else{
+		Graphic::Draw::mixColor();
+	}
 	Graphic::Draw::Line::setLineStroke(2.0f);
 	if(isTextFocused() && Math::cycleStep<75, 40>(time)){
 		for (const auto & caret : carets){
-			Geom::Vec2 src = caret.getDrawPos() * glyphLayout->getScale() + glyphLayout->offset;
-			src.y -= glyphLayout->getDrawBound().getHeight();
+			Graphic::Draw::color(caret.caretColor);
+			const Geom::Vec2 src = caret.getDrawPos() * glyphLayout->getScale() + glyphLayout->offset;
 			Graphic::Draw::Line::line(src, {src.x, src.y + caret.getHeight() * glyphLayout->getScale()});
 		}
 	}
+
+	Graphic::Draw::color();
+
 }

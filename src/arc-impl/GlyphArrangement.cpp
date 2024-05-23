@@ -38,6 +38,9 @@ void Font::GlyphLayout::render(const float alphaMask) const {
 		// Graphic::Draw::Line::setLineStroke(1.25f);
 		// Graphic::Draw::Line::rectOrtho(glyph.getBound().scl(getScale(), getScale()).move(off));
 	}
+
+	// Graphic::Draw::Line::rectOrtho(drawBund.copy().setSrc(off));
+
 }
 
 void Font::GlyphLayout::render(const float alphaMask, float progress) const {

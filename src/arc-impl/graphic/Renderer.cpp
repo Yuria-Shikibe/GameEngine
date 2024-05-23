@@ -103,7 +103,7 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 
 	effectBuffer.getTopTexture().active(0);
 	contextFrameBuffer->getTopTexture().active(1);
-	uiBlurMask.getMaskBuffer().getTopTexture().active(2);
+	uiBlurMask.getTopTexture().active(2);
 
 	GL::disable(GL::State::BLEND);
 	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::Shader& shader){

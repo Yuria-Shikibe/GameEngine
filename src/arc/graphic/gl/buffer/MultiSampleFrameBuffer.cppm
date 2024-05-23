@@ -12,14 +12,14 @@ export namespace GL {
 	class MultiSampleFrameBuffer final : public FrameBuffer {
 	public:
 		int samples{4};
-		MultiSampleFrameBuffer(const int w, const int h, const int samples = 4, const int colorAttachments = 1)
+		MultiSampleFrameBuffer(const int w, const int h, const int samples = 4, const int colorAttachments = 1, const bool hasRenderBuffer = false)
 				: FrameBuffer(), samples(samples) {
 			width = w;
 			height = h;
 			glCreateFramebuffers(1, &nameID);
 
 			setColorAttachments<MultiSampleTexture2D>(colorAttachments, samples);
-			setRenderBuffer<MultiSampleRenderBuffer>(samples);
+			if(hasRenderBuffer)setRenderBuffer<MultiSampleRenderBuffer>(samples);
 		}
 
 		[[nodiscard]] MultiSampleFrameBuffer() = default;

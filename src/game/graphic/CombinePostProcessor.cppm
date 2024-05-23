@@ -24,7 +24,7 @@ export namespace Game{
 
 		const GL::Shader* mergeShader{nullptr};
 		const GL::Shader* bloomShader{nullptr};
-		const GL::Shader* SSAObliter{nullptr};
+		// const GL::Shader* SSAObliter{nullptr};
 
 		CombinePostProcessor(Graphic::PostProcessor* const blurProcessor1, Graphic::PostProcessor* const blurProcessor2, const GL::Shader* mergeShader)
 			: blur(blurProcessor1, blurProcessor2, 3),
@@ -32,14 +32,12 @@ export namespace Game{
 
 			blur.port.inPort = 2;
 			blur.port.outPort = 0;
-			blur.setScale(0.75f);
-			// setTargetState(GL::State::BLEND, false);
+			blur.setScale(1.0f);
 		}
 
 		void beginProcess() const override{
 			temp.resize(toProcess->getWidth(), toProcess->getHeight());
 			temp.clearColor();
-			// Graphic::Draw::blitCopy(toProcess, 2, &temp, 0);
 			blur.apply(toProcess, &temp);
 		}
 

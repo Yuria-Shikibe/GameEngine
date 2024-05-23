@@ -37,13 +37,13 @@ export namespace Graphic {
 
 		float threshold = 0.3f;
 
-		float intensity_blo = 1.2f;
+		float intensity_blo = 1.1f;
 		float intensity_ori = 1.0f;
 		float scale = 0.5f;
 
 		void setIntensity(const float intensity) {
 			intensity_ori = intensity;
-			intensity_blo = intensity * 1.2f;
+			intensity_blo = intensity * 1.1f;
 		}
 
 		void setIntensity(const float ori, const float blo) {

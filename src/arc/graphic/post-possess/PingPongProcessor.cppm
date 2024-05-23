@@ -33,6 +33,11 @@ export namespace Graphic {
 
 		unsigned int processTimes = 3;
 
+		void setShaders(PostProcessor* ping2pong, PostProcessor* pong2ping){
+			this->ping2pong = ping2pong;
+			this->pong2ping = pong2ping;
+		}
+
 		[[nodiscard]] FrameBuffer* getPing() const {
 			return &ping;
 		}

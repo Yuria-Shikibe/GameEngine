@@ -319,12 +319,13 @@ export namespace Graphic{
 
     public:
         void flipY() const{
-            const auto ptr = copyData();
+            const std::size_t rowDataCount = static_cast<std::size_t>(getWidth()) * Channels;
 
-            const size_t rowDataCount = static_cast<size_t>(getWidth()) * Channels;
-
-            for(int y = 0; y < height; ++y){
-                std::memcpy(bitmapData.get() + rowDataCount * y, ptr.get() + (getHeight() - y - 1) * rowDataCount, rowDataCount);
+            for(std::size_t y = 0; y < height / 2; ++y){
+                std::swap_ranges(
+                    bitmapData.get() + rowDataCount * y, bitmapData.get() + rowDataCount * y + rowDataCount,
+                    bitmapData.get() + rowDataCount * (height - y)
+                );
             }
         }
         void blend(const int x, const int y, const Color& color) const {

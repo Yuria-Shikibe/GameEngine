@@ -102,6 +102,11 @@ void UI::Root::update(const float delta){
 
 	rootDialog.update(delta);
 	tooltipManager.update(delta);
+
+	if(isHidden){
+		releaseFocus();
+		currentCursorType = CursorType::regular;
+	}
 }
 
 void UI::Root::determinShiftFocus(Widget* newFocus){

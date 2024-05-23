@@ -34,7 +34,7 @@ export namespace Game {
 		std::unique_ptr<Graphic::EffectManager> effectManager{std::make_unique<Graphic::EffectManager>()};
 
 		PlayerController* playerController{nullptr};
-		bool cameraLock{true};
+		bool cameraLock{false};
 
 		[[nodiscard]] Core(){
 			pauseRestrictable = true;
@@ -79,9 +79,9 @@ export namespace Game {
 			if(overlayManager->activated)overlayManager->updateGlobal(delta);
 			if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
 
-			// if(cameraLock && playerController){
-			// 	FrameCore::camera->setPosition(FrameCore::camera->getPosition().lerp(playerController->moveCommand.curTrans.vec, 0.05f));
-			// }
+			if(cameraLock && playerController){
+				FrameCore::camera->setPosition(FrameCore::camera->getPosition().lerp(playerController->moveCommand.curTrans.vec, 0.05f));
+			}
 		}
 
 		virtual void drawAboveUI(FrameCore::Renderer* renderer) const{
@@ -104,4 +104,8 @@ export namespace Game {
 			}
 		}
 	};
+}
+
+export extern Graphic::EffectManager* Graphic::getDefManager(){
+	return Game::core->effectManager.get();
 }

@@ -199,7 +199,6 @@ export namespace Graphic{
 		template <Concepts::InvokeNullable<void(const GL::Shader&)> Func = std::nullptr_t>
 		void blit(const GL::FrameBuffer* const draw, const unsigned port = 0, const GL::Shader* shader = blitter,
 		          Func&& f = nullptr){
-			GL::viewport(0, 0, draw->getWidth(), draw->getHeight());
 			draw->bind(GL::FrameBuffer::DRAW);
 			draw->enableDrawAt(port);
 
@@ -386,8 +385,7 @@ export namespace Graphic{
 			}
 		}
 
-		template <bool applyAlpha = true>
-		void color(const Color color, float alpha){
+		void color(const Color color, const float alpha){
 			globalState.contextColor.set(color.r, color.g, color.b, alpha);
 		}
 

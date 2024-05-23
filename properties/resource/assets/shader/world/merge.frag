@@ -7,21 +7,25 @@ in vec2 texCoord;
 
 uniform sampler2D texBase;
 uniform sampler2D texNormal;
-uniform sampler2D texLight;
+uniform mediump sampler2D texLight;
 uniform sampler2D texData;
-uniform sampler2D texBloom;
+uniform mediump sampler2D texBloom;
 
-uniform vec2 kernal[MaxKernalSize];
+uniform mediump vec2 kernal[MaxKernalSize];
 uniform uint kernalSize;
-uniform vec2 scale;
+uniform mediump vec2 scale;
 
-const float intensity_blo = 1.25f;
-const float intensity_ori = 1.05f;
+const mediump float intensity_blo = 1.25f;
+const mediump float intensity_ori = 1.05f;
+
+const mediump float radius = 6.f;
+const mediump float zDiffScl = 1.8f;
+
 
 layout (location = 0) out vec4 FragColor;
+
+//TODO other channel can be used at here
 //layout (location = 1) out vec4 SSAOColor;
-const float radius = 6.f;
-const float zDiffScl = 1.8f;
 
 float valueOf(vec3 color){
     return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
@@ -59,15 +63,6 @@ void main() {
         originalAlpha * (1.0f - lightColor.a) + lightColor.a
     );
 
-    //    vec3 fragPos = vec3(texCoord.xy, normalColor.a);
-    //    const vec3 normal = vec3(0.0, 0.0, 1.0);//texture(gNormal, TexCoords).rgb;
-    // vec3 randomVec = vec3(1.0, 0.0f, 0.0f);//texture(texNoise, TexCoords * noiseScale).xyz;
-    // Create TBN change-of-basis matrix: from tangent-space to view-space
-    //    vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
-    //    vec3 bitangent = cross(normal, tangent);
-    //    mat3 TBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), normal);
-
-
     float occlusion = 0.0;
     const float depth = coordData.x;
 
@@ -87,28 +82,11 @@ void main() {
             if(thresHold > 0.0f){
                 const float rangeCheck = smoothstep(0.0, 1.0, radius / abs(depth - sampleDepth) * zDiffScl);
                 occlusion += rangeCheck * thresHold;
-            }else{
-                occlusion -= light;
             }
-            // range check & accumulate
         }
     }
 
     occlusion = 1.0 - (max(occlusion * (1 - lightColor.a * 1.15f), 0) / kernalSize);
 
     FragColor = vec4(baseColor.rgb * occlusion, baseColor.a);
-
-//    FragColor = vec4(vec3(texture(texBloom, texCoord).a), baseColor.a);
-//    FragColor = vec4(lightColor);
-
-    //    baseColor = vec4(
-    //    baseColor.rgb * (1.0f - fog.a) + fog.rgb * fog.a,
-    //    originalAlpha * (1.0f - fog.a) + fog.a
-    //    );
-
-
-    //    FragColor = vec4(vec3(depth), baseColor.a);
-    //    FragColor = baseColor;
-    //    FragColor = vec4(vec3(normalColor.a), mix(baseColor.a, originalAlpha, 1 -0.001f));
-    //    SSAOColor = vec4(occlusion, occlusion, occlusion, originalAlpha);
 }

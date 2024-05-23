@@ -1,8 +1,10 @@
-module UI.Label;
+module UI.TextWidget;
 
 import Graphic.Draw;
 
-void UI::Label::drawContent() const {
+void UI::TextWidget::drawContent() const{
+	Widget::drawContent();
+
 	Graphic::Draw::mixColor(color);
 	glyphLayout->render(maskOpacity);
 
@@ -14,6 +16,3 @@ void UI::Label::drawContent() const {
 	// Graphic::Draw::Line::setLineStroke(1.25f);
 	// Graphic::Draw::Line::rectOrtho(getValidBound(), true, getAbsSrc());
 }
-
-
-

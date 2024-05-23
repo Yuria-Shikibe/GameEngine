@@ -41,6 +41,12 @@ export namespace Geom{
 		std::mutex containerlock{};
 		std::mutex subTreelock{};
 
+		void setBoundary_enforce(const Rect& boundary){
+			if(!allChildrenEmpty()) throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
+
+			this->boundary = boundary;
+		}
+
 		bool isInersectedBetween(const Cont* subject, const Cont* object){
 			if(subject == object) return false;
 			const bool intersected =
@@ -531,6 +537,7 @@ export namespace Geom{
 				std::ranges::copy(bottomRight->rectangles, std::back_inserter(rectangles));
 			}
 
+			std::lock_guard l{subTreelock};
 			topLeft->clearItemsOnly();
 			topRight->clearItemsOnly();
 			bottomLeft->clearItemsOnly();

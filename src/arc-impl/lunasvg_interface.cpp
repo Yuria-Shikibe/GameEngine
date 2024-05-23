@@ -8,7 +8,7 @@ module Image.Svg;
 Graphic::Pixmap ext::svgToBitmap(const OS::File& file, const unsigned int width, const unsigned int height){
 	const auto document = lunasvg::Document::loadFromFile(file.getPath().string());
 
-	lunasvg::Bitmap bitmap;
+	lunasvg::Bitmap bitmap{};
 
 	if(width > 0){
 		if(height > 0){

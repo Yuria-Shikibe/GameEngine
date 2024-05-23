@@ -7,9 +7,15 @@ export module Graphic.Effect;
 export import Math.Timed;
 
 import Geom.Transform;
+import Geom.Rect_Orthogonal;
 import Graphic.Color;
 import ext.Concepts;
 import std;
+
+namespace Core{
+	export class Camera2D;
+}
+
 
 namespace Graphic{
 	inline std::atomic_size_t next = 0;
@@ -23,25 +29,37 @@ export namespace Graphic{
 	struct Effect;
 	class EffectManager;
 
+	extern EffectManager* getDefManager();
+
 	struct EffectDrawer{
 		float defLifetime = 60.0f;
+		float defClipSize{100.0};
+
 		virtual ~EffectDrawer() = default;
 		virtual void operator()(Effect& effect) const = 0;
 
+		virtual Geom::OrthoRectFloat getClipBound(const Effect& effect) const noexcept;
+
 		constexpr EffectDrawer() = default;
 
-		constexpr explicit EffectDrawer(const float defaultLifetime)
+		[[nodiscard]] constexpr explicit EffectDrawer(const float defaultLifetime)
 			: defLifetime(defaultLifetime){}
 
+		[[nodiscard]] constexpr EffectDrawer(const float defLifetime, const float defClipSize)
+			: defLifetime{defLifetime},
+			  defClipSize{defClipSize}{}
+
 		Effect* suspendOn(EffectManager* manager) const;
+
+		Effect* suspendOn() const;
 	};
 
-	template<Concepts::Invokable<void(Graphic::Effect&)> Func>
+	template<Concepts::Invokable<void(Graphic::Effect&)> Draw>
 	struct EffectDrawer_Func final : EffectDrawer{
-		Func func{};
+		const Draw func{};
 
-		explicit EffectDrawer_Func(const float time, Func&& func)
-			: EffectDrawer(time), func(std::forward<Func>(func)){}
+		explicit EffectDrawer_Func(const float time, Draw&& func)
+			: EffectDrawer(time), func(std::forward<Draw>(func)){}
 
 		void operator()(Effect& effect) const override{
 			func(effect);
@@ -51,9 +69,59 @@ export namespace Graphic{
 	template <Concepts::Invokable<void(Graphic::Effect&)> Func>
 	EffectDrawer_Func(float, Func) -> EffectDrawer_Func<Func>;
 
+	template<Concepts::Invokable<void(Graphic::Effect&)> Draw, Concepts::Invokable<void(float, const Graphic::Effect&)> Clip>
+	struct EffectDrawer_Func_Clip final : EffectDrawer{
+		const Draw func{};
+		const Clip clip{};
+
+		explicit EffectDrawer_Func_Clip(const float time, const float clipSize, Draw&& func, Clip&& clip)
+			: EffectDrawer(clipSize, time), func(std::forward<Draw>(func)), clip(std::forward<Clip>(clip)){}
+
+		void operator()(Effect& effect) const override{
+			func(effect);
+		}
+
+		Geom::OrthoRectFloat getClipBound(const Effect& effect) const noexcept override{
+			return clip(defClipSize, effect);
+		}
+	};
+
+	template <Concepts::Invokable<void(Graphic::Effect&)> Func, Concepts::Invokable<void(float, const Graphic::Effect&)> Clip>
+	EffectDrawer_Func_Clip(float, float, Func, Clip) -> EffectDrawer_Func_Clip<Func, Clip>;
+
+
+	struct EffectShake final : Graphic::EffectDrawer{
+		float near{1000};
+		float far{10000};
+
+		[[nodiscard]] constexpr EffectShake(float defLifetime, float defClipSize)
+			: EffectDrawer{defLifetime, defClipSize}{
+			defClipSize = far * 2.f;
+		}
+
+		[[nodiscard]] constexpr EffectShake(){
+			defClipSize = far * 2.f;
+		}
+
+		Effect* create(EffectManager* manager, Core::Camera2D* camera, const Geom::Vec2 pos, const float intensity, float fadeSpeed = -1.f) const;
+
+		Effect* create(const Geom::Vec2 pos, const float intensity, const float fadeSpeed = -1.f) const;
+
+		constexpr float getIntensity(const float dst) const noexcept{
+			return Math::clamp(1 - (1 / dst - 1 / near) / (1 / far - 1 / near));
+		}
+
+		void operator()(Effect& effect) const override;
+	};
+
 	template <Concepts::Invokable<void(Graphic::Effect&)> Func>
 	std::unique_ptr<EffectDrawer_Func<Func>> makeEffect(const float time, Func&& func){
 		return std::make_unique<EffectDrawer_Func<Func>>(time, std::forward<Func>(func));
+	}
+
+	template<Concepts::Invokable<void(Graphic::Effect&)> Draw, Concepts::Invokable<void(float, const Graphic::Effect&)> Clip>
+	std::unique_ptr<EffectDrawer_Func_Clip<Draw, Clip>> makeEffect(const float time, const float clipSize, Draw&& func, Clip&& clip){
+		return std::make_unique<EffectDrawer_Func_Clip<Draw, Clip>>(time, clipSize, std::forward<Draw>(func), std::forward<Clip>(clip));
 	}
 
 	struct EffectDrawer_Multi final : EffectDrawer{

@@ -4,6 +4,7 @@ export import Graphic.Effect;
 
 import ext.Container.ObjectPool;
 import ext.Heterogeneous;
+import Geom.Rect_Orthogonal;
 
 import std;
 
@@ -64,10 +65,11 @@ export namespace Graphic{
 			return out;
 		}
 
-		void render() const{
-			//TODO effect viewport clip
+		void render(const Geom::OrthoRectFloat viewport) const{
 			for(auto& effect : activatedEffects){
-				effect->render();
+				if(effect->drawer->getClipBound(*effect).overlap(viewport)){
+					effect->render();
+				}
 			}
 		}
 	};

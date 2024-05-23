@@ -56,75 +56,79 @@ export namespace Font {
 
 		Math::Range heightAlign{};
 
-		[[nodiscard]] bool isEnd() const{
+		[[nodiscard]] bool isSentinel() const noexcept{
+			return isEnd() || isBegin();
+		}
+
+		[[nodiscard]] constexpr bool isEnd() const noexcept{
 			return code == 0;
 		}
 
-		[[nodiscard]] bool isEndRow() const{
+		[[nodiscard]] constexpr bool isEndRow() const noexcept{
 			return code == '\n';
 		}
 
-		[[nodiscard]] bool isBeginRow() const{
+		[[nodiscard]] constexpr bool isBeginRow() const noexcept{
 			return layoutPos.x == 0 && layoutPos.y != 0;
 		}
 
-		[[nodiscard]] bool isBegin() const{
+		[[nodiscard]] constexpr bool isBegin() const noexcept{
 			return layoutPos.isZero();
 		}
 
-		[[nodiscard]] Geom::Vec2 v00() const{return src;}
-		[[nodiscard]] Geom::Vec2 v01() const{return {src.x, end.y};}
-		[[nodiscard]] Geom::Vec2 v11() const{return end;}
-		[[nodiscard]] Geom::Vec2 v10() const{return {end.x, src.y};}
+		[[nodiscard]] constexpr Geom::Vec2 v00() const noexcept{return src;}
+		[[nodiscard]] constexpr Geom::Vec2 v01() const noexcept{return {src.x, end.y};}
+		[[nodiscard]] constexpr Geom::Vec2 v11() const noexcept{return end;}
+		[[nodiscard]] constexpr Geom::Vec2 v10() const noexcept{return {end.x, src.y};}
 
 		//{ src.x,  src.y - getBelowBaseHeight(),  getWidth(),  getFullHeight()};
-		[[nodiscard]] Geom::Vec2 getBoundSrc() const{return {src.x,  src.y - getBelowBaseHeight()};}
-		[[nodiscard]] Geom::Vec2 getBoundEnd() const{return {end.x,  src.y - getBelowBaseHeight() + getFullHeight()};}
+		[[nodiscard]] constexpr Geom::Vec2 getBoundSrc() const noexcept{return {src.x,  src.y - getBelowBaseHeight()};}
+		[[nodiscard]] constexpr Geom::Vec2 getBoundEnd() const noexcept{return {end.x,  src.y - getBelowBaseHeight() + getFullHeight()};}
 
-		void move(const float x, const float y) {
+		constexpr void move(const float x, const float y) noexcept{
 			src.add(x, y);
 			end.add(x, y);
 		}
 
-		void moveX(const float x) {
+		constexpr void moveX(const float x) noexcept{
 			src.x += x;
 			end.x += x;
 		}
 
-		void moveY(const float y) {
+		constexpr void moveY(const float y) noexcept{
 			src.y += y;
 			end.y += y;
 		}
 
-		[[nodiscard]] unsigned getRow() const{
+		[[nodiscard]] constexpr unsigned getRow() const noexcept{
 			return layoutPos.y;
 		}
 
-		[[nodiscard]] unsigned getColumn() const{
+		[[nodiscard]] constexpr unsigned getColumn() const noexcept{
 			return layoutPos.x;
 		}
 
-		[[nodiscard]] float getAboveBaseHeight() const{
+		[[nodiscard]] constexpr float getAboveBaseHeight() const noexcept{
 			return getFullHeight() - getBelowBaseHeight();
 		}
 
-		[[nodiscard]] float getBelowBaseHeight() const{
+		[[nodiscard]] constexpr float getBelowBaseHeight() const noexcept{
 			return -heightAlign.from;
 		}
 
-		[[nodiscard]] float getWidth() const{
+		[[nodiscard]] constexpr float getWidth() const noexcept{
 			return end.x - src.x;
 		}
 
-		[[nodiscard]] float getGlyphHeight() const{
+		[[nodiscard]] constexpr float getGlyphHeight() const noexcept{
 			return end.y - src.y;
 		}
 
-		[[nodiscard]] float getFullHeight() const{
+		[[nodiscard]] constexpr float getFullHeight() const noexcept{
 			return end.y - src.y + heightAlign.to;
 		}
 
-		[[nodiscard]] Geom::OrthoRectFloat getBound() const{
+		[[nodiscard]] constexpr Geom::OrthoRectFloat getBound() const noexcept{
 			return Geom::OrthoRectFloat{ src.x,  src.y - getBelowBaseHeight(),  getWidth(),  getFullHeight()};
 		}
 	};
@@ -145,13 +149,13 @@ export namespace Font {
 
 		TextString lastText{};
 
-		void updateDrawbound(){
+		void updateDrawbound() noexcept{
 			drawBund = rawBound;
 			drawBund.sclSize(scale, scale);
 			drawBund.sclPos(scale, scale);
 		}
 
-		void setSCale(const float scale){
+		void setSCale(const float scale) noexcept{
 			this->scale = scale;
 			updateDrawbound();
 		}

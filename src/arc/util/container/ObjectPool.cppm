@@ -9,7 +9,8 @@ import ext.Owner;
 
 export namespace ext{
     //TODO this class is a totoally failure
-    template <class T>
+    //TODO uses allocator
+    template <class T, typename Alloc = std::allocator<T>>
         requires Concepts::DefConstructable<T>
     class ObjectPool{
     public:
@@ -26,7 +27,17 @@ export namespace ext{
 
             void operator()(const ext::Owner<T*> t) const {
                 if(!src) {
-                    delete t;
+                    // if constexpr (requires{
+                    //     Alloc{};
+                    // }){
+                    //     Alloc alloc;
+                    //     alloc.deallocate(t, 1);
+                    // }else{
+                    //
+                    // }
+
+                    t->~T();
+                    std::free(t);
                 }else{
                     src->store(t);
                 }
@@ -74,12 +85,12 @@ export namespace ext{
         };
 
     protected:
-        size_t maxSize{5000};
+        Alloc alloc{};
+        std::size_t maxSize{5000};
         std::vector<ext::Owner<T*>> vault;
 
         Deleter deleter{this};
         std::mutex vaultLock{};
-        // std::unique_ptr<std::pmr::monotonic_buffer_resource> monotonicPool{nullptr};
 
     public:
         Deleter getDeleter(){
@@ -128,7 +139,7 @@ export namespace ext{
                 return;
             }
 
-            delete ptr;
+            std::free(ptr);
         }
 
         // std::pmr::monotonic_buffer_resource* getMonotonicPool() {
