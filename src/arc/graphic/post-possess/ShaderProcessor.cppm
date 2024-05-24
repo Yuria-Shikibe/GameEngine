@@ -16,12 +16,12 @@ export namespace Graphic {
 			: PostProcessor(toProcess) {
 		}
 
-		[[nodiscard]] ShaderProcessor(FrameBuffer* const toProcess, const GL::Shader* const shader)
+		[[nodiscard]] ShaderProcessor(FrameBuffer* const toProcess, const GL::ShaderProgram* const shader)
 			: PostProcessor(toProcess),
 			shader(shader) {
 		}
 
-		[[nodiscard]] explicit ShaderProcessor(const GL::Shader* const shader)
+		[[nodiscard]] explicit ShaderProcessor(const GL::ShaderProgram* const shader)
 			: shader(shader) {
 			if(!shader)ShaderProcessor::throwException();
 		}
@@ -30,15 +30,15 @@ export namespace Graphic {
 
 		}
 
-		[[nodiscard]] ShaderProcessor(const GL::Shader* const shader,
-		                              const std::function<void(const GL::Shader&)>& shaderHandler)
+		[[nodiscard]] ShaderProcessor(const GL::ShaderSource* const shader,
+		                              const std::function<void(const GL::ShaderProgram&)>& shaderHandler)
 			: shader(shader),
 			shaderHandler(shaderHandler) {
 			if(!shader)ShaderProcessor::throwException();
 		}
 
-		const GL::Shader* shader{nullptr};
-		std::function<void(const GL::Shader&)> shaderHandler{nullptr};
+		const GL::ShaderProgram* shader{nullptr};
+		std::function<void(const GL::ShaderProgram&)> shaderHandler{nullptr};
 
 		FramePort port{};
 

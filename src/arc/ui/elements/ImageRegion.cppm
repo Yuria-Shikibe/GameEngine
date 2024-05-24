@@ -4,7 +4,7 @@
 
 export module UI.ImageRegion;
 
-export import UI.Widget;
+export import UI.Elem;
 export import UI.RegionDrawable;
 
 import std;
@@ -12,7 +12,7 @@ import GL.Texture.Texture2D;
 import GL.Texture.TextureRegionRect;
 
 export namespace UI{
-	class ImageRegion : public Widget{
+	class ImageRegion : public Elem{
 		std::unique_ptr<RegionDrawable> drawable{};
 
 	public:

@@ -4,12 +4,12 @@
 
 export module UI.TextWidget;
 
-export import UI.Widget;
+export import UI.Elem;
 import std;
 import Font.GlyphArrangement;
 
 export namespace UI{
-	class TextWidget : public UI::Widget{
+	class TextWidget : public UI::Elem{
 	protected:
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{Font::obtainLayoutPtr()};
 		const Font::GlyphParser* defParser = Font::defGlyphParser.get();
@@ -49,8 +49,8 @@ export namespace UI{
 			}
 		}
 	public:
-		void calAbsoluteSrc(Widget* parent) override {
-			Widget::calAbsoluteSrc(parent);
+		void calAbsoluteSrc(Elem* parent) noexcept override {
+			Elem::calAbsoluteSrc(parent);
 			updateGlyphPosition();
 		}
 
@@ -66,7 +66,7 @@ export namespace UI{
 			layoutText();
 			updateGlyphPosition();
 
-			Widget::layout();
+			Elem::layout();
 		}
 
 		void setTextScl(const float scl = 1.0f) const noexcept{

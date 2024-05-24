@@ -10,15 +10,15 @@ using namespace GL;
 using namespace Graphic;
 
 void Assets::Shaders::loadPrimitive() {
-	blit = new Shader(Dir::shader, "blit");
-	blit->setUniformer(+[](const Shader& shader) {
+	blit = new ShaderSource(Dir::shader, "blit");
+	blit->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("texture0", 0);
 		// shader.setTexture2D("texture1", 1);
 		// shader.setTexture2D("texture2", 2);
 	});
 
-	sildeLines = new Shader(Dir::shader, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
-	sildeLines->setUniformer(+[](const Shader& shader) {
+	sildeLines = new ShaderSource(Dir::shader, {{ShaderType::frag, "slide-line"}, {ShaderType::vert, "screenspace"}});
+	sildeLines->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		const float stroke = slideLineShaderDrawArgs.get<0>();
 		const float spacing = slideLineShaderDrawArgs.get<1>();
@@ -34,28 +34,28 @@ void Assets::Shaders::loadPrimitive() {
 		shader.setFloat("angle", slideLineShaderAngle.get<0>() + 45.0f);
 	});
 
-	threshold_light = new Shader(Dir::shader, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
-	threshold_light->setUniformer(+[](const Shader& shader) {
+	threshold_light = new ShaderSource(Dir::shader, {{ShaderType::frag, "threshold"}, {ShaderType::vert, "blit"}});
+	threshold_light->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("u_texture", 0);
 	});
 
-	gaussian = new Shader(Dir::shader, "gaussian-blur");
+	gaussian = new ShaderSource(Dir::shader, "gaussian-blur");
 
 	//TODO dynamic apply
-	gaussian->setUniformer(+[](const Shader& shader) {
+	gaussian->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("texture");
 
 		//TODO size adapter
 		shader.setVec2("size", ~Core::renderer->getSize());
 	});
 
-	bloom = new Shader(Dir::shader, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});
-	bloom->setUniformer(+[](const Shader& shader) {
+	bloom = new ShaderSource(Dir::shader, {{ShaderType::frag, "bloom"}, {ShaderType::vert, "blit"}});
+	bloom->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("texture0", 0);
 		shader.setTexture2D("texture1", 1);
 	});
 
-	screenSpace = new Shader(Dir::shader, "screenspace");
+	screenSpace = new ShaderSource(Dir::shader, "screenspace");
 
 	blit->readSource();
 	blit->compile();
@@ -78,15 +78,15 @@ void Assets::Shaders::loadPrimitive() {
 
 void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-parameter)
 	texPost = manager->registerShader(Dir::shader, "tex-std");
-	texPost->setUniformer([]([[maybe_unused]] const Shader& shader) {});
+	texPost->setUniformer([]([[maybe_unused]] const ShaderProgram& shader) {});
 
 	stdPost = manager->registerShader(Dir::shader, "std");
-	stdPost->setUniformer([]([[maybe_unused]] const Shader& shader) {
+	stdPost->setUniformer([]([[maybe_unused]] const ShaderProgram& shader) {
 		// GL::uniformColor(0, Graphic::Colors::WHITE);
 	});
 
 	gaussian_world = manager->registerShader(Dir::shader, "gaussian-blur");
-	gaussian_world->setUniformer(+[](const Shader& shader) {
+	gaussian_world->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("texture");
 		shader.setVec2("size", ~Core::renderer->getSize() * Core::camera->getScale());
 		// shader.setVec2("size", Core::renderer->getSize());
@@ -94,24 +94,24 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 	});
 
 	coordAxis = manager->registerShader(Dir::shader, "coordinate-axis");
-	coordAxis->setUniformer([](const Shader& shader) {
+	coordAxis->setUniformer([](const ShaderProgram& shader) {
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
 		auto* camera = coordAxisArgs.get<0>() ? coordAxisArgs.get<0>() : Core::camera;
 		shader.setFloat("scale",  camera->getScale());
-		shader.setVec2("screenSize", camera->getSize());
+		shader.setVec2("screenSize", camera->getScreenSize());
 		shader.setVec2("cameraPos", camera->getViewportCenter());
 	});
 
 	filter = manager->registerShader(Dir::shader, "filter");
-	filter->setUniformer([](const Shader& shader) {
+	filter->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("tex");
 	});
 
 	world = manager->registerShader(Dir::shader, "screenspace-world");
 
-	merge = manager->registerShader(new Shader{Dir::shader.subFile("world"),{{ShaderType::frag, "merge"}, {ShaderType::vert, "blit"}}});
-	merge->setUniformer([](const Shader& shader) {
+	merge = manager->registerShader(new ShaderSource{Dir::shader.subFile("world"),{{ShaderType::frag, "merge"}, {ShaderType::vert, "blit"}}});
+	merge->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texBase", 0);
 		shader.setTexture2D("texNormal", 1);
 		shader.setTexture2D("texLight", 2);
@@ -153,30 +153,30 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		// shader.setVec2("screenSizeInv", 1.0f / Core::renderer->getDrawWidth(), 1.0f / Core::renderer->getDrawHeight());
 	});
 
-	worldBloom = manager->registerShader(new Shader{Dir::shader.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
-	mask = manager->registerShader(new Shader{Dir::shader.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
-	mask->setUniformer([](const Shader& shader) {
+	worldBloom = manager->registerShader(new ShaderSource{Dir::shader.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
+	mask = manager->registerShader(new ShaderSource{Dir::shader.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
+	mask->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("srcTex", 0);
 		shader.setTexture2D("dstTex", 1);
 		shader.setTexture2D("maskTex", 2);
 	});
 
-	frostedGlass = manager->registerShader(new Shader{Dir::shader.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
-	frostedGlass->setUniformer([](const Shader& shader) {
+	frostedGlass = manager->registerShader(new ShaderSource{Dir::shader.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
+	frostedGlass->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.0f);
 	});
 
-	outline_ortho = manager->registerShader(new Shader{Dir::shader, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
-	outline_ortho->setUniformer([](const Shader& shader) {
+	outline_ortho = manager->registerShader(new ShaderSource{Dir::shader, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
+	outline_ortho->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("scaleInv", outlineArgs.get<2>());
 		shader.setFloat("stepLength", outlineArgs.get<0>());
 		shader.setFloat("rot", outlineArgs.get<1>());
 	});
 
-	outline_sobel = manager->registerShader(new Shader{Dir::shader, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
-	outline_sobel->setUniformer([](const Shader& shader) {
+	outline_sobel = manager->registerShader(new ShaderSource{Dir::shader, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
+	outline_sobel->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("scaleInv", outlineArgs.get<2>());
 		shader.setFloat("stepLength", outlineArgs.get<0>());
@@ -193,13 +193,13 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 void Assets::PostProcessors::loadPrimitive(){
 	multiToBasic.reset(new Graphic::MultiSampleBliter{});
 
-	blurX.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+	blurX.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const ShaderProgram& shader) {
 		shader.setVec2("direction", Geom::Vec2{1.15f, 0});
 	}});
 	blurX->setTargetState(GL::State::BLEND, false);
 
 
-	blurY.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const Shader& shader) {
+	blurY.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian, [](const ShaderProgram& shader) {
 		shader.setVec2("direction", Geom::Vec2{0, 1.15f});
 	}});
 	blurY->setTargetState(GL::State::BLEND, false);
@@ -240,12 +240,12 @@ void Assets::PostProcessors::load(){
 	bloom->scale = 0.5f;
 	bloom->blur.setScale(0.5f);
 
-	blurX_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const Shader& shader) {
+	blurX_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const ShaderProgram& shader) {
 		shader.setVec2("direction", Geom::Vec2{1.45f, 0});
 	}});
 	blurX_World->setTargetState(GL::State::BLEND, false);
 
-	blurY_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const Shader& shader) {
+	blurY_World.reset(new Graphic::ShaderProcessor{Assets::Shaders::gaussian_world, [](const ShaderProgram& shader) {
 		shader.setVec2("direction", Geom::Vec2{0, 1.45f});
 	}});
 	blurY_World->setTargetState(GL::State::BLEND, false);

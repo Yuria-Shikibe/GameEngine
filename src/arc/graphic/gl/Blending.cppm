@@ -4,107 +4,97 @@ export module GL.Blending;
 
 import GL.Constants;
 import GL;
+import std;
 
 export namespace GL{
-	//TODO is virtual necessary??
-	struct Blending
-	{
-		GLenum src{}, dst{}, srcAlpha{}, dstAlpha{};
+	enum struct blend : unsigned short{
+		disable             = static_cast<unsigned short>(~0u),
+		zero                = GL_ZERO,                //(0,0,0,0)
+		one                 = GL_ONE,                 //(1, 1, 1, 1)
+		src_color           = GL_SRC_COLOR,           //(R / kR, G / kG, B / kB, A / kA )
+		one_minus_src_color = GL_ONE_MINUS_SRC_COLOR, //(1, 1, 1, 1) - (R / kR, G / kG, B / kB, A / kA )
+		dst_color           = GL_DST_COLOR,           //(Rd / kR, Gd / kG, Bd / kB, Ad / kA )
+		one_minus_dst_color = GL_ONE_MINUS_DST_COLOR, //(1, 1, 1, 1) - (Rd / kR、Gd / kG、Bd / k B、Ad / kA )
+		src_alpha           = GL_SRC_ALPHA,           //(A / kA, A / kA, A / kA, A / kA )
+		one_minus_src_alpha = GL_ONE_MINUS_SRC_ALPHA, //(1, 1, 1, 1) - (A / kA, A / kA, A / kA, A / kA )
+		dst_alpha           = GL_DST_ALPHA,           //(Ad / kA, Ad / kA, Ad / kA, A d / kA )
+		one_minus_dst_alpha = GL_ONE_MINUS_DST_ALPHA, //(1, 1, 1, 1) - (Ad / kA, Ad / kA, Ad / kA, Ad / kA )
+		saturate            = GL_SRC_ALPHA_SATURATE,  //(i, i, i, 1)
+	};
 
-		constexpr Blending(const GLenum src, const GLenum dst, const GLenum srcAlpha, const GLenum dstAlpha): src(src),
-		                                                                                            dst(dst),
-		                                                                                            srcAlpha(srcAlpha),
-		                                                                                            dstAlpha(dstAlpha){
-		}
+	struct Blending{
+		blend src{}, dst{}, srcAlpha{}, dstAlpha{};
+
+		[[nodiscard]] constexpr Blending(const blend src, const blend dst, const blend srcAlpha, const blend dstAlpha): src(src),
+			dst(dst),
+			srcAlpha(srcAlpha),
+			dstAlpha(dstAlpha){}
+
+		[[nodiscard]] constexpr Blending(const blend src, const blend dst) : Blending(src, dst, src, dst){}
 
 		[[nodiscard]] constexpr Blending() = default;
 
-		constexpr Blending(const Blending& other) = default;
-
-		constexpr Blending(Blending&& other) noexcept: src(other.src),
-		                                     dst(other.dst),
-		                                     srcAlpha(other.srcAlpha),
-		                                     dstAlpha(other.dstAlpha){
+		friend constexpr bool operator==(const Blending& lhs, const Blending& rhs){
+			return lhs.src == rhs.src
+				&& lhs.dst == rhs.dst
+				&& lhs.srcAlpha == rhs.srcAlpha
+				&& lhs.dstAlpha == rhs.dstAlpha;
 		}
 
-		constexpr Blending& operator=(const Blending& other){
-			if(this == &other) return *this;
-			src = other.src;
-			dst = other.dst;
-			srcAlpha = other.srcAlpha;
-			dstAlpha = other.dstAlpha;
-			return *this;
+		friend constexpr bool operator!=(const Blending& lhs, const Blending& rhs){ return !(lhs == rhs); }
+
+		friend constexpr void swap(Blending& lhs, Blending& rhs) noexcept{
+			using std::swap;
+			swap(lhs.src, rhs.src);
+			swap(lhs.dst, rhs.dst);
+			swap(lhs.srcAlpha, rhs.srcAlpha);
+			swap(lhs.dstAlpha, rhs.dstAlpha);
 		}
 
-		constexpr Blending& operator=(Blending&& other) noexcept{
-			if(this == &other) return *this;
-			src = other.src;
-			dst = other.dst;
-			srcAlpha = other.srcAlpha;
-			dstAlpha = other.dstAlpha;
-			return *this;
+		void apply() const{
+			if(src == blend::disable || dst == blend::disable || srcAlpha == blend::disable || dstAlpha ==
+				blend::disable)[[unlikely]] {
+				GL::disable(GL::State::BLEND);
+			} else{
+				GL::enable(GL::State::BLEND);
+				GL::blendFunc(static_cast<GLenum>(src), static_cast<GLenum>(dst), static_cast<GLenum>(srcAlpha),
+				              static_cast<GLenum>(dstAlpha));
+			}
 		}
 
-		friend bool operator==(const Blending& lhs, const Blending& rhs){
-			return &lhs == &rhs;
-		}
-
-		friend bool operator!=(const Blending& lhs, const Blending& rhs){
-			return !(lhs == rhs);
-		}
-
-		constexpr Blending(const GLenum src, const GLenum dst) : Blending(src, dst, src, dst) {}
-
-		virtual ~Blending() = default;
-
-		friend bool operator==(const Blending& lhs, const Blending& rhs);
-
-		friend bool operator!=(const Blending& lhs, const Blending& rhs);
-
-		virtual void apply() const{
-			GL::enable(GL_BLEND);
-			GL::blendFunc(src, dst, srcAlpha, dstAlpha);
-		}
-
-		virtual void apply(const GLuint id) const{
-			GL::enablei(GL_BLEND, id);
-			GL::blendFunci(id, src, dst, srcAlpha, dstAlpha);
+		void apply(const GLuint id) const{
+			GL::enablei(GL::State::BLEND, id);
+			GL::blendFunci(id, static_cast<GLenum>(src), static_cast<GLenum>(dst), static_cast<GLenum>(srcAlpha),
+			               static_cast<GLenum>(dstAlpha));
 		}
 	};
 
-	struct BlendingDisable final : Blending{
-		[[nodiscard]] constexpr BlendingDisable() = default;
-
-		void apply() const override {
-			GL::disable(GL_BLEND);
-		}
-
-		void apply(const GLuint id) const override {
-			GL::disablei(GL_BLEND, id);
-		}
-	};
-
-	struct BlendingEasy final : Blending{
-		constexpr BlendingEasy(const GLenum src, const GLenum dst) : Blending(src, dst, src, dst) {}
-
-		void apply() const override{
-			GL::enable(GL_BLEND);
-			GL::blendFunc(src, dst);
-		}
-
-		void apply(const GLuint id) const override{
-			GL::enablei(GL_BLEND, id);
-			GL::blendFunci(id, src, dst);
-		}
-	};
 
 	namespace Blendings{
-		inline constexpr BlendingDisable Disable{};
-		inline constexpr Blending Normal{ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
-		inline constexpr Blending Addictive{ GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE_MINUS_SRC_ALPHA };
-		inline constexpr Blending Inverse{ GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA};
-		inline constexpr Blending Multiply{ GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA};
+		inline constexpr Blending Disable{blend::disable, blend::disable, blend::disable, blend::disable};
+		inline constexpr Blending Normal{
+				blend::src_alpha,
+				blend::one_minus_src_alpha,
+				blend::one,
+				blend::one_minus_src_alpha
+			};
+		inline constexpr Blending Addictive{
+				blend::src_alpha,
+				blend::one,
+				blend::one,
+				blend::one_minus_src_alpha
+			};
+		inline constexpr Blending Inverse{
+				blend::one_minus_dst_color,
+				blend::one_minus_src_alpha,
+				blend::one,
+				blend::one_minus_src_alpha
+			};
+		inline constexpr Blending Multiply{
+				blend::dst_color,
+				blend::zero,
+				blend::src_alpha,
+				blend::one_minus_src_alpha
+			};
 	}
 }
-
-

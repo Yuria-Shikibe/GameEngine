@@ -4,7 +4,7 @@ export module UI.Cell;
 
 import UI.Align;
 import ext.Concepts;
-import UI.Widget;
+import UI.Elem;
 import std;
 
 export namespace UI {
@@ -25,9 +25,9 @@ export namespace UI {
 		}
 	public:
 		//Weak Reference Object
-		Widget* item{nullptr};
+		Elem* item{nullptr};
 
-		Rect allocatedBound{};
+		UI::Rect allocatedBound{};
 
 		Align::Spacing margin{};
 
@@ -285,13 +285,13 @@ export namespace UI {
 		void applyAlignToItem(const Rect bound) const;
 
 		//Invoke this after all cell bound has been arranged.
-		void applyPosToItem(Widget* parent) const;
+		void applyPosToItem(Elem* parent) const;
 
 		[[nodiscard]] bool isIgnoreLayout() const {
 			return item->isIgnoreLayout();
 		}
 
-		template <Concepts::Derived<Widget> T>
+		template <Concepts::Derived<Elem> T>
 		[[nodiscard]] T& as() {//TODO static cast maybe??
 			return static_cast<T&>(*item);
 		}

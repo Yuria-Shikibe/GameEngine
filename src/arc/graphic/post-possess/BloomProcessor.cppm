@@ -22,10 +22,10 @@ export namespace Graphic {
 
 		PingPongProcessor blur{};
 
-		const Shader* bloomShader{nullptr};
-		const Shader* thresHoldShader{nullptr};
+		const ShaderProgram* bloomShader{nullptr};
+		const ShaderProgram* thresHoldShader{nullptr};
 
-		[[nodiscard]] BloomProcessor(PostProcessor* const blurProcessor1, PostProcessor* const blurProcessor2, const GL::Shader* const bloomShader, const GL::Shader* const thresHoldShader)
+		[[nodiscard]] BloomProcessor(PostProcessor* const blurProcessor1, PostProcessor* const blurProcessor2, const GL::ShaderProgram* const bloomShader, const GL::ShaderProgram* const thresHoldShader)
 			: blur(blurProcessor1, blurProcessor2, 3), bloomShader(bloomShader), thresHoldShader(thresHoldShader)
 		{
 			setTargetState(GL_DEPTH_TEST, false);
@@ -63,7 +63,7 @@ export namespace Graphic {
 			temp1.clearColor();
 
 			toProcess->getColorAttachments().at(port.inPort)->active(0);
-			Graphic::Frame::blit(&temp1, 0, thresHoldShader, [this](const Shader& shader) {
+			Graphic::Frame::blit(&temp1, 0, thresHoldShader, [this](const ShaderProgram& shader) {
 				shader.setFloat("threshold", threshold);
 			});
 		}
@@ -80,7 +80,7 @@ export namespace Graphic {
 			GL::enable(GL_BLEND);
 			GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			Frame::blit(target, port.outPort, bloomShader, [this](const Shader& shader) {
+			Frame::blit(target, port.outPort, bloomShader, [this](const ShaderProgram& shader) {
 				shader.setFloat("intensity_blo", intensity_blo);
 				shader.setFloat("intensity_ori", intensity_ori);
 			});

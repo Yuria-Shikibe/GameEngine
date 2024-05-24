@@ -2,7 +2,7 @@ module;
 
 export module UI.ScrollPane;
 
-import UI.Widget;
+import UI.Elem;
 import UI.Group;
 
 import Geom.Vector2D;
@@ -10,6 +10,7 @@ import Geom.Matrix3D;
 import GL;
 import std;
 import ext.Concepts;
+import OS.Ctrl.Bind.Constants;
 
 export namespace UI {
 	struct ScrollBarDrawer;
@@ -41,7 +42,7 @@ export namespace UI {
 
 		ScrollBarDrawer* scrollBarDrawer{nullptr};
 
-		Widget* getItem() const{
+		Elem* getItem() const{
 			return children.front().get();
 		};
 
@@ -83,29 +84,33 @@ export namespace UI {
 
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
 				scrollTargetVelocity = event;
+
 				if(ishoriOutOfBound() ^ isvertOutOfBound()){
 					scrollTargetVelocity.x = scrollTargetVelocity.y;
+				}else if(keyDown(Ctrl::Key::Left_Shift, Ctrl::Act::Continuous)){
+					scrollTargetVelocity.swapXY();
+					scrollTargetVelocity.x *= -1;
 				}
 
 				scrollTargetVelocity.scl(-scrollSensitivity.x, -scrollSensitivity.y);
 			});
 
 			touchbility = UI::TouchbilityFlags::enabled;
-			quitInboundFocus = false;
+			dropFocusAtCursorQuitBound = false;
 			ScrollPane::applyDefDrawer();
 		}
 
 		void update(const float delta) override;
 
-		bool isInbound(const Geom::Vec2 screenPos) const override{
-			if(Widget::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {
+		bool isInbound(const Geom::Vec2 screenPos) const noexcept override{
+			if(Elem::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {
 				return inbound_scrollBars(screenPos);
 			}
 			return false;
 		}
 
 		void layout() override{
-			Widget::layout();
+			Elem::layout();
 
 			getItem()->layout_tryFillParent();
 
@@ -121,7 +126,7 @@ export namespace UI {
 
 		}
 
-		void calAbsoluteSrc(Widget* parent) override{
+		void calAbsoluteSrc(Elem* parent) noexcept override{
 			Geom::Vec2 vec{parent->getAbsSrc()};
 			vec.add(bound.getSrcX(), bound.getSrcY());
 			//TODO scroll offset check
@@ -141,7 +146,7 @@ export namespace UI {
 			}
 		}
 
-		template <Concepts::Derived<Widget> T, bool fillX = true, bool fillY = false>
+		template <Concepts::Derived<Elem> T, bool fillX = true, bool fillY = false>
 		T& setItem(Concepts::Invokable<void(T&)> auto&& func) {
 			auto ptr = std::make_unique<T>();
 
@@ -160,8 +165,8 @@ export namespace UI {
 
 		//BUG this has bug when resized !
 		//If layouted multible times, this will shrink itemsize!
-		Rect getFilledChildrenBound(Widget* elem) const override {
-			Rect rect = Widget::getFilledChildrenBound(elem);
+		Rect getFilledChildrenBound(Elem* elem) const noexcept override {
+			Rect rect = Elem::getFilledChildrenBound(elem);
 
 			if(hoverScroller)return rect;
 
@@ -176,8 +181,8 @@ export namespace UI {
 			return rect;
 		}
 
-		[[nodiscard]] bool hintInbound_validToParent(const Geom::Vec2 screenPos) override {
-			return Widget::isInbound(screenPos) && !inbound_scrollBars(screenPos);
+		[[nodiscard]] bool hintInbound_validToParent(const Geom::Vec2 screenPos) noexcept override {
+			return Elem::isInbound(screenPos) && !inbound_scrollBars(screenPos);
 		}
 
 		[[nodiscard]] bool inbound_scrollBars(const Geom::Vec2 screenPos) const {
@@ -282,9 +287,9 @@ export namespace UI {
 			};
 		}
 
-		CursorType getCursorType() const override;
+		CursorType getCursorType() const noexcept override;
 
-		void applyDefDrawer() override;
+		void applyDefDrawer() noexcept override;
 
 		void drawBase() const override;
 

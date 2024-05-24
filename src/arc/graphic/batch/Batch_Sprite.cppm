@@ -10,13 +10,16 @@ import GL.Mesh;
 import GL.Buffer.DataBuffer;
 import GL.VertexArray;
 import GL;
+import Math;
 
 import ext.Concepts;
 
 export namespace Core{
 
+	//TODO batch should have their unique shader and manage their lifetime, since the drawer in the shaders may ref the
+	//TODO projections of the batch
 	template <GLsizei vertGroupSize = GL::VERT_GROUP_SIZE_LAYOUT, GLsizei maxVertSize = 8192 * 2>
-		requires requires{maxVertSize <= std::numeric_limits<GLsizei>::max() / GL::ELEMENTS_QUAD_LENGTH;}
+		requires requires{requires maxVertSize <= std::numeric_limits<GLsizei>::max() / GL::ELEMENTS_QUAD_LENGTH;}
 	class SpriteBatch : public Batch
 	{
 	public:
@@ -47,7 +50,7 @@ export namespace Core{
 			index = 0;
 		}
 
-		SpriteBatch(Concepts::Invokable<GL::Shader*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(GL::AttributeLayout&)> auto&& layouter){
+		SpriteBatch(Concepts::Invokable<GL::ShaderProgram*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(GL::AttributeLayout&)> auto&& layouter){
 			mesh = std::make_unique<GL::Mesh>([&layouter, this](GL::Mesh& mesh){
 				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size(), GL_STATIC_DRAW);
 				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
@@ -86,7 +89,7 @@ export namespace Core{
 			bindShader();
 			applyShader();
 
-			mesh->render(std::min(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH, static_cast<size_t>(this->indexRef.size())));
+			mesh->render(Math::min(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH, static_cast<std::size_t>(this->indexRef.size())));
 
 			index = 0;
 		}

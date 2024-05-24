@@ -11,7 +11,6 @@ import Graphic.Viewport;
 import Graphic.Resizeable;
 import Graphic.Viewport.Viewport_OrthoRect;
 import Geom.Rect_Orthogonal;
-import OS.ApplicationListener;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import std;
@@ -21,13 +20,14 @@ import Math;
 export namespace Core{
 	//TODO poor design
 	//TODO 3D support maybe in the future?
-	class Camera2D final : public OS::ApplicationListener, public Graphic::ResizeableInt {
+	class Camera2D final : public Graphic::ResizeableInt {
 	public:
 		static constexpr float DefMaximumScale = 5.0f;
 		static constexpr float DefMinimumScale = 0.2f;
 		static constexpr float DefScaleSpeed = 0.095f;
 		static constexpr float ShakeActivateThreshold = 0.005f;
 		static constexpr float ShakeMinSpacing = 1 / 30.f;
+		static constexpr float ShakeMinCorrectionSpeed = 0.1f;
 	protected:
 		Geom::Matrix3D worldToScreen{};
 		Geom::Matrix3D screenToWorld{};
@@ -38,28 +38,36 @@ export namespace Core{
 		Geom::Vec2 stablePos{};
 		Geom::OrthoRectFloat viewport{};
 
-		float scale{1.0f};
-		float targetScale{1.0f};
 
 		float minScale = std::log(DefMinimumScale);
 		float maxScale = std::log(DefMaximumScale);
 
+		float scale{getTargetScaleDef()};
+		float targetScale{getTargetScaleDef()};
+
 		float shakeIntensity{0.0f};
-		float shakeCorrectionSpeed{0.05f};
+		float shakeCorrectionSpeed{ShakeMinCorrectionSpeed};
 
 		float shakeReload{};
 
 		Math::Rand rand{};
+
+		constexpr void setOrtho(float width, float height) noexcept{
+			width /= scale;
+			height /= scale;
+
+			viewport.setSize(width, height);
+		}
 
 	public:
 		Camera2D() = default;
 
 		void shake(const float intensity, const float fadeSpeed) noexcept{
 			shakeIntensity = Math::max(intensity, shakeIntensity);
-			shakeCorrectionSpeed = Math::max(0.1f, (shakeCorrectionSpeed + Math::ceilPositive(fadeSpeed)) * 0.5f);
+			shakeCorrectionSpeed = Math::max(ShakeMinCorrectionSpeed, (shakeCorrectionSpeed + Math::ceilPositive(fadeSpeed)) * 0.5f);
 		}
 
-		void setScaleClamp(const float min, const float max) noexcept{
+		void setScaleRange(const float min, const float max) noexcept{
 			minScale = std::log(max);
 			maxScale = std::log(min);
 		}
@@ -68,42 +76,41 @@ export namespace Core{
 			screenSize.set(w, h);
 		}
 
-		[[nodiscard]] const Geom::OrthoRectFloat& getViewport() const noexcept {
+		[[nodiscard]] constexpr const Geom::OrthoRectFloat& getViewport() const noexcept {
 			return viewport;
 		}
 
-		void move(const float x, const float y) noexcept {
+		constexpr void move(const float x, const float y) noexcept {
 			stablePos.add(x, y);
 		}
 
-		void move(const Geom::Vec2 vec2) noexcept {
+		constexpr void move(const Geom::Vec2 vec2) noexcept {
 			stablePos.add(vec2);
 		}
 
-		[[nodiscard]] Geom::Vec2 getPosition() const noexcept {
+		/**
+		 * @return Return the stable position
+		 */
+		[[nodiscard]] constexpr Geom::Vec2 getPosition() const noexcept {
 			return stablePos;
 		}
 
-		[[nodiscard]] Geom::Vec2 getViewportCenter() const noexcept {
+		/**
+		 * @return Return the viewport center position
+		 */
+		[[nodiscard]] constexpr Geom::Vec2 getViewportCenter() const noexcept {
 			return viewport.getCenter();
 		}
 
-		void setPosition(const Geom::Vec2& position) noexcept {
-			stablePos.set(position);
+		constexpr void setPosition(const Geom::Vec2& stablePos) noexcept {
+			this->stablePos.set(stablePos);
 		}
 
-		[[nodiscard]] Geom::Vec2 screenCenter() const noexcept{
+		[[nodiscard]] constexpr Geom::Vec2 getScreenCenter() const noexcept{
 			return screenSize.as<float>() / 2.f;
 		}
 
-		void setOrtho(float width, float height) noexcept{
-			width /= scale;
-			height /= scale;
-
-			viewport.setSize(width, height);
-		}
-
-		void update(const float delta) override {
+		void update(const float delta){
 			setOrtho(static_cast<float>(screenSize.x), static_cast<float>(screenSize.y));
 
 			scale = std::exp(std::lerp(
@@ -190,10 +197,14 @@ export namespace Core{
 		}
 
 		void setTargetScaleDef() noexcept{
-			this->targetScale = std::exp(Math::clamp(0.0f, minScale, maxScale));
+			this->targetScale = getTargetScaleDef();
 		}
 
-		Geom::Vec2 getSize() const noexcept{
+		float getTargetScaleDef() const noexcept{
+			return std::exp(Math::clamp(0.0f, minScale, maxScale));
+		}
+
+		Geom::Vec2 getScreenSize() const noexcept{
 			return screenSize.as<float>();
 		}
 	};

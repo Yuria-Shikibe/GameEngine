@@ -1,8 +1,7 @@
 export module OS.ApplicationListener;
 
 export namespace OS{
-	class ApplicationListener{
-	public:
+	struct ApplicationListener{
 		bool pauseRestrictable = false;
 		virtual ~ApplicationListener() = default;
 
@@ -28,9 +27,9 @@ export namespace OS{
 			return &lhs != &rhs;
 		}
 
-		ApplicationListener(const ApplicationListener& o) = delete;
-		ApplicationListener(ApplicationListener&& o) = delete;
-		ApplicationListener& operator=(const ApplicationListener& o) = delete;
-		ApplicationListener& operator=(ApplicationListener&& o) = delete;
+		ApplicationListener(const ApplicationListener&) = delete;
+		ApplicationListener(ApplicationListener&&) = delete;
+		ApplicationListener& operator=(const ApplicationListener&) = delete;
+		ApplicationListener& operator=(ApplicationListener&&) = delete;
 	};
 }

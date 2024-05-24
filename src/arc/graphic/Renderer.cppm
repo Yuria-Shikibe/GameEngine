@@ -155,7 +155,7 @@ export namespace Core{
 
 		virtual void frameEnd(const Graphic::PostProcessor* processor);
 
-		virtual void frameEnd(const GL::Shader* shader);
+		virtual void frameEnd(const GL::ShaderSource* shader);
 
 		void frameEnd(const Graphic::PostProcessor& processor){
 			frameEnd(&processor);

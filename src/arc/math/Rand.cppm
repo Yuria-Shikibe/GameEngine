@@ -179,6 +179,4 @@ export namespace Math {
 			return seedIndex == 0 ? seed0 : seed1;
 		}
 	};
-
-	thread_local Rand globalRand{};
 }

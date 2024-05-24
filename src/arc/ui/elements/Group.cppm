@@ -2,7 +2,7 @@ module;
 
 export module UI.Group;
 
-export import UI.Widget;
+export import UI.Elem;
 export import UI.Flags;
 import ext.RuntimeException;
 
@@ -11,11 +11,11 @@ import ext.Concepts;
 import std;
 
 export namespace UI {
-	class Group : public Widget{
+	class Group : public Elem{
 	protected:
 		//TODO abstact this if possible
-		std::vector<std::unique_ptr<Widget>> children{};
-		std::unordered_set<Widget*> toRemove{};
+		std::vector<std::unique_ptr<Elem>> children{};
+		std::unordered_set<Elem*> toRemove{};
 
 	public:
 		[[nodiscard]] Group() {
@@ -28,45 +28,45 @@ export namespace UI {
 			}
 		}
 
-		void postRemove(Widget* elem) {
+		void postRemove(Elem* elem) {
 			toRemove.insert(elem);
 		}
 
-		void setRoot(Root* root) override{
-			Widget::setRoot(root);
+		void setRoot(Root* root) noexcept override{
+			Elem::setRoot(root);
 
 			for(const auto& elem : children){
 				elem->setRoot(root);
 			}
 		}
 
-		virtual Widget* addChildren(std::unique_ptr<Widget>&& elem) {
+		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem) {
 			modifyAddedChildren(elem.get());
-			children.push_back(std::forward<std::unique_ptr<Widget>>(elem));
+			children.push_back(std::forward<std::unique_ptr<Elem>>(elem));
 			return children.back().get();
 		}
 
-		virtual Widget* addChildren(std::unique_ptr<Widget>&& elem, const int depth) {
+		virtual Elem* addChildren(std::unique_ptr<Elem>&& elem, const int depth) {
 			if(depth >= children.size()) {
-				addChildren(std::forward<std::unique_ptr<Widget>>(elem));
+				addChildren(std::forward<std::unique_ptr<Elem>>(elem));
 				return children.back().get();
 			}else{
 				modifyAddedChildren(elem.get());
-				return children.insert(children.begin() + depth, std::forward<std::unique_ptr<Widget>>(elem))->get();
+				return children.insert(children.begin() + depth, std::forward<std::unique_ptr<Elem>>(elem))->get();
 			}
 		}
 
-		virtual void addChildren(Widget* elem) {
+		virtual void addChildren(Elem* elem) {
 			modifyAddedChildren(elem);
 			children.emplace_back(elem);
 		}
 
-		virtual void addChildren(Widget* elem, const std::size_t depth) {
+		virtual void addChildren(Elem* elem, const std::size_t depth) {
 			if(depth >= children.size()) {
 				addChildren(elem);
 			}else {
 				modifyAddedChildren(elem);
-				children.insert(children.begin() + depth, std::unique_ptr<Widget>(elem));
+				children.insert(children.begin() + depth, std::unique_ptr<Elem>(elem));
 			}
 		}
 
@@ -76,29 +76,29 @@ export namespace UI {
 			}
 		}
 
-		virtual void modifyAddedChildren(Widget* elem);
+		virtual void modifyAddedChildren(Elem* elem);
 
-		void calAbsoluteChildren() override{
-			std::for_each(std::execution::unseq, children.begin(), children.end(), [this](const std::unique_ptr<Widget>& elem) {
+		void calAbsoluteChildren() noexcept override{
+			std::for_each(std::execution::unseq, children.begin(), children.end(), [this](const std::unique_ptr<Elem>& elem) {
 				elem->calAbsoluteSrc(this);
 			});
 		}
 
-		const std::vector<std::unique_ptr<Widget>>* getChildren() const override {
-			return &children;
+		const std::vector<std::unique_ptr<Elem>>& getChildren() const noexcept override {
+			return children;
 		}
 
-		bool hasChildren() const override {
+		bool hasChildren() const noexcept override {
 			return !children.empty();
 		}
 
 		void layout() override {
 			layoutChildren();
 
-			Widget::layout();
+			Elem::layout();
 		}
 
-		void iterateAll(Concepts::Invokable<void(Widget*)> auto&& func) {
+		void iterateAll(Concepts::Invokable<void(Elem*)> auto&& func) {
 			func(this);
 
 			for (const auto& child : getChildren()) {
@@ -110,7 +110,7 @@ export namespace UI {
 
 		virtual void removePosted() {
 			if(toRemove.empty() || children.empty())return;
-			std::erase_if(children, [this](const std::unique_ptr<Widget>& ptr) {
+			std::erase_if(children, [this](const std::unique_ptr<Elem>& ptr) {
 				return toRemove.contains(ptr.get());
 			});
 			toRemove.clear();
@@ -137,12 +137,12 @@ export namespace UI {
 		void update(const float delta) override {
 			removePosted();
 
-			Widget::update(delta);
+			Elem::update(delta);
 
 			updateChildren(delta);
 		}
 
-		void setDisabled(const bool disabled) override{
+		void setDisabled(const bool disabled) noexcept override{
 			if(this->disabled != disabled){
 				this->disabled = disabled;
 				for (const auto& child : children){
@@ -152,7 +152,7 @@ export namespace UI {
 		}
 
 		void drawBase() const override{
-			Widget::drawBase();
+			Elem::drawBase();
 
 			if(visiable)for(const auto& elem : children) {
 				elem->drawBase();
@@ -163,11 +163,11 @@ export namespace UI {
 			if(visiable)drawChildren();
 		}
 
-		void postChanged() override{
-			Widget::postChanged();
+		void postChanged() noexcept override{
+			Elem::postChanged();
 
 			if(lastSignal & ChangeSignal::notifyChildrenOnly){
-				for(auto& element : children){
+				for(const auto& element : children){
 					element->changed(lastSignal, ChangeSignal::notifyParentOnly);
 					element->postChanged();
 				}
@@ -188,7 +188,7 @@ export namespace UI {
 			return rst;
 		}
 
-		void childrenCheck(const Widget* ptr) override{
+		void childrenCheck(const Elem* ptr) override{
 #ifdef  _DEBUG
 			if(!ptr)throw ext::NullPointerException{"Empty Elem"};
 #else

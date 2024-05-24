@@ -51,7 +51,7 @@ void UI::LayoutCell::applyAlignToItem(const Rect bound) const{
 	item->bound.setSrc(Align::getOffsetOf(align, item->getBound(), bound));
 }
 
-void UI::LayoutCell::applyPosToItem(Widget* parent) const{
+void UI::LayoutCell::applyPosToItem(Elem* parent) const{
 	applyAlignToItem(allocatedBound);
 
 	float xMove{};

@@ -4,7 +4,7 @@
 
 export module UI.Screen;
 
-export import UI.Widget;
+export import UI.Elem;
 import GL.Buffer.FrameBuffer;
 import Core.Camera;
 import Core.BatchGroup;
@@ -13,7 +13,7 @@ import Geom.Matrix3D;
 
 
 export namespace UI{
-	class Screen : public Widget{
+	class Screen : public Elem{
 		Core::Camera2D camera{};
 		GL::FrameBuffer buffer{GL::FrameBuffer::RecommendedMinSize, GL::FrameBuffer::RecommendedMinSize, 2};
 
@@ -30,19 +30,19 @@ export namespace UI{
 		}
 
 		[[nodiscard]] Screen(){
-			inputListener.on<UI::CurosrExbound>([this](const auto& event) {
+			inputListener.on<UI::CurosrExbound>([this](const auto&) {
 				if(focusWhenInbound)endCameraFocus();
 			});
 
-			inputListener.on<UI::CurosrInbound>([this](const auto& event) {
+			inputListener.on<UI::CurosrInbound>([this](const auto&) {
 				if(focusWhenInbound)beginCameraFocus();
 			});
 
 			touchbility = TouchbilityFlags::enabled;
 		}
 
-		bool setWidth(const float w) override{
-			const bool changed = Widget::setWidth(w);
+		bool setWidth(const float w) noexcept override{
+			const bool changed = Elem::setWidth(w);
 			if(changed){
 				buffer.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
 				camera.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
@@ -50,8 +50,8 @@ export namespace UI{
 			return changed;
 		}
 
-		bool setHeight(const float h) override{
-			const bool changed = Widget::setHeight(h);
+		bool setHeight(const float h) noexcept override{
+			const bool changed = Elem::setHeight(h);
 			if(changed){
 				buffer.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
 				camera.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
@@ -68,7 +68,7 @@ export namespace UI{
 		void drawContent() const override;
 
 		void update(const float delta) override{
-			Widget::update(delta);
+			Elem::update(delta);
 			camera.update(delta);
 		}
 

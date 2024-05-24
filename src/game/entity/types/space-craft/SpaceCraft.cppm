@@ -75,7 +75,7 @@ export namespace Game {
 			if(!trait){
 				throw ext::NullPointerException{"Unable To Find SpaceCraft Trait"};
 			}
-			auto rand = Math::globalRand;
+			Math::Rand rand{};
 
 			const int turrets = rand.random(2, 5);
 

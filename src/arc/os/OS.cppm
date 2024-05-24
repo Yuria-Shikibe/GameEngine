@@ -28,7 +28,7 @@ namespace OS{
 	float updateTime_internal = 0.0f;     //Sec
 	float updateTick_internal = 0.0f;     //Tick
 
-	std::vector<::OS::ApplicationListener*> applicationListeners;
+	// std::vector<::OS::ApplicationListener*> applicationListeners;
 
 	std::thread::id mainThreadID{};
 
@@ -101,15 +101,15 @@ export namespace OS{
 	inline void setPause(const bool v) {paused = v;}
 
 
-	/**
-	 * \brief Register an application listener.
-	 * \param listener Should Has Static Lifetime or at least keeps alive before main loop exited.
-	 */
-	void registerListener(ApplicationListener* listener){applicationListeners.push_back(listener);}
+	// /**
+	//  * \brief Register an application listener.
+	//  * \param listener Should Has Static Lifetime or at least keeps alive before main loop exited.
+	//  */
+	// void registerListener(ApplicationListener* listener){applicationListeners.push_back(listener);}
+	//
+	// void removeListener(ApplicationListener* listener){std::erase(applicationListeners, listener);}
 
-	void removeListener(ApplicationListener* listener){std::erase(applicationListeners, listener);}
-
-	void clearListeners(){applicationListeners.clear();}
+	// void clearListeners(){applicationListeners.clear();}
 
 	void launchApplication(){
 		std::signal(SIGABRT, exitApplication);
@@ -144,19 +144,19 @@ export namespace OS{
 
 		handleTasks();
 
-		for(const auto & listener : applicationListeners){
-			if(listener->pauseRestrictable) {
-				if(!paused)listener->update(updateDeltaTick_internal);
-			}else {
-				listener->update(deltaTick_internal);
-			}
-
-			listener->updateGlobal(deltaTick_internal);
-		}
-
-		for(const auto & listener : applicationListeners){
-			listener->updatePost(deltaTick_internal);
-		}
+		// for(const auto & listener : applicationListeners){
+		// 	if(listener->pauseRestrictable) {
+		// 		if(!paused)listener->update(updateDeltaTick_internal);
+		// 	}else {
+		// 		listener->update(deltaTick_internal);
+		// 	}
+		//
+		// 	listener->updateGlobal(deltaTick_internal);
+		// }
+		//
+		// for(const auto & listener : applicationListeners){
+		// 	listener->updatePost(deltaTick_internal);
+		// }
 
 		updateSignalManager.fire(Event::CycleSignalState::end);
 	}

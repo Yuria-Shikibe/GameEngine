@@ -51,20 +51,20 @@ export namespace Assets{
 	inline OS::FileTree textureTree;
 
 	namespace Shaders {
-		inline GL::Shader* stdPost = nullptr;
-		inline GL::Shader* texPost = nullptr;
-		inline GL::Shader* screenSpace = nullptr;
+		inline GL::ShaderSource* stdPost = nullptr;
+		inline GL::ShaderSource* texPost = nullptr;
+		inline GL::ShaderSource* screenSpace = nullptr;
 
 		/** @brief [Screen Size, Camera Pos]*/
 		inline GL::UniformTupleWrapper coordAxisArgs{static_cast<Core::Camera2D*>(nullptr)};
-		inline GL::Shader* coordAxis = nullptr;
-		inline GL::Shader* filter = nullptr;
+		inline GL::ShaderSource* coordAxis = nullptr;
+		inline GL::ShaderSource* filter = nullptr;
 
-		inline GL::Shader* threshold_light = nullptr;
-		inline GL::Shader* gaussian = nullptr;
-		inline GL::Shader* gaussian_world = nullptr;
-		inline GL::Shader* bloom = nullptr;
-		inline GL::Shader* blit = nullptr;
+		inline GL::ShaderSource* threshold_light = nullptr;
+		inline GL::ShaderSource* gaussian = nullptr;
+		inline GL::ShaderSource* gaussian_world = nullptr;
+		inline GL::ShaderSource* bloom = nullptr;
+		inline GL::ShaderSource* blit = nullptr;
 
 		/** @brief [width, spacing, color, mulScale] */
 		inline GL::UniformTupleWrapper slideLineShaderDrawArgs
@@ -73,19 +73,19 @@ export namespace Assets{
 		/** @brief [screen scale, offset, timeScale] */
 		inline GL::UniformTupleWrapper slideLineShaderScaleArgs{1.0f};
 		inline GL::UniformTupleWrapper slideLineShaderAngle{45.0f};
-		inline GL::Shader* sildeLines = nullptr;
+		inline GL::ShaderSource* sildeLines = nullptr;
 
-		inline GL::Shader* world = nullptr;
-		inline GL::Shader* merge = nullptr;
+		inline GL::ShaderSource* world = nullptr;
+		inline GL::ShaderSource* merge = nullptr;
 
-		inline GL::Shader* mask = nullptr;
-		inline GL::Shader* worldBloom = nullptr;
+		inline GL::ShaderSource* mask = nullptr;
+		inline GL::ShaderSource* worldBloom = nullptr;
 
-		inline GL::Shader* frostedGlass = nullptr;
+		inline GL::ShaderSource* frostedGlass = nullptr;
 
 		inline GL::UniformTupleWrapper outlineArgs{4.0f, 0.0f, Geom::norBaseVec2<float>};
-		inline GL::Shader* outline_ortho = nullptr;
-		inline GL::Shader* outline_sobel = nullptr;
+		inline GL::ShaderSource* outline_ortho = nullptr;
+		inline GL::ShaderSource* outline_sobel = nullptr;
 
 
 		void loadPrimitive();

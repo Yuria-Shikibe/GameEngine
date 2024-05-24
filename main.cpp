@@ -48,6 +48,7 @@ import OS;
 import OS.ApplicationListenerSetter;
 
 import Core;
+import Core.MainLoopManager;
 
 import Core.Audio;
 import Assets.Manager;
@@ -86,7 +87,7 @@ import Assets.Loader;
 import Assets.Manager;
 
 //TODO 模块分区
-import UI.Widget;
+import UI.Elem;
 import UI.Root;
 import UI.Table;
 import UI.Label;
@@ -228,7 +229,7 @@ namespace GameCtrl{
 
 	::Ctrl::Operation shoot_prs{
 			"shoot-prs", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Press, +[]{
-				if(Game::core->playerController){
+				if(Game::core->playerController && !Core::uiRoot->cursorCaptured()){
 					Game::core->playerController->shoot = true;
 				}
 			}),
@@ -850,7 +851,7 @@ int main(const int argc, char* argv[]){
 	OS::activateHander();
 
 	while(!Core::platform->shouldExit()){
-		OS::update();
+		Core::loopManager->update();
 
 		Core::audio->setListenerPosition(Core::camera->getPosition().x, Core::camera->getPosition().y);
 		Core::renderer->draw();

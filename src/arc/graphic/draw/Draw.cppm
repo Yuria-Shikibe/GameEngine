@@ -194,10 +194,10 @@ export namespace Graphic{
 
 	namespace Frame{
 		inline const GL::Mesh* rawMesh{ nullptr };
-		inline const GL::Shader* blitter{ nullptr };
+		inline const GL::ShaderProgram* blitter{ nullptr };
 
-		template <Concepts::InvokeNullable<void(const GL::Shader&)> Func = std::nullptr_t>
-		void blit(const GL::FrameBuffer* const draw, const unsigned port = 0, const GL::Shader* shader = blitter,
+		template <Concepts::InvokeNullable<void(const GL::ShaderProgram&)> Func = std::nullptr_t>
+		void blit(const GL::FrameBuffer* const draw, const unsigned port = 0, const GL::ShaderProgram* shader = blitter,
 		          Func&& f = nullptr){
 			draw->bind(GL::FrameBuffer::DRAW);
 			draw->enableDrawAt(port);
@@ -265,7 +265,7 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void blend(const GL::Blending& blending = GL::Blendings::Normal){
+		void blend(const GL::Blending blending = GL::Blendings::Normal){
 			getBatch(batchPtr)->switchBlending(blending);
 		}
 
@@ -275,7 +275,7 @@ export namespace Graphic{
 		}
 
 		template <BatchPtr Core::BatchGroup::* batchPtr = DefBatch>
-		void beginShader(GL::Shader* shader, const bool flushContext){
+		void beginShader(GL::ShaderProgram* shader, const bool flushContext){
 			if(flushContext) flush<batchPtr>();
 
 			getBatch(batchPtr)->setCustomShader(shader);

@@ -4,7 +4,7 @@
 
 export module UI.Action.Actions;
 
-export import UI.Widget;
+export import UI.Elem;
 export import UI.Action;
 
 import Graphic.Color;
@@ -16,7 +16,7 @@ import std;
 using namespace Graphic;
 
 export namespace UI::Actions{
-	struct ColorAction : Action<Widget>{
+	struct ColorAction : Action<Elem>{
 	protected:
 		Color beginColor;
 
@@ -24,27 +24,27 @@ export namespace UI::Actions{
 		Color endColor;
 
 		ColorAction(const float lifetime, const Color& endColor)
-			: Action<Widget>(lifetime),
+			: Action<Elem>(lifetime),
 			  endColor(endColor){}
 
 		ColorAction(const float lifetime, const Color& beginColor, const Math::Interp::InterpFunc& interpFunc)
-			: Action<Widget>(lifetime, interpFunc),
+			: Action<Elem>(lifetime, interpFunc),
 			  beginColor(beginColor){}
 
-		void apply(Widget* elem, const float progress) override{
+		void apply(Elem* elem, const float progress) override{
 			elem->color = beginColor.createLerp(endColor, progress);
 		}
 
-		void begin(Widget* elem) override{
+		void begin(Elem* elem) override{
 			beginColor = elem->color;
 		}
 
-		void end(Widget* elem) override{
+		void end(Elem* elem) override{
 			elem->color = endColor;
 		}
 	};
 
-	struct AlphaAction : Action<Widget>{
+	struct AlphaAction : Action<Elem>{
 	protected:
 		float beginAlpha{};
 
@@ -52,22 +52,22 @@ export namespace UI::Actions{
 		float endAlpha{};
 
 		AlphaAction(const float lifetime, const float endAlpha, const Math::Interp::InterpFunc& interpFunc)
-			: Action<Widget>(lifetime, interpFunc),
+			: Action<Elem>(lifetime, interpFunc),
 			  endAlpha(endAlpha){}
 
 		AlphaAction(const float lifetime, const float endAlpha)
-			: Action<Widget>(lifetime),
+			: Action<Elem>(lifetime),
 			  endAlpha(endAlpha){}
 
-		void apply(Widget* elem, const float progress) override{
+		void apply(Elem* elem, const float progress) override{
 			elem->selfMaskOpacity = Math::lerp(beginAlpha, endAlpha, progress);
 		}
 
-		void begin(Widget* elem) override{
+		void begin(Elem* elem) override{
 			beginAlpha = elem->selfMaskOpacity;
 		}
 
-		void end(Widget* elem) override{
+		void end(Elem* elem) override{
 			elem->selfMaskOpacity = endAlpha;
 		}
 	};
@@ -79,24 +79,24 @@ export namespace UI::Actions{
 		AlphaMaskAction(const float lifetime, const float endAlpha)
 			: AlphaAction{lifetime, endAlpha}{}
 
-		void apply(Widget* elem, const float progress) override{
+		void apply(Elem* elem, const float progress) override{
 
 			elem->maskOpacity = Math::lerp(beginAlpha, endAlpha, progress);
 		}
 
-		void begin(Widget* elem) override{
+		void begin(Elem* elem) override{
 			beginAlpha = elem->maskOpacity;
 		}
 
-		void end(Widget* elem) override{
+		void end(Elem* elem) override{
 			elem->maskOpacity = endAlpha;
 		}
 	};
 
-	struct RemoveAction : Action<Widget>{
+	struct RemoveAction : Action<Elem>{
 		RemoveAction() = default;
 
-		void begin(Widget* elem) override;
+		void begin(Elem* elem) override;
 	};
 
 	template <typename T, Concepts::Invokable<void(T*)> Func>

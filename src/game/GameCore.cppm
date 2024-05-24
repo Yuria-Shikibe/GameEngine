@@ -70,9 +70,13 @@ export namespace Game {
 		}
 
 		void update(const float delta) override {
-			//TODO async
+			//TODO better async
+			std::future<void> fut{};
+			if(!effectManager->activatedEmpty()){
+				fut = std::async(&EffectManager::update, effectManager.get(), delta);
+			}
 			EntityManage::update(delta);
-			effectManager->update(delta);
+			if(fut.valid())fut.get();
 		}
 
 		void updateGlobal(const float delta) override{

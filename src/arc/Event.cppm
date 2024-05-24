@@ -16,7 +16,7 @@ export namespace Event {
 #ifdef _DEBUG
 		std::set<std::type_index> registered{};
 #endif
-		std::unordered_map<std::type_index, std::vector<std::function<void(const void*)>>> events;
+		std::unordered_map<std::type_index, std::vector<std::function<void(const void*)>>> events{};
 
 	public:
 		template <Concepts::Derived<EventType> T>
@@ -78,19 +78,40 @@ export namespace Event {
 	 * @tparam T Used Enum Type
 	 * @tparam maxsize How Many Items This Enum Contains
 	 */
-	template <Concepts::Enum T, size_t maxsize>
+	template <Concepts::Enum T, std::underlying_type_t<T> maxsize>
 	class SignalManager {
 		std::array<std::vector<std::function<void()>>, maxsize> events{};
 
 	public:
-		void fire(const T event) {
-			for (const auto tasks = events.at(static_cast<size_t>(event)); const auto& listener : tasks) {
+		using SignalType = std::underlying_type_t<T>;
+		template <T index>
+		static constexpr bool isValid = requires{
+			requires static_cast<SignalType>(index) < maxsize;
+			requires static_cast<SignalType>(index) >= 0;
+		};
+
+		void fire(const T signal) {
+			for (const auto& listener : events[static_cast<SignalType>(signal)]) {
 				listener();
 			}
 		}
 
-		void on(const T index, Concepts::Invokable<void(const T&)> auto&& func){
-			events[static_cast<size_t>(index)].emplace_back(std::forward<decltype(func)>(func));
+		void on(const T signal, Concepts::Invokable<void(const T&)> auto&& func){
+			events[static_cast<SignalType>(signal)].emplace_back(std::forward<decltype(func)>(func));
+		}
+
+		template <T signal>
+			requires isValid<signal>
+		void on(Concepts::Invokable<void(const T&)> auto&& func){
+			events[static_cast<SignalType>(signal)].emplace_back(std::forward<decltype(func)>(func));
+		}
+
+		template <T signal>
+			requires isValid<signal>
+		void fire(){
+			for (const auto& listener : events[static_cast<SignalType>(signal)]) {
+				listener();
+			}
 		}
 	};
 

@@ -1,5 +1,6 @@
 module Core;
 
+import Core.MainLoopManager;
 import ext.RuntimeException;
 import GL;
 import GL.Constants;
@@ -64,9 +65,6 @@ void Core::initCore_Post(const std::function<void()>& initializer) {
 
 	if(!batchGroup.overlay)throw ext::NullPointerException{"Empty Overlay Batch!"};
 
-	OS::registerListener(&input);
-	OS::registerListener(camera);
-
 	assetsManager = new Assets::Manager{};
 }
 
@@ -83,7 +81,7 @@ void Core::dispose() {
 		destructor();
 	}
 
-	OS::clearListeners();
+	loopManager->clearListeners();
 
 	delete camera;
 	delete renderer;

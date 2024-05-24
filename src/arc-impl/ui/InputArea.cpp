@@ -20,18 +20,22 @@ void UI::InputArea::drawContent() const{
 	Graphic::Draw::alpha();
 
 	if(showingHintText){
-		Graphic::Draw::mixColor(UI::Pal::GRAY);
+		Graphic::Draw::mixColor(UI::Pal::GRAY.copy().mul(color));
+	}else{
+		Graphic::Draw::mixColor(color);
 	}
 
 	if(!glyphLayout->empty()){
 		const Geom::Vec2 off = glyphLayout->getDrawOffset();
 
 		for (const auto & caret : carets){
-			unsigned curRow = caret.dataBegin ? caret.dataBegin->getRow() : std::numeric_limits<unsigned>::max();
-			Geom::Vec2 sectionBegin{caret.getDrawPos(false).scl(glyphLayout->getScale())};
+			auto [from, to] = Math::Section{caret.dataBegin, caret.dataEnd}.ordered();
+
+			unsigned curRow = from ? from->getRow() : std::numeric_limits<unsigned>::max();
+			Geom::Vec2 sectionBegin{from->getBoundSrc().scl(glyphLayout->getScale())};
 			Geom::Vec2 sectionEnd{};
 
-			for(auto data : std::span{caret.dataBegin, caret.dataEnd}){
+			for(auto& data : std::ranges::subrange{from, to}){
 				if(sectionBegin.isNaN()){
 					sectionBegin = data.getBoundSrc().scl(glyphLayout->getScale());
 				}
@@ -52,14 +56,13 @@ void UI::InputArea::drawContent() const{
 			}
 
 			Rect rect{};
-			sectionEnd.x = caret.getDrawPos().x * glyphLayout->getScale();
+			sectionEnd.x = to->getBoundSrc().x * glyphLayout->getScale();
 			Graphic::Draw::color(caret.selectionColor, 0.65f);
 			Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
 		}
-
-		glyphLayout->render();
 	}
 
+	glyphLayout->render(maskOpacity);
 
 	if(isTextFull()){
 		Graphic::Draw::mixColor(Pal::RED_DUSK);
@@ -69,7 +72,7 @@ void UI::InputArea::drawContent() const{
 		Graphic::Draw::mixColor();
 	}
 	Graphic::Draw::Line::setLineStroke(2.0f);
-	if(isTextFocused() && Math::cycleStep<75, 40>(time)){
+	if(isTextFocused() && Math::cycleStep<75, 40>(insertLineTimer)){
 		for (const auto & caret : carets){
 			Graphic::Draw::color(caret.caretColor);
 			const Geom::Vec2 src = caret.getDrawPos() * glyphLayout->getScale() + glyphLayout->offset;

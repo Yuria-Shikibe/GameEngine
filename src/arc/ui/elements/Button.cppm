@@ -63,7 +63,7 @@ export namespace UI{
 		[[nodiscard]] std::function<void(Button&, bool)>& getCall(){ return call; }
 
 		void drawStyle() const override{
-			Widget::drawStyle();
+			Elem::drawStyle();
 		}
 	};
 

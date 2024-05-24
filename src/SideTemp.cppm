@@ -17,7 +17,7 @@ import Game.Entity.Controller.AI;
 
 import Math.Rand;
 
-import UI.Widget;
+import UI.Elem;
 import UI.Root;
 import UI.Table;
 import UI.Label;
@@ -33,7 +33,7 @@ import UI.FileTreeSelector;
 export namespace Test{
 	void genRandomEntities(){
 		Game::EntityManage::clear();
-		Math::Rand rand = Math::globalRand;
+		Math::Rand rand{};
 		for(int i = 0; i < 300; ++i) {
 
 
@@ -102,10 +102,10 @@ void setupUITest_Old(){
 		   table.add<UI::ScrollPane>([&inputArea](UI::ScrollPane& pane){
 			   inputArea = &pane.setItem<UI::InputArea, false, false>([](UI::InputArea& area){
 				   area.setWrap();
-				   area.setMaxTextLength(32);
+				   area.setMaxTextLength(3200);
 
 				   area.getGlyphLayout()->setSCale(0.75f);
-				   area.setText("");
+			   	area.setText("12312312\n123123123123\n123123n");
 			   });
 			   pane.setEmptyDrawer();
 		   }).fillParent();
@@ -240,10 +240,10 @@ void setupUITest_Old(){
 
 
 	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::Widget>();
+		   table.add<UI::Elem>();
 		   table.lineFeed();
-		   table.add<UI::Widget>();
-		   table.add<UI::Widget>();
+		   table.add<UI::Elem>();
+		   table.add<UI::Elem>();
 	   })
 	   .setAlign(Align::Mode::bottom_left)
 	   .setSizeScale(0.25f, 0.2f)
@@ -269,16 +269,16 @@ void setupUITest_Old(){
 					paneT.setHeight(600);
 					paneT.setFillparentX();
 
-					paneT.add<UI::Widget>();
+					paneT.add<UI::Elem>();
 					paneT.lineFeed();
-					paneT.add<UI::Widget>();
-					paneT.add<UI::Widget>();
+					paneT.add<UI::Elem>();
+					paneT.add<UI::Elem>();
 				});
 			});
 			// rt->add(new UI::Elem);
 			rt.lineFeed();
-			rt.transferElem(new UI::Widget{});
-			rt.transferElem(new UI::Widget{});
+			rt.transferElem(new UI::Elem{});
+			rt.transferElem(new UI::Elem{});
 		});
 
 		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);

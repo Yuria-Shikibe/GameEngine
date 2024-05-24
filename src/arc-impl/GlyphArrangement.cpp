@@ -8,9 +8,9 @@ import ext.RuntimeException;
 import Math;
 
 
-const Font::GlyphDrawData* Font::GlyphLayout::find(const Geom::Point2U layoutPos) const{
+const Font::GlyphDrawData* Font::GlyphLayout::find(const TextLayoutPos layoutPos) const{
 	auto itr = std::ranges::lower_bound(glyphs, layoutPos,
-		[](const Geom::Point2U pos, const Geom::Point2U inputPos) -> bool {
+		[](const TextLayoutPos pos, const TextLayoutPos inputPos) -> bool {
 		return (pos.y == inputPos.y && pos.x < inputPos.x) || pos.y < inputPos.y;
 	}, &GlyphDrawData::layoutPos);
 

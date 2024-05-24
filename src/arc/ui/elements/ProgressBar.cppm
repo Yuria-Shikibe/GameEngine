@@ -4,7 +4,7 @@
 
 export module UI.ProgressBar;
 
-export import UI.Widget;
+export import UI.Elem;
 export import Math.Interpolation;
 
 import std;
@@ -12,7 +12,7 @@ import std;
 export namespace UI{
 	struct ProgressBarDrawer;
 
-	class ProgressBar : public Widget{
+	class ProgressBar : public Elem{
 	public:
 		enum struct ApproachScope : bool{
 			drawing = false,
@@ -49,7 +49,7 @@ export namespace UI{
 
 
 		void update(const float delta) override{
-			Widget::update(delta);
+			Elem::update(delta);
 
 			if(approachScope == ApproachScope::updating){
 				updateProgress(delta);
@@ -58,7 +58,7 @@ export namespace UI{
 
 		void drawContent() const override;
 
-		void applyDefDrawer() override;
+		void applyDefDrawer() noexcept override;
 	};
 
 }

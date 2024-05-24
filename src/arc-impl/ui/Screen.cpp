@@ -25,7 +25,7 @@ void UI::Screen::endDraw_noContextFallback() const{
 }
 
 void UI::Screen::draw() const{
-	Widget::draw();
+	Elem::draw();
 }
 
 void UI::Screen::beginDraw(std::unique_ptr<Core::Batch> Core::BatchGroup::* batchPtr) const{
@@ -74,7 +74,7 @@ void UI::Screen::drawContent() const{
 
 	GL::disable(GL::State::BLEND);
 	Assets::Shaders::mask->bind();
-	Assets::Shaders::mask->applyDynamic([](const GL::Shader& shader){
+	Assets::Shaders::mask->applyDynamic([](const GL::ShaderProgram& shader){
 		shader.setColor("mixColor", Colors::CLEAR);
 		shader.setColor("srcColor", Colors::WHITE);
 	}, true);

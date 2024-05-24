@@ -26,10 +26,10 @@ namespace Core{
 
 		const Texture* lastTexture = nullptr;
 
-		Shader* generalShader = nullptr;
-		Shader* customShader = nullptr;
+		ShaderProgram* generalShader = nullptr;
+		ShaderProgram* customShader = nullptr;
 
-		const Blending* blending = &Blendings::Normal;
+		Blending blending = Blendings::Normal;
 
 		/**
 		 * \brief From Viewport Size to normalized [-1, 1]
@@ -61,6 +61,7 @@ namespace Core{
 		}
 
 		virtual void reset(){
+			localToWorld.idt();
 			projectionFallback = nullptr;
 			lastTexture = nullptr;
 		}
@@ -91,7 +92,7 @@ namespace Core{
 			return customShader;
 		}
 
-		[[nodiscard]] Shader* getGeneralShader() const {
+		[[nodiscard]] ShaderProgram* getGeneralShader() const {
 			return generalShader;
 		}
 
@@ -99,7 +100,7 @@ namespace Core{
 			return lastTexture;
 		}
 
-		void setCustomShader(Shader* shader) noexcept{
+		void setCustomShader(ShaderProgram* shader) noexcept{
 			customShader = shader;
 		}
 
@@ -107,13 +108,13 @@ namespace Core{
 			customShader = nullptr;
 		}
 
-		[[nodiscard]] Shader* getCustomShader() const{ return customShader; }
+		[[nodiscard]] ShaderProgram* getCustomShader() const{ return customShader; }
 
 		void setupBlending() const {
-			blending->apply();
+			blending.apply();
 		}
 
-		void switchCustomShader(Shader* shader = nullptr) {
+		void switchCustomShader(ShaderProgram* shader = nullptr) {
 			flush();
 
 			setCustomShader(shader);
@@ -126,13 +127,13 @@ namespace Core{
 			generalShader->bind();
 		}
 
-		void switchBlending(const Blending& b){
-			if(blending != &b){
+		void switchBlending(const Blending blend){
+			if(blending != blend){
 				flush();
 			}
 
-			blending = &b;
-			blending->apply();
+			blending = blend;
+			blending.apply();
 		}
 
 		[[nodiscard]] const Mesh* getMesh() const {
@@ -184,7 +185,7 @@ namespace Core{
 		void applyShader() const{
 			if(hasCustomShader()){
 				//TODO this is really dangerous!
-				customShader->applyDynamic(generalShader->getUniformSetter(), true);
+				customShader->applyDynamic(generalShader->getUniformer(), true);
 			}else{
 				generalShader->apply();
 			}
@@ -259,9 +260,9 @@ namespace Core{
 	};
 
 	export struct BatchGuard_Shader : BatchGuard{
-		GL::Shader* originalShader{nullptr};
+		GL::ShaderProgram* originalShader{nullptr};
 
-		[[nodiscard]] explicit BatchGuard_Shader(Batch& batch, GL::Shader* shader) noexcept
+		[[nodiscard]] explicit BatchGuard_Shader(Batch& batch, GL::ShaderProgram* shader) noexcept
 			: BatchGuard{batch}, originalShader{batch.getCustomShader()}{
 			batch.getGeneralShader()->bind();
 			batch.getGeneralShader()->apply();

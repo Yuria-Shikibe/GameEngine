@@ -2,7 +2,7 @@ module;
 
 export module UI.Table;
 export import UI.Group;
-export import UI.Widget;
+export import UI.Elem;
 export import UI.Flags;
 export import UI.Cell;
 
@@ -63,7 +63,7 @@ export namespace UI {
 			return elemLayoutMaxCount.x;
 		}
 
-		template <Concepts::Derived<Widget> T, Concepts::InvokeNullable<void(T&)> Func = std::nullptr_t>
+		template <Concepts::Derived<Elem> T, Concepts::InvokeNullable<void(T&)> Func = std::nullptr_t>
 		LayoutCell& add(Func&& func = nullptr, const unsigned depth = std::numeric_limits<unsigned>::max()) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
@@ -75,12 +75,22 @@ export namespace UI {
 			return cell;
 		}
 
-		LayoutCell& transferElem(Widget* elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
+		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T&)> Func, typename ...Args>
+		LayoutCell& add(Func&& func, Args&& ...args) {
+			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(std::forward<Args>(args) ...)));
+			cell.applyLayout(defaultCellLayout);
+
+			func(cell.as<T>());
+
+			return cell;
+		}
+
+		LayoutCell& transferElem(Elem* elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
 			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
 		}
 
-		constexpr LayoutCell* getCellOf(Widget* elem){
+		constexpr LayoutCell* getCellOf(Elem* elem){
 			if(const auto itr = std::ranges::find(cells, elem, &LayoutCell::item); itr != cells.end()){
 				return itr.operator->();
 			}
@@ -125,7 +135,7 @@ export namespace UI {
 			Group::update(delta);
 		}
 
-		Rect getFilledChildrenBound(Widget* elem) const override{
+		Rect getFilledChildrenBound(Elem* elem) const noexcept override{
 			return elem->getBound();
 		}
 

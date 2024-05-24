@@ -2,8 +2,8 @@ module UI.SliderBar;
 
 import UI.Drawer;
 
-void UI::SliderBar::applyDefDrawer(){
-	Widget::applyDefDrawer();
+void UI::SliderBar::applyDefDrawer() noexcept{
+	Elem::applyDefDrawer();
 	barDrawer = &defSlideBarDrawer;
 }
 

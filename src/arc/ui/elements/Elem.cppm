@@ -1,8 +1,8 @@
 module;
 
-export module UI.Widget;
+#include <irrKlang.h>
 
-import <irrKlang.h>;
+export module UI.Elem;
 
 export import UI.Flags;
 export import UI.Align;
@@ -17,6 +17,7 @@ import Graphic.Color;
 import Geom.Rect_Orthogonal;
 import ext.RuntimeException;
 import Assets.Bundle;
+import OS.Ctrl.Bind.Constants;
 
 import std;
 
@@ -65,29 +66,34 @@ export namespace UI {
 
 	using Rect = Geom::OrthoRectFloat;
 
-	class Widget : public SeperateDrawable{
+	class Elem : public SeperateDrawable{
+		inline static std::vector<std::unique_ptr<Elem>> emptyElems{};
+
 	public:
 		int PointCheck{0};
 
-		~Widget() override{
+		~Elem() noexcept override{
 			releaseAllFocus();
 		}
 
-		[[nodiscard]] Widget(){
-			Widget::applyDefDrawer();
+		[[nodiscard]] Elem(){
+			Elem::applyDefDrawer();
 		}
+
+		friend ::UI::LayoutCell;
+
 	protected:
+
 		/**
 		 * \brief The srcx, srcy is relative to its parent.
 		 */
 		Rect bound{};
-		friend struct ::UI::LayoutCell;
 
 		Group* parent{nullptr};
 		mutable ::UI::Root* root{nullptr};
 
 		//TODO is this necessary?
-		std::unordered_set<Widget*> focusTarget{};
+		// std::unordered_set<Widget*> focusTarget{};
 
 		Event::EventManager inputListener{
 			Event::indexOf<UI::MouseActionPress>(),
@@ -101,32 +107,38 @@ export namespace UI {
 
 		TouchbilityFlags touchbility = TouchbilityFlags::disabled;
 
-		mutable bool layoutChanged{false};
-
 		bool fillParentX{false};
 		bool fillParentY{false};
+
 		bool endRow{false};
+
 		bool visiable{true};
-		bool requiresLayout{false};
+
+		/** Whether this element is being pressed*/
 		bool pressed{false};
+		/** Whether this element is in disabled state*/
 		bool disabled{false};
+		/** Whether this element is in active state*/
 		bool activated{false};
+
 		bool sleep{false};
 
-		bool quitInboundFocus = true;
+		bool dropFocusAtCursorQuitBound{true};
 
 		Geom::Vec2 absoluteSrc{};
 		Geom::Vec2 minimumSize{};
 		Geom::Vec2 maximumSize{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
-		//TODO should here be a maximum size
 
 		WidgetDrawer* drawer{nullptr};
 
 		Align::Spacing border{};
 
-		std::queue<std::unique_ptr<Action<Widget>>> actions{};
+		std::queue<std::unique_ptr<Action<Elem>>> actions{};
 
 		ChangeSignal lastSignal{ChangeSignal::notifyNone};
+		mutable bool layoutChanged{false};
+
+		// bool requiresLayout{false};
 
 		[[nodiscard]] float clampTargetWidth(const float w) const{
 			return  Math::clamp(w, minimumSize.x, maximumSize.x);
@@ -140,60 +152,61 @@ export namespace UI {
 		TooltipBuilder tooltipbuilder{};
 
 	public:
-		Widget(const Widget& other) = delete;
+		Elem(const Elem& other) = delete;
 
-		Widget(Widget&& other) noexcept = default;
+		Elem(Elem&& other) noexcept = default;
 
-		Widget& operator=(const Widget& other) = delete;
+		Elem& operator=(const Elem& other) = delete;
 
-		Widget& operator=(Widget&& other) noexcept = default;
+		Elem& operator=(Elem&& other) noexcept = default;
 
-		std::string name{"undefind"};
+		std::string name{""};
 
 		std::function<bool()> visibilityChecker{nullptr};
 		std::function<bool()> disableChecker{nullptr};
 		std::function<bool()> activatedChecker{nullptr};
+
 		std::function<void()> appendUpdator{nullptr};
 
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
 
 		mutable Graphic::Color tempColor{0.0f, 0.0f, 0.0f, 0.0f};
 		mutable float maskOpacity = 1.0f;
+
 		float selfMaskOpacity = 1.0f;
 
 		std::any animationData{};
 
-		[[nodiscard]] Geom::Vec2 getMinimumSize() const{ return minimumSize; }
+		[[nodiscard]] constexpr Geom::Vec2 getMinimumSize() const noexcept{ return minimumSize; }
 
-		void setMinimumSize(const Geom::Vec2 minimumSize){
+		constexpr void setMinimumSize(const Geom::Vec2 minimumSize) noexcept{
 			this->minimumSize = minimumSize;
 			setWidth(Math::max(minimumSize.x, getWidth()));
 			setHeight(Math::max(minimumSize.y, getHeight()));
 		}
 
+		[[nodiscard]] constexpr Geom::Vec2 getMaximumSize() const noexcept{ return maximumSize; }
 
-		[[nodiscard]] Geom::Vec2 getMaximumSize() const{ return maximumSize; }
-
-		void setMaximumSize(const Geom::Vec2 maximumSize){
+		constexpr void setMaximumSize(const Geom::Vec2 maximumSize) noexcept{
 			this->maximumSize = maximumSize;
 			setWidth(Math::min(maximumSize.x, getWidth()));
 			setHeight(Math::min(maximumSize.y, getHeight()));
 		}
 
-		[[nodiscard]] virtual bool isVisiable() const {return visiable;}
+		[[nodiscard]] virtual bool isVisiable() const noexcept{return visiable;}
 
 		//TODO rename this shit
-		[[nodiscard]] constexpr bool shouldDropFocusAtCursorQuitBound() const{
-			return quitInboundFocus;
+		[[nodiscard]] constexpr bool shouldDropFocusAtCursorQuitBound() const noexcept{
+			return dropFocusAtCursorQuitBound;
 		}
 
-		constexpr void setDropFocusAtCursorQuitBound(const bool quitInboundFocus){ this->quitInboundFocus = quitInboundFocus; }
+		constexpr void setDropFocusAtCursorQuitBound(const bool quitInboundFocus) noexcept{ this->dropFocusAtCursorQuitBound = quitInboundFocus; }
 
-		[[nodiscard]] constexpr bool isPressed() const {return pressed;}
+		[[nodiscard]] bool isPressed() const noexcept{return pressed;}
 
-		[[nodiscard]] bool isSleep() const{ return sleep; }
+		[[nodiscard]] bool isSleep() const noexcept{ return sleep; }
 
-		void setSleep(const bool sleep){ this->sleep = sleep; }
+		void setSleep(const bool sleep) noexcept{ this->sleep = sleep; }
 
 		void passSound(SoundSource sound) const;
 
@@ -201,7 +214,7 @@ export namespace UI {
 		 * @param elem Element To Fill This(it's parent)
 		 * @return Expected Bound Of This Child Element
 		 */
-		virtual Rect getFilledChildrenBound(Widget* elem) const {
+		virtual Rect getFilledChildrenBound(Elem* elem) const noexcept{
 			Rect bound = elem->bound;
 
 			bound.setSrc(border.bot_lft());
@@ -217,13 +230,13 @@ export namespace UI {
 			return bound;
 		}
 
-		virtual bool layout_tryFillParent();
+		virtual bool layout_tryFillParent() noexcept;
 
-		[[nodiscard]] bool isFillParentX() const {
+		[[nodiscard]] bool isFillParentX() const noexcept{
 			return fillParentX;
 		}
 
-		[[nodiscard]] bool isFillParentY() const {
+		[[nodiscard]] bool isFillParentY() const noexcept{
 			return fillParentY;
 		}
 
@@ -237,9 +250,11 @@ export namespace UI {
 			layoutChanged = false;
 		}
 
-		virtual void applySettings() {}
+		virtual void applySettings() noexcept{
+			//TODO what is this used for... I forgot
+		}
 
-		virtual bool isIgnoreLayout() const {
+		virtual bool isIgnoreLayout() const noexcept{
 			return !visiable;
 		}
 
@@ -253,68 +268,68 @@ export namespace UI {
 
 		virtual void drawContent() const {}
 
-		virtual void setVisible(const bool val) {
+		virtual void setVisible(const bool val) noexcept{
 			visiable = val;
 		}
 
-		virtual void setRoot(Root* const root) {
+		virtual void setRoot(Root* const root) noexcept{
 			this->root = root;
 		}
 
-		[[nodiscard]] UI::Root* getRoot() const{ return root; }
+		[[nodiscard]] UI::Root* getRoot() const noexcept{ return root; }
 
-		virtual void applyDefDrawer();
+		virtual void applyDefDrawer() noexcept;
 
-		void setTooltipBuilder(const TooltipBuilder& hoverTableBuilder){
+		void setTooltipBuilder(const TooltipBuilder& hoverTableBuilder) noexcept{
 			this->tooltipbuilder = hoverTableBuilder;
 		}
 
-		void setTooltipBuilder(TooltipBuilder&& hoverTableBuilder){
+		void setTooltipBuilder(TooltipBuilder&& hoverTableBuilder) noexcept{
 			this->tooltipbuilder = std::move(hoverTableBuilder);
 		}
 
-		[[nodiscard]] const TooltipBuilder& getTooltipBuilder() const{ return tooltipbuilder; }
+		[[nodiscard]] const TooltipBuilder& getTooltipBuilder() const noexcept{ return tooltipbuilder; }
 
-		void updateHoverTableHandle(Table* handle){
+		void updateHoverTableHandle(Table* handle) noexcept{
 			this->hoverTableHandle = handle;
 		}
 
-		void setFillparentX(const bool val = true) {
+		void setFillparentX(const bool val = true) noexcept{
 			if(val != fillParentX)changed(UI::ChangeSignal::notifySubs);
 
 			fillParentX = val;
 		}
 
-		void setFillparentY(const bool val = true) {
+		void setFillparentY(const bool val = true) noexcept{
 			if(val != fillParentY)changed(UI::ChangeSignal::notifySubs);
 
 			fillParentY = val;
 		}
 
-		void setFillparent(const bool valX = true, const bool valY = true) {
-			setFillparentX(valX);
-			setFillparentY(valY);
+		void setFillparent(const bool fillX = true, const bool fillY = true) noexcept{
+			setFillparentX(fillX);
+			setFillparentY(fillY);
 		}
 
-		[[nodiscard]] constexpr bool touchDisabled() const {
+		[[nodiscard]] constexpr bool touchDisabled() const noexcept{
 			return touchbility == TouchbilityFlags::disabled;
 		}
 
-		[[nodiscard]] constexpr TouchbilityFlags getTouchbility() const {
+		[[nodiscard]] constexpr TouchbilityFlags getTouchbility() const noexcept{
 			return touchbility;
 		}
 
-		constexpr void setTouchbility(const TouchbilityFlags flag) {
+		constexpr void setTouchbility(const TouchbilityFlags flag) noexcept{
 			this->touchbility = flag;
 		}
 
-		[[nodiscard]] constexpr float getBorderWidth() const {return border.getWidth();}
+		[[nodiscard]] constexpr float getBorderWidth() const noexcept{return border.getWidth();}
 
-		[[nodiscard]] constexpr float getBorderHeight() const {return border.getHeight();}
+		[[nodiscard]] constexpr float getBorderHeight() const noexcept{return border.getHeight();}
 
-		[[nodiscard]] constexpr float getValidWidth() const{return Math::clampPositive(getWidth() - getBorderWidth());}
+		[[nodiscard]] constexpr float getValidWidth() const noexcept{return Math::clampPositive(getWidth() - getBorderWidth());}
 
-		[[nodiscard]] constexpr float getValidHeight() const{return Math::clampPositive(getHeight() - getBorderHeight());}
+		[[nodiscard]] constexpr float getValidHeight() const noexcept{return Math::clampPositive(getHeight() - getBorderHeight());}
 
 		virtual void drawStyle() const;
 
@@ -331,33 +346,34 @@ export namespace UI {
 
 		virtual void callRemove();
 
-		[[nodiscard]] constexpr bool isEndingRow() const {return endRow;}
+		[[nodiscard]] constexpr bool isEndingRow() const noexcept{return endRow;}
 
-		constexpr void setEndRow(const bool end) {endRow = end;}
+		constexpr void setEndRow(const bool end) noexcept {endRow = end;}
 
-		[[nodiscard]] const std::unordered_set<Widget*>& getFocus() const {return focusTarget;}
+		// [[nodiscard]] const std::unordered_set<Widget*>& getFocus() const {return focusTarget;}
+		//
+		// [[nodiscard]] std::unordered_set<Widget*>& getFocus() {return focusTarget;}
+		//
+		// virtual void addFocusTarget(Widget* const target) {
+		// 	focusTarget.insert(target);
+		// }
+		//
+		// virtual void removeFocusTarget(Widget* const target) {
+		// 	focusTarget.erase(target);
+		// }
 
-		[[nodiscard]] std::unordered_set<Widget*>& getFocus() {return focusTarget;}
-
-		virtual void addFocusTarget(Widget* const target) {
-			focusTarget.insert(target);
-		}
-
-		virtual void removeFocusTarget(Widget* const target) {
-			focusTarget.erase(target);
-		}
-
-		void setSrc(const Geom::Vec2 src) {
+		void setSrc(const Geom::Vec2 src) noexcept{
 			setSrc(src.x, src.y);
 		}
 
-		void setSrc(const float x, const float y) {
+		void setSrc(const float x, const float y) noexcept{
 			if(bound.getSrcX() == x && bound.getSrcY() == y)return;
 			bound.setSrc(x, y);
 			changed(UI::ChangeSignal::notifyAll);
 		}
 
-		virtual bool setWidth(float w) {
+		/** @return true if changed */
+		virtual bool setWidth(float w) noexcept{
 			w = clampTargetWidth(w);
 			if(Math::equal(bound.getWidth(), w))return false;
 			bound.setWidth(w);
@@ -365,7 +381,8 @@ export namespace UI {
 			return true;
 		}
 
-		virtual bool setHeight(float h) {
+		/** @return true if changed */
+		virtual bool setHeight(float h) noexcept{
 			h = clampTargetHeight(h);
 			if(Math::equal(bound.getHeight(), h))return false;
 			bound.setHeight(h);
@@ -373,21 +390,23 @@ export namespace UI {
 			return true;
 		}
 
+		/** @return true if changed */
 		bool setSize(const float w, const float h) {
+			//Cautious for short circuit evaluation
 			bool isChanged = false;
 			isChanged |= setWidth(w);
 			isChanged |= setHeight(h);
-			if(isChanged)changed(UI::ChangeSignal::notifyAll);
 			return isChanged;
 		}
 
+		/** @return true if changed */
 		bool setSize(const float s) {
 			return setSize(s, s);
 		}
 
-		virtual float getIdealWidth() const noexcept {return bound.getWidth();}
+		//virtual float getIdealWidth() const noexcept {return bound.getWidth();}
 
-		virtual float getIdealHeight() const noexcept {return bound.getHeight();}
+		//virtual float getIdealHeight() const noexcept {return bound.getHeight();}
 
 		[[nodiscard]] constexpr Rect getBound() const noexcept {return bound;}
 
@@ -395,7 +414,7 @@ export namespace UI {
 
 		[[nodiscard]] constexpr Geom::Vec2 getValidSize() const noexcept {return {getValidWidth(), getValidHeight()};}
 
-		virtual void calAbsoluteSrc(Widget* parent) {
+		virtual void calAbsoluteSrc(Elem* parent) noexcept{
 			Geom::Vec2 vec = parent ? parent->absoluteSrc : Geom::ZERO;
 
 			vec.add(bound.getSrc());
@@ -404,74 +423,73 @@ export namespace UI {
 			calAbsoluteChildren();
 		}
 
-		virtual void calAbsoluteChildren() {}
+		virtual void calAbsoluteChildren() noexcept {}
 
-		[[nodiscard]] Geom::Vec2 getAbsSrc() const{
+		[[nodiscard]] Geom::Vec2 getAbsSrc() const noexcept{
 			return absoluteSrc;
 		}
 
-		void setAbsSrc(const Geom::Vec2 src){
+		void setAbsSrc(const Geom::Vec2 src) noexcept{
 			if(absoluteSrc != src){
 				absoluteSrc = src;
 				changed(UI::ChangeSignal::notifyAll);
 			}
 		}
 
-		virtual int elemSerializationID() {
-			return 0;
-		}
+		// TODO json srl support
+		// virtual int elemSerializationID() noexcept{
+		// 	return 0;
+		// }
 
-		[[nodiscard]] Event::EventManager& getInputListener() {return inputListener;}
+		[[nodiscard]] auto& getInputListener() noexcept{return inputListener;}
+		[[nodiscard]] auto& getInputListener() const noexcept{return inputListener;}
 
-		[[nodiscard]] const Event::EventManager& getInputListener() const {return inputListener;}
-
-		[[nodiscard]] constexpr bool hasChanged() const {return layoutChanged;}
+		[[nodiscard]] constexpr bool hasChanged() const noexcept{return layoutChanged;}
 
 		/**
 		 * @brief
 		 * This is a post signal function.
 		 * After change is called, layout should be called in the next update to handle the change.
 		 */
-		void changed(const ChangeSignal direction, const ChangeSignal removal = ChangeSignal::notifyNone){
+		void changed(const ChangeSignal direction, const ChangeSignal removal = ChangeSignal::notifyNone) noexcept{
 			lastSignal = lastSignal + direction - removal;
 		}
 
-		virtual void postChanged();
+		virtual void postChanged() noexcept;
 
-		void overrideChanged(const bool val, const ChangeSignal removal = ChangeSignal::notifyNone){
+		void overrideChanged(const bool val, const ChangeSignal removal = ChangeSignal::notifyNone) noexcept{
 			layoutChanged = val;
 			lastSignal = removal;
 		}
 
-		void toString(std::ostream& os, const int depth) const {
+		virtual void toString(std::ostream& os, const int depth) const {
 			//TODO tree print support
 		}
 
-		virtual void setDisabled(const bool disabled){
+		virtual void setDisabled(const bool disabled) noexcept{
 			this->disabled = disabled;
 		}
 
-		[[nodiscard]] std::function<bool()>& getActivatedChecker(){ return activatedChecker; }
+		[[nodiscard]] std::function<bool()>& getActivatedChecker() noexcept{ return activatedChecker; }
 
-		void setActivatedChecker(const std::function<bool()>& activatedChecker){
+		void setActivatedChecker(const std::function<bool()>& activatedChecker) noexcept{
 			this->activatedChecker = activatedChecker;
 		}
 
-		virtual void setActivated(const bool activated){
+		virtual void setActivated(const bool activated) noexcept{
 			this->activated = activated;
 		}
 
-		[[nodiscard]] bool isActivated() const{ return activated; }
+		[[nodiscard]] bool isActivated() const noexcept{ return activated; }
 
 		virtual void update(const float delta){
-			if(visibilityChecker)setVisible(visibilityChecker());
-			if(disableChecker)setDisabled(disableChecker());
-			if(activatedChecker)setActivated(activatedChecker());
+			if(visibilityChecker) [[unlikely]] setVisible(visibilityChecker());
+			if(disableChecker) [[unlikely]] setDisabled(disableChecker());
+			if(activatedChecker) [[unlikely]] setActivated(activatedChecker());
 			if(appendUpdator) [[unlikely]] appendUpdator();
 
-			float actionDelta = delta;
 
-			while(!actions.empty()){
+			for(float actionDelta = delta; !actions.empty();){
 				const auto& current = actions.front();
 
 				actionDelta = current->update(actionDelta, this);
@@ -484,50 +502,53 @@ export namespace UI {
 			}
 		}
 
-		[[nodiscard]] auto& getActions() const{ return actions; }
+		[[nodiscard]] auto& getActions() const noexcept{ return actions; }
+		[[nodiscard]] auto& getActions() noexcept{ return actions; }
 
-		template <Concepts::Derived<Action<Widget>> ActionType, typename ...T>
+		template <Concepts::Derived<Action<Elem>> ActionType, typename ...T>
 		void pushAction(T&&... args){
 			actions.push(std::make_unique<ActionType>(std::forward<T>(args)...));
 		}
 
-		template<Concepts::Derived<Action<Widget>> ...ActionType>
+		template<Concepts::Derived<Action<Elem>> ...ActionType>
 		void pushActions(std::unique_ptr<ActionType>&& ...actionArgs){
-			std::array<Action<Widget>, sizeof...(actionArgs)> arr = {actionArgs...};
+			std::array<Action<Elem>, sizeof...(actionArgs)> arr = {actionArgs...};
 			actions.push_range(arr);
 		}
 
-		virtual const std::vector<std::unique_ptr<Widget>>* getChildren() const {return nullptr;}
+		virtual const std::vector<std::unique_ptr<Elem>>& getChildren() const noexcept{
+			return emptyElems;
+		}
 
-		virtual bool hasChildren() const {return false;}
+		virtual bool hasChildren() const noexcept {return false;}
 
-		[[nodiscard]] constexpr bool isInteractable() const{
+		[[nodiscard]] constexpr bool isInteractable() const noexcept{
 			return (touchbility == TouchbilityFlags::enabled || static_cast<bool>(tooltipbuilder)) && visiable;
 		}
 
-		[[nodiscard]] constexpr bool isQuietInteractable() const{
+		[[nodiscard]] constexpr bool isQuietInteractable() const noexcept{
 			return (touchbility != TouchbilityFlags::enabled && static_cast<bool>(tooltipbuilder)) && visiable;
 		}
 
-		virtual bool hintInbound_validToParent(const Geom::Vec2 screenPos){
+		virtual bool hintInbound_validToParent(const Geom::Vec2 screenPos) noexcept{
 			return isInbound(screenPos);
 		}
 
-		[[nodiscard]] virtual bool isInbound(Geom::Vec2 screenPos) const;
+		[[nodiscard]] virtual bool isInbound(Geom::Vec2 screenPos) const noexcept;
 
-		bool isFocusedKeyInput() const;
+		bool isFocusedKeyInput() const noexcept;
 
-		bool isFocusedScroll() const;
+		bool isFocusedScroll() const noexcept;
 
-		bool isCursorInbound() const;
+		bool isCursorInbound() const noexcept;
 
-		void setFocusedKey(bool focus);
+		void setFocusedKey(bool focus) noexcept;
 
-		void setFocusedScroll(bool focus);
+		void setFocusedScroll(bool focus) noexcept;
 
-		void releaseAllFocus() const;
+		void releaseAllFocus() const noexcept;
 
-		virtual CursorType getCursorType() const{
+		virtual CursorType getCursorType() const noexcept{
 			if(touchbility != TouchbilityFlags::enabled){
 				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
 			}else{
@@ -535,35 +556,38 @@ export namespace UI {
 			}
 		}
 
-		[[nodiscard]] constexpr float drawSrcX() const {return absoluteSrc.x;}
+		[[nodiscard]] constexpr float drawSrcX() const noexcept{return absoluteSrc.x;}
 
-		[[nodiscard]] constexpr float drawSrcY() const {return absoluteSrc.y;}
+		[[nodiscard]] constexpr float drawSrcY() const noexcept{return absoluteSrc.y;}
 
-		[[nodiscard]] constexpr float getWidth() const {return bound.getWidth();}
+		[[nodiscard]] constexpr float getWidth() const noexcept{return bound.getWidth();}
 
-		[[nodiscard]] constexpr float getHeight() const {return bound.getHeight();}
+		[[nodiscard]] constexpr float getHeight() const noexcept{return bound.getHeight();}
 
-		[[nodiscard]] const Align::Spacing& getBorder() const{ return border; }
+		[[nodiscard]] auto& getBorder() const noexcept{ return border; }
+		[[nodiscard]] auto& getBorder() noexcept{ return border; }
 
-		[[nodiscard]] Align::Spacing& getBorder() { return border; }
+		void setBorderZero() noexcept {setBorder(0.0f);}
 
-		void setBorderZero() {setBorder(0.0f);}
-
-		void setBorder(const Align::Spacing margin) {
+		void setBorder(const Align::Spacing margin) noexcept{
 			if(margin != this->border){
 				this->border = margin;
 				changed(UI::ChangeSignal::notifySubs);
 			}
 		}
 
-		void setBorder(const float val) {
+		void setBorder(const float val) noexcept{
 			if(border != val){
 				this->border.set(val);
 				changed(UI::ChangeSignal::notifySubs);
 			}
 		}
 
-		bool keyDown(const int code, const int action, const int mode) const;
+		bool isTrivialElem() const noexcept{
+			return appendUpdator == nullptr && disableChecker == nullptr && activatedChecker == nullptr && visibilityChecker == nullptr;
+		}
+
+		bool keyDown(const int code, const int action, const int mode = Ctrl::Mode::Ignore) const;
 
 		/**
 		 * @return True if there is nothing can do, then transfer the control
@@ -578,7 +602,7 @@ export namespace UI {
 		[[nodiscard]] Assets::Bundle& getBundles(bool fromUICategory = true) const;
 
 	protected:
-		virtual void childrenCheck(const Widget* ptr) {
+		virtual void childrenCheck(const Elem* ptr) {
 			throw ext::IllegalArguments{"Labels shouldn't have children!"};
 		}
 	};

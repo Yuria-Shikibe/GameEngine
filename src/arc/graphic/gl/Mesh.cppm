@@ -46,14 +46,10 @@ export namespace GL{
 
 		void bind() const{
 			vertexArray.bind();
-			// vertexBuffer.bind();
-			// indexBuffer.bind();
 		}
 
 		void unbind() const{
-			// vertexBuffer.unbind();
 			vertexArray.unbind();
-			// indexBuffer.unbind();
 		}
 
 		template <size_t size>

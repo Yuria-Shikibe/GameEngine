@@ -18,14 +18,33 @@ import OS.TextInputListener;
 import OS.Ctrl.Bind.Constants;
 
 import ext.Encoding;
+import ext.Concepts;
 
 export namespace UI{
 	struct TextCursorDrawer;
-	struct TextCaret{
-		/** @brief for rows, y for columns*/
-		Geom::Point2U beginPos{};
-		Geom::Point2U endPos{};
 
+	struct TextCaretData{
+		/** @brief for rows, y for columns*/
+		Font::TextLayoutPos beginPos{};
+		Font::TextLayoutPos endPos{};
+
+		//TODO necessary?
+		Graphic::Color caretColor{Graphic::Colors::WHITE};
+		Graphic::Color selectionColor{Graphic::Colors::ROYAL};
+
+		[[nodiscard]] TextCaretData() = default;
+
+		[[nodiscard]] TextCaretData(const Font::TextLayoutPos beginPos, const Font::TextLayoutPos endPos)
+			: beginPos{beginPos},
+			  endPos{endPos}{}
+	};
+
+	struct TextCaret : TextCaretData{
+	private:
+		static bool caresAbout(const Font::CharCode code){
+			return std::isalnum(code) || code == Font::GlyphParser::TokenSignal;
+		}
+	public:
 		/** THIS MUST BE IN A CONTINIOUS SEQ*/
 		const Font::GlyphDrawData* dataBegin{};
 		const Font::GlyphDrawData* dataEnd{};
@@ -33,29 +52,79 @@ export namespace UI{
 
 		std::shared_ptr<Font::GlyphLayout> layout{};
 
-		//TODO necessary?
-		Graphic::Color caretColor{Graphic::Colors::WHITE};
-		Graphic::Color selectionColor{Graphic::Colors::ROYAL};
-
 		//TODO should this thing here or in the area class?
 		// TextCursorDrawer* drawer{};
 		// bool insertMode{};
 
 		using SeqType = std::vector<Font::GlyphDrawData>;
 
+		explicit operator TextCaretData() const{
+			return static_cast<TextCaretData>(*this);
+		}
 
 		[[nodiscard]] TextCaret() = default;
 
-		[[nodiscard]] TextCaret(const Geom::Point2U& beginPos, const Geom::Point2U& endPos,
+		[[nodiscard]] TextCaret(const TextCaretData& data) : TextCaretData{data}{};
+
+		[[nodiscard]] TextCaret(const Font::TextLayoutPos beginPos, const Font::TextLayoutPos endPos,
 		                        const std::shared_ptr<Font::GlyphLayout>& layout)
-			: beginPos{beginPos},
-			  endPos{endPos},
+			: TextCaretData{beginPos, endPos},
 			  layout{layout}{}
 
 		[[nodiscard]] explicit TextCaret(const std::shared_ptr<Font::GlyphLayout>& layout)
 			: layout{layout}{}
 
 		void draw() const;
+
+		void moveToHome(const Font::GlyphDrawData* TextCaret::* ptr){
+			auto& p = this->*ptr;
+			while(true){
+				if(p->isBegin())break;
+				p--;
+				if(p->isEndRow()){
+					p++;
+					break;
+				}
+			}
+
+			alignTo(ptr);
+		}
+
+		void moveToEnd(const Font::GlyphDrawData* TextCaret::* ptr){
+			auto& p = this->*ptr;
+			while(true){
+				if(p->isEnd() || p->isEndRow())break;
+				p++;
+			}
+
+			alignTo(ptr);
+		}
+
+		void moveToNextBreakpoint_Left(const Font::GlyphDrawData* TextCaret::* ptr){
+			auto& p = this->*ptr;
+
+			while (!p->isBegin() && !caresAbout(p[-1].code)) {
+				p--;
+			}
+			while (!p->isBegin() && caresAbout(p[-1].code)) {
+				p--;
+			}
+
+			alignTo(ptr);
+		}
+
+		void moveToNextBreakpoint_Right(const Font::GlyphDrawData* TextCaret::* ptr){
+			auto& p = this->*ptr;
+
+			while (!p->isEnd() && caresAbout(p->code)) {
+				p++;
+			}
+			while (!p->isEnd() && !caresAbout(p->code) && p->code != '\n') {
+				p++;
+			}
+
+			alignTo(ptr);
+		}
 
 		[[nodiscard]] bool contains(const Font::GlyphDrawData* data) const{
 			return data >= dataBegin && data < dataEnd;
@@ -110,12 +179,28 @@ export namespace UI{
 		}
 
 		[[nodiscard]] Math::Section<int> getSectionIndex() const{
-			return textSubrange;
+			return textSubrange.ordered();
 		}
 
 		void alignPos(){
 			if(dataBegin){beginPos = dataBegin->layoutPos;}
 			if(dataEnd){endPos = dataEnd->layoutPos;}
+		}
+
+		void alignBegin(){
+			if(dataBegin){beginPos = dataBegin->layoutPos;}
+		}
+
+		void alignEnd(){
+			if(dataEnd){endPos = dataEnd->layoutPos;}
+		}
+
+		void alignTo(const Font::GlyphDrawData* TextCaret::* ptr){
+			if(ptr == &TextCaret::dataBegin){
+				alignBegin();
+			}else{
+				alignEnd();
+			}
 		}
 
 		void refreshDataPtr(){
@@ -124,38 +209,47 @@ export namespace UI{
 
 			alignPos();
 
-			if(dataBegin > dataEnd){
-				swapSentinal();
-			}
-
 			textSubrange.from = dataBegin ? dataBegin->index : 0;
 			textSubrange.to = dataEnd ? dataEnd->index : 0;
 		}
 
-		/**
-		 * @param toEnd true - Align to end | false - align to begin
-		 */
-		void alignToSentinal(const bool toEnd){
-			if(toEnd){
-				dataBegin = dataEnd;
-				beginPos = endPos = dataEnd->layoutPos;
+		void alignToSentinal(const Font::GlyphDrawData* TextCaret::* ptr){
+			dataBegin = dataEnd = this->*ptr;
+			beginPos = endPos = (this->*ptr)->layoutPos;
+		}
+
+		void alignToDirection(const bool right){
+			const auto [l, r] = Math::Section{dataBegin, dataEnd}.ordered();
+			if(right){
+				dataBegin = dataEnd = r;
+				beginPos = endPos = r->layoutPos;
 			}else{
-				dataEnd = dataBegin;
-				endPos = beginPos = dataBegin->layoutPos;
+				dataEnd = dataBegin = l;
+				endPos = beginPos = l->layoutPos;
 			}
+		}
+
+		bool incr(const Font::GlyphDrawData* TextCaret::* ptr){
+			if((this->*ptr)->isEnd())return false;
+			++(this->*ptr);
+			return true;
+		}
+
+		bool decr(const Font::GlyphDrawData* TextCaret::* ptr){
+			if((this->*ptr)->isBegin())return false;
+			--(this->*ptr);
+			return true;
 		}
 
 		TextCaret& operator++(){
 			if(isRangeSelecting()){
-				alignToSentinal(true);
+				alignToDirection(true);
 				return *this;
 			}
 
-			if(dataBegin->isEnd())return *this;
+			if(!incr(&TextCaret::dataEnd))return *this;
 
-			++dataEnd;
-
-			alignToSentinal(true);
+			alignToSentinal(&TextCaret::dataEnd);
 			return *this;
 		}
 
@@ -163,32 +257,25 @@ export namespace UI{
 		 * @brief Do this at the tail of the text
 		 */
 		TextCaret& forceIncr(){
-			if(isRangeSelecting()){
-				alignToSentinal(true);
-				return *this;
-			}
-
 			endPos.x ++;
-			beginPos.x ++;
+			beginPos = endPos;
 			return *this;
 		}
 
 		TextCaret& operator--(){
 			if(isRangeSelecting()){
-				alignToSentinal(false);
+				alignToDirection(false);
 				return *this;
 			}
 
-			if(dataBegin->isBegin())return *this;
+			if(!decr(&TextCaret::dataBegin))return *this;
 
-			--dataBegin;
-
-			alignToSentinal(false);
+			alignToSentinal(&TextCaret::dataBegin);
 			return *this;
 		}
 
 		TextCaret& tryGotoAboveRow(){
-			Geom::Point2U pos = beginPos;
+			Font::TextLayoutPos pos = endPos;
 			if(pos.y == 0)return *this;
 
 			pos.y--;
@@ -197,20 +284,20 @@ export namespace UI{
 					rst--;
 				}
 
-				this->dataBegin = rst;
-				alignToSentinal(false);
+				this->dataEnd = rst;
+				alignEnd();
 			}
 
 			return *this;
 		}
 
 		TextCaret& tryGotoBelowRow(){
-			Geom::Point2U pos = beginPos;
+			Font::TextLayoutPos pos = endPos;
 			pos.y++;
 
 			if(auto* rst = layout->find(pos)){
-				this->dataBegin = rst;
-				alignToSentinal(false);
+				this->dataEnd = rst;
+				alignEnd();
 			}
 
 			return *this;
@@ -232,23 +319,19 @@ export namespace UI{
 	}
 
 	/*
-	 * TODO shift + -> / <-
-	 * TODO shift + up / down
-	 * TODO ctrl + -> / <-
-	 * TODO ctrl + shift + -> / <-
 	 * TODO ctrl + Delete / Backspace
 	 * TODO IME context support
-	 * TODO hint text support
 	 * TODO better do/undo
 	 * TODO multiple carets
 	 * TODO bound checks
 	 * TODO token highlight parser
+	 *
 	 */
 	class InputArea : public UI::TextWidget, public OS::TextInputListener{
 	public:
 		struct SnapshotData{ //TODO this is really a violent way to do/undo
 			std::string text{};
-			std::vector<TextCaret> carets{};
+			std::vector<TextCaretData> carets{};
 		};
 
 	protected:
@@ -260,7 +343,7 @@ export namespace UI{
 
 		Font::TextString hintText{""};
 		bool showingHintText{false};
-		float time{};
+		float insertLineTimer{};
 
 		std::vector<TextCaret> carets{};
 
@@ -290,7 +373,7 @@ export namespace UI{
 
 			layoutText(forceUpdate);
 
-			for (auto& caret : carets){
+			for (TextCaret& caret : carets){
 				caret.refreshDataPtr();
 			}
 		}
@@ -301,11 +384,11 @@ export namespace UI{
 
 		void setTextUnfocused() const;
 
-		void genTextCaret(const std::optional<Geom::Point2U> pos, const bool multi = false){
+		void genTextCaret(const std::optional<Font::TextLayoutPos> pos, const bool multi = false){
 			genTextSection(pos, pos, multi);
 		}
 
-		void genTextSection(const std::optional<Geom::Point2U> begin, const std::optional<Geom::Point2U> end, const bool multi = false){
+		void genTextSection(const std::optional<Font::TextLayoutPos> begin, const std::optional<Font::TextLayoutPos> end, const bool multi = false){
 			if(!begin.has_value() || !end.has_value())return;
 
 			setTextFocused();
@@ -322,7 +405,9 @@ export namespace UI{
 			}))return;
 
 			carets.emplace_back(beginPos, endPos, glyphLayout);
-			getLastestSnapshot().carets = carets;
+			getLastestSnapshot().carets = carets
+			| std::ranges::views::transform(&TextCaret::operator TextCaretData)
+			| std::ranges::to<decltype(getLastestSnapshot().carets)>();
 
 			updateHint();
 		}
@@ -336,7 +421,7 @@ export namespace UI{
 			return vec2;
 		}
 
-		[[nodiscard]] std::optional<Geom::Point2U> getLayoutPos(Geom::Vec2 caretPos) const {
+		[[nodiscard]] std::optional<Font::TextLayoutPos> getLayoutPos(Geom::Vec2 caretPos) const {
 			if(glyphLayout->empty()){
 				return std::nullopt;
 			}
@@ -383,7 +468,7 @@ export namespace UI{
 		}
 
 		constexpr void resetTime() noexcept{
-			time = 0;
+			insertLineTimer = 0;
 		}
 
 		[[nodiscard]] constexpr int getMaxTextLength() const noexcept{ return maxTextByteLength; }
@@ -409,9 +494,9 @@ export namespace UI{
 		void update(const float delta) override {
 			updateOperatrion();
 
-			time += delta;
-			if(constexpr float maxSpacing = 10000.0f; time > maxSpacing){
-				time = Math::mod(time, maxSpacing);
+			insertLineTimer += delta;
+			if(constexpr float maxSpacing = 10000.0f; insertLineTimer > maxSpacing){
+				insertLineTimer = Math::mod(insertLineTimer, maxSpacing);
 			}
 
 			flushInputBuffer();
@@ -421,43 +506,152 @@ export namespace UI{
 				layout();
 			}
 
-			Widget::update(delta);
+			Elem::update(delta);
 		}
 
 		void updateOperatrion(){
 			if(!isTextFocused())return;
-			if(
-				keyDown(Ctrl::Key::Right, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
-				keyDown(Ctrl::Key::Right, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)
-			){
-				for(auto& caret : carets){
-					++caret;
-					resetTime();
+
+			auto validKey = [this](const int key, const int mode){
+				return keyDown(key, Ctrl::Act::Press, mode) || keyDown(key, Ctrl::Act::Repeat, mode);
+			};
+
+			auto act = [this](Concepts::Invokable<void(TextCaret&)> auto&& func){
+				for(TextCaret& caret : carets){
+					func(caret);
 				}
+				resetTime();
+			};
+
+			if(keyDown(Ctrl::Key::Home, Ctrl::Act::Press, Ctrl::Mode::None)){
+				act([](TextCaret& caret){
+					caret.moveToHome(&TextCaret::dataEnd);
+					caret.alignToDirection(false);
+				});
 			}
 
-			if(keyDown(Ctrl::Key::Left, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
-				keyDown(Ctrl::Key::Left, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
-				for(auto& caret : carets){
-					--caret;
-					resetTime();
-				}
+			if(keyDown(Ctrl::Key::End, Ctrl::Act::Press, Ctrl::Mode::None)){
+				act([](TextCaret& caret){
+					caret.moveToEnd(&TextCaret::dataEnd);
+					caret.alignToDirection(true);
+				});
 			}
 
-			if(keyDown(Ctrl::Key::Down, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
-				keyDown(Ctrl::Key::Down, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
-				for (auto& caret : carets){
+			if(keyDown(Ctrl::Key::Home, Ctrl::Act::Press, Ctrl::Mode::Shift)){
+				act([](TextCaret& caret){
+					caret.moveToHome(&TextCaret::dataEnd);
+					caret.alignEnd();
+				});
+			}
+
+			if(keyDown(Ctrl::Key::End, Ctrl::Act::Press, Ctrl::Mode::Shift)){
+				act([](TextCaret& caret){
+					caret.moveToEnd(&TextCaret::dataEnd);
+					caret.alignEnd();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Right, Ctrl::Mode::None)){
+				act([](TextCaret& caret){++caret;});
+
+			}
+
+			if(validKey(Ctrl::Key::Left, Ctrl::Mode::None)){
+				act([](TextCaret& caret){--caret;});
+			}
+
+			if(validKey(Ctrl::Key::Down, Ctrl::Mode::None)){
+				act([](TextCaret& caret){
 					caret.tryGotoBelowRow();
-					resetTime();
-				}
+					caret.alignToSentinal(&TextCaret::dataEnd);
+				});
 			}
 
-			if(keyDown(Ctrl::Key::Up, Ctrl::Act::Press, Ctrl::Mode::Ignore) ||
-				keyDown(Ctrl::Key::Up, Ctrl::Act::Repeat, Ctrl::Mode::Ignore)){
-				for (auto& caret : carets){
+			if(validKey(Ctrl::Key::Up, Ctrl::Mode::None)){
+				act([](TextCaret& caret){
 					caret.tryGotoAboveRow();
-					resetTime();
-				}
+					caret.alignToSentinal(&TextCaret::dataEnd);
+				});
+			}
+
+			if(validKey(Ctrl::Key::Down, Ctrl::Mode::Ctrl)){
+				act([](TextCaret& caret){
+					caret.tryGotoBelowRow();
+					caret.alignToSentinal(&TextCaret::dataEnd);
+				});
+			}
+
+			if(validKey(Ctrl::Key::Up, Ctrl::Mode::Ctrl)){
+				act([](TextCaret& caret){
+					caret.tryGotoAboveRow();
+					caret.alignToSentinal(&TextCaret::dataEnd);
+				});
+			}
+
+			if(validKey(Ctrl::Key::Down, Ctrl::Mode::Shift)){
+				act([](TextCaret& caret){
+					caret.tryGotoBelowRow();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Up, Ctrl::Mode::Shift)){
+				act([](TextCaret& caret){
+					caret.tryGotoAboveRow();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Down, Ctrl::Mode::Ctrl_Shift)){
+				act([](TextCaret& caret){
+					caret.tryGotoBelowRow();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Up, Ctrl::Mode::Ctrl_Shift)){
+				act([](TextCaret& caret){
+					caret.tryGotoAboveRow();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Left, Ctrl::Mode::Shift)){
+				act([](TextCaret& caret){
+					caret.decr(&TextCaret::dataEnd);
+					caret.alignEnd();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Right, Ctrl::Mode::Shift)){
+				act([](TextCaret& caret){
+					caret.incr(&TextCaret::dataEnd);
+					caret.alignEnd();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Left, Ctrl::Mode::Ctrl)){
+				act([](TextCaret& caret){
+					caret.moveToNextBreakpoint_Left(&TextCaret::dataEnd);
+					caret.alignToDirection(false);
+				});
+			}
+
+			if(validKey(Ctrl::Key::Right, Ctrl::Mode::Ctrl)){
+				act([](TextCaret& caret){
+					caret.moveToNextBreakpoint_Right(&TextCaret::dataEnd);
+					caret.alignToDirection(true);
+				});
+			}
+
+			if(validKey(Ctrl::Key::Left, Ctrl::Mode::Ctrl_Shift)){
+				act([](TextCaret& caret){
+					caret.moveToNextBreakpoint_Left(&TextCaret::dataEnd);
+					caret.alignEnd();
+				});
+			}
+
+			if(validKey(Ctrl::Key::Right, Ctrl::Mode::Ctrl_Shift)){
+				act([](TextCaret& caret){
+					caret.moveToNextBreakpoint_Right(&TextCaret::dataEnd);
+					caret.alignEnd();
+				});
 			}
 		}
 
@@ -466,7 +660,7 @@ export namespace UI{
 			updateTextLayout();
 			updateGlyphPosition();
 
-			Widget::layout();
+			Elem::layout();
 		}
 
 		void drawContent() const override;
@@ -508,11 +702,11 @@ export namespace UI{
 
 			const auto forwardSize = std::ranges::count_if(text, ext::isUnicodeHead);
 
-			for (auto& caret : carets){
+			for (TextCaret& caret : carets){
 				auto [begin, end] = caret.getSectionIndex();
 				if(begin != end){
 					glyphLayout->lastText.replace(glyphLayout->lastText.begin() + begin, glyphLayout->lastText.begin() + end, view);
-					caret.alignToSentinal(false);
+					caret.alignToSentinal(&TextCaret::dataBegin);
 				}else{
 					glyphLayout->lastText.insert_range(glyphLayout->lastText.begin() + begin, view);
 				}
@@ -526,14 +720,15 @@ export namespace UI{
 		}
 
 		void informBackSpace(int mode) override{
-			for (auto& caret : carets){
+			replaceSnapshot();
+
+			for (TextCaret& caret : carets){
 				auto [posBegin, posEnd] = caret.getSectionIndex();
 				if(posBegin != posEnd){
 					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + posBegin, glyphLayout->lastText.begin() + posEnd);
 					textChanged = true;
-					caret.alignToSentinal(false);
+					caret.alignToDirection(false);
 				}else if(posBegin > 0){
-
 					const auto cur = glyphLayout->lastText.begin() + posBegin;
 					const auto src = ext::gotoUnicodeHead(glyphLayout->lastText.begin() + (posBegin - 1));
 
@@ -554,12 +749,14 @@ export namespace UI{
 		}
 
 		void informDelete(int mode) override{
-			for (auto& caret : carets){
+			replaceSnapshot();
+
+			for (TextCaret& caret : carets){
 				auto [posBegin, posEnd] = caret.getSectionIndex();
 				if(posBegin != posEnd){
 					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + posBegin, glyphLayout->lastText.begin() + posEnd);
 					textChanged = true;
-					caret.alignToSentinal(false);
+					caret.alignToDirection(false);
 				}else if(!caret.dataBegin->isEnd()){
 					auto cur = glyphLayout->lastText.begin() + posBegin;
 					const int length = ext::getUnicodeLength<int>(*cur);
@@ -605,13 +802,15 @@ export namespace UI{
 		std::string getClipboardClip() override{
 			if(carets.empty())return {};
 			if(carets.size() == 1){
-				auto& caret = carets.front();
+				replaceSnapshot();
+
+				TextCaret& caret = carets.front();
 				auto [posBegin, posEnd] = caret.getSectionIndex();
 				if(posBegin != posEnd){
 					auto str = caret.getSectionText();
 					glyphLayout->lastText.erase(glyphLayout->lastText.begin() + posBegin, glyphLayout->lastText.begin() + posEnd);
 					textChanged = true;
-					caret.alignToSentinal(false);
+					caret.alignToDirection(false);
 					return str;
 				}
 			}else{
@@ -625,12 +824,19 @@ export namespace UI{
 			const auto& [text, carets] = snapshots.at(index);
 			glyphLayout->lastText = text;
 
-			this->carets = carets;
+			this->carets.clear();
+			this->carets.reserve(carets.size());
+			std::ranges::transform(carets, std::back_inserter(this->carets), [this](const TextCaretData& data){
+				TextCaret caret{data};
+				caret.layout = glyphLayout;
+				caret.refreshDataPtr();
+				return caret;
+			});
 
 			updateTextLayout(true);
 			resetTime();
 
-			for (auto& caret : this->carets){
+			for (TextCaret& caret : this->carets){
 				caret.refreshDataPtr();
 			}
 		}
@@ -645,18 +851,29 @@ export namespace UI{
 				snapshots.pop_back();
 			}
 
-			snapshots.emplace_front(glyphLayout->lastText, carets);
+			snapshots.emplace_front(glyphLayout->lastText, carets
+			                        | std::ranges::views::transform(&TextCaret::operator TextCaretData)
+			                        | std::ranges::to<decltype(getLastestSnapshot().carets)>());
 
 			if(snapshots.front().carets.size() > 1){
-				throw std::exception{"Should Never Happen"};
+				throw std::exception{"Should Never Happen, Currently"};
 			}
+		}
+
+		void popSnapshot(){
+			snapshots.pop_front();
+		}
+
+		void replaceSnapshot(){
+			popSnapshot();
+			takeSnapshot();
 		}
 
 		SnapshotData& getLastestSnapshot(){
 			return snapshots.front();
 		}
 
-		CursorType getCursorType() const override{
+		CursorType getCursorType() const noexcept override{
 			if(touchbility != TouchbilityFlags::enabled){
 				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
 			}

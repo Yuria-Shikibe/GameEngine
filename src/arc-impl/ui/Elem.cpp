@@ -1,4 +1,4 @@
-module UI.Widget;
+module UI.Elem;
 
 import UI.Group;
 import UI.Drawer;
@@ -7,11 +7,11 @@ import Graphic.Draw;
 import ext.RuntimeException;
 import Core;
 
-void UI::Widget::passSound(const SoundSource sound) const{
+void UI::Elem::passSound(const SoundSource sound) const{
 	root->handleSound(sound);
 }
 
-bool UI::Widget::layout_tryFillParent() {
+bool UI::Elem::layout_tryFillParent() noexcept{
 	if(parent) {
 		if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
 			setSrc(rect.getSrcX(), rect.getSrcY());
@@ -25,7 +25,7 @@ bool UI::Widget::layout_tryFillParent() {
 	return false;
 }
 
-void UI::Widget::drawBase() const{
+void UI::Elem::drawBase() const{
 	if(!visiable)return;
 
 	if(parent) {
@@ -35,11 +35,11 @@ void UI::Widget::drawBase() const{
 	drawer->drawBackground(this);
 }
 
-void UI::Widget::drawBase(const Rect rect) const{
+void UI::Elem::drawBase(const Rect rect) const{
 	drawer->drawBackground(rect);
 }
 
-void UI::Widget::draw() const {
+void UI::Elem::draw() const {
 	if(!visiable)return;
 
 	if(parent) {
@@ -56,31 +56,33 @@ void UI::Widget::draw() const {
 	Graphic::Draw::color();
 }
 
-void UI::Widget::applyDefDrawer(){
+void UI::Elem::applyDefDrawer() noexcept{
 	setDrawer(UI::defDrawer);
 }
 
-void UI::Widget::drawStyle() const {
+void UI::Elem::drawStyle() const {
 	drawer->drawStyle(this);
 }
 
-UI::Group* UI::Widget::getParent() const {
+UI::Group* UI::Elem::getParent() const {
 	return parent;
 }
 
-void UI::Widget::setDrawer(WidgetDrawer* drawer) {
+void UI::Elem::setDrawer(WidgetDrawer* drawer){
 	this->drawer = drawer;
 
 	if(drawer) {
 		drawer->applyToElem(this);
+	}else{
+		throw ext::NullPointerException{"Drawer Should Never Be Null!"};
 	}
 }
 
-void UI::Widget::setEmptyDrawer(){
+void UI::Elem::setEmptyDrawer(){
 	setDrawer(&UI::emptyDrawer);
 }
 
-UI::Group* UI::Widget::setParent(Group* const parent) {
+UI::Group* UI::Elem::setParent(Group* const parent) {
 	Group* former = parent;
 	this->parent = parent;
 	setRoot(parent->root);
@@ -88,7 +90,7 @@ UI::Group* UI::Widget::setParent(Group* const parent) {
 	return former;
 }
 
-void UI::Widget::callRemove() {
+void UI::Elem::callRemove() {
 	if(parent != nullptr) {
 		parent->postRemove(this);
 	}
@@ -98,17 +100,17 @@ void UI::Widget::callRemove() {
 	}
 }
 
-void UI::Widget::setFocusedKey(const bool focus){
+void UI::Elem::setFocusedKey(const bool focus) noexcept{
 	if(!isFocusedKeyInput() && !focus)return;
 	this->root->currentInputFocused = focus ? this : nullptr;
 }
 
-void UI::Widget::setFocusedScroll(const bool focus){
+void UI::Elem::setFocusedScroll(const bool focus) noexcept{
 	if(!isFocusedScroll() && !focus)return;
 	this->root->currentScrollFocused = focus ? this : nullptr;
 }
 
-void UI::Widget::postChanged(){
+void UI::Elem::postChanged() noexcept{
 	if(lastSignal & ChangeSignal::notifySelf){
 		layoutChanged = true;
 	}
@@ -123,49 +125,51 @@ void UI::Widget::postChanged(){
 	lastSignal = ChangeSignal::notifyNone;
 }
 
-bool UI::Widget::isInbound(const Geom::Vec2 screenPos) const{
+bool UI::Elem::isInbound(const Geom::Vec2 screenPos) const noexcept{
 	if(touchbility == TouchbilityFlags::disabled && !tooltipbuilder)return false;
 	if(parent != nullptr && !parent->hintInbound_validToParent(screenPos))return false;
 	return screenPos.x > absoluteSrc.x && screenPos.y > absoluteSrc.y && screenPos.x < absoluteSrc.x + bound.getWidth() && screenPos.y < absoluteSrc.y + bound.getHeight();
 }
 
-bool UI::Widget::isFocusedKeyInput() const {
+bool UI::Elem::isFocusedKeyInput() const noexcept{
 	return this->root->currentInputFocused == this;
 }
 
-bool UI::Widget::isFocusedScroll() const {
+bool UI::Elem::isFocusedScroll() const noexcept{
 	return this->root->currentScrollFocused == this;
 }
 
-bool UI::Widget::isCursorInbound() const {
+bool UI::Elem::isCursorInbound() const noexcept{
 	return this->root->currentCursorFocus == this;
 }
 
-void UI::Widget::releaseAllFocus() const {
+void UI::Elem::releaseAllFocus() const noexcept{
 	if(!root)return;
+
 	if(root->tooltipManager.getLastRequester() == this){
 		root->tooltipManager.dropCurrentAt(nullptr, true);
 	}
+
 	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
 	if(isCursorInbound())root->currentCursorFocus = nullptr;
 }
 
 
-bool UI::Widget::keyDown(const int code, const int action, const int mode) const{
+bool UI::Elem::keyDown(const int code, const int action, const int mode) const{
 	return root->keyDown(code, action, mode);
 }
 
-void UI::Widget::buildTooltip(){
+void UI::Elem::buildTooltip(){
 	if(!root)return;
 	updateHoverTableHandle(root->tooltipManager.tryObtain(this));
 }
 
-std::string_view UI::Widget::getBundleEntry(const std::string_view key, const bool fromUICategory) const{
+std::string_view UI::Elem::getBundleEntry(const std::string_view key, const bool fromUICategory) const{
 	return getBundles(fromUICategory)[key];
 }
 
-Assets::Bundle& UI::Widget::getBundles(const bool fromUICategory) const{
+Assets::Bundle& UI::Elem::getBundles(const bool fromUICategory) const{
 	if(root && fromUICategory){
 		return root->uiBasicBundle;
 	}else{

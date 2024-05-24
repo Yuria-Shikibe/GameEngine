@@ -5,7 +5,7 @@
 export module UI.TooltipManager;
 
 export import UI.Table;
-export import UI.Widget;
+export import UI.Elem;
 import UI.Action.Actions;
 import UI.SeperateDrawable;
 import ext.Concepts;
@@ -20,12 +20,12 @@ export namespace UI{
 		std::deque<std::unique_ptr<Table>> droppedTables{};
 
 		//TODO using stack to support multiple hover=table
-		std::vector<std::pair<std::unique_ptr<Table>, const Widget*>> focusTableStack{};
+		std::vector<std::pair<std::unique_ptr<Table>, const Elem*>> focusTableStack{};
 
 		Geom::Vec2 cursorPos{};
 
 		/** @brief Nullable */
-		const Widget* lastConsumer{nullptr};
+		const Elem* lastConsumer{nullptr};
 		Root* root{nullptr};
 		friend class Root;
 
@@ -43,15 +43,15 @@ export namespace UI{
 		struct TableDeleter{
 			TooltipManager& manager;
 
-			void operator()(Widget* elem) const{
+			void operator()(Elem* elem) const{
 				manager.nextPopCount++;
 			}
 		} deleter{*this};
 
 
-		[[nodiscard]] const Widget* getLastRequester() const{ return lastConsumer; }
+		[[nodiscard]] const Elem* getLastRequester() const{ return lastConsumer; }
 
-		void dropCurrentAt(const Widget* where = nullptr, const bool instantDrop = false);
+		void dropCurrentAt(const Elem* where = nullptr, const bool instantDrop = false);
 
 		/**
 		 * @brief
@@ -59,7 +59,7 @@ export namespace UI{
 		 * @param consumer
 		 * @return Used as a release handle, should avoid using it to access members deferly
 		 */
-		Table* generateTooltip(const std::function<void(Table&)>& builder, const Widget* consumer = nullptr){
+		Table* generateTooltip(const std::function<void(Table&)>& builder, const Elem* consumer = nullptr){
 			if(getCurrentFocus() != consumer){
 				dropCurrentAt(consumer);
 			}
@@ -82,9 +82,9 @@ export namespace UI{
 			return ptr.get();
 		}
 
-		Table* tryObtain(const Widget* consumer);
+		Table* tryObtain(const Elem* consumer);
 
-		[[nodiscard]] bool obtainValid(const Widget* lastRequester, const float minHoverTime = 45.0f,
+		[[nodiscard]] bool obtainValid(const Elem* lastRequester, const float minHoverTime = 45.0f,
 		                               const bool useStaticTime = true) const;
 
 		void releaseFocus(const Table* table = nullptr){
@@ -112,7 +112,7 @@ export namespace UI{
 			return focusTableStack.empty() ? nullptr : focusTableStack.back().first.get();
 		}
 
-		[[nodiscard]] const Widget* getCurrentConsumer() const{
+		[[nodiscard]] const Elem* getCurrentConsumer() const{
 			return focusTableStack.empty() ? nullptr : focusTableStack.back().second;
 		}
 
@@ -194,7 +194,7 @@ export namespace UI{
 			// lastRequester = nullptr;
 		}
 
-		[[nodiscard]] bool isOccupied(const Widget* widget) const noexcept{
+		[[nodiscard]] bool isOccupied(const Elem* widget) const noexcept{
 			return widget == lastConsumer;
 		}
 

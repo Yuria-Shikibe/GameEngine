@@ -160,6 +160,13 @@ export namespace Geom{
 			return *this;
 		}
 
+		constexpr Vector2D& swapXY() noexcept{
+			const T t = x;
+			x = y;
+			y = t;
+			return *this;
+		}
+
 		constexpr Vector2D& add(const T val) noexcept {
 			x += val;
 			y += val;

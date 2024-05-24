@@ -15,11 +15,11 @@ export namespace GL {
 	template <GLenum primitiveType = GL_TRIANGLES>
 	struct RenderableMesh final : Mesh {
 	protected:
-		const Shader* shader = nullptr;
+		const ShaderSource* shader = nullptr;
 	public:
 		~RenderableMesh() override = default;
 
-		explicit RenderableMesh(const Shader* const shader, Concepts::Invokable<void(RenderableMesh&)> auto&& init) : shader(shader){
+		explicit RenderableMesh(const ShaderSource* const shader, Concepts::Invokable<void(RenderableMesh&)> auto&& init) : shader(shader){
 			init(*this);
 		}
 

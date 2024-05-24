@@ -22,11 +22,11 @@ export namespace Game{
 	public:
 		Graphic::PingPongProcessor blur{};
 
-		const GL::Shader* mergeShader{nullptr};
-		const GL::Shader* bloomShader{nullptr};
+		const GL::ShaderSource* mergeShader{nullptr};
+		const GL::ShaderSource* bloomShader{nullptr};
 		// const GL::Shader* SSAObliter{nullptr};
 
-		CombinePostProcessor(Graphic::PostProcessor* const blurProcessor1, Graphic::PostProcessor* const blurProcessor2, const GL::Shader* mergeShader)
+		CombinePostProcessor(Graphic::PostProcessor* const blurProcessor1, Graphic::PostProcessor* const blurProcessor2, const GL::ShaderSource* mergeShader)
 			: blur(blurProcessor1, blurProcessor2, 3),
 			  mergeShader(mergeShader){
 

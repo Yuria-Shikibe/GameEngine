@@ -57,7 +57,7 @@ export namespace UI {
 				layout();
 			}
 
-			Widget::update(delta);
+			Elem::update(delta);
 		}
 
 		[[nodiscard]] bool isDynamic() const {

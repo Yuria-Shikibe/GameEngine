@@ -10,6 +10,7 @@ import OS.File;
 import OS.ApplicationListenerSetter;
 import Image;
 import Core;
+import Core.MainLoopManager;
 import Core.Batch.Batch_Sprite;
 import Assets.Directories;
 import Assets.Graphic;
@@ -78,7 +79,7 @@ export namespace Test{
 			Core::batchGroup.overlay = std::make_unique<Core::SpriteBatch<>>([](const Core::SpriteBatch<>& self){
 				auto* const shader = Assets::Shaders::screenSpace;
 
-				shader->setUniformer([&self](const GL::Shader& s){
+				shader->setUniformer([&self](const GL::ShaderProgram& s){
 					s.setTexture2D("u_texture", self.getTexture());
 					s.setMat3("view", *self.getProjection());
 					s.setMat3("localToWorld", self.getLocalToWorld());
@@ -93,19 +94,14 @@ export namespace Test{
 				// auto size = Core::platform
 				auto [x, y] = Core::platform->window->equrySize();
 
-				Core::uiRoot = new UI::Root{};
 				Core::renderer = new Core::Renderer{x, y};
 
-				Core::uiRoot->resize(x, y);
 				Core::camera->resize(x, y);
 			}
 
 			Core::renderer->registerSynchronizedResizableObject(Core::camera);
-			Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
 
 			Ctrl::registerCommands(Core::input);
-			OS::registerListener(Core::uiRoot);
-
 		});
 
 		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
@@ -114,10 +110,9 @@ export namespace Test{
 		Graphic::Frame::blitter = Assets::Shaders::blit;
 
 		Core::bundle.load(Assets::Dir::bundle.subFile("bundle.zh_cn.json"), Assets::Dir::bundle.subFile("bundle.def.json"));
-		Core::uiRoot->uiBasicBundle.load(Assets::Dir::bundle.subFile("ui.def.json"), Assets::Dir::bundle.subFile("ui.def.json"));
 
 		Game::core = std::make_unique<Game::Core>();
-		OS::registerListener(Game::core.get());
+		Core::loopManager->setGameCore(Game::core.get());
 
 		ext::json::Json json{Assets::Dir::settings.subFile("ctrl.json").readString()};
 		ext::json::getValueTo(Assets::Ctrl::basicGroup, json.getData());
@@ -262,6 +257,13 @@ export namespace Test{
 			                                           [](GL::Texture2DArray* tex){
 				                                           tex->setScale(GL::mipmap_linear_linear, GL::nearest);
 			                                           });
+
+			Core::uiRoot = new UI::Root{};
+			Core::uiRoot->resize(Core::renderer->getWidth(), Core::renderer->getHeight());
+			Core::uiRoot->uiBasicBundle.load(Assets::Dir::bundle.subFile("ui.def.json"), Assets::Dir::bundle.subFile("ui.def.json"));
+
+			Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
+			//Core::loopManager->registerListener(Core::uiRoot);
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPost>([](const auto& event){
@@ -269,11 +271,10 @@ export namespace Test{
 				[](const Core::SpriteBatch<GL::VERT_GROUP_SIZE_WORLD>& self){
 					auto* const shader = Assets::Shaders::world;
 
-					shader->setUniformer([&self](const GL::Shader& s){
+					shader->setUniformer([&self](const GL::ShaderProgram& s){
 						s.setTexture2D("texArray", self.getTexture());
 						s.setMat3("view", *self.getProjection());
 						s.setMat3("localToWorld", self.getLocalToWorld());
-						// s.setMat3("localToWorld", Geom::MAT3_IDT);
 					});
 
 					return shader;

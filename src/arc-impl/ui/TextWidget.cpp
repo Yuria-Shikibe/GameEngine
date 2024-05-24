@@ -3,7 +3,7 @@ module UI.TextWidget;
 import Graphic.Draw;
 
 void UI::TextWidget::drawContent() const{
-	Widget::drawContent();
+	Elem::drawContent();
 
 	Graphic::Draw::mixColor(color);
 	glyphLayout->render(maskOpacity);

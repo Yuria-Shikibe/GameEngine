@@ -7,7 +7,7 @@ void UI::TooltipManager::drop(std::unique_ptr<Table>&& element, const bool insta
 		element.reset(nullptr);
 	}else{
 		element->pushAction<Actions::AlphaMaskAction>(12.0f, 0.0f);
-		element->pushAction<Actions::RunnableAction<Widget, TableDeleter>>(deleter);
+		element->pushAction<Actions::RunnableAction<Elem, TableDeleter>>(deleter);
 
 		if(root->currentCursorFocus == element.get()){
 			root->determinShiftFocus(nullptr);
@@ -17,7 +17,7 @@ void UI::TooltipManager::drop(std::unique_ptr<Table>&& element, const bool insta
 	}
 }
 
-void UI::TooltipManager::dropCurrentAt(const Widget* where, const bool instantDrop){
+void UI::TooltipManager::dropCurrentAt(const Elem* where, const bool instantDrop){
 	if(focusTableStack.empty())return;
 
 	lastConsumer = nullptr;
@@ -45,7 +45,7 @@ void UI::TooltipManager::dropCurrentAt(const Widget* where, const bool instantDr
 	lastConsumer = getCurrentConsumer();
 }
 
-UI::Table* UI::TooltipManager::tryObtain(const Widget* consumer){
+UI::Table* UI::TooltipManager::tryObtain(const Elem* consumer){
 	if(consumer && consumer->getTooltipBuilder() &&
 		obtainValid(
 			consumer,
@@ -60,7 +60,7 @@ UI::Table* UI::TooltipManager::tryObtain(const Widget* consumer){
 	return nullptr;
 }
 
-bool UI::TooltipManager::obtainValid(const Widget* lastRequester, const float minHoverTime, const bool useStaticTime) const{
+bool UI::TooltipManager::obtainValid(const Elem* lastRequester, const float minHoverTime, const bool useStaticTime) const{
 	if(lastRequester == this->lastConsumer)return false;
 
 	if(root->cursorInBoundTime > 0.0f){

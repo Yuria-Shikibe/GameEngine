@@ -72,5 +72,9 @@ export namespace Graphic{
 				}
 			}
 		}
+
+		[[nodiscard]] bool activatedEmpty() const noexcept{
+			return activatedEffects.empty();
+		}
 	};
 }

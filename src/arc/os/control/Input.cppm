@@ -8,12 +8,10 @@ import ext.Concepts;
 import OS.Ctrl.Bind.Constants;
 import OS.Ctrl.Bind;
 import OS.InputListener;
-import OS.ApplicationListener;
-
 
 export namespace Core{
 
-	class Input final : public OS::ApplicationListener{
+	class Input{
 	public:
 		using PosListener = std::function<void(float, float)>;
 		std::vector<PosListener> scrollListeners{};
@@ -126,7 +124,7 @@ export namespace Core{
 			isInbound = b;
 		}
 
-		void updatePost(const float delta) override{
+		void update(const float delta){
 			binds.update(delta);
 
 			mouseVelocity = mousePos;

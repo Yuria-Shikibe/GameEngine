@@ -26,6 +26,8 @@ export namespace Font {
 
 	using TextView = std::string_view;
 	using TextString = std::string;
+	using TextLayoutPos = Geom::Point2US;
+
 
 	std::unordered_map<TextView, const FontFlags*> parserableFonts{};
 	std::unordered_map<TextView, Graphic::Color> parserableColors{};
@@ -52,7 +54,7 @@ export namespace Font {
 
 		Geom::Vec2 src{};
 		Geom::Vec2 end{};
-		Geom::Point2U layoutPos{};
+		TextLayoutPos layoutPos{};
 
 		Math::Range heightAlign{};
 
@@ -194,7 +196,7 @@ export namespace Font {
 			return glyphs | std::ranges::views::all;
 		}
 
-		[[nodiscard]] const GlyphDrawData* find(const Geom::Point2U layoutPos) const;
+		[[nodiscard]] const GlyphDrawData* find(const TextLayoutPos layoutPos) const;
 
 		void reset() {
 			lastText.clear();
@@ -267,7 +269,7 @@ export namespace Font {
 		float additionalYOffset{0.0f}; // This happens when the font changes, maybe
 
 		/** x for column, y for row*/
-		Geom::Point2U currentLayoutPos{};
+		TextLayoutPos currentLayoutPos{};
 
 		Geom::Vec2 offset{};
 
@@ -397,10 +399,10 @@ namespace ParserFunctions {
 	public:
 		virtual ~GlyphParser() = default;
 
-		const char TokenSignal = '$'; //$$for$
+		static constexpr char TokenSignal = '$'; //$$for$
 		//TODO switch this to '< >' to make this compatible with std::format
-		const char TokenBeginCode = '<';
-		const char TokenEndCode = '>';
+		static constexpr char TokenBeginCode = '<';
+		static constexpr char TokenEndCode = '>';
 
 		Font::FontAtlas* fontLib{nullptr};
 

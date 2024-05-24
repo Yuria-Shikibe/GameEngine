@@ -13,12 +13,11 @@ import UI.SeperateDrawable;
 
 import OS.Ctrl.Bind.Constants;
 import Graphic.Resizeable;
-import OS.ApplicationListener;
 import OS.TextInputListener;
 import OS.InputListener;
 
 export import UI.Dialog;
-export import UI.Widget;
+export import UI.Elem;
 export import UI.Scene;
 
 import OS.Ctrl.Bind;
@@ -30,7 +29,7 @@ import std;
 
 //TODO layout update inform system: current layout process is totally mess!
 export namespace UI{
-	class Root : public Graphic::ResizeableInt, public OS::ApplicationListener,
+	class Root : public Graphic::ResizeableInt,
 	             public OS::InputListener{
 	protected:
 		mutable MouseActionPress pressAction{};
@@ -46,7 +45,7 @@ export namespace UI{
 		Geom::Matrix3D projection{};
 		ext::StringMap<std::unique_ptr<Scene>> scenes{};
 
-		void setRootOf(Widget* widget);
+		void setRootOf(Elem* widget);
 
 	public:
 		Assets::Bundle uiBasicBundle{};
@@ -71,9 +70,9 @@ export namespace UI{
 		std::array<int, Ctrl::Mouse::Count> pressedMouseButtons{};
 
 		//TODO is this necessary?
-		Widget* currentInputFocused{nullptr};
-		Widget* currentScrollFocused{nullptr};
-		Widget* currentCursorFocus{nullptr};
+		Elem* currentInputFocused{nullptr};
+		Elem* currentScrollFocused{nullptr};
+		Elem* currentCursorFocus{nullptr};
 
 		//TODO directly use InputArea instead?
 		//redundant virtual
@@ -188,21 +187,21 @@ export namespace UI{
 			textInputListener = nullptr;
 		}
 
-		void iterateAll_DFS(Widget* current, Concepts::Invokable<bool(Widget*)> auto&& func){
+		void iterateAll_DFS(Elem* current, Concepts::Invokable<bool(Elem*)> auto&& func){
 			if(!func(current)) return;
 
 			if(!current->hasChildren()) return;
 
-			for(auto& child : *current->getChildren()){
+			for(auto& child : current->getChildren()){
 				this->iterateAll_DFS(child.get(), std::forward<decltype(func)>(func));
 			}
 		}
 
 
 		void updateCurrentFocus(){
-			Widget* last = nullptr;
+			Elem* last = nullptr;
 
-			Widget* toIterate = nullptr;
+			Elem* toIterate = nullptr;
 
 
 			if(!tooltipManager.focusEmpty()){
@@ -218,7 +217,7 @@ export namespace UI{
 			}
 
 			if(toIterate){
-				iterateAll_DFS(toIterate, [this, &last](Widget* elem) mutable{
+				iterateAll_DFS(toIterate, [this, &last](Elem* elem) mutable{
 					if(elem->isInteractable() && elem->isInbound(cursorPos)){
 						last = elem;
 					}
@@ -232,14 +231,14 @@ export namespace UI{
 
 		void drawCursor() const;
 
-		void update(float delta) override;
+		void update(float delta);
 
 		[[nodiscard]] Geom::Matrix3D& getPorj(){
 			return projection;
 		}
 
 		//TODO shit named fucntion and logic!
-		void determinShiftFocus(Widget* newFocus);
+		void determinShiftFocus(Elem* newFocus);
 
 		void setTextFocus(OS::TextInputListener* listener){
 			this->textInputListener = listener;
@@ -345,7 +344,7 @@ export namespace UI{
 			}
 		}
 
-		void setEnter(Widget* elem, bool quiet = false);
+		void setEnter(Elem* elem, bool quiet = false);
 
 	};
 }

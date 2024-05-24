@@ -47,14 +47,6 @@ export namespace Math {
 
 	using Progress = float;
 
-	template <Concepts::Number T>
-	struct Section{
-		T from{};
-		T to{};
-	};
-
-	using Range = Section<float>;
-
 	[[nodiscard]] std::string printSinTable() {
 		const SinTable<SIN_COUNT, SIN_MASK, DEG_TO_INDEX> table{};
 
@@ -359,7 +351,10 @@ export namespace Math {
 		return v;
 	}
 
-	template <Concepts::Number T>
+	template <typename  T>
+		requires requires(T a, T b){
+			{a < b} -> std::convertible_to<bool>;
+		}
 	constexpr std::pair<const T, const T> minmax(const T left, const T right) noexcept(noexcept(right < left)){
 		if (right < left) {
 			return {right, left};
@@ -835,4 +830,18 @@ export namespace Math {
 			return dst <= range ? angle : moveToward_unsigned(angle, dest, dst - range);
 		}
 	}
+
+
+	template <typename T>
+	struct Section{
+		T from{};
+		T to{};
+
+		[[nodiscard]] constexpr Section ordered() const noexcept{
+			auto [min, max] = Math::minmax(from, to);
+			return {min, max};
+		}
+	};
+
+	using Range = Section<float>;
 }

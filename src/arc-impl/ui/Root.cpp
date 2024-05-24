@@ -6,7 +6,7 @@ import std;
 import Core;
 import OS.ApplicationListenerSetter;
 
-void UI::Root::setRootOf(Widget* widget){
+void UI::Root::setRootOf(Elem* widget){
 	widget->setRoot(this);
 }
 
@@ -109,7 +109,7 @@ void UI::Root::update(const float delta){
 	}
 }
 
-void UI::Root::determinShiftFocus(Widget* newFocus){
+void UI::Root::determinShiftFocus(Elem* newFocus){
 
 	if(newFocus == nullptr){
 		if(currentCursorFocus != nullptr){
@@ -280,7 +280,7 @@ void UI::Root::handleSound(const SoundSource sound){
 	Core::audio->play(sound);
 }
 
-void UI::Root::setEnter(Widget* elem, const bool quiet){
+void UI::Root::setEnter(Elem* elem, const bool quiet){
 	if(elem == currentCursorFocus) return;
 
 	if(currentCursorFocus != nullptr){

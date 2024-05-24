@@ -8,12 +8,12 @@ export import Core.Audio;
 export import Assets.Manager;
 export import Assets.Bundle;
 export import Core.Settings;
-export import Core.Log;
 
 export import UI.Root;
 export import Core.BatchGroup;
 export import Core.Input;
 export import Core.Camera;
+export import Core.Log;
 export import Core.Renderer;
 export import Core.Platform;
 export import Core.Platform.Current;

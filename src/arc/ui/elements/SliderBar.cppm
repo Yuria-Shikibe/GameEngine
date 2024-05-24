@@ -2,7 +2,7 @@ module;
 
 export module UI.SliderBar;
 
-export import UI.Widget;
+export import UI.Elem;
 export import UI.Root;
 
 import std;
@@ -10,11 +10,12 @@ import Math;
 import Graphic.Draw;
 import Graphic.Color;
 import Geom.Rect_Orthogonal;
+import OS.Ctrl.Bind.Constants;
 
 export namespace UI{
 	struct SliderBarDrawer;
 
-	class SliderBar : public Widget{
+	class SliderBar : public Elem{
 	protected:
 		SliderBarDrawer* barDrawer{nullptr};
 		Geom::Vec2 barLastSize{10.0f, 10.0f};
@@ -76,13 +77,19 @@ export namespace UI{
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
 				Geom::Vec2 move = event;
 
-				if(isSegmentMoveActivated()){
-					move.normalizeToBase().mul(getSegmentUnit());
+				if(keyDown(Ctrl::Key::Left_Shift, Ctrl::Act::Continuous)){
+					move.swapXY();
+					move.x *= -1;
 				}
+
+
 
 				if(isClamped()){
 					moveBar(scrollSensitivity * slideSensitivity.normalizeToBase() * move.y * Geom::Vec2{-1, 1});
 				}else{
+					if(isSegmentMoveActivated()){
+						move.normalizeToBase().mul(getSegmentUnit());
+					}
 					moveBar(move * scrollSensitivity);
 				}
 
@@ -101,14 +108,14 @@ export namespace UI{
 			inputListener.on<UI::CurosrExbound>([this](const auto& event) {
 				pressed = false;
 				resumeLast();
-				Widget::setFocusedScroll(false);
+				Elem::setFocusedScroll(false);
 			});
 
 			inputListener.on<UI::CurosrInbound>([this](const auto& event) {
-				Widget::setFocusedScroll(true);
+				Elem::setFocusedScroll(true);
 			});
 
-			quitInboundFocus = false;
+			dropFocusAtCursorQuitBound = false;
 			touchbility = UI::TouchbilityFlags::enabled;
 			// segments.set(8, 1);
 
@@ -177,14 +184,17 @@ export namespace UI{
 				barLastSize.y = barBaseSize.y;
 			}
 
-			Widget::update(delta);
+			Elem::update(delta);
 		}
 
-		CursorType getCursorType() const override{
+		CursorType getCursorType() const noexcept override{
+			if(touchbility != TouchbilityFlags::enabled){
+				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
+			}
 			return CursorType::drag;
 		}
 
-		void applyDefDrawer() override;
+		void applyDefDrawer() noexcept override;
 
 		void drawContent() const override;
 	};

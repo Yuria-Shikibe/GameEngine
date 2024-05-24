@@ -1,6 +1,6 @@
 module UI.Group;
 
-void UI::Group::modifyAddedChildren(Widget* elem) {
+void UI::Group::modifyAddedChildren(Elem* elem) {
 	childrenCheck(elem);
 	elem->setParent(this);
 	changed(ChangeSignal::notifyAll);

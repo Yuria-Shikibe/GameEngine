@@ -26,10 +26,10 @@ void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
 }
 
 void UI::ScrollPane::update(const float delta){
-	if(Widget::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())) {
-		Widget::setFocusedScroll(true);
+	if(Elem::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())) {
+		Elem::setFocusedScroll(true);
 	}else{
-		Widget::setFocusedScroll(false);
+		Elem::setFocusedScroll(false);
 	}
 
 
@@ -83,7 +83,7 @@ void UI::ScrollPane::update(const float delta){
 	calAbsoluteSrc(parent);
 }
 
-UI::CursorType UI::ScrollPane::getCursorType() const{
+UI::CursorType UI::ScrollPane::getCursorType() const noexcept{
 	if(root){
 		if(isInHoriBar(root->cursorPos)){
 			return CursorType::scrollHori;
@@ -96,13 +96,13 @@ UI::CursorType UI::ScrollPane::getCursorType() const{
 	return CursorType::scroll;
 }
 
-void UI::ScrollPane::applyDefDrawer(){
+void UI::ScrollPane::applyDefDrawer() noexcept{
 	Group::applyDefDrawer();
 	scrollBarDrawer = &UI::defScrollBarDrawer;
 }
 
 void UI::ScrollPane::drawBase() const{
-	Widget::drawBase();
+	Elem::drawBase();
 }
 
 void UI::ScrollPane::drawContent() const{
