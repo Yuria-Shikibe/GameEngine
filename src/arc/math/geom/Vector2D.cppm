@@ -639,6 +639,16 @@ export namespace Geom{
 			return tgt;
 		}
 
+
+		template <typename N>
+		Vector2D<N> round() noexcept requires std::is_floating_point_v<T>{
+			Vector2D<N> tgt = as<N>();
+			tgt.x = Math::round<N>(x);
+			tgt.y = Math::round<N>(y);
+
+			return tgt;
+		}
+
 		template <std::integral N>
 		Vector2D<N> trac() noexcept{
 			return Vector2D<N>{Math::trac<N>(x), Math::trac<N>(y)};
@@ -710,6 +720,10 @@ export namespace Geom{
 	template <typename N> constexpr Vector2D<N> back{-1, 0};
 	template <typename N> constexpr Vector2D<N> sideL{0, 1};
 	template <typename N> constexpr Vector2D<N> sideR{0, -1};
+
+	template <typename N> constexpr Vector2D<N> maxVec2{std::numeric_limits<N>::max(), std::numeric_limits<N>::max()};
+	template <typename N> constexpr Vector2D<N> minVec2{std::numeric_limits<N>::min(), std::numeric_limits<N>::min()};
+	template <typename N> constexpr Vector2D<N> lowestVec2{std::numeric_limits<N>::lowest(), std::numeric_limits<N>::lowest()};
 
 	constexpr Vec2 ZERO{ 0, 0 };
 	constexpr Point2U ZERO_U{ 0u, 0u };

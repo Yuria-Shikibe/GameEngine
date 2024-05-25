@@ -207,6 +207,14 @@ export namespace Core{
 		Geom::Vec2 getScreenSize() const noexcept{
 			return screenSize.as<float>();
 		}
+
+		[[nodiscard]] Geom::Vec2 getNormalized(const Geom::Vec2 p) const noexcept{
+			return (p / getScreenSize()).sub(0.5f, 0.5f).scl(2);
+		}
+
+		[[nodiscard]] Geom::Vec2 getMouseToWorld(const Geom::Vec2 cursor, const Geom::Vec2 offset = {}) const{
+			return screenToWorld * getNormalized(cursor - offset);
+		}
 	};
 }
 

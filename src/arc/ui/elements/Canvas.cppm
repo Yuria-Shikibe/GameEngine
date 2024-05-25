@@ -6,14 +6,16 @@ export module UI.Canvas;
 
 import UI.Elem;
 import ext.Concepts;
+import std;
 
 export namespace UI{
 
-	template <Concepts::Invokable<void(Elem&)> Drawer>
+	template <Concepts::Invokable<void(const Elem&)> Drawer>
 	class Canvas : public Elem{
 		Drawer drawer;
 
 	public:
+		using DrawerType = Drawer;
 		[[nodiscard]] explicit Canvas(const Drawer& drawer)
 			: drawer{drawer}{}
 
@@ -22,6 +24,11 @@ export namespace UI{
 		}
 	};
 
-	template <Concepts::Invokable<void(Elem&)> Drawer>
+	template <Concepts::Invokable<void(const Elem&)> Drawer>
 	Canvas(Drawer) -> Canvas<Drawer>;
+
+	template <Concepts::Invokable<void(const Elem&)> Drawer>
+	std::unique_ptr<Elem> makeCanvas(Drawer&& drawer){
+		return std::make_unique<Canvas<std::decay_t<Drawer>>>(std::forward<Drawer>(drawer));
+	}
 }

@@ -629,13 +629,15 @@ int main(const int argc, char* argv[]){
 
 	setupBaseDraw();
 
+
+	::Test::chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	::Test::loadChamberTest();
+
 	Core::uiRoot->registerScene<Game::Scenes::MainMenu>(UI::Menu_Main);
 
 	Core::uiRoot->switchScene(UI::Menu_Main);
 
 
-	::Test::chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
-	::Test::loadChamberTest();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};

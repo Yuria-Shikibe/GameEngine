@@ -63,20 +63,18 @@ export namespace UI {
 			return elemLayoutMaxCount.x;
 		}
 
-		template <Concepts::Derived<Elem> T, Concepts::InvokeNullable<void(T&)> Func = std::nullptr_t>
-		LayoutCell& add(Func&& func = nullptr, const unsigned depth = std::numeric_limits<unsigned>::max()) {
+		template <Concepts::Derived<Elem> T>
+		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func = nullptr, const unsigned depth = std::numeric_limits<unsigned>::max()) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
 
-			if constexpr (!std::same_as<Func, std::nullptr_t>) {
-				func(cell.as<T>());
-			}
+			func(cell.as<T>());
 
 			return cell;
 		}
 
 		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T&)> Func, typename ...Args>
-		LayoutCell& add(Func&& func, Args&& ...args) {
+		LayoutCell& emplace(Func&& func, Args&& ...args) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(std::forward<Args>(args) ...)));
 			cell.applyLayout(defaultCellLayout);
 
@@ -88,6 +86,11 @@ export namespace UI {
 		LayoutCell& transferElem(Elem* elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
 			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
+		}
+
+		LayoutCell& transferElem(std::unique_ptr<Elem>&& elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
+			auto* ptr = addChildren(std::move(elem), depth);
+			return cells.emplace_back(LayoutCell{.item = ptr}).applyLayout(defaultCellLayout);
 		}
 
 		constexpr LayoutCell* getCellOf(Elem* elem){

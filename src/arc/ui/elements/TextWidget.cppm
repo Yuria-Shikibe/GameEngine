@@ -47,6 +47,8 @@ export namespace UI{
 			if(usingGlyphWidth && !fillParentX){
 				setWidth(border.getWidth() + glyphLayout->getDrawBound().getWidth());
 			}
+
+			updateGlyphPosition();
 		}
 	public:
 		void calAbsoluteSrc(Elem* parent) noexcept override {
@@ -64,7 +66,6 @@ export namespace UI{
 		void layout() override{
 			setTextUpdated();
 			layoutText();
-			updateGlyphPosition();
 
 			Elem::layout();
 		}

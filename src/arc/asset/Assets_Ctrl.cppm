@@ -37,11 +37,9 @@ namespace Assets::Ctrl{
 
 	::Ctrl::Operation cameraTeleport{"cmove-telp", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::DoubleClick, +[] {
 		if(Core::uiRoot->cursorCaptured()){
-			if(auto* screen = dynamic_cast<UI::Screen*>(Core::uiRoot->currentCursorFocus)){
-				Core::focus.camera.set(Core::Util::getMouseToWorld(screen->getCamera(), screen->getBound()));
-			}
+
 		}else{
-			Core::focus.camera.set(Core::Util::getMouseToWorld());
+			Core::camera->setPosition(Core::Util::getMouseToWorld());
 		}
 	})};
 

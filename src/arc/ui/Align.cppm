@@ -213,7 +213,7 @@ export namespace Align {
 	 * @return
 	 */
 	template <Concepts::Signed T>
-	constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Vector2D<T>& internal_toAlignSize, const Geom::Rect_Orthogonal<T>& external) {
+	[[nodiscard]] constexpr Geom::Vector2D<T> getOffsetOf(const Mode align, const Geom::Vector2D<T>& internal_toAlignSize, const Geom::Rect_Orthogonal<T>& external) {
 		Geom::Vector2D<T> offset{};
 
 		if(align & Align::Mode::top) {

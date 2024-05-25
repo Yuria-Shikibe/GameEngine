@@ -54,7 +54,7 @@ export namespace UI {
 		}
 
 		[[nodiscard]] bool autoBuild() const noexcept{
-			return minHoverTime > 0.0f;
+			return minHoverTime >= 0.0f;
 		}
 	};
 
@@ -548,6 +548,8 @@ export namespace UI {
 
 		void releaseAllFocus() const noexcept;
 
+		Geom::Vec2 getCursorPos() const noexcept;
+
 		virtual CursorType getCursorType() const noexcept{
 			if(touchbility != TouchbilityFlags::enabled){
 				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
@@ -564,8 +566,8 @@ export namespace UI {
 
 		[[nodiscard]] constexpr float getHeight() const noexcept{return bound.getHeight();}
 
-		[[nodiscard]] auto& getBorder() const noexcept{ return border; }
-		[[nodiscard]] auto& getBorder() noexcept{ return border; }
+		[[nodiscard]] const Align::Spacing& getBorder() const noexcept{ return border; }
+		[[nodiscard]] Align::Spacing& getBorder() noexcept{ return border; }
 
 		void setBorderZero() noexcept {setBorder(0.0f);}
 

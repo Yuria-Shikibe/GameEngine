@@ -13,6 +13,11 @@ import std;
 
 export import Core.IO.Specialized;
 
+namespace UI{
+	export class Table;
+}
+
+
 using Geom::Point2;
 using Geom::Vec2;
 using Geom::OrthoRectFloat;
@@ -103,11 +108,7 @@ export namespace Game{
 
 		ChamberTile(const ChamberTile& other)
 			: pos{other.pos},
-			  chamber{std::unique_ptr<Chamber<Entity>>{other.chamber->copy()}}{}
-
-		ChamberTile(ChamberTile&& other) noexcept
-			: pos{std::move(other.pos)},
-			  chamber{std::move(other.chamber)}{}
+			  chamber{std::unique_ptr<Chamber<Entity>>{other.chamber ? other.chamber->copy() : nullptr}}{}
 
 		ChamberTile& operator=(const ChamberTile& other){
 			if(this == &other) return *this;
@@ -116,9 +117,15 @@ export namespace Game{
 			return *this;
 		}
 
+		ChamberTile(ChamberTile&& other) noexcept
+			: pos{std::move(other.pos)},
+			  referenceTile{other.referenceTile},
+			  chamber{std::move(other.chamber)}{}
+
 		ChamberTile& operator=(ChamberTile&& other) noexcept{
 			if(this == &other) return *this;
 			pos = std::move(other.pos);
+			referenceTile = other.referenceTile;
 			chamber = std::move(other.chamber);
 			return *this;
 		}
@@ -266,6 +273,10 @@ export namespace Game{
 		using EntityType = Entity;
 		virtual ~ChamberFactory() = default;
 
+		std::string factoryName{};
+
+		virtual void buildDesc(UI::Table& table) const{}
+
 		virtual std::unique_ptr<Chamber<Entity>> genChamber() const{
 			return std::unique_ptr<Chamber<Entity>>(nullptr);
 		}
@@ -307,7 +318,6 @@ export namespace Game{
 			float reload{};
 		};
 
-
 		struct TurretChamberTrait : ChamberTraitFallback<TurretChamberData>{
 			float reloadTime{};
 
@@ -338,7 +348,7 @@ export namespace Game{
 
 	template <typename Entity>
 	struct ChamberJsonSrl{
-		static constexpr std::string_view DstToRef = "relativeRefPos";
+		// static constexpr std::string_view DstToRef = "relativeRefPos";
 		static constexpr std::string_view OwnsChamber = "ownsChamber";
 		static constexpr std::string_view Chamber = "chamber";
 		static constexpr Game::MockChamberFactory<Entity> mockFactory{};

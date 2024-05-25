@@ -14,11 +14,40 @@ import ext.Algorithm;
 
 namespace Game{
 	export
+	[[nodiscard]] Geom::Point2 toChamberPos(Geom::Vec2 pos) noexcept{
+		return pos.div(TileSize).trac<int>();
+	}
+
+	export
 	template <typename Entity>
 	class ChamberFrameData{
 	public:
+		// using Entity = Geom::Vec2;
 		using EntityType = Entity;
 		using Tile = ChamberTile<Entity>;
+		using ItrType = typename std::list<Tile>::iterator;
+
+		struct TileBrief{
+			std::vector<Game::Chamber<EntityType>*> owners{};
+			std::vector<const Tile*> invalids{};
+			std::vector<const Tile*> valids{};
+
+			bool dataValid{false};
+
+			constexpr void reset() noexcept{
+				dataValid = false;
+				owners.clear();
+				invalids.clear();
+				valids.clear();
+			}
+		};
+
+		mutable TileBrief brief{};
+
+		void resetBrief() const noexcept{
+			if(!brief.dataValid)return;
+			brief.reset();
+		}
 
 	protected:
 		[[nodiscard]] static Geom::OrthoRectFloat getBoundOf(const ChamberTile<Entity>& ChamberTile){
@@ -31,8 +60,72 @@ namespace Game{
 		//TODO Is all these worth it to sustain this vector?
 		//Maybe directly uses umap is a better choise
 
-		std::unordered_map<Geom::Point2, Tile*> positionRef{};
+		void eraseRef(const Geom::Point2 pos){
+			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
+				positionRef.erase(itr);
+			}
+		}
 
+		std::unordered_map<Geom::Point2, ItrType> positionRef{};
+
+		bool shouldInsert(const Tile& tile) const {
+			if(const auto finded = find(tile.pos)){
+				if(!tile.ownsChamber())return false;
+
+				if(!finded->valid()){
+					return true;
+				}
+
+				throw ext::IllegalArguments{"Insertion Failed: Cannot Insert Two Valid Tile in the same pos!"};
+			}
+			return true;
+		}
+
+		void updateReference(){
+			for(Tile& tile : data | std::ranges::views::filter(&Tile::ownsChamber)){
+				tile.getChamberRegion().each([this, &tile](const Geom::Point2 pos){
+					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
+						itr->second->referenceTile = &tile;
+					}
+				});
+			}
+		}
+
+		void padReference(Tile& src){
+			if(src.getChamberRegion().area() <= 1)return;
+
+			src.getChamberRegion().each([this, &src](const Geom::Point2 pos){
+				if(pos == src.pos)return;
+
+				const Tile* tile{nullptr};
+
+				auto itr = findItrByPos(pos);
+				if(itr != data.end())tile = itr.operator->();
+
+				if(tile){
+					if(tile->valid()){
+						throw ext::IllegalArguments{"Overlap Valid Should Never Happend During MultiTile Chamber Insertion!"};
+					}
+					erase(pos);
+				}
+			});
+
+			src.getChamberRegion().each([this, &src](const Geom::Point2 pos){
+				if(pos == src.pos)return;
+
+				this->insert(Tile{pos, &src});
+			});
+		}
+
+		auto findItrByPos(const Geom::Point2 pos){
+			auto itr = positionRef.find(pos);
+
+			if(itr == positionRef.end()){
+				return std::ranges::find(data, pos, &Tile::pos);
+			}else{
+				return itr->second;
+			}
+		}
 	public:
 		[[nodiscard]] ChamberFrameData() = default;
 
@@ -59,101 +152,66 @@ namespace Game{
 			return *this;
 		}
 
-	protected:
-		void eraseRef(const Geom::Point2 pos){
-			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-				positionRef.erase(itr);
-			}
-		}
+		void updateBrief() const{
+			if(brief.dataValid)return;
 
-		bool shouldInsert(const Tile& tile) const {
-			if(const auto finded = find(tile.pos)){
-				if(!tile.ownsChamber())return false;
-
-				if(!finded->valid()){
-					return true;
+			for (auto& chamberTile : data){
+				if(chamberTile.ownsChamber()){
+					brief.owners.push_back(chamberTile.chamber.get());
 				}
 
-				throw ext::IllegalArguments{"Insertion Failed: Cannot Insert Two Valid Tile in the same pos!"};
-			}
-			return true;
-		}
-
-		void updateReference(){
-			for(const Tile& tile : data | std::ranges::views::filter(&Tile::ownsChamber)){
-				tile.getChamberRegion().each([this, &tile](const Geom::Point2 pos){
-					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-						itr->second->referenceTile = &tile;
-					}
-				});
-			}
-		}
-
-		void padReference(Tile& src, const bool mapValid = true){
-			if(src.getChamberRegion().area() <= 1)return;
-
-			src.getChamberRegion().each([this, &src, mapValid](const Geom::Point2 pos){
-				if(pos == src.pos)return;
-
-				const Tile* tile{nullptr};
-
-				if(mapValid){
-					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-						tile = itr->second;
-					}
+				if(chamberTile.valid()){
+					brief.valids.push_back(&chamberTile);
 				}else{
-					if(const auto itr = std::ranges::find(data, pos, &Tile::pos); itr != data.end()){
-						tile = itr.operator->();
-					}
+					brief.invalids.push_back(&chamberTile);
 				}
+			}
 
-				if(tile){
-					if(tile->valid()){
-						throw ext::IllegalArguments{"Overlap Valid Should Never Happend During MultiTile Chamber Insertion!"};
-					}
-					erase(pos);
-				}
-			});
-
-			src.getChamberRegion().each([this, &src, mapValid](const Geom::Point2 pos){
-				if(pos == src.pos)return;
-
-				if(mapValid){
-					this->insert(Tile{pos, &src});
-				}else{
-					data.emplace_back(pos, &src);
-				}
-			});
+			brief.dataValid = true;
 		}
 
+		[[nodiscard]] const TileBrief& getBrief() const{
+			updateBrief();
+			return brief;
+		}
 
-	public:
+		[[nodiscard]] bool isBriefValid() const noexcept{
+			return brief.dataValid;
+		}
+
 		[[nodiscard]] const std::list<Tile>& getData() const noexcept{ return data; }
 		[[nodiscard]] std::list<Tile>& getData() noexcept{ return data; }
 
-		[[nodiscard]] const std::unordered_map<Geom::Point2, Tile*>& getPositionRef() const noexcept{ return positionRef; }
-		[[nodiscard]] std::unordered_map<Geom::Point2, Tile*>& getPositionRef() noexcept{ return positionRef; }
+		[[nodiscard]] auto& getPositionRef() const noexcept{ return positionRef; }
+		[[nodiscard]] auto& getPositionRef() noexcept{ return positionRef; }
 
 		[[nodiscard]] const Tile& at(const Geom::Point2 pos) const{
-			return *positionRef.at(pos);
+			return positionRef.at(pos).operator*();
 		}
 
 		[[nodiscard]] Tile& at(const Geom::Point2 pos){
-			return *positionRef.at(pos);
+			return positionRef.at(pos).operator*();
 		}
 
 		[[nodiscard]] const Tile* find(const Geom::Point2 pos) const{
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-				return itr->second;
+				return itr->second.operator->();
 			}
 			return nullptr;
 		}
 
 		[[nodiscard]] Tile* find(const Geom::Point2 pos){
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-				return itr->second;
+				return itr->second.operator->();
 			}
 			return nullptr;
+		}
+
+		[[nodiscard]] ItrType findItr(const Geom::Point2 pos){
+			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
+				return itr->second;
+			}
+			return data.end();
 		}
 
 		[[nodiscard]] Chamber<EntityType>* findChamber(const Geom::Point2 pos){
@@ -177,11 +235,16 @@ namespace Game{
 		 * @param setToInvalid erase relative tiles or set them to invalid
 		 */
 		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
-			if(auto itr = std::ranges::find(data, chamberPos, &Tile::pos); itr != data.end()){
-				Tile* chamber = itr.operator->();
+			resetBrief();
+
+			//TODO optm this
+			auto itr = findItrByPos(chamberPos);
+
+			if(itr != data.end()){
+				const Tile* chamber = itr.operator->();
 
 				if(chamber->refOnly()){
-					itr = std::ranges::find(data, chamber->referenceTile->pos, &Tile::pos);
+					itr = findItrByPos(chamber->referenceTile->pos);
 					if(itr == data.end()){
 						throw ext::IllegalArguments{"Failed to find ref tile!"};
 					}
@@ -214,19 +277,21 @@ namespace Game{
 		 * @param tile Tile to insert
 		 */
 		void insert(Tile&& tile){
-			if(!shouldInsert(tile))return;
+			if(!this->shouldInsert(tile))return;
+
+			resetBrief();
 
 			tile.init();
-			erase(tile.pos);
+			this->erase(tile.pos);
 			data.push_back(std::move(tile));
-			auto& val = data.back();
+			const auto& itr = std::prev(data.end());
 
-			positionRef.insert_or_assign(val.pos, &val);
-			padReference(val, true);
+			positionRef.insert_or_assign(itr->pos, ItrType{itr});
+			this->padReference(itr.operator*());
 		}
 
 		void erase(const Tile* val){
-			erase(val->pos);
+			this->erase(val->pos);
 		}
 
 		template <Concepts::Iterable<Tile> Range>
@@ -241,7 +306,7 @@ namespace Game{
 				if(!shouldInsert(tile))continue;
 				erase(tile.pos);
 				data.push_back(std::forward<std::ranges::range_value_t<Range>>(tile));
-				positionRef.insert_or_assign(tile.pos, &data.back());
+				positionRef.insert_or_assign(tile.pos, std::prev(data.end()));
 
 				Tile& t = data.back();
 				t.init();
@@ -250,7 +315,7 @@ namespace Game{
 
 					erase(pos);
 					data.emplace_back(pos, &t);
-					positionRef.insert_or_assign(pos, &data.back());
+					positionRef.insert_or_assign(pos, std::prev(data.end()));
 				});
 			}
 
@@ -280,9 +345,10 @@ namespace Game{
 				this->resizeBound();
 			}
 
-			for (auto& tile : data){
-				positionRef.insert_or_assign(tile.pos, &tile);
+			for(auto cur = data.begin(); cur != data.end(); ++cur){
+				positionRef.insert_or_assign(cur->pos, cur);
 			}
+
 		}
 
 		[[nodiscard]] bool contains(const Geom::Point2 point2) const {
@@ -304,18 +370,14 @@ namespace Game{
 		}
 
 
-		/** @return [compliant not] */
+		/** @return [compliant, not] */
 		auto getPartedTiles(Concepts::Invokable<bool(const Tile&)> auto&& pred) const{
 			return ext::partBy(data, pred);
 		}
 
-		/** @return [compliant not] */
+		/** @return [compliant, not] */
 		auto getPartedTiles(Concepts::Invokable<bool(const Tile&)> auto&& pred){
 			return ext::partBy(data, pred);
-		}
-
-		[[nodiscard]] Geom::Point2 getNearbyPos(Geom::Vec2 pos) const{
-			return pos.div(TileSize).trac<int>();
 		}
 
 		[[nodiscard]] const Geom::OrthoRectFloat& getBound() const{ return bound; }
@@ -391,78 +453,20 @@ namespace Game{
 
 		using TreeType = Geom::QuadTree<Tile, float, &ChamberFrame::getBoundOf>;
 
-		struct TileBrief{
-			std::vector<Game::Chamber<EntityType>*> owners{};
-			std::vector<const Tile*> invalids{};
-			std::vector<const Tile*> valids{};
-
-			bool dataValid{false};
-
-			constexpr void reset() noexcept{
-				dataValid = false;
-				owners.clear();
-				invalids.clear();
-				valids.clear();
-			}
-		};
-		
 	protected:
-		mutable TileBrief brief{};
-		TreeType quadTree{5};
-
-		void resetBrief() const{
-			if(!brief.dataValid)return;
-			brief.~TileBrief();
-			new (&brief) TileBrief;
-		}
-
 		using ChamberFrameData<Entity>::eraseRef;
 		using ChamberFrameData<Entity>::padReference;
 		using ChamberFrameData<Entity>::shouldInsert;
+
+		TreeType quadTree{5};
 
 	public:
 		ChamberFrame(){
 			quadTree.setStrict(false);
 		}
 
-		void updateBrief() const{
-			if(brief.dataValid)return;
-
-			for (auto& chamberTile : data){
-				if(chamberTile.ownsChamber()){
-					brief.owners.push_back(chamberTile.chamber.get());
-				}
-
-				if(chamberTile.valid()){
-					brief.valids.push_back(&chamberTile);
-				}else{
-					brief.invalids.push_back(&chamberTile);
-				}
-			}
-
-			brief.dataValid = true;
-		}
-
-		[[nodiscard]] const TileBrief& getBrief() const{
-			updateBrief();
-			return brief;
-		}
-
-		[[nodiscard]] bool isBriefValid() const noexcept{
-			return brief.dataValid;
-		}
-
 		[[nodiscard]] TreeType& getQuadTree() noexcept { return quadTree; }
 
-		/**
-		 * @brief Be cautionous about iterator failure
-		 * @param setToInvalid erase relative tiles or set them to invalid
-		 */
-		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
-			resetBrief();
-
-			ChamberFrameData<Entity>::erase(chamberPos, setToInvalid);
-		}
 
 		/**
 		 * @brief
@@ -474,18 +478,12 @@ namespace Game{
 
 			auto& val = data.back();
 			if(!noTreeInsertion)tryInsertTree(val, true);
-
-			resetBrief();
-		}
-
-		void erase(const Tile* val){
-			erase(val->pos);
 		}
 
 		template <Concepts::Iterable<Tile> Range>
 		void build(Range&& input){
 			quadTree.clear();
-			resetBrief();
+			this->resetBrief();
 
 			ChamberFrameData<Entity>::build(std::move(input));
 

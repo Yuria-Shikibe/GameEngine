@@ -71,7 +71,7 @@ export namespace Assets{
 			{25.0f, -1.0f, Graphic::Colors::GRAY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.5f), 1.0f};
 
 		/** @brief [screen scale, offset, timeScale] */
-		inline GL::UniformArgsWrapper slideLineShaderScaleArgs{1.0f};
+		inline GL::UniformArgsWrapper slideLineShaderScaleArgs{1.0f, Geom::SNAN2};
 		inline GL::UniformArgsWrapper slideLineShaderAngle{45.0f};
 		inline GL::ShaderSource* sildeLines = nullptr;
 

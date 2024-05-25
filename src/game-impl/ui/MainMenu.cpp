@@ -125,10 +125,10 @@ void Game::Scenes::MainMenu::build(){
 		.setMargin(0, 10, 0, 10).setSrcScale(0.075f, 0.0f);
 
 	&add<Game::Scene::ChamberWorkshop<Game::SpaceCraft>>([](Game::Scene::ChamberWorkshop<Game::SpaceCraft>& table){
-			table.build({});
+			table.build(::Test::chamberFrame->getChambers());
+			table.currentFactory = ::Test::testFactory.get();
 		})
-		.setAlign(Align::Mode::center_left).setSizeScale(0.6f, 1.f)
-		.setMargin(0, 10, 0, 10).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
+		.setAlign(Align::Mode::center_left).setSizeScale(0.6f, 1.f).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
 
 	add<UI::Table>(func)
 		.setAlign(Align::Mode::bottom_right)

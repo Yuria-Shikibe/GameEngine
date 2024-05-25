@@ -331,10 +331,10 @@ void setupUITest_Old(){
 
 
 	HUD->add<UI::Table>([](UI::Table& table){
-		   table.add<UI::Elem>();
-		   table.lineFeed();
-		   table.add<UI::Elem>();
-		   table.add<UI::Elem>();
+		   // table.add<UI::Elem>();
+		   // table.lineFeed();
+		   // table.add<UI::Elem>();
+		   // table.add<UI::Elem>();
 	   })
 	   .setAlign(Align::Mode::bottom_left)
 	   .setSizeScale(0.25f, 0.2f)
@@ -360,10 +360,10 @@ void setupUITest_Old(){
 					paneT.setHeight(600);
 					paneT.setFillparentX();
 
-					paneT.add<UI::Elem>();
-					paneT.lineFeed();
-					paneT.add<UI::Elem>();
-					paneT.add<UI::Elem>();
+					// paneT.add<UI::Elem>();
+					// paneT.lineFeed();
+					// paneT.add<UI::Elem>();
+					// paneT.add<UI::Elem>();
 				});
 			});
 			// rt->add(new UI::Elem);

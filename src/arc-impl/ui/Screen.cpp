@@ -19,6 +19,7 @@ void UI::Screen::endDraw_noContextFallback() const{
 		}
 	}
 
+	unlockViewport();
 	//TODO this may cause bug, should be careful
 	//TODO Reserve original framebuffer id or pointer?
 	buffer.unbind();
@@ -40,6 +41,8 @@ void UI::Screen::beginDraw(std::unique_ptr<Core::Batch> Core::BatchGroup::* batc
 	buffer.bind();
 	buffer.enableDrawAll();
 	buffer.clearColorAll();
+	lockViewport();
+
 }
 
 void UI::Screen::endDraw() const{
@@ -61,7 +64,10 @@ void UI::Screen::drawContent() const{
 		drawBase();
 	}
 
-	const auto cur = Core::renderer->frameEnd_Quiet();
+	GL::FrameBuffer* cur = nullptr;
+	if(!usesUIEffect){
+		cur = Core::renderer->frameEnd_Quiet();
+	}
 
 	buffer.getColorAttachments().at(0)->active(0);
 	Core::renderer->contextFrameBuffer->getTopTexture().active(1);
@@ -83,7 +89,10 @@ void UI::Screen::drawContent() const{
 	Frame::rawMesh->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
 	// GL::enable(GL::State::BLEND);
 
-	Core::renderer->frameBegin_Quiet(cur);
+	if(cur)Core::renderer->frameBegin_Quiet(cur);
+	else{
+		Core::renderer->contextFrameBuffer->bind();
+	}
 }
 
 void UI::Screen::beginCameraFocus(){
@@ -92,4 +101,19 @@ void UI::Screen::beginCameraFocus(){
 
 void UI::Screen::endCameraFocus() const{
 	if(Core::focus.camera.operator->() == &camera)Core::focus.camera.switchDef();
+}
+
+void UI::Screen::lockViewport() const noexcept{
+	GL::lockViewport = true;
+}
+
+void UI::Screen::unlockViewport() const noexcept{
+	GL::lockViewport = false;
+}
+
+Core::Batch* UI::Screen::getBatch() const{
+	if(batchPtr){
+		return (Core::batchGroup.*batchPtr).get();
+	}
+	return nullptr;
 }

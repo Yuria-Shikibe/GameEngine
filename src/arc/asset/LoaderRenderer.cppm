@@ -200,7 +200,7 @@ export namespace Assets {
 
 			const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 			Assets::PostProcessors::bloom->blur.setProcessTimes(2);
-			Assets::PostProcessors::bloom->setIntensity(1.f);
+			Assets::PostProcessors::bloom->setIntensity(1.f, 1.f);
 
 			Assets::PostProcessors::bloom->apply(&effectBuffer, &defaultFrameBuffer);
 
@@ -209,8 +209,8 @@ export namespace Assets {
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer.getID());
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 			glBlitFramebuffer(
-				0, 0, static_cast<GLint>(width), static_cast<GLint>(height),
-				0, 0, static_cast<GLint>(width), static_cast<GLint>(height),
+				0, 0, width, height,
+				0, 0, width, height,
 				GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		}
 

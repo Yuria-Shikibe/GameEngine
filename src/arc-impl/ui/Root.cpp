@@ -180,7 +180,7 @@ void UI::Root::onPress(const int id, const int mode){
 	pressAction.set(cursorPos, id, mode);
 	cursorPressedBeginPos = cursorPos;
 	currentCursorFocus->getInputListener().fire(pressAction);
-	pressedMouseButtons[id] = true;
+	pressedMouseButtons[id] = mode;
 }
 
 void UI::Root::onRelease(const int id, const int mode){

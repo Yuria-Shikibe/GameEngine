@@ -31,7 +31,7 @@ void Font::GlyphLayout::render(const float alphaMask) const {
 			glyph.v11().scl(scale) + off,
 			glyph.v01().scl(scale) + off
 		);
-
+		//
 		// Graphic::Draw::color(Graphic::Colors::RED_DUSK);
 		// Graphic::Draw::rectPoint(glyph.v00().scl(getScale()) + off, 4);
 		// Graphic::Draw::tint(Graphic::Colors::YELLOW, .35f);
@@ -94,7 +94,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 
 	//The glyphs must have no address move during the parse
 	auto& datas = layout->getGlyphs();
-	datas.reserve(layout->lastText.size());
+	datas.reserve(layout->lastText.size() + 1);
 
 	const Font::CharData* lastCharData = &Font::emptyCharData;
 	bool tokenState = false;
@@ -202,13 +202,13 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 
 	if(datas.empty())return;
 
-	if(layout->lastText.back() != '\n' && charParser->contains('\n')) {
+	if(!layout->back().isEndRow() && charParser->contains('\n')) {
 		lastCharData = context.currentFont->getCharData('\n');
-		ParserFunctions::pushData(0, static_cast<int>(totalSize), lastCharData, { context, currentPosition, lastCharData, *layout });
+		ParserFunctions::pushData('\n', static_cast<int>(totalSize), lastCharData, { context, currentPosition, lastCharData, *layout });
 		charParser->parse('\n', { context, currentPosition, lastCharData, *layout });
-	}else{
-		layout->getGlyphs().back().code = 0;
 	}
+
+	layout->getGlyphs().back().code = 0;
 
 	layout->getRawBound().addSize(0, -2 * context.currentLineBound.getHeight());
 

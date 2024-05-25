@@ -64,7 +64,7 @@ export namespace UI{
 
 		[[nodiscard]] TextCaret() = default;
 
-		[[nodiscard]] TextCaret(const TextCaretData& data) : TextCaretData{data}{};
+		[[nodiscard]] explicit TextCaret(const TextCaretData& data) : TextCaretData{data}{};
 
 		[[nodiscard]] TextCaret(const Font::TextLayoutPos beginPos, const Font::TextLayoutPos endPos,
 		                        const std::shared_ptr<Font::GlyphLayout>& layout)

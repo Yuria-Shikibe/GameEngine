@@ -35,9 +35,9 @@ export namespace Ctrl{
 					Core::uiRoot->onRelease(i, mode);
 				});
 
-				// input.binds.registerMouseBind(i, Act::DoubleClick, mode, [i, mode]{
-				// 	Core::uiRoot->onDoubleClick(i, mode);
-				// });
+				input.binds.registerBind(i, Act::DoubleClick, mode, [i, mode]{
+					Core::uiRoot->onDoubleClick(i, mode);
+				});
 			}
 		}
 

@@ -28,7 +28,11 @@ void Assets::Shaders::loadPrimitive() {
 		shader.setColor("mulColor", slideLineShaderDrawArgs.get<2, true>());
 		shader.setFloat("mulSub", slideLineShaderDrawArgs.get<3>());
 
-		shader.setVec2("scale", ~Core::renderer->getSize());
+		if(auto vec = slideLineShaderScaleArgs.get<1>(); vec.isNaN()){
+			shader.setVec2("scale", ~Core::renderer->getSize());
+		}else{
+			shader.setVec2("scale", ~vec);
+		}
 		shader.setFloat("time", OS::globalTick() * slideLineShaderScaleArgs.get<0>());
 
 		shader.setFloat("angle", slideLineShaderAngle.get<0>() + 45.0f);

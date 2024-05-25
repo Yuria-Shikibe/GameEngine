@@ -25,6 +25,8 @@ export namespace UI{
 		void endDraw_noContextFallback() const;
 	public:
 		bool focusWhenInbound{true};
+		/** @brief Whether adapt ui bloom effect*/
+		bool usesUIEffect{true};
 
 		~Screen() override{
 			endDraw_noContextFallback();
@@ -40,6 +42,13 @@ export namespace UI{
 				if(focusWhenInbound)beginCameraFocus();
 			});
 
+			inputListener.on<UI::MouseActionDoubleClick>([this](const UI::MouseActionDoubleClick& event) {
+
+				if(event.key == Ctrl::Mouse::LMB){
+					camera.setPosition(camera.getMouseToWorld(Geom::Vector2D(event), absoluteSrc));
+				}
+			});
+
 			inputListener.on<UI::MouseActionRelease>([this](const UI::MouseActionRelease& event) {
 				if(event.key == Ctrl::Mouse::CMB){
 					lastPos.setNaN();
@@ -48,10 +57,14 @@ export namespace UI{
 
 			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
 				if(event.key == Ctrl::Mouse::CMB){
-					if(lastPos.isNaN()){
-						lastPos.set(camera.getPosition());
+					if(event.mode == Ctrl::Mode::Shift){
+						if(lastPos.isNaN()){
+							lastPos.set(camera.getPosition());
+						}else{
+							camera.setPosition(lastPos + event.getRelativeMove() * (-1 / camera.getScale()));
+						}
 					}else{
-						camera.setPosition(lastPos + event.getRelativeMove() * (-1 / camera.getScale()));
+						lastPos.setNaN();
 					}
 				}
 			});
@@ -102,6 +115,17 @@ export namespace UI{
 		void beginCameraFocus();
 		void endCameraFocus() const;
 
+		void lockViewport() const noexcept;
+		void unlockViewport() const noexcept;
+
+		Core::Batch* getBatch() const;
+
 		[[nodiscard]] Core::Camera2D& getCamera() noexcept{ return camera; }
+
+		[[nodiscard]] const GL::FrameBuffer& getBuffer() const{ return buffer; }
+
+		[[nodiscard]] Geom::Vec2 getCursorPosInScreen() const{
+			return camera.getMouseToWorld(getCursorPos(), absoluteSrc);
+		}
 	};
 }

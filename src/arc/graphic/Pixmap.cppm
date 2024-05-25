@@ -325,7 +325,7 @@ export namespace Graphic{
             for(std::size_t y = 0; y < height / 2; ++y){
                 std::swap_ranges(
                     bitmapData.get() + rowDataCount * y, bitmapData.get() + rowDataCount * y + rowDataCount,
-                    bitmapData.get() + rowDataCount * (height - y)
+                    bitmapData.get() + rowDataCount * (height - y - 1)
                 );
             }
         }

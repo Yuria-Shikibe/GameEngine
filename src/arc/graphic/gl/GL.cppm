@@ -18,6 +18,7 @@ namespace GL {
 
     int maxTexSize = 4096;
 
+    export inline bool lockViewport;
     int viewport_x{0};
     int viewport_y{0};
     int viewport_w{0};
@@ -218,6 +219,7 @@ export namespace GL {
     }
 
     void viewport(const GLsizei x, const GLsizei y, const GLsizei width, const GLsizei height) {
+        if(lockViewport)return;
         if(x == viewport_x && y == viewport_y && viewport_w == width && viewport_h == height)return;
 
         glViewport(x, y, width, height);

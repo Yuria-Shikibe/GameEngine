@@ -70,8 +70,14 @@ export namespace UI{
 		Geom::Point2U segments{};
 
 		SliderBar(){
-			inputListener.on<UI::MouseActionPress>([this](const auto& event) {
+			inputListener.on<UI::MouseActionPress>([this](const MouseActionPress& event) {
 				pressed = true;
+
+				if(event.mode == Ctrl::Mode::Ctrl){
+					const auto move = Geom::Vec2(event) - (getProgress() * getValidSize() + absoluteSrc + border.bot_lft());
+					moveBar(move);
+					applyLast();
+				}
 			});
 
 			inputListener.on<UI::MouseActionScroll>([this](const auto& event) {
@@ -87,8 +93,10 @@ export namespace UI{
 				}else{
 					if(isSegmentMoveActivated()){
 						move.normalizeToBase().mul(getSegmentUnit());
+					}else{
+						move *= scrollSensitivity;
 					}
-					moveBar(move * scrollSensitivity);
+					moveBar(move);
 				}
 
 				applyLast();
@@ -189,7 +197,7 @@ export namespace UI{
 			if(touchbility != TouchbilityFlags::enabled){
 				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
 			}
-			return CursorType::drag;
+			return pressed ? CursorType::drag : CursorType::scroll;
 		}
 
 		void applyDefDrawer() noexcept override;

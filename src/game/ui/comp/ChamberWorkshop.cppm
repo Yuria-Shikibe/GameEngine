@@ -1,7 +1,6 @@
-//
-// Created by Matrix on 2024/5/23.
-//
-
+// ReSharper disable CppDFANullDereference
+// ReSharper disable CppDFAUnreachableCode
+// ReSharper disable CppDFAUnreachableFunctionCall
 export module Game.UI.ChamberWorkshop;
 
 export import UI.Table;
@@ -9,24 +8,160 @@ export import UI.Screen;
 import UI.ScrollPane;
 import UI.Button;
 import UI.Label;
+import UI.Cell;
+import UI.SliderBar;
+import UI.Palette;
+import UI.Canvas;
 
 export import Game.Chamber;
 export import Game.Chamber.Frame;
 
+import Core;
+import Graphic.Draw;
+import Assets.Graphic;
+import GL.Shader.UniformWrapper;
+
+import ext.BooleanOperation;
+
 export namespace Game::Scene{
+
+	template <typename T>
+	struct ChamberWorkshopMenuBuilder{
+		std::vector<ChamberFactory<T>*> getFactories() = delete; 
+	};
+
 	template <typename T>
 	class ChamberWorkshop : public UI::Table{
-		Game::ChamberFrameData<T> frame{};
+		static constexpr auto MaxTileSize = 10;
+
+		static Geom::Point2 getSizeFromProgress(Geom::Vec2 progress){
+			return progress.scl(MaxTileSize - 1).round<int>().add(1, 1);
+		}
+
+		using Tile = ChamberTile<T>;
+		using TileFrame = ChamberFrameData<T>;
+
+		//TODO maybe shared_ptr is better?
+		TileFrame frame{};
+		std::unordered_map<Geom::Point2, typename TileFrame::ItrType> selected{};
 
 		UI::Screen* screen{};
 		UI::Table* selectionTable{};
+		UI::SliderBar* slider{};
+
+		Geom::Point2 selectionBegin{Geom::maxVec2<int>};
+
+		enum struct ChamberFilter{
+			owner,
+			invalid
+		};
+
+		ChamberFilter filterType{};
+		ext::BooleanOperation booleanOperation{};
+
+		constexpr bool isBoxSelecting() const noexcept{
+			return selectionBegin != Geom::maxVec2<int>;
+		}
+
+		void boxSelectBegin(){
+			selectionBegin = toChamberPos(screen->getCursorPosInScreen());
+		}
+
+		Geom::OrthoRectInt getSelectionRange() const noexcept{
+			Geom::OrthoRectInt selectionRange{};
+			selectionRange.setVert(selectionBegin, toChamberPos(screen->getCursorPosInScreen()));
+
+			return selectionRange;
+		}
+
+		void boxSelectEnd(){
+			auto selectionRange = getSelectionRange();
+			std::unordered_map<Geom::Point2, typename TileFrame::ItrType> newSelected{};
+
+			selectionRange.each([this, &newSelected](Geom::Point2 pos){
+				if(const auto itr = frame.findItr(pos); itr != frame.getData().end()){
+					newSelected.try_emplace(pos, itr);
+				}
+			});
+
+			ext::booleanConj(booleanOperation, selected, std::move(newSelected));
+
+			selectionBegin = Geom::maxVec2<int>;
+		}
+
+		Geom::OrthoRectInt getTileBound() const{
+			if(slider){
+				auto [w, h] = getSizeFromProgress(slider->getProgress());
+				return Geom::OrthoRectInt{w, h};
+			}else [[unlikely]] {
+				return {};
+			}
+		}
 
 		void buildElem(){
 			setEmptyDrawer();
+
 			UI::Table::add<UI::ScrollPane>([this](UI::ScrollPane& pane){
 				pane.setItem<UI::Table>([this](Table& table){
-					// table.setEmptyDrawer();
-					
+					table.setEmptyDrawer();
+					UI::LayoutCell& cell = table.add<UI::SliderBar>([](UI::SliderBar& bar){
+						bar.setSegments(Geom::norBaseVec2<unsigned>.copy().scl(MaxTileSize - 1));
+
+						bar.setTooltipBuilder({
+							.followTarget = UI::TooltipBuilder::FollowTarget::parent,
+							.minHoverTime = 0.f,
+							.builder = [&bar](UI::Table& hint){
+								auto canvas = UI::makeCanvas([&bar](const UI::Elem& elem){
+									using namespace Graphic;
+
+									Geom::Vec2 offset{};
+
+									const auto progress = getSizeFromProgress(bar.getProgress());
+									const auto [srcX, srcY] = Align::getOffsetOf(Align::Mode::center,
+                                       progress.as<float>().scl(elem.getValidWidth() / MaxTileSize, elem.getValidHeight() / MaxTileSize),
+                                       elem.getValidBound().copy().move(elem.getAbsSrc())
+									);
+									Draw::Line::setLineStroke(2.f);
+									Draw::color(UI::Pal::LIGHT_GRAY, elem.maskOpacity);
+
+									for(int x = 0; x < progress.x; ++x){
+										for(int y = 0; y < progress.y; ++y){
+											Draw::Line::rectOrtho(
+												srcX + offset.x,
+												srcY + offset.y,
+												elem.getValidWidth() / MaxTileSize,
+												elem.getValidHeight() / MaxTileSize
+											);
+
+											offset.y += elem.getValidHeight() / MaxTileSize;
+										}
+
+										offset.x += elem.getValidWidth() / MaxTileSize;
+										offset.y = 0.f;
+									}
+								});
+								canvas->setEmptyDrawer();
+								UI::LayoutCell& c = hint.transferElem(std::move(canvas));
+								c.setSize(300.f, 300.f, true).endLine();
+
+								UI::LayoutCell& c1 = hint.add<UI::Label>([&bar](UI::Label& label){
+									label.setEmptyDrawer();
+									label.setWrap(false, true);
+									label.setTextAlign(Align::Mode::center_left);
+									label.setText([&bar]{
+										auto [x, y] = getSizeFromProgress(bar.getProgress());
+										return std::format(" {}x{} ", x, y);
+									});
+									label.setTextScl(0.7f);
+								});
+								c1.fillParentX().wrapY();
+							}
+						});
+					});
+
+					cell.fillParentX().setHeight(300.0f);
+
+					slider = &cell.as<UI::SliderBar>();
 				});
 			}).setSizeScale(0.2f, 0.9f).setMargin(4.0f).setAlign(Align::Mode::top_left);
 
@@ -42,22 +177,171 @@ export namespace Game::Scene{
 			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Mode::bottom_left);
 
 			screen = &UI::Table::add<UI::Screen>([](UI::Screen& screen){
-
+				screen.usesUIEffect = true;
 			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Mode::right).template as<UI::Screen>();
+
+			screen->getInputListener().on<UI::MouseActionPress>([this](const UI::MouseActionPress& e){
+				switch(e.key){
+					case Ctrl::Mouse::_2 :{
+						if(!currentFactory)break;
+						const auto pos = toChamberPos(screen->getCursorPosInScreen());
+						Geom::OrthoRectInt bound = getTileBound();
+						bound.setCenter(pos);
+
+						if(frame.placementValid(bound)){
+							frame.insert(currentFactory->genChamberTile(bound));
+						}
+						break;
+					}
+
+					case Ctrl::Mouse::_1 :{
+						const auto pos = toChamberPos(screen->getCursorPosInScreen());
+						frame.erase(pos, true);
+						break;
+					}
+
+					default: break;
+				}
+
+				if(e.key == Ctrl::Mouse::_1 && e.mode == Ctrl::Mode::Ctrl){
+					if(!this->isBoxSelecting())boxSelectBegin();
+				}
+			});
+
+			screen->getInputListener().on<UI::MouseActionRelease>([this](const UI::MouseActionRelease& e){
+				if(e.key == Ctrl::Mouse::_1){
+					if(isBoxSelecting())boxSelectEnd();
+				}
+			});
 		}
 	public:
+
+		ChamberFactory<T>* currentFactory{};
+
 		using EntityType = T;
 
 		[[nodiscard]] ChamberWorkshop(){
 			setLayoutByRelative(false);
 		}
 
-		void build(const Game::ChamberFrameData<T>& data){
+		void build(const ChamberFrameData<T>& data){
 			frame = data;
 
 			buildElem();
 		}
 
-		// void drawContent() const override{}
+		void drawChildren() const override{
+			Table::drawChildren();
+
+			using namespace Graphic;
+
+			screen->beginDraw(&Core::BatchGroup::overlay);
+			const auto& brief = frame.getBrief();
+
+			{
+				GL::UniformGuard _{Assets::Shaders::coordAxisArgs, &screen->getCamera()};
+				Graphic::Mesh::meshBegin();
+				Graphic::Mesh::meshEnd(true, Assets::Shaders::coordAxis);
+			}
+
+			//TODO is screen space clip necessary?
+			if(Core::renderer){
+				screen->unlockViewport();
+
+				Core::renderer->effectBuffer.bind();
+				Core::renderer->effectBuffer.enableDrawAll();
+				Core::renderer->effectBuffer.clearColorAll();
+				Draw::color(Colors::GRAY);
+
+				for(const Tile* tile : brief.invalids){
+					if(!screen->getCamera().getViewport().overlap(tile->getChamberRealRegion()))continue;
+					Draw::rectOrtho(Draw::globalState.defaultTexture, tile->getTileBound());
+				}
+
+				[[maybe_unused]] GL::UniformGuard guard_outline
+					{
+						Assets::Shaders::outlineArgs, 2.0f * screen->getCamera().getScale(), 0.f,
+						screen->getCamera().getScreenSize().inverse()
+					};
+				screen->getBatch()->flush();
+
+				// GL::enable(GL::State::BLEND);
+				Core::renderer->effectBuffer.getTexture().active(0);
+				Frame::blit(&screen->getBuffer(), 0, Assets::Shaders::outline_ortho);
+				screen->lockViewport();
+			}
+
+			Draw::color(Colors::GRAY, 0.45f);
+			Draw::Line::setLineStroke(2.0f);
+			for(const auto tile : brief.valids){
+				if(!screen->getCamera().getViewport().overlap(tile->getChamberRealRegion()))continue;
+				Draw::Line::rectOrtho(tile->getTileBound());
+			}
+
+			Draw::color(Colors::LIGHT_GRAY, 0.85f);
+			for(const auto tile : brief.owners){
+				if(!screen->getCamera().getViewport().overlap(tile->getChamberBound()))continue;
+				Draw::Line::rectOrtho(tile->getChamberBound());
+			}
+
+
+			{
+				Draw::color(Colors::WHITE);
+				Draw::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
+
+				[[maybe_unused]] GL::UniformGuard guard_slideLine_1{
+					Assets::Shaders::slideLineShaderDrawArgs, 25.0f, 45.0f, Colors::CLEAR
+				};
+				[[maybe_unused]] GL::UniformGuard guard_slideLine_2{
+					Assets::Shaders::slideLineShaderScaleArgs, 1.f, screen->getCamera().getScreenSize()
+				};
+				[[maybe_unused]] Core::BatchGuard_Shader guard_batchShader{
+					*Core::batchGroup.overlay, Assets::Shaders::sildeLines
+				};
+
+				for(const auto* tile : brief.invalids){
+					if(!screen->getCamera().getViewport().overlap(tile->getChamberRealRegion()))continue;
+					Draw::rectOrtho(Draw::getDefaultTexture(), tile->getTileBound());
+				}
+			}
+
+			Draw::mixColor();
+
+			const auto pos = toChamberPos(screen->getCursorPosInScreen());
+			Geom::OrthoRectInt bound = getTileBound();
+			bound.setCenter(pos);
+
+			if(const auto finded = frame.find(pos)){
+				Draw::color(Colors::LIGHT_GRAY);
+				Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
+			}
+
+			if(frame.placementValid(bound)){
+				Draw::color(Colors::PALE_GREEN);
+			} else{
+				Draw::color(Colors::RED_DUSK);
+			}
+
+			Draw::Line::setLineStroke(2.f);
+			Draw::Line::rectOrtho(bound.as<float>().scl(TileSize, TileSize));
+
+			if(isBoxSelecting()){
+				Draw::color(Colors::AQUA_SKY);
+				Draw::Line::rectOrtho(getSelectionRange().as<float>().scl(TileSize, TileSize));
+			}
+
+			screen->endDraw();
+		}
+
+		UI::CursorType getCursorType() const noexcept override{
+			if(touchbility != UI::TouchbilityFlags::enabled || !screen->isInbound(getCursorPos())){
+				return tooltipbuilder ? UI::CursorType::regular_tip : UI::CursorType::regular;
+			}else{
+				return tooltipbuilder ? UI::CursorType::clickable_tip : UI::CursorType::clickable;
+			}
+		}
+
+		[[nodiscard]] const TileFrame& getFrame() const{ return frame; }
+		[[nodiscard]] TileFrame& getFrame(){ return frame; }
 	};
 }

@@ -155,6 +155,10 @@ void UI::Elem::releaseAllFocus() const noexcept{
 	if(isCursorInbound())root->currentCursorFocus = nullptr;
 }
 
+Geom::Vec2 UI::Elem::getCursorPos() const noexcept{
+	return root ? root->cursorPos : Geom::Vec2{};
+}
+
 
 bool UI::Elem::keyDown(const int code, const int action, const int mode) const{
 	return root->keyDown(code, action, mode);

@@ -100,8 +100,6 @@ export namespace Test{
 			}
 
 			Core::renderer->registerSynchronizedResizableObject(Core::camera);
-
-			Ctrl::registerCommands(Core::input);
 		});
 
 		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
@@ -268,6 +266,9 @@ export namespace Test{
 			Core::uiRoot->uiBasicBundle.load(Assets::Dir::bundle.subFile("ui.def.json"), Assets::Dir::bundle.subFile("ui.def.json"));
 
 			Core::renderer->registerSynchronizedResizableObject(Core::uiRoot);
+			Ctrl::registerCommands(Core::input);
+
+			Assets::PostProcessors::bloom->setIntensity(1.f);
 			//Core::loopManager->registerListener(Core::uiRoot);
 		});
 
