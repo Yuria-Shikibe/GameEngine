@@ -27,7 +27,7 @@ export namespace Core{
 
 		void update() const{
 			std::future<void> gameFuture;
-			if(!isPaused())gameFuture = std::async(&OS::ApplicationListener::update, gameCore, getDeltaTick());
+			if(!isPaused() && gameCore)gameFuture = std::async(&OS::ApplicationListener::update, gameCore, getDeltaTick());
 
 			handleAsync();
 
@@ -45,6 +45,7 @@ export namespace Core{
 				listener->updatePost(getDeltaTick());
 			}
 
+			if(gameCore)gameCore->updateGlobal(getDeltaTick());
 			if(Core::uiRoot)Core::uiRoot->update(getDeltaTick());
 			Core::input.update(getDeltaTick());
 			if(Core::camera)Core::camera->update(getDeltaTick());

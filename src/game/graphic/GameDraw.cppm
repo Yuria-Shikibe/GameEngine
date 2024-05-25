@@ -38,7 +38,7 @@ namespace Game::Draw{
 	void chamberFrameTile(const ChamberFrameTrans<Entity>& chambers, Core::Renderer* renderer = Core::renderer,
 	                      const bool disableDrawLimit = false){
 		[[maybe_unused]] auto guard = Draw::genColorGuard();
-		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.overlay, chambers.getTransformMat()};
+		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.overlay, chambers.getLocalToWorld()};
 
 		const float chamberTileAlpha = disableDrawLimit ? 1.0f : Math::curve(Core::camera->getScale(), 1.25f, 1.5f);
 
@@ -95,7 +95,7 @@ namespace Game::Draw{
 	void chamberFrame(const Entity& entity, const ChamberFrameTrans<Entity>& chambers,
 	                  Core::Renderer* renderer = Core::renderer){
 		[[maybe_unused]] auto guard = Draw::genColorGuard();
-		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.world, chambers.getTransformMat()};
+		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.world, chambers.getLocalToWorld()};
 
 		for(const auto* tile : chambers.getDrawable().owners){
 			tile->draw(entity);

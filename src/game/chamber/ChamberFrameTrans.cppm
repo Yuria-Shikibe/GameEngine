@@ -30,7 +30,8 @@ export namespace Game{
 		typename FrameType::TileBrief drawable{};
 
 		/** @brief Local draw usage*/
-		Geom::Matrix3D transMat{};
+		Geom::Matrix3D localToWorld{};
+		Geom::Matrix3D worldToLocal{};
 		Geom::OrthoRectFloat frameBound{};
 		Geom::QuadBox lastViewport{};
 
@@ -43,25 +44,24 @@ export namespace Game{
 
 		[[nodiscard]] Geom::Transform getLocalTrans() const{ return localTrans; }
 
-		void setLocalTrans(const Geom::Transform localTrans){
+		void setLocalTrans(const Geom::Transform localTrans) noexcept{
 			this->localTrans = localTrans;
 			// transMat.setScaling(0.05f, 0.05f).translateTo(localTrans);
-			transMat.setTranslation(localTrans);
+			localToWorld.setTranslation(localTrans);
+			worldToLocal.set(localToWorld).inv();
 		}
 
-		template <bool noScale = true>
 		[[nodiscard]] Geom::Vec2 getWorldToLocal(const Geom::Vec2 worldPos) const noexcept{
-			if constexpr (noScale){
-				return (worldPos - getLocalTrans().vec).rotate(-localTrans.rot);
-			}else{
-				return Geom::Matrix3D{transMat}.inv() * worldPos;
-			}
+			return worldToLocal * worldPos;
 		}
 
-		[[nodiscard]] const Geom::Matrix3D& getTransformMat() const noexcept{return transMat;}
-		[[nodiscard]]  Geom::Matrix3D& getTransformMat() noexcept{return transMat;}
+		[[nodiscard]] auto& getLocalToWorld() const noexcept{return localToWorld;}
+		[[nodiscard]] auto& getLocalToWorld() noexcept{return localToWorld;}
 
-		[[nodiscard]] FrameType& getChambers(){ return frameData; }
+		[[nodiscard]] auto& getWorldToLocal() const noexcept{return worldToLocal;}
+		[[nodiscard]] auto& getWorldToLocal() noexcept{return worldToLocal;}
+
+		[[nodiscard]] FrameType& getChambers() noexcept{ return frameData; }
 
 		[[nodiscard]] typename FrameType::TileBrief& getDrawable() noexcept{ return drawable; }
 		[[nodiscard]] const typename FrameType::TileBrief& getDrawable() const noexcept{ return drawable; }
@@ -69,11 +69,9 @@ export namespace Game{
 		Geom::QuadBox transformViewport(Geom::OrthoRectFloat viewport) const noexcept{
 			viewport.expand(ExtendSize / 2, ExtendSize / 2);
 			Geom::QuadBox portBox{viewport};
-			Geom::Matrix3D mat{transMat};
-			mat.inv(); //Get world to local
 
 			for(unsigned i = 0; i < 4; ++i){
-				portBox.vertAt(i) *= mat;
+				portBox.vertAt(i) *= worldToLocal;
 			}
 
 			return portBox;

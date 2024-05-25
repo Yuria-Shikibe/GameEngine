@@ -13,52 +13,55 @@ import Math;
 import ext.Algorithm;
 
 namespace Game{
-	/**
-	 * @brief This frame should never be dynamic used! since insert or erase a new chamber cost too much time
-	 */
 	export
 	template <typename Entity>
-	class ChamberFrame{
+	class ChamberFrameData{
+	public:
+		using EntityType = Entity;
+		using Tile = ChamberTile<Entity>;
+
+	protected:
 		[[nodiscard]] static Geom::OrthoRectFloat getBoundOf(const ChamberTile<Entity>& ChamberTile){
 			return ChamberTile.getChamberRealRegion();
 		}
 
-	public:
-		using EntityType = Entity;
-		using Tile = ChamberTile<Entity>;
-		using TreeType = Geom::QuadTree<Tile, float, &ChamberFrame::getBoundOf>;
-
-		struct TileBrief{
-			std::vector<Game::Chamber<EntityType>*> owners{};
-			std::vector<const Tile*> invalids{};
-			std::vector<const Tile*> valids{};
-
-			bool dataValid{false};
-
-			constexpr void reset() noexcept{
-				dataValid = false;
-				owners.clear();
-				invalids.clear();
-				valids.clear();
-			}
-		};
-		
-	protected:
-		mutable TileBrief brief{};
-
 		Geom::OrthoRectFloat bound{};
-
 		std::list<Tile> data{};
-		TreeType quadTree{5};
 
 		//TODO Is all these worth it to sustain this vector?
 		//Maybe directly uses umap is a better choise
 
 		std::unordered_map<Geom::Point2, Tile*> positionRef{};
 
+	public:
+		[[nodiscard]] ChamberFrameData() = default;
+
+		ChamberFrameData(const ChamberFrameData& other){
+			this->build(std::list<Tile>{other.data} | std::ranges::views::filter(std::not_fn(&Tile::refOnly)));
+		}
+
+		ChamberFrameData(ChamberFrameData&& other) noexcept
+			: bound{std::move(other.bound)},
+			  data{std::move(other.data)},
+			  positionRef{std::move(other.positionRef)}{}
+
+		ChamberFrameData& operator=(const ChamberFrameData& other){
+			if(this == &other) return *this;
+			this->build(std::list<Tile>{other.data} | std::ranges::views::filter(std::not_fn(&Tile::refOnly)));
+			return *this;
+		}
+
+		ChamberFrameData& operator=(ChamberFrameData&& other) noexcept{
+			if(this == &other) return *this;
+			bound = std::move(other.bound);
+			data = std::move(other.data);
+			positionRef = std::move(other.positionRef);
+			return *this;
+		}
+
+	protected:
 		void eraseRef(const Geom::Point2 pos){
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-				quadTree.remove(itr->second);
 				positionRef.erase(itr);
 			}
 		}
@@ -76,16 +79,25 @@ namespace Game{
 			return true;
 		}
 
-		void padReference(Tile& src, const bool insertToMap = true){
+		void updateReference(){
+			for(const Tile& tile : data | std::ranges::views::filter(&Tile::ownsChamber)){
+				tile.getChamberRegion().each([this, &tile](const Geom::Point2 pos){
+					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
+						itr->second->referenceTile = &tile;
+					}
+				});
+			}
+		}
 
+		void padReference(Tile& src, const bool mapValid = true){
 			if(src.getChamberRegion().area() <= 1)return;
 
-			src.getChamberRegion().each([this, &src, insertToMap](const Geom::Point2 pos){
+			src.getChamberRegion().each([this, &src, mapValid](const Geom::Point2 pos){
 				if(pos == src.pos)return;
 
 				const Tile* tile{nullptr};
 
-				if(insertToMap){
+				if(mapValid){
 					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
 						tile = itr->second;
 					}
@@ -103,58 +115,19 @@ namespace Game{
 				}
 			});
 
-			src.getChamberRegion().each([this, &src, insertToMap](const Geom::Point2 pos){
+			src.getChamberRegion().each([this, &src, mapValid](const Geom::Point2 pos){
 				if(pos == src.pos)return;
 
-				if(insertToMap){
-					insert(Tile{pos, &src});
+				if(mapValid){
+					this->insert(Tile{pos, &src});
 				}else{
 					data.emplace_back(pos, &src);
 				}
 			});
 		}
 
-		void resetBrief() const{
-			if(!brief.dataValid)return;
-			brief.~TileBrief();
-			new (&brief) TileBrief;
-		}
-
 
 	public:
-		ChamberFrame(){
-			quadTree.setStrict(false);
-		}
-
-		void updateBrief() const{
-			if(brief.dataValid)return;
-
-			for (auto& chamberTile : data){
-				if(chamberTile.ownsChamber()){
-					brief.owners.push_back(chamberTile.chamber.get());
-				}
-
-				if(chamberTile.valid()){
-					brief.valids.push_back(&chamberTile);
-				}else{
-					brief.invalids.push_back(&chamberTile);
-				}
-			}
-
-			brief.dataValid = true;
-		}
-
-		[[nodiscard]] const TileBrief& getBrief() const{
-			updateBrief();
-			return brief;
-		}
-
-		[[nodiscard]] bool isBriefValid() const noexcept{
-			return brief.dataValid;
-		}
-
-		[[nodiscard]] TreeType& getQuadTree() noexcept { return quadTree; }
-
 		[[nodiscard]] const std::list<Tile>& getData() const noexcept{ return data; }
 		[[nodiscard]] std::list<Tile>& getData() noexcept{ return data; }
 
@@ -204,8 +177,6 @@ namespace Game{
 		 * @param setToInvalid erase relative tiles or set them to invalid
 		 */
 		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
-			resetBrief();
-
 			if(auto itr = std::ranges::find(data, chamberPos, &Tile::pos); itr != data.end()){
 				Tile* chamber = itr.operator->();
 
@@ -241,9 +212,8 @@ namespace Game{
 		/**
 		 * @brief
 		 * @param tile Tile to insert
-		 * @param noTreeInsertion whether to insert tile to the quad tree now, used for IO and editor when quad tree is not needed
 		 */
-		void insert(Tile&& tile, const bool noTreeInsertion = false){
+		void insert(Tile&& tile){
 			if(!shouldInsert(tile))return;
 
 			tile.init();
@@ -252,11 +222,7 @@ namespace Game{
 			auto& val = data.back();
 
 			positionRef.insert_or_assign(val.pos, &val);
-
-			if(!noTreeInsertion)tryInsertTree(val, true);
 			padReference(val, true);
-
-			resetBrief();
 		}
 
 		void erase(const Tile* val){
@@ -265,10 +231,8 @@ namespace Game{
 
 		template <Concepts::Iterable<Tile> Range>
 		void build(Range&& input){
-			quadTree.clear();
 			positionRef.clear();
 			data.clear();
-			resetBrief();
 
 			//TODO better bound allocation if the origin point of tilemap doesn't begin at (0, 0) [esp > (0, 0)]
 			bound.set(0, 0, 0, 0);
@@ -291,58 +255,34 @@ namespace Game{
 			}
 
 			reMap(true);
-			reTree();
+		}
+
+		void resizeBound(){
+			if(data.empty()){
+				bound = {};
+				return;
+			}
+
+			bound = data.front().getTileBound();
+			for (const auto& val : data){
+				bound.expandBy(this->getBoundOf(val));
+			}
 		}
 
 		void reMap(const bool resizeBound = false){
 			positionRef.clear();
-			quadTree.clearItemsOnly();
 
 			positionRef.reserve(data.size());
 
 			if(data.empty())return;
 
 			if(resizeBound){
-				if(Math::zero(bound.area())){
-					bound = data.front().getTileBound();
-				}
-
-				for (const auto& val : data){
-					bound.expandBy(getBoundOf(val));
-				}
+				this->resizeBound();
 			}
-			
+
 			for (auto& tile : data){
 				positionRef.insert_or_assign(tile.pos, &tile);
 			}
-		}
-
-		void reTree(){
-			quadTree.clearItemsOnly();
-			quadTree.setBoundary(bound);
-
-			for (auto& tile : data){
-				tryInsertTree(tile);
-			}
-		}
-
-		void tryInsertTree(Tile& val, const bool boundCheck = false){
-			// if(val.ownsChamber()){
-				quadTree.insert(&val);
-
-				if(boundCheck){
-					const auto oriBound = bound;
-
-					bound.expandBy(getBoundOf(val));
-					if(bound != oriBound){
-						quadTree.clear();
-						quadTree.setBoundary(bound);
-						for(auto& bound : data/* | std::ranges::views::filter(&ChamberTile::ownsChamber)*/){
-							quadTree.insert(&bound);
-						}
-					}
-				}
-			// }
 		}
 
 		[[nodiscard]] bool contains(const Geom::Point2 point2) const {
@@ -379,7 +319,7 @@ namespace Game{
 		}
 
 		[[nodiscard]] const Geom::OrthoRectFloat& getBound() const{ return bound; }
-		
+
 		[[nodiscard]] Geom::OrthoRectInt getTiledBound() const{
 			Geom::OrthoRectFloat boundSize = bound;
 			boundSize.sclSize(1 / TileSize, 1 / TileSize);
@@ -390,7 +330,7 @@ namespace Game{
 			static constexpr std::string_view InvalidTiles = "it";
 			static constexpr std::string_view OwnerTiles = "ot";
 
-			static void write(ext::json::JsonValue& jsonValue, const ChamberFrame& data){
+			static void write(ext::json::JsonValue& jsonValue, const ChamberFrameData& data){
 				auto& map = jsonValue.asObject();
 
 				ext::json::JsonValue owners{};
@@ -416,32 +356,175 @@ namespace Game{
 				map.insert_or_assign(InvalidTiles, std::move(invalids));
 			}
 
-			static void read(const ext::json::JsonValue& jsonValue, ChamberFrame& data){
+			static void read(const ext::json::JsonValue& jsonValue, ChamberFrameData& data){
 				auto& map = jsonValue.asObject();
 				auto& owners = map.at(OwnerTiles).asArray();
 
 				for(const auto& jval : owners){
 					auto tile = ext::json::getValueFrom<Tile>(jval);
-					data.insert(std::move(tile), false);
+					data.insert(std::move(tile));
 				}
 
 				auto& invalids = map.at(InvalidTiles).asArray();
 
 				for(const auto& jval : invalids){
-					data.insert(Tile{ext::json::getValueFrom<Geom::Point2>(jval)}, false);
+					data.insert(Tile{ext::json::getValueFrom<Geom::Point2>(jval)});
 				}
 
-				data.reTree();
+				data.resizeBound();
 			}
 		};
 	};
+	/**
+	 * @brief This frame should never be dynamic used! since insert or erase a new chamber cost too much time
+	 */
+	export
+	template <typename Entity>
+	class ChamberFrame : public ChamberFrameData<Entity>{
+	public:
+		using ChamberFrameData<Entity>::ChamberFrameData;
+		using typename ChamberFrameData<Entity>::Tile;
+		using typename ChamberFrameData<Entity>::EntityType;
+		using ChamberFrameData<Entity>::positionRef;
+		using ChamberFrameData<Entity>::data;
+		using ChamberFrameData<Entity>::bound;
+
+		using TreeType = Geom::QuadTree<Tile, float, &ChamberFrame::getBoundOf>;
+
+		struct TileBrief{
+			std::vector<Game::Chamber<EntityType>*> owners{};
+			std::vector<const Tile*> invalids{};
+			std::vector<const Tile*> valids{};
+
+			bool dataValid{false};
+
+			constexpr void reset() noexcept{
+				dataValid = false;
+				owners.clear();
+				invalids.clear();
+				valids.clear();
+			}
+		};
+		
+	protected:
+		mutable TileBrief brief{};
+		TreeType quadTree{5};
+
+		void resetBrief() const{
+			if(!brief.dataValid)return;
+			brief.~TileBrief();
+			new (&brief) TileBrief;
+		}
+
+		using ChamberFrameData<Entity>::eraseRef;
+		using ChamberFrameData<Entity>::padReference;
+		using ChamberFrameData<Entity>::shouldInsert;
+
+	public:
+		ChamberFrame(){
+			quadTree.setStrict(false);
+		}
+
+		void updateBrief() const{
+			if(brief.dataValid)return;
+
+			for (auto& chamberTile : data){
+				if(chamberTile.ownsChamber()){
+					brief.owners.push_back(chamberTile.chamber.get());
+				}
+
+				if(chamberTile.valid()){
+					brief.valids.push_back(&chamberTile);
+				}else{
+					brief.invalids.push_back(&chamberTile);
+				}
+			}
+
+			brief.dataValid = true;
+		}
+
+		[[nodiscard]] const TileBrief& getBrief() const{
+			updateBrief();
+			return brief;
+		}
+
+		[[nodiscard]] bool isBriefValid() const noexcept{
+			return brief.dataValid;
+		}
+
+		[[nodiscard]] TreeType& getQuadTree() noexcept { return quadTree; }
+
+		/**
+		 * @brief Be cautionous about iterator failure
+		 * @param setToInvalid erase relative tiles or set them to invalid
+		 */
+		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
+			resetBrief();
+
+			ChamberFrameData<Entity>::erase(chamberPos, setToInvalid);
+		}
+
+		/**
+		 * @brief
+		 * @param tile Tile to insert
+		 * @param noTreeInsertion whether to insert tile to the quad tree now, used for IO and editor when quad tree is not needed
+		 */
+		void insert(Tile&& tile, const bool noTreeInsertion = false){
+			ChamberFrameData<Entity>::insert(std::move(tile));
+
+			auto& val = data.back();
+			if(!noTreeInsertion)tryInsertTree(val, true);
+
+			resetBrief();
+		}
+
+		void erase(const Tile* val){
+			erase(val->pos);
+		}
+
+		template <Concepts::Iterable<Tile> Range>
+		void build(Range&& input){
+			quadTree.clear();
+			resetBrief();
+
+			ChamberFrameData<Entity>::build(std::move(input));
+
+			reTree();
+		}
+
+		void reMap(const bool resizeBound = false){
+			quadTree.clearItemsOnly();
+			ChamberFrameData<Entity>::reMap(resizeBound);
+		}
+
+		void reTree(){
+			quadTree.clearItemsOnly();
+			quadTree.setBoundary(bound);
+
+			for (auto& tile : data){
+				tryInsertTree(tile);
+			}
+		}
+
+		void tryInsertTree(Tile& val, const bool boundCheck = false){
+			// if(val.ownsChamber()){
+				quadTree.insert(&val);
+
+				if(boundCheck){
+					const auto oriBound = bound;
+
+					bound.expandBy(this->getBoundOf(val));
+					if(bound != oriBound){
+						quadTree.clear();
+						quadTree.setBoundary(bound);
+						for(auto& bound : data/* | std::ranges::views::filter(&ChamberTile::ownsChamber)*/){
+							quadTree.insert(&bound);
+						}
+					}
+				}
+			// }
+		}
+	};
 }
 
-namespace Game{
-	class SpaceCraft;
-}
 
-
-export
-template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberFrame<Game::SpaceCraft>> : Game::ChamberFrame<Game::SpaceCraft>::JsonSrl{};

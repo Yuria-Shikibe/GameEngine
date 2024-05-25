@@ -11,7 +11,7 @@ export namespace Graphic{
 		virtual void resize(T w, T h) = 0;
 	};
 
-	// using ResizeableUInt = Resizeable<unsigned int>;
+	using ResizeableUInt = Resizeable<unsigned int>;
 	using ResizeableInt = Resizeable<int>;
 }
 

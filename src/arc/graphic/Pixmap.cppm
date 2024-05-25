@@ -12,12 +12,13 @@ import Graphic.Color;
 import Math;
 import std;
 
-using Color = Graphic::Color;
-using ColorBits = Graphic::Color::ColorBits;
+
 
 export namespace Graphic{
     class Pixmap{
     public:
+        using Color = Graphic::Color;
+        using ColorBits = Graphic::Color::ColorBits;
         using DataType = unsigned char;
     protected:
         int width{ 1 };

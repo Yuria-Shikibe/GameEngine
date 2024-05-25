@@ -199,13 +199,12 @@ export namespace Assets {
 			drawMain();
 
 			const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
-			Assets::PostProcessors::bloom->blur.setProcessTimes(4);
-			Assets::PostProcessors::bloom->setIntensity(0.9f);
+			Assets::PostProcessors::bloom->blur.setProcessTimes(2);
+			Assets::PostProcessors::bloom->setIntensity(1.f);
 
 			Assets::PostProcessors::bloom->apply(&effectBuffer, &defaultFrameBuffer);
 
 			Assets::PostProcessors::bloom->blur.setProcessTimes(times);
-			Assets::PostProcessors::bloom->setIntensity(1.f);
 
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, defaultFrameBuffer.getID());
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

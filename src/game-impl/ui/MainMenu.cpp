@@ -9,6 +9,9 @@ import Graphic.Draw;
 import Assets.Graphic;
 import OS;
 
+import Game.UI.ChamberWorkshop;
+import Game.Entity.SpaceCraft;
+
 void func(UI::Table& table){
 	table.setEmptyDrawer();
 
@@ -121,10 +124,10 @@ void Game::Scenes::MainMenu::build(){
 		.setAlign(Align::left).setSizeScale(0.2f, 1.0f)
 		.setMargin(0, 10, 0, 10).setSrcScale(0.075f, 0.0f);
 
-	screen = &add<UI::Screen>([](UI::Screen& table){
-
+	&add<Game::Scene::ChamberWorkshop<Game::SpaceCraft>>([](Game::Scene::ChamberWorkshop<Game::SpaceCraft>& table){
+			table.build({});
 		})
-		.setAlign(Align::Mode::center_left).setSizeScale(0.3f, 0.5f)
+		.setAlign(Align::Mode::center_left).setSizeScale(0.6f, 1.f)
 		.setMargin(0, 10, 0, 10).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
 
 	add<UI::Table>(func)
@@ -137,14 +140,14 @@ void Game::Scenes::MainMenu::drawContent() const{
 	namespace Draw = Graphic::Draw;
 	Scene::drawContent();
 
-	screen->beginDraw(&Core::BatchGroup::overlay);
-
-	GL::UniformGuard _{Assets::Shaders::coordAxisArgs, &screen->getCamera()};
-	Graphic::Mesh::meshBegin(Assets::Meshes::coords);
-	Graphic::Mesh::meshEnd(true);
-
-	Draw::color(Graphic::Colors::WHITE);
-	Draw::rectOrtho(Draw::globalState.contextTexture, 0, 0, 100, 100);
-
-	screen->endDraw();
+	// screen->beginDraw(&Core::BatchGroup::overlay);
+	//
+	// GL::UniformGuard _{Assets::Shaders::coordAxisArgs, &screen->getCamera()};
+	// Graphic::Mesh::meshBegin();
+	// Graphic::Mesh::meshEnd(true, Assets::Shaders::coordAxis);
+	//
+	// Draw::color(Graphic::Colors::WHITE);
+	// Draw::rectOrtho(Draw::globalState.contextTexture, 0, 0, 100, 100);
+	//
+	// screen->endDraw();
 }

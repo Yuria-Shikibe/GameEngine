@@ -4,7 +4,6 @@ export module Assets.Graphic;
 
 import Assets.Directories;
 
-import GL.Mesh.RenderableMesh;
 import GL.Buffer.DataBuffer;
 import GL.VertexArray;
 import Font;
@@ -12,6 +11,7 @@ import Font.FrequentCharCode;
 import Font.UnicodeRefParser;
 import Font.GlyphArrangement;
 import OS.FileTree;
+import GL.Mesh;
 import GL.Shader;
 import GL.Uniform;
 import GL.Texture.Texture2D;
@@ -56,7 +56,7 @@ export namespace Assets{
 		inline GL::ShaderSource* screenSpace = nullptr;
 
 		/** @brief [Screen Size, Camera Pos]*/
-		inline GL::UniformTupleWrapper coordAxisArgs{static_cast<Core::Camera2D*>(nullptr)};
+		inline GL::UniformArgsWrapper coordAxisArgs{static_cast<Core::Camera2D*>(nullptr)};
 		inline GL::ShaderSource* coordAxis = nullptr;
 		inline GL::ShaderSource* filter = nullptr;
 
@@ -67,12 +67,12 @@ export namespace Assets{
 		inline GL::ShaderSource* blit = nullptr;
 
 		/** @brief [width, spacing, color, mulScale] */
-		inline GL::UniformTupleWrapper slideLineShaderDrawArgs
+		inline GL::UniformArgsWrapper slideLineShaderDrawArgs
 			{25.0f, -1.0f, Graphic::Colors::GRAY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.5f), 1.0f};
 
 		/** @brief [screen scale, offset, timeScale] */
-		inline GL::UniformTupleWrapper slideLineShaderScaleArgs{1.0f};
-		inline GL::UniformTupleWrapper slideLineShaderAngle{45.0f};
+		inline GL::UniformArgsWrapper slideLineShaderScaleArgs{1.0f};
+		inline GL::UniformArgsWrapper slideLineShaderAngle{45.0f};
 		inline GL::ShaderSource* sildeLines = nullptr;
 
 		inline GL::ShaderSource* world = nullptr;
@@ -83,7 +83,7 @@ export namespace Assets{
 
 		inline GL::ShaderSource* frostedGlass = nullptr;
 
-		inline GL::UniformTupleWrapper outlineArgs{4.0f, 0.0f, Geom::norBaseVec2<float>};
+		inline GL::UniformArgsWrapper outlineArgs{4.0f, 0.0f, Geom::norBaseVec2<float>};
 		inline GL::ShaderSource* outline_ortho = nullptr;
 		inline GL::ShaderSource* outline_sobel = nullptr;
 
@@ -251,54 +251,36 @@ export namespace Assets{
 	}
 
 	namespace Meshes {
-		GL::Mesh
-			*raw{nullptr},
-			*coords{nullptr}
+		std::unique_ptr<GL::Mesh> raw{nullptr}
 		;
 
 		void loadPrimitive() {
-			raw = new GL::Mesh{[]( GL::Mesh& mesh) {
+			raw.reset(new GL::Mesh{[]( GL::Mesh& mesh) {
 				mesh.bind();
-				mesh.getVertexBuffer().setData({
+				mesh.vertexBuffer.setData({
 					-1.0f, -1.0f, 0.0f, 0.0f,
 					 1.0f, -1.0f, 1.0f, 0.0f,
 					 1.0f,  1.0f, 1.0f, 1.0f,
 					-1.0f,  1.0f, 0.0f, 1.0f
 				}, GL_STATIC_DRAW);
 
-				mesh.getIndexBuffer().setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
+				mesh.indexBuffer.setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
-				GL::AttributeLayout& layout = mesh.getVertexArray().getLayout();
+				GL::AttributeLayout& layout = mesh.vertexArray.getLayout();
 				layout.addFloat(2);
 				layout.addFloat(2);
 				mesh.applyLayout();
 
 				mesh.unbind();
-			}};
+			}});
 		}
 
 		void load() {
-			coords = new GL::RenderableMesh<GL_TRIANGLE_FAN>(Assets::Shaders::coordAxis, [](GL::RenderableMesh<GL_TRIANGLE_FAN>& mesh) {
-				mesh.bind();
-				mesh.getVertexBuffer().setData({
-					-1.0f, -1.0f,
-					 1.0f, -1.0f,
-					 1.0f,  1.0f,
-					-1.0f,  1.0f
-				}, GL_STATIC_DRAW);
-				mesh.getIndexBuffer().setDataRaw(GL::ELEMENTS_STRIP_STD.data(), GL::ELEMENTS_QUAD_STRIP_LENGTH, GL_STATIC_DRAW);
 
-				GL::AttributeLayout& layout = mesh.getVertexArray().getLayout();
-				layout.addFloat(2);
-				mesh.applyLayout();;
-
-				mesh.unbind();
-			});
 		}
 
 		void dispose() {
-			delete raw;
-			delete coords;
+			raw.reset(nullptr);
 		}
 	}
 

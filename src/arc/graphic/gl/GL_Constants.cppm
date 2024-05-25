@@ -1740,6 +1740,8 @@ export{
 	constexpr unsigned short GL_TRANSFORM_FEEDBACK_OVERFLOW = 0x82EC;
 	constexpr unsigned short GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW = 0x82ED;
 
+
+namespace GL{
 	int sizeofType(const unsigned int type){
 		switch(type){
 			case GL_FLOAT: return 4;
@@ -1750,4 +1752,6 @@ export{
 			default: throw "Unregistered GL Type!";
 		}
 	}
+}
+
 }

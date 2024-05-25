@@ -7,6 +7,7 @@ export module Game.Chamber;
 export import Geom.Rect_Orthogonal;
 export import Geom.Vector2D;
 import ext.Concepts;
+import ext.Owner;
 import ext.RuntimeException;
 import std;
 
@@ -49,6 +50,14 @@ export namespace Game{
 			ext::json::getValueTo(region, jval.asObject().at(ChamberRegionFieldName));
 		}
 
+		virtual ext::Owner<Chamber*> copy(){ //TODO temp test impl, garbage
+			ext::json::JsonValue jval{};
+			writeTo(jval);
+			Game::Chamber<Entity>* ptr = generate<Game::Chamber<Entity>>(jval);
+			if(ptr)ptr->readFrom(jval);
+			return ptr;
+		}
+
 		~Chamber() override = default;
 
 		virtual void update(float delta, Entity& entity) = 0;
@@ -77,11 +86,51 @@ export namespace Game{
 
 		std::unique_ptr<Chamber<Entity>> chamber{};
 
+		[[nodiscard]] ChamberTile() = default;
+
+		[[nodiscard]] explicit ChamberTile(const Point2& pos)
+			: pos{pos}{}
+
+		[[nodiscard]] ChamberTile(const Point2& pos, ChamberTile* referenceTile)
+			: pos{pos},
+			  referenceTile{referenceTile}{}
+
+		[[nodiscard]] ChamberTile(const Point2& pos, ChamberTile* referenceTile,
+			const std::unique_ptr<Chamber<Entity>>& chamber)
+			: pos{pos},
+			  referenceTile{referenceTile},
+			  chamber{chamber}{}
+
+		ChamberTile(const ChamberTile& other)
+			: pos{other.pos},
+			  chamber{std::unique_ptr<Chamber<Entity>>{other.chamber->copy()}}{}
+
+		ChamberTile(ChamberTile&& other) noexcept
+			: pos{std::move(other.pos)},
+			  chamber{std::move(other.chamber)}{}
+
+		ChamberTile& operator=(const ChamberTile& other){
+			if(this == &other) return *this;
+			pos = other.pos;
+			chamber.reset(other.chamber->copy());
+			return *this;
+		}
+
+		ChamberTile& operator=(ChamberTile&& other) noexcept{
+			if(this == &other) return *this;
+			pos = std::move(other.pos);
+			chamber = std::move(other.chamber);
+			return *this;
+		}
+
 		[[nodiscard]] bool valid() const {
 			//Not chain query, only one-depth reference is allowed
 			return ownsChamber() || (referenceTile && referenceTile->ownsChamber());
 		}
 
+		/**
+		 * @return Whether this tile works by its reference tile
+		 */
 		[[nodiscard]] bool refOnly() const {
 			//Not chain query, only one-depth reference is allowed
 			return !ownsChamber() && referenceTile && referenceTile->ownsChamber();
@@ -329,16 +378,7 @@ export namespace Game{
 			}
 		}
 	};
-
-	using DeckTile = ChamberTile<SpaceCraft>;
-	using DeckUnit = Chamber<SpaceCraft>;
 }
-
-export template<>
-struct std::hash<Game::DeckTile> : Game::ChamberHasher<Game::SpaceCraft>{};
-
-export template<>
-struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
 
 
 

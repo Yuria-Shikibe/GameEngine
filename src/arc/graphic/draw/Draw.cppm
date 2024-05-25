@@ -288,7 +288,8 @@ export namespace Graphic{
 	}
 
 	namespace Mesh{
-		inline void meshBegin(const GL::Mesh* const mesh){
+		inline void meshBegin(const GL::Mesh* mesh = nullptr){
+			if(!mesh)mesh = Frame::rawMesh;
 			mesh->bind();
 			formerMesh.push(mesh);
 		}
@@ -305,8 +306,14 @@ export namespace Graphic{
 			}
 		}
 
-		inline void meshEnd(const bool render = false){
-			if(render) formerMesh.top()->render();
+		inline void meshEnd(const bool render = false, const GL::ShaderProgram* shader = nullptr){
+			if(render){
+				if(shader){
+					shader->bind();
+					shader->apply();
+				}
+				formerMesh.top()->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
+			}
 			formerMesh.pop();
 
 			if(!formerMesh.empty()) formerMesh.top()->bind();

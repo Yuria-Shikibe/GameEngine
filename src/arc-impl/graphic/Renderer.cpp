@@ -29,13 +29,27 @@ void Core::Renderer::frameBegin(GL::FrameBuffer* frameBuffer, const bool resize,
 	}
 
 	contextFrameBuffer->bind();
-	GL::viewport(contextFrameBuffer->getWidth(), contextFrameBuffer->getHeight());
-
-
 	contextFrameBuffer->enableDrawAll();
 
 	contextFrameBuffer->clearColorAll(initColor);
 	contextFrameBuffer->clearDepth(0.0f);
+}
+
+void Core::Renderer::frameBegin_Quiet(GL::FrameBuffer* frameBuffer, const bool resize){
+	if (contextFrameBuffer == frameBuffer)throw ext::RuntimeException{ "Illegally Begin Twice!" };
+
+	Graphic::Batch::flush();
+
+	frameStack.push(contextFrameBuffer);
+
+	contextFrameBuffer = frameBuffer;
+
+	if(resize){
+		contextFrameBuffer->resize(width, height);
+	}
+
+	contextFrameBuffer->bind();
+	contextFrameBuffer->enableDrawAll();
 }
 
 void Core::Renderer::frameEnd(const ::std::function<void(GL::FrameBuffer*, GL::FrameBuffer*)>& func) {
@@ -80,13 +94,14 @@ void Core::Renderer::frameEnd() {
 	contextFrameBuffer = beneathFrameBuffer;
 }
 
-void Core::Renderer::frameEnd_Quiet(){
+GL::FrameBuffer* Core::Renderer::frameEnd_Quiet(){
+	const auto cur = contextFrameBuffer;
 	GL::FrameBuffer* beneathFrameBuffer = frameBufferFallback();
 	Graphic::Batch::flush();
 
 	contextFrameBuffer = beneathFrameBuffer;
 	contextFrameBuffer->bind();
-
+	return cur;
 }
 
 

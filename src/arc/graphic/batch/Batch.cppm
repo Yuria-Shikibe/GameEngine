@@ -22,7 +22,7 @@ namespace Core{
 	export class Batch
 	{
 	protected:
-		std::unique_ptr<Mesh> mesh = nullptr;
+		Mesh mesh{};
 
 		const Texture* lastTexture = nullptr;
 
@@ -57,7 +57,7 @@ namespace Core{
 		Batch& operator=(Batch&& other) = delete;
 
 		virtual void bindAll() const {
-			mesh->bind();
+			mesh.bind();
 		}
 
 		virtual void reset(){
@@ -136,8 +136,8 @@ namespace Core{
 			blending.apply();
 		}
 
-		[[nodiscard]] const Mesh* getMesh() const {
-			return mesh.get();
+		[[nodiscard]] const Mesh& getMesh() const {
+			return mesh;
 		}
 
 		void setProjection(const Geom::Matrix3D* porj){

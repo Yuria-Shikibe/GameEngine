@@ -1,6 +1,7 @@
-//
-// Created by Matrix on 2024/5/16.
-//
+module;
+
+#include "../src/code-gen/ReflectData_Builtin.hpp"
+#include "../src/arc/util/ReflectionUtil.hpp"
 
 export module SideTemp;
 
@@ -30,8 +31,98 @@ import UI.ProgressBar;
 import UI.InputArea;
 import UI.FileTreeSelector;
 
+import Game.Chamber;
+import Game.Chamber.FrameTrans;
+import Game.Chamber.Frame;
+import Game.Chamber.Util;
+
+import Graphic.Draw;
+import Graphic.Color;
+
+export struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
+	struct TestChamberData : Game::ChamberMetaDataBase{
+		Vec2 targetPos{};
+		float reload{};
+	};
+
+
+	struct TestChamberTrait : Game::ChamberTraitFallback<EntityType, TestChamberData>{
+		float reloadTime{};
+
+		void update(Game::Chamber<EntityType>* chamber, EntityType& entity, TraitDataType& data,
+					const float delta) const{
+			chamber->update(delta, entity);
+			data.reload += delta;
+			if(data.reload > reloadTime){
+				data.reload = 0;
+			}
+		}
+
+		void draw(const Game::Chamber<EntityType>* chamber, const EntityType& entity, const TraitDataType& data) const{
+			Graphic::Draw::setZ(entity.zLayer);
+			Graphic::Draw::rectOrtho<&Core::BatchGroup::world>(Graphic::Draw::globalState.defaultSolidTexture,
+															   chamber->getChamberBound());
+		}
+	} baseTraitTest;
+
+
+	template <Concepts::Derived<TestChamberTrait> Trait = TestChamberTrait>
+	using ChamberType = Game::ChamberVariant<EntityType, typename Trait::TraitDataType, TestChamberTrait>;
+
+	std::unique_ptr<Game::Chamber<EntityType>> genChamber() const override{
+		return std::make_unique<ChamberType<>>(baseTraitTest);
+	}
+};
+
+REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
+
+export
+template <>
+struct ::Core::IO::JsonSerializator<Game::ChamberFrameData<Game::SpaceCraft>> : Game::ChamberFrameData<Game::SpaceCraft>::JsonSrl{};
+
+export
+template <>
+struct ::Core::IO::JsonSerializator<Game::ChamberFrame<Game::SpaceCraft>>{
+	static void write(ext::json::JsonValue& jsonValue, const Game::ChamberFrame<Game::SpaceCraft>& data){
+		::Core::IO::JsonSerializator<Game::ChamberFrameData<Game::SpaceCraft>>::write(jsonValue, data);
+	}
+
+	static void read(const ext::json::JsonValue& jsonValue, Game::ChamberFrame<Game::SpaceCraft>& data){
+		::Core::IO::JsonSerializator<Game::ChamberFrameData<Game::SpaceCraft>>::read(jsonValue, data);
+		data.reTree();
+	}
+};
+
+export template<>
+struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
+
 export namespace Test{
+	std::unique_ptr<Game::ChamberFrameTrans<Game::SpaceCraft>> chamberFrame{};
+	std::unique_ptr<Game::ChamberFactory<Game::SpaceCraft>> testFactory{std::make_unique<TestChamberFactory>()};
+
+	void loadChamberTest(){
+		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
+		OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
+
+
+		if constexpr(false){
+			auto pixmap_ = Graphic::Pixmap{pixmap};
+			::Test::chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap<Game::SpaceCraft>(
+				pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
+
+			ext::json::JsonValue jval = ext::json::getJsonOf(::Test::chamberFrame->getChambers());
+
+			fi.writeString(std::format("{:nf0}", jval));
+		} else{
+			ext::json::Json json{fi.quickRead()};
+
+			ext::json::getValueTo(::Test::chamberFrame->getChambers(), json.getData());
+		}
+	}
+
 	void genRandomEntities(){
+		loadChamberTest();
+
 		Game::EntityManage::clear();
 		Math::Rand rand{};
 		for(int i = 0; i < 300; ++i) {
@@ -80,10 +171,10 @@ export namespace Test{
 		ptr->setHealthMaximum(20000);
 		ptr->initTrait(Game::Content::Builtin::test_pester);
 		ptr->activate();
-		// ptr->chambers.operator=(std::move(*chamberFrame));
-		// ptr->chamberTrans.vec.x = 85;
+		ptr->chambers.operator=(std::move(*chamberFrame));
+		ptr->chamberTrans.vec.x = 85;
 		ptr->physicsBody.inertialMass = 4000;
-		// chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+		chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
 		ptr->controller.reset(new Game::PlayerController{ptr.get()});
 
 	}

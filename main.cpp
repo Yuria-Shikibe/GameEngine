@@ -149,49 +149,10 @@ using Geom::Vec2;
 
 import SideTemp;
 
-struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
-	struct TestChamberData : Game::ChamberMetaDataBase{
-		Vec2 targetPos{};
-		float reload{};
-	};
-
-
-	struct TestChamberTrait : Game::ChamberTraitFallback<EntityType, TestChamberData>{
-		float reloadTime{};
-
-		void update(Game::Chamber<EntityType>* chamber, EntityType& entity, TraitDataType& data,
-		            const float delta) const{
-			chamber->update(delta, entity);
-			data.reload += delta;
-			if(data.reload > reloadTime){
-				data.reload = 0;
-			}
-		}
-
-		void draw(const Game::Chamber<EntityType>* chamber, const EntityType& entity, const TraitDataType& data) const{
-			Draw::setZ(entity.zLayer);
-			Graphic::Draw::rectOrtho<&Core::BatchGroup::world>(Draw::globalState.defaultSolidTexture,
-			                                                   chamber->getChamberBound());
-		}
-	} baseTraitTest;
-
-
-	template <Concepts::Derived<TestChamberTrait> Trait = TestChamberTrait>
-	using ChamberType = Game::ChamberVariant<EntityType, typename Trait::TraitDataType, TestChamberTrait>;
-
-	std::unique_ptr<Game::Chamber<EntityType>> genChamber() const override{
-		return std::make_unique<ChamberType<>>(baseTraitTest);
-	}
-};
-
-REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
-
-
 //TODO temp global static mut should be remove
 bool drawDebug{false};
 std::stringstream sstream{};
-std::unique_ptr<Game::ChamberFrameTrans<Game::SpaceCraft>> chamberFrame{};
-std::unique_ptr<Game::ChamberFactory<Game::SpaceCraft>> testFactory{std::make_unique<TestChamberFactory>()};
+
 
 
 namespace GameCtrl{
@@ -622,6 +583,8 @@ void setupCtrl(){
 	// 	});
 }
 
+REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
+
 void setupBaseDraw(){
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Batch::flush();
@@ -642,13 +605,11 @@ int main(const int argc, char* argv[]){
 	::Test::assetsLoad();
 	::Test::setupUITest_Old();
 
-	::Test::genRandomEntities();
-
 	::Test::setupAudioTest();
 
 	Core::audio->engine->setSoundVolume(0.5f);
 
-	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	::Test::chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
 
 	if(true){
 		Game::core->overlayManager->activate();
@@ -658,29 +619,8 @@ int main(const int argc, char* argv[]){
 		Game::core->overlayManager->deactivate();
 	}
 
-	// auto loadChamber = []{
-	// 	OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
-	// 	OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
-	//
-	//
-	// 	if constexpr(false){
-	// 		auto pixmap_ = Graphic::Pixmap{pixmap};
-	// 		chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap<Game::SpaceCraft>(
-	// 			pixmap_, {-pixmap_.getWidth() / 2, -pixmap_.getHeight() / 2});
-	//
-	// 		ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
-	//
-	// 		fi.writeString(std::format("{:nf0}", jval));
-	// 	} else{
-	// 		auto str = fi.quickRead();
-	//
-	// 		ext::json::Json json{fi.readString()};
-	//
-	// 		ext::json::getValueTo(chamberFrame->getChambers(), json.getData());
-	// 	}
-	// };
 
-	// loadChamber();
+	::Test::genRandomEntities();
 
 	// UI Test
 	setupUITest();
@@ -694,8 +634,8 @@ int main(const int argc, char* argv[]){
 	Core::uiRoot->switchScene(UI::Menu_Main);
 
 
-	chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
-	// loadChamber();
+	::Test::chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	::Test::loadChamberTest();
 
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
@@ -745,8 +685,8 @@ int main(const int argc, char* argv[]){
 
 	// glDepthRangef(Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);
 	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
-		Graphic::Mesh::meshBegin(Assets::Meshes::coords);
-		Graphic::Mesh::meshEnd(true);
+		Graphic::Mesh::meshBegin();
+		Graphic::Mesh::meshEnd(true, Assets::Shaders::coordAxis);
 
 		acceptBuffer1.getColorAttachments().at(3)->setScale(GL::nearest, GL::nearest);
 
@@ -782,9 +722,9 @@ int main(const int argc, char* argv[]){
 
 	});
 
-	chamberFrame->updateChamberFrameData();
-	chamberFrame->setLocalTrans({});
-	chamberFrame->getTransformMat().scale(10.0f, 10.0f);
+	::Test::chamberFrame->updateChamberFrameData();
+	::Test::chamberFrame->setLocalTrans({});
+	::Test::chamberFrame->getLocalToWorld().scale(10.0f, 10.0f);
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
 		if(!drawDebug) return;

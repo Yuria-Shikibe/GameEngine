@@ -6,11 +6,9 @@ export module Core.Renderer;
 
 import std;
 import GL.Buffer.FrameBuffer;
-// import GL.Buffer.MultiSampleFrameBuffer;
 import GL;
 import GL.Shader;
 import Event;
-import Graphic.Mask;
 import Graphic.Color;
 import Graphic.Resizeable;
 import Graphic.PostProcessor;
@@ -137,6 +135,8 @@ export namespace Core{
 
 		virtual void frameBegin(GL::FrameBuffer* frameBuffer, bool resize, const Graphic::Color& initColor, GLbitfield mask);
 
+		virtual void frameBegin_Quiet(GL::FrameBuffer* frameBuffer, bool resize = false);
+
 		void frameBegin(GL::FrameBuffer* frameBuffer){
 			frameBegin(frameBuffer, false, Graphic::Colors::CLEAR);
 		}
@@ -163,7 +163,7 @@ export namespace Core{
 
 		virtual void frameEnd();
 
-		virtual void frameEnd_Quiet();
+		virtual GL::FrameBuffer* frameEnd_Quiet();
 
 		virtual void renderUI();
 

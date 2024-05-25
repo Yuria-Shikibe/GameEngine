@@ -9,18 +9,18 @@ import ext.Concepts;
 
 export namespace GL{
 	template<typename ...Args>
-	struct UniformTupleWrapper{
+	struct UniformArgsWrapper{
 		static constexpr std::size_t size = sizeof...(Args);
 		using ArgsType = std::tuple<Args...>;
 		ArgsType defData{};
 		ArgsType data{};
 
-		[[nodiscard]] constexpr UniformTupleWrapper() noexcept = default;
+		[[nodiscard]] constexpr UniformArgsWrapper() noexcept = default;
 
-		[[nodiscard]] constexpr explicit UniformTupleWrapper(ArgsType&& defParams) noexcept : defData{std::move(defParams)}, data{defData}{}
+		[[nodiscard]] constexpr explicit UniformArgsWrapper(ArgsType&& defParams) noexcept : defData{std::move(defParams)}, data{defData}{}
 
 		template <typename ...T>
-		[[nodiscard]] constexpr explicit UniformTupleWrapper(T&& ...args) noexcept : defData(std::make_tuple(std::forward<T>(args) ... )), data{defData}{}
+		[[nodiscard]] constexpr explicit UniformArgsWrapper(T&& ...args) noexcept : defData(std::make_tuple(std::forward<T>(args) ... )), data{defData}{}
 
 		template <typename ...T>
 			requires requires {requires ext::isArgsSubOf<true, ArgsType, T...>();}
@@ -33,14 +33,14 @@ export namespace GL{
 		}
 
 		template <std::size_t argIndex, bool asReference = false>
-			requires requires{ requires argIndex < UniformTupleWrapper::size; }
+			requires requires{ requires argIndex < UniformArgsWrapper::size; }
 		[[nodiscard]] constexpr typename Concepts::RefConditional<!asReference, std::tuple_element_t<argIndex, ArgsType>>::type
 			get() noexcept{
 			return std::get<argIndex>(data);
 		}
 
 		template <std::size_t argIndex, bool asReference = true>
-			requires requires{ requires argIndex < UniformTupleWrapper::size; }
+			requires requires{ requires argIndex < UniformArgsWrapper::size; }
 		[[nodiscard]] constexpr typename Concepts::RefConditional<!asReference, std::tuple_element_t<argIndex, ArgsType>>::type
 			get() const noexcept{
 			return std::get<argIndex>(data);
@@ -48,10 +48,10 @@ export namespace GL{
 	};
 
 	template<typename ...Args>
-	UniformTupleWrapper(std::tuple<Args...>) -> UniformTupleWrapper<Args...>;
+	UniformArgsWrapper(std::tuple<Args...>) -> UniformArgsWrapper<Args...>;
 
 	template<typename ...Args>
-	UniformTupleWrapper(Args...) -> UniformTupleWrapper<Args...>;
+	UniformArgsWrapper(Args...) -> UniformArgsWrapper<Args...>;
 
 	// template <typename T>
 	// 	// requires std::is_nothrow_constructible_v<T> && std::is_copy_assignable_v<T>

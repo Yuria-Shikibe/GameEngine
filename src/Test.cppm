@@ -106,7 +106,7 @@ export namespace Test{
 
 		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
 		Graphic::Draw::setTexture();
-		Graphic::Frame::rawMesh = Assets::Meshes::raw;
+		Graphic::Frame::rawMesh = Assets::Meshes::raw.get();
 		Graphic::Frame::blitter = Assets::Shaders::blit;
 
 		Core::bundle.load(Assets::Dir::bundle.subFile("bundle.zh_cn.json"), Assets::Dir::bundle.subFile("bundle.def.json"));
@@ -228,6 +228,11 @@ export namespace Test{
 			}
 
 			{
+				auto& ptr = UI::getCursorRaw(UI::CursorType::select_regular);
+				ptr = std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-aim"));
+			}
+
+			{
 
 				UI::setCursorRaw(UI::CursorType::regular,
 					std::make_unique<UI::Cursor>(event.manager->getAtlas().find("ui-cursor-regular")));
@@ -342,7 +347,7 @@ export namespace Test{
 			};
 
 			Font::forwardParser->charParser->shouldNotContinueSet.insert(Font::forwardParser->TokenEndCode);
-			Font::forwardParser->charParser->modifier[Font::forwardParser->TokenEndCode] = [](const Font::ModifierableData& data){
+			Font::forwardParser->charParser->modifier[(Font::forwardParser->TokenEndCode)] = [](const Font::ModifierableData& data){
 				if(data.context.currentColor == Graphic::Colors::GRAY){
 					data.context.currentColor = data.context.fallbackColor;
 				}

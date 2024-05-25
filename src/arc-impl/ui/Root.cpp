@@ -205,10 +205,10 @@ void UI::Root::onScroll() const{
 void UI::Root::onDragUpdate() const{
 	if(currentCursorFocus == nullptr) return;
 
-	for(int i = 0; i < Ctrl::Mouse::Count; ++i){
-		dragAction.begin = cursorPressedBeginPos;
-		dragAction.end = cursorPos;
+	dragAction.begin = cursorPressedBeginPos;
+	dragAction.end = cursorPos;
 
+	for(int i = 0; i < Ctrl::Mouse::Count; ++i){
 		if(onDrag(i)){
 			dragAction.set(cursorVel, i, pressedMouseButtons[i]);
 			currentCursorFocus->getInputListener().fire(dragAction);

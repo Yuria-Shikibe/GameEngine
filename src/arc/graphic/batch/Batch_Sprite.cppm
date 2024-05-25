@@ -51,14 +51,12 @@ export namespace Core{
 		}
 
 		SpriteBatch(Concepts::Invokable<GL::ShaderProgram*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(GL::AttributeLayout&)> auto&& layouter){
-			mesh = std::make_unique<GL::Mesh>([&layouter, this](GL::Mesh& mesh){
-				mesh.getIndexBuffer().setDataRaw(this->indexRef.data(), this->indexRef.size(), GL_STATIC_DRAW);
-				mesh.getVertexBuffer().setDataRaw(this->cachedVertices.data(), maxDataSize);
+			mesh.indexBuffer.setDataRaw(this->indexRef.data(), this->indexRef.size(), GL_STATIC_DRAW);
+			mesh.vertexBuffer.setDataRaw(this->cachedVertices.data(), maxDataSize);
 
-				layouter(mesh.getVertexArray().getLayout());
+			layouter(mesh.vertexArray.getLayout());
 
-				mesh.applyLayout();
-			});
+			mesh.applyLayout();
 
 			generalShader = shader(*this);
 		}
@@ -83,13 +81,13 @@ export namespace Core{
 		void flush() override{
 			if(index == 0)return;
 
-			mesh->bind();
-			mesh->getVertexBuffer().setDataRaw(cachedVertices.data(), index);
+			mesh.bind();
+			mesh.vertexBuffer.setDataRaw(cachedVertices.data(), index);
 
 			bindShader();
 			applyShader();
 
-			mesh->render(Math::min(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH, static_cast<std::size_t>(this->indexRef.size())));
+			mesh.render(Math::min(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH, static_cast<std::size_t>(this->indexRef.size())));
 
 			index = 0;
 		}

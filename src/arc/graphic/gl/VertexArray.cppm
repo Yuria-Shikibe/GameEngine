@@ -15,19 +15,6 @@ export namespace GL{
 		GLenum type{0};
 		GLboolean normalized{0};
 		GLint size{0};
-
-		[[nodiscard]] VertElem(const GLenum type, const GLboolean normalized, const GLint size)
-			: type(type),
-			normalized(normalized),
-			size(size) {
-		}
-
-		[[nodiscard]] VertElem() = default;
-
-		[[nodiscard]] explicit VertElem(const GLint size)
-			: type(GL_FLOAT),
-			size(size) {
-		}
 	};
 
 	class AttributeLayout //TODO make this impl by template and finish layout in compile
@@ -39,7 +26,7 @@ export namespace GL{
 	public:
 		void add(const GLenum type, const GLint size, const GLboolean normalized = false){
 			elems.emplace_back( type, normalized, size );
-			stride += sizeofType(type) * size;
+			stride += GL::sizeofType(type) * size;
 		}
 
 		void addFloat(const GLint size){

@@ -17,7 +17,7 @@ import Graphic.Color;
 import Geom.Rect_Orthogonal;
 import ext.RuntimeException;
 import Assets.Bundle;
-import OS.Ctrl.Bind.Constants;
+export import OS.Ctrl.Bind.Constants;
 
 import std;
 

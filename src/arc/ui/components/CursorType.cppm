@@ -13,7 +13,10 @@ export namespace UI{
 		clickable,
 		regular_tip,
 		clickable_tip,
+
 		select,
+		select_regular,
+
 		textInput,
 		scroll,
 		scrollHori,
