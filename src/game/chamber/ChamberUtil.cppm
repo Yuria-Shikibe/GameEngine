@@ -36,7 +36,7 @@ export namespace Game::ChamberUtil{
 	constexpr ChamberColorRef placed = Colors::WHITE;
 
 	template <typename ET>
-	[[nodiscard]] Graphic::Pixmap saveToPixmap(const ChamberFrame<ET>& frame){
+	[[nodiscard]] Graphic::Pixmap saveToPixmap(const ChamberGrid<ET>& frame){
 		const Geom::OrthoRectInt bound = frame.getTiledBound();
 
 		Graphic::Pixmap map{bound.getWidth(), bound.getHeight()};
@@ -50,8 +50,8 @@ export namespace Game::ChamberUtil{
 	}
 
 	template <typename ET>
-	[[nodiscard]] ChamberFrame<ET> genFrameFromPixmap(const Graphic::Pixmap& map, const Geom::Point2 offset = {}){
-		ChamberFrame<ET> frame{};
+	[[nodiscard]] ChamberGrid<ET> genFrameFromPixmap(const Graphic::Pixmap& map, const Geom::Point2 offset = {}){
+		ChamberGrid<ET> frame{};
 
 		map.each([&frame, offset](const Graphic::Pixmap& pixmap, const int x, const int y){
 			const auto color = pixmap.get(x, y);

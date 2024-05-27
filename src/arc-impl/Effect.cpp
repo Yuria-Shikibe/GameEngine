@@ -20,7 +20,7 @@ Graphic::Effect* Graphic::EffectShake::create(EffectManager* manager, Core::Came
 	auto* eff = suspendOn(manager);
 	fadeSpeed = fadeSpeed > 0 ? fadeSpeed : intensity / 32.f;
 	eff->set({pos, intensity}, Graphic::Colors::CLEAR, intensity / fadeSpeed, camera);
-	eff->zOffset = fadeSpeed;
+	eff->zLayer = fadeSpeed;
 
 	return eff;
 }
@@ -32,6 +32,6 @@ Graphic::Effect* Graphic::EffectShake::create(const Geom::Vec2 pos, const float 
 void Graphic::EffectShake::operator()(Effect& effect) const{
 	if(auto* camera = std::any_cast<Core::Camera2D*>(effect.additionalData)){
 		const float dst = effect.trans.vec.dst(camera->getPosition());
-		camera->shake(getIntensity(dst) * effect.trans.rot, effect.zOffset);
+		camera->shake(getIntensity(dst) * effect.trans.rot, effect.zLayer);
 	}
 }

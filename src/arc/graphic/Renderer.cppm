@@ -88,9 +88,9 @@ export namespace Core{
 
 		[[nodiscard]] Renderer(const int w, const int h):
 			defaultFrameBuffer{w, h, 1, false},
-		uiPostBuffer{w, h, 1, true},
-		effectBuffer{w, h, 1, true},
-		uiBlurMask{w, h, 1, false}{
+			uiPostBuffer{w, h, 1, true},
+			effectBuffer{w, h, 1, true},
+			uiBlurMask{w, h, 1, false}{
 			contextFrameBuffer = &defaultFrameBuffer;
 
 			frameStack.push(contextFrameBuffer);

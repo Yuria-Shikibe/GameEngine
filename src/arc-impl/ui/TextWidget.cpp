@@ -5,7 +5,7 @@ import Graphic.Draw;
 void UI::TextWidget::drawContent() const{
 	Elem::drawContent();
 
-	Graphic::Draw::mixColor(color);
+	Graphic::Draw::Overlay::mixColor(color);
 	glyphLayout->render(maskOpacity);
 
 	// Graphic::Draw::tint(Graphic::Colors::YELLOW, .35f);

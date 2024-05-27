@@ -127,7 +127,7 @@ namespace Core{
 			generalShader->bind();
 		}
 
-		void switchBlending(const Blending blend){
+		void switchBlending(const Blending blend = GL::Blendings::Normal){
 			if(blending != blend){
 				flush();
 			}
@@ -224,6 +224,19 @@ namespace Core{
 		~BatchGuard_L2W(){
 			batch.flush();
 			batch.setLocalToWorld(originalMat);
+		}
+	};
+
+	export struct BatchGuard_Blend : BatchGuard{
+		const GL::Blending blending{};
+
+		[[nodiscard]] explicit BatchGuard_Blend(Batch& batch, const GL::Blending blending)
+			: BatchGuard{batch}, blending{blending}{
+			batch.switchBlending(blending);
+		}
+
+		~BatchGuard_Blend(){
+			batch.switchBlending(blending);
 		}
 	};
 

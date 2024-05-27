@@ -358,5 +358,25 @@ export namespace GL {
     auto getCurFrameBuffer_Read(){
         return currentReadFrameBufferID;
     }
+
+    template <GLenum state>
+    struct StateGurad{
+        template <auto T>
+            requires std::is_enum_v<decltype(T)> && std::same_as<std::underlying_type_t<decltype(T)>, GLenum>
+        [[nodiscard]] StateGurad(decltype(T)){
+            enable(state);
+        }
+
+        [[nodiscard]] StateGurad(){
+            enable(state);
+        }
+
+        ~StateGurad(){
+            disable(state);
+        }
+    };
+
+    template<auto T>
+    StateGurad(decltype(T)) -> StateGurad<static_cast<std::underlying_type_t<decltype(T)>>(T)>;
 }
 

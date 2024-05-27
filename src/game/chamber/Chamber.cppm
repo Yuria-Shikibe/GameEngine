@@ -2,6 +2,7 @@
 // Created by Matrix on 2024/4/18.
 //
 
+// ReSharper disable CppDFAUnreachableCode
 export module Game.Chamber;
 
 export import Geom.Rect_Orthogonal;
@@ -31,28 +32,31 @@ namespace Game{
 export namespace Game{
 	constexpr float TileSize = 8.0f;
 
+	struct ChamberBase{
+		Geom::OrthoRectInt gridBound{};
+		unsigned id{};
+
+		[[nodiscard]] constexpr OrthoRectFloat getEntityBound() const noexcept{
+			return gridBound.as<float>().scl(TileSize, TileSize);
+		}
+	};
+
 	template <typename Entity>
 	struct ChamberTile;
 
 	template <typename Entity>
-	struct Chamber : Core::IO::DynamicJsonSerializable{
+	struct Chamber : ChamberBase, Core::IO::DynamicJsonSerializable{
 		using EntityType = Entity;
-		Geom::OrthoRectInt region{};
-		unsigned id{};
 
 		std::vector<Chamber*> proximity{};
 
-		OrthoRectFloat getChamberBound() const{
-			return region.as<float>().scl(TileSize, TileSize);
-		}
-
 		void writeTo(ext::json::JsonValue& jval) const override{
 			writeType(jval);
-			jval.append(ChamberRegionFieldName, ext::json::getJsonOf(region));
+			jval.append(ChamberRegionFieldName, ext::json::getJsonOf(gridBound));
 		}
 
 		void readFrom(const ext::json::JsonValue& jval) override{
-			ext::json::getValueTo(region, jval.asObject().at(ChamberRegionFieldName));
+			ext::json::getValueTo(gridBound, jval.asObject().at(ChamberRegionFieldName));
 		}
 
 		virtual ext::Owner<Chamber*> copy(){ //TODO temp test impl, garbage
@@ -85,106 +89,47 @@ export namespace Game{
 
 	template <typename Entity>
 	struct ChamberTile{
+		// using EntityType = int;
+		using EntityType = Entity;
 		Point2 pos{};
-		/** Usage for multi tile*/
-		ChamberTile* referenceTile{nullptr};
 
-		std::unique_ptr<Chamber<Entity>> chamber{};
+		std::shared_ptr<Chamber<EntityType>> chamber{};
 
-		[[nodiscard]] ChamberTile() = default;
-
-		[[nodiscard]] explicit ChamberTile(const Point2& pos)
-			: pos{pos}{}
-
-		[[nodiscard]] ChamberTile(const Point2& pos, ChamberTile* referenceTile)
-			: pos{pos},
-			  referenceTile{referenceTile}{}
-
-		[[nodiscard]] ChamberTile(const Point2& pos, ChamberTile* referenceTile,
-			const std::unique_ptr<Chamber<Entity>>& chamber)
-			: pos{pos},
-			  referenceTile{referenceTile},
-			  chamber{chamber}{}
-
-		ChamberTile(const ChamberTile& other)
-			: pos{other.pos},
-			  chamber{std::unique_ptr<Chamber<Entity>>{other.chamber ? other.chamber->copy() : nullptr}}{}
-
-		ChamberTile& operator=(const ChamberTile& other){
-			if(this == &other) return *this;
-			pos = other.pos;
-			chamber.reset(other.chamber->copy());
-			return *this;
+		[[nodiscard]] bool valid() const noexcept{
+			return chamber != nullptr;
 		}
 
-		ChamberTile(ChamberTile&& other) noexcept
-			: pos{std::move(other.pos)},
-			  referenceTile{other.referenceTile},
-			  chamber{std::move(other.chamber)}{}
-
-		ChamberTile& operator=(ChamberTile&& other) noexcept{
-			if(this == &other) return *this;
-			pos = std::move(other.pos);
-			referenceTile = other.referenceTile;
-			chamber = std::move(other.chamber);
-			return *this;
-		}
-
-		[[nodiscard]] bool valid() const {
-			//Not chain query, only one-depth reference is allowed
-			return ownsChamber() || (referenceTile && referenceTile->ownsChamber());
+		[[nodiscard]] explicit operator bool() const noexcept{
+			return valid();
 		}
 
 		/**
 		 * @return Whether this tile works by its reference tile
 		 */
 		[[nodiscard]] bool refOnly() const {
-			//Not chain query, only one-depth reference is allowed
-			return !ownsChamber() && referenceTile && referenceTile->ownsChamber();
+			return valid() && chamber->gridBound.getSrc() != pos;
 		}
 
-		[[nodiscard]] bool ownsChamber() const{
-			return !referenceTile && static_cast<bool>(chamber);
+		[[nodiscard]] bool isOwner() const {
+			return valid() && chamber->gridBound.getSrc() == pos;
 		}
 
-		[[nodiscard]] bool isSubTile() const{
-			return static_cast<bool>(referenceTile);
-		}
+		// void init() const{
+		// 	if(!isOwner()) return;
+		// 	// chamber->init(this);
+		// }
 
-		template <Concepts::InvokeNullable<void(const ChamberTile&)> DrawPred = std::nullptr_t>
-		void draw(DrawPred&& fallbackDrawer = nullptr) const{
-			if(!ownsChamber()){
-				if constexpr(!std::same_as<DrawPred, std::nullptr_t>){
-					fallbackDrawer(*this);
-				}
-
-				return;
-			}
-			chamber->draw();
-		}
-
-		void init() const{
-			if(!ownsChamber()) return;
-			chamber->init(this);
-		}
-
-		void setReference(ChamberTile& referenceTile){
-			if(ownsChamber() || !referenceTile.ownsChamber() || !referenceTile.chamber->region.containsPos_edgeInclusive(pos)){
-				throw ext::IllegalArguments{std::format("Wrongly Set a refernece tile")};
+		[[nodiscard]] Geom::Point2 getOffsetToRef() const noexcept{
+			if(refOnly()){
+				return pos - chamber->gridBound.getSrc();
 			}
 
-			this->referenceTile = &referenceTile;
-			chamber.reset();
+			return {};
 		}
 
-		void setReference(std::nullptr_t) noexcept{
-			this->referenceTile = nullptr;
-			chamber.reset();
-		}
-
-		[[nodiscard]] Geom::Point2 getOffsetToRef() const {
-			if(isSubTile()){
-				return pos - referenceTile->pos;
+		[[nodiscard]] Geom::Point2 getPosOfRef() const noexcept{
+			if(refOnly()){
+				return chamber->gridBound.getSrc();
 			}
 
 			return {};
@@ -194,12 +139,12 @@ export namespace Game{
 			return Geom::OrthoRectFloat{TileSize * pos.x, TileSize * pos.y, TileSize, TileSize};
 		}
 
-		[[nodiscard]] Geom::OrthoRectInt getChamberRegion() const noexcept{
-			return ownsChamber() ? chamber->region : Geom::OrthoRectInt{pos.x, pos.y, 1, 1};
+		[[nodiscard]] Geom::OrthoRectInt getChamberGridBound() const noexcept{
+			return valid() ? chamber->gridBound : Geom::OrthoRectInt{pos.x, pos.y, 1, 1};
 		}
 
-		[[nodiscard]] Geom::OrthoRectFloat getChamberRealRegion() const noexcept{
-			return ownsChamber() ? chamber->getChamberBound() : getTileBound();
+		[[nodiscard]] Geom::OrthoRectFloat getChamberRegion() const noexcept{
+			return valid() ? chamber->getEntityBound() : getTileBound();
 		}
 
 		friend bool operator==(const ChamberTile& lhs, const ChamberTile& rhs) noexcept { return lhs.pos == rhs.pos; }
@@ -287,7 +232,7 @@ export namespace Game{
 			tile.pos = region.getSrc();
 
 			if(tile.chamber){
-				tile.chamber->region = region;
+				tile.chamber->gridBound = region;
 			}else{
 				if(region.area() != 1){
 					throw ext::IllegalArguments{"Emply Tile Should Always Have Area of 1!"};
@@ -356,7 +301,7 @@ export namespace Game{
 		static void write(ext::json::JsonValue& jval, const Game::ChamberTile<Entity>& data){
 			ext::json::append(jval, ext::json::keys::Pos, data.pos);
 
-			if(data.ownsChamber()){
+			if(data.isOwner()){
 				ext::json::JsonValue chamberJval{};
 				chamberJval.asObject();
 				data.chamber->writeType(chamberJval);
@@ -379,9 +324,9 @@ export namespace Game{
 					data.chamber = mockFactory.genChamber();
 
 					if(chamberJval.asObject().contains(Game::ChamberRegionFieldName)){
-						ext::json::getValueTo(data.chamber->region, chamberJval.asObject().at(Game::ChamberRegionFieldName));
+						ext::json::getValueTo(data.chamber->gridBound, chamberJval.asObject().at(Game::ChamberRegionFieldName));
 					}else{
-						data.chamber->region.setSrc(data.pos);
+						data.chamber->gridBound.setSrc(data.pos);
 					}
 
 				}

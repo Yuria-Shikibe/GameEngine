@@ -195,7 +195,7 @@ ext::MemberEqualTo<Font::FontData_Preload, &Font::FontData_Preload::charCode>>;
 export namespace Font{
 	struct FontData {
 		std::unordered_map<CharCode, CharData> charDatas{};
-		float lineSpacingMin{-1};
+		float lineSpacingDef{-1};
 
 		explicit FontData(const PreloadDataSet& datas){
 			for (auto&& data : datas){
@@ -288,6 +288,8 @@ export namespace Font{
 
 		const FontFlags* fallback{nullptr};
 
+
+
 		[[nodiscard]] FontFlags(
 			const OS::File& fontFile,
 			const std::vector<CharCode>& segments,
@@ -327,8 +329,6 @@ export namespace Font{
 					exitLoad(fullname());
 				}
 			}
-
-			FT_Set_Pixel_Sizes(face, 0, size);
 
 			if(const auto state = FT_Load_Char(face, charCode, loadFlags); state != 0) {
 				if(state == FT_Err_Invalid_Glyph_Index) {
@@ -493,11 +493,8 @@ export namespace Font{
 					supportedFonts[i].insert(value->internalID);
 				}
 
-				//Set font char texture region uv
-				for(auto& charData : value->data->charDatas | std::ranges::views::values) {
-					if(value->data->lineSpacingMin < 0) {
-						value->data->lineSpacingMin = Math::max(normalizeLen(charData.glyphMatrices.height), value->data->lineSpacingMin);
-					}
+				if(value->data->lineSpacingDef < 0) {
+					value->data->lineSpacingDef = normalizeLen(value->face->size->metrics.ascender);
 				}
 
 				//The pixmap data for a single font wont be needed anymore in all cases, release it if possible;
@@ -593,6 +590,7 @@ export namespace Font{
 			PreloadDataSet fontDatas{};
 
 			// Graphic::Pixmap maxMap{};
+			FT_Set_Pixel_Sizes(params.face, 0, params.size);
 
 			if(needCache){
 				for (const CharCode i : params.segments){
@@ -721,11 +719,6 @@ export namespace Font{
 			assignID();
 			setProgress(0.8f);
 
-			//TODO is this necessary?
-			for (const auto& flag : flags) {
-				flag->freeFontFace();
-			}
-
 			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
 			//FontsManager obtain the texture from the total cache; before this no texture should be generated!
 			if(quickInit) {
@@ -735,7 +728,6 @@ export namespace Font{
 					atlas = std::make_unique<FontAtlas>(flags);
 				}).get();
 			}
-
 
 			setProgress(0.95f);
 

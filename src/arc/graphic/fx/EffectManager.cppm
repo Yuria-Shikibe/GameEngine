@@ -23,23 +23,26 @@ export namespace Graphic{
 		std::vector<Effect*> toRemove{};
 		std::stack<PoolType::UniquePtr> waiting{};
 
-		std::mutex suspendLock{};
+		std::shared_mutex effectMtx{};
 
 	public:
 		void update(const float delta){
 			toRemove.clear();
 
+			//TODO parallar update support
+			//TODO uses map + itr in toRemove
 			for(auto& effect : activatedEffects){
-				if(effect->update(delta)){
+				if(std::shared_lock guard{effectMtx}; effect->update(delta)){
 					toRemove.push_back(effect.get());
 				}
 			}
 
-			for(const auto& effect : toRemove){
-				if(const auto& itr = activatedEffects.extract(effect)){
-					waiting.push(std::move(itr.value()));
+			if(!toRemove.empty())
+				for(std::unique_lock guard{effectMtx}; const auto effect : toRemove){
+					if(const auto& itr = activatedEffects.extract(effect)){
+						waiting.push(std::move(itr.value()));
+					}
 				}
-			}
 		}
 
 		[[nodiscard]] Effect* suspend(){
@@ -47,7 +50,7 @@ export namespace Graphic{
 
 			{
 				PoolType::UniquePtr ptr;
-				std::scoped_lock gurad{suspendLock};
+				std::unique_lock guard{effectMtx};
 				if(waiting.empty()){
 					ptr = effectPool.obtainUnique();
 				}else{

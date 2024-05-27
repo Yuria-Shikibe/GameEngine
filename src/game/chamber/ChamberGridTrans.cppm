@@ -20,13 +20,15 @@ export namespace Game{
 	 * @brief This frame should be workable on a async thread
 	 */
 	//TODO using template maybe, to support different types
+
+	// using Entity = int;
 	template <typename Entity>
-	class ChamberFrameTrans{
+	class ChamberGridTrans{
 		static constexpr float ExtendSize{100};
-		using FrameType = ChamberFrame<Entity>;
+		using FrameType = ChamberGrid<Entity>;
 
 		Geom::Transform localTrans{};
-		ChamberFrame<Entity> frameData{};
+		ChamberGrid<Entity> frameData{};
 		typename FrameType::TileBrief drawable{};
 
 		/** @brief Local draw usage*/
@@ -36,7 +38,7 @@ export namespace Game{
 		Geom::QuadBox lastViewport{};
 
 	public:
-		[[nodiscard]] ChamberFrameTrans() = default;
+		[[nodiscard]] ChamberGridTrans() = default;
 
 		void updateChamberFrameData(){
 			frameBound = frameData.getBound();
@@ -93,7 +95,7 @@ export namespace Game{
 			frameData.getQuadTree().intersectRegion(lastViewport, [](const auto& rect, const auto& quad){
 				return quad.overlapRough(rect) && quad.overlapExact(rect);
 			}, [this](const ChamberTile<Entity>* tile, const Geom::QuadBox& view){
-				if(tile->ownsChamber()){
+				if(tile->isOwner()){
 					drawable.owners.push_back(tile->chamber.get());
 				}
 

@@ -34,10 +34,7 @@ export namespace Assets::Effects{
 			using namespace Graphic;
 			const auto& [trail] = std::any_cast<Data&>(effect.additionalData);
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
-
-			Draw::setZ(effect.zOffset);
+			Draw::World::setZ(effect.zLayer);
 			trail.each<Graphic::Trail::DefDraw, false>(effect.trans.rot, Graphic::Trail::DefDraw{effect.color},
 			                                           trail.size() * effect.progress.get());
 		}
@@ -61,10 +58,7 @@ export namespace Assets::Effects{
 			using namespace Graphic;
 			const auto& [trail, endColor] = std::any_cast<Data&>(effect.additionalData);
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
-
-			Draw::setZ(effect.zOffset);
+			Draw::World::setZ(effect.zLayer);
 			trail.each(effect.trans.rot, Graphic::Trail::DefDraw_WithLerp{effect.color, endColor},
 			           trail.size() * effect.progress.get());
 		}
@@ -93,87 +87,84 @@ export namespace Assets::Effects{
 	std::unique_ptr<Graphic::EffectDrawer>
 		circleOut = Graphic::makeEffect(60.0f, [](const Graphic::Effect& effect){
 			using namespace Graphic;
+			using Draw::World;
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
-
-			Draw::setZ(effect.zOffset);
-			Draw::color(Colors::WHITE, effect.color, effect.progress.getMargin(0.35f));
-			Draw::Line::setLineStroke(effect.progress.getInv() * 4.5f);
-			Draw::Line::circle<BatchWorld>(effect.trans.vec.x, effect.trans.vec.y,
-			                               effect.progress.get(Math::Interp::pow2Out) * 120.0f);
+			World::setZ(effect.zLayer);
+			World::color(Colors::WHITE, effect.color, effect.progress.getMargin(0.35f));
+			World::Line::setLineStroke(effect.progress.getInv() * 4.5f);
+			World::Line::circle(effect.trans.vec.x, effect.trans.vec.y,
+			                    effect.progress.get(Math::Interp::pow2Out) * 120.0f);
 		}),
 
 		squareOut = Graphic::makeEffect(60.0f, [](const Graphic::Effect& effect){
 			using namespace Graphic;
+			using Draw::World;
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
-
-			Draw::setZ(effect.zOffset);
-			Draw::color(Colors::WHITE, effect.color, effect.progress.getMargin(0.35f));
-			Draw::Line::setLineStroke(effect.progress.getInv() * 4.5f);
-			Draw::Line::square<BatchWorld>(effect.trans.vec.x, effect.trans.vec.y,
-			                               effect.progress.get(Math::Interp::pow2Out) * 120.0f, 45);
+			World::setZ(effect.zLayer);
+			World::color(Colors::WHITE, effect.color, effect.progress.getMargin(0.35f));
+			World::Line::setLineStroke(effect.progress.getInv() * 4.5f);
+			World::Line::square(effect.trans.vec.x, effect.trans.vec.y,
+			                    effect.progress.get(Math::Interp::pow2Out) * 120.0f, 45);
 		}),
 
 		sparkLarge = Graphic::makeEffect(60.0f, [](const Graphic::Effect& e){
 			using namespace Graphic;
+			using Draw::World;
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
+			World::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
+			World::Line::setLineStroke(e.progress.getInv() * 8.6f);
 
-			Draw::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
-			Draw::Line::setLineStroke(e.progress.getInv() * 8.6f);
-
-			Draw::setZ(e.zOffset);
+			World::setZ(e.zLayer);
 			splashVec(e.handle, {
 				          .count = 18, .progress = e.progress.get(Math::Interp::pow2Out) * 27.0f,
 				          .radius = {3, 15}
 			          },
 			          [vecSrc = e.trans.vec, progress = e.progress.getInv()](const auto vec2, auto& rand){
-				          Draw::Line::lineAngle<BatchWorld>(
+				          World::Line::lineAngle(
 					          {vecSrc + vec2, vec2.angle()},
 					          progress * rand.random(12.0f, 33.0f) + 2.0f
 				          );
 			          });
 		}),
 
-		explode = Graphic::makeEffect(100.0f, 100.0f, [](const Graphic::Effect& e){
-			                              using Math::Interp::operator|;
-			                              using namespace Graphic;
+		explode = Graphic::makeEffect(
+			100.0f,
+			100.0f,
+			[](const Graphic::Effect& e){
+				using Math::Interp::operator|;
+				using namespace Graphic;
+				using Draw::World;
 
-			                              [[maybe_unused]] ext::Guard<
-				                              Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				                              {Draw::globalState, Draw::globalState.defaultLightTexture};
+				World::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
+				World::setZ(e.zLayer);
 
-			                              Draw::color(e.color, Colors::WHITE, e.progress.getInv() * 0.3f);
-			                              Draw::setZ(e.zOffset);
+				World::Line::setLineStroke(e.progress.getInv() * 7.f);
+				World::Line::circle(e.trans.vec.x, e.trans.vec.y,
+				                   e.progress.get(Math::Interp::pow3Out) * e.trans
+				                                                            .rot * 1.4f);
 
-			                              Draw::Line::setLineStroke(e.progress.getInv() * 7.f);
-			                              Draw::Line::circle<BatchWorld>(e.trans.vec.x, e.trans.vec.y,
-			                                                             e.progress.get(Math::Interp::pow3Out) * e.trans
-			                                                             .rot * 1.4f);
-
-			                              splashVec(e.handle, {
-				                                        .count = 18, .progress = e.progress.get(Math::Interp::pow2Out),
-				                                        .radius = {e.trans.rot * 0.3f, e.trans.rot * 1.25f}
-			                                        },
-			                                        [&e](const Geom::Vec2 vec2, Math::Rand& rand){
-				                                        const auto [x, y] = e.trans.vec + vec2;
-				                                        Draw::color(Colors::DARK_GRAY, Colors::GRAY,
-				                                                    rand.random(0.1f, 0.5f));
-				                                        Draw::Fill::circle<BatchWorld>(x, y,
-					                                        (e.progress.getInv() | Math::Interp::pow2In) * rand.random(
-						                                        e.trans.rot * 0.2f, e.trans.rot * 0.6f) + 2.0f);
-			                                        });
-		                              }, [](const float clip, const Graphic::Effect& e){
-			                              return Geom::OrthoRectFloat{
-					                              Math::max(
-						                              clip, e.progress.get(Math::Interp::pow3Out) * e.trans.rot * 1.4f *
-						                              2.0f)
-				                              }.setCenter(e.trans.vec);
-		                              });
+				splashVec(e.handle, {
+					          .count = 18, .progress = e.progress.get(Math::Interp::pow2Out),
+					          .radius = {e.trans.rot * 0.3f, e.trans.rot * 1.25f}
+				          },
+				          [&e](const Geom::Vec2 vec2, Math::Rand& rand){
+					          const auto [x, y] = e.trans.vec + vec2;
+					          World::color(Colors::DARK_GRAY, Colors::GRAY,
+					                       rand.random(0.1f, 0.5f));
+					          World::Fill::circle(
+						          x, y,
+						          (e.progress.getInv() | Math::Interp::pow2In) * rand.random(
+							          e.trans.rot * 0.2f,
+							          e.trans.rot * 0.6f
+						          ) + 2.0f
+					          );
+				          });
+			}, [](const float clip, const Graphic::Effect& e){
+				return Geom::OrthoRectFloat{
+						e.trans.vec,
+						Math::max(clip, e.progress.get(Math::Interp::pow3Out) * e.trans.rot * 1.4f * 2.0f)
+					};
+			});
 
 	// EffectDrawer_Func<[](const Graphic::Effect& effect){
 	// 	Draw::color(Colors::WHITE, effect.color, effect.progress.getMargin(0.35f));

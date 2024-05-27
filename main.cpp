@@ -1,4 +1,3 @@
-
 #include <glad/glad.h>
 
 #include "src/application_head.h"
@@ -587,14 +586,14 @@ REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
 void setupBaseDraw(){
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
-		Graphic::Batch::flush();
+		Graphic::Draw::Overlay::getBatch().flush();
 		Core::uiRoot->drawCursor();
-		Graphic::Batch::flush();
+		Graphic::Draw::Overlay::getBatch().flush();
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->drawBeneathUI(e.renderer);
-		Graphic::Batch::flush();
+		Graphic::Draw::Overlay::getBatch().flush();
 	});
 }
 
@@ -609,7 +608,7 @@ int main(const int argc, char* argv[]){
 
 	Core::audio->engine->setSoundVolume(0.5f);
 
-	::Test::chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	::Test::chamberFrame = std::make_unique<Game::ChamberGridTrans<Game::SpaceCraft>>();
 
 	if(true){
 		Game::core->overlayManager->activate();
@@ -630,7 +629,7 @@ int main(const int argc, char* argv[]){
 	setupBaseDraw();
 
 
-	::Test::chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+	::Test::chamberFrame = std::make_unique<Game::ChamberGridTrans<Game::SpaceCraft>>();
 	::Test::loadChamberTest();
 
 	Core::uiRoot->registerScene<Game::Scenes::MainMenu>(UI::Menu_Main);
@@ -649,7 +648,7 @@ int main(const int argc, char* argv[]){
 			Assets::PostProcessors::blurX_World.get(), Assets::PostProcessors::blurY_World.get(),
 			Assets::Shaders::merge
 		};
-	// merger.blur.setScale(0.5f);
+	merger.blur.setScale(0.5f);
 	merger.blur.setProcessTimes(4);
 	merger.setTargetState(GL::State::BLEND, true);
 
@@ -672,10 +671,10 @@ int main(const int argc, char* argv[]){
 		// event.renderer->effectBuffer.bind();
 		event.renderer->frameBegin(&frameBuffer);
 
-		Draw::Line::setLineStroke(5);
-		Draw::color(Colors::GRAY);
+		Draw::Overlay::Line::setLineStroke(5);
+		Draw::Overlay::color(Colors::GRAY);
 		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t){
-			Draw::Line::rectOrtho(t->getBoundary());
+			Draw::Overlay::Line::rectOrtho(t->getBoundary());
 		});
 
 		Game::EntityManage::renderDebug();
@@ -712,7 +711,7 @@ int main(const int argc, char* argv[]){
 
 		Game::core->effectManager->render(Core::camera->getViewport());
 
-		Graphic::Batch::flush<BatchWorld>();
+		Graphic::Draw::World::getBatch().flush();
 
 		GL::disable(GL::Test::DEPTH);
 		GL::setDepthMask(false);
@@ -729,11 +728,11 @@ int main(const int argc, char* argv[]){
 	::Test::chamberFrame->getLocalToWorld().scale(10.0f, 10.0f);
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
-		if(!drawDebug) return;
+		// if(!drawDebug) return;
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 
-		Graphic::Batch::blend<>();
+		Graphic::Draw::Overlay::getBatch().flush();
 		/*//
 		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
 		::Game::Draw::chamberFrameTile(*chamberFrame, Core::renderer, true);
@@ -763,28 +762,25 @@ int main(const int argc, char* argv[]){
 		}
 		*/
 
-		Graphic::Batch::blend();
-
-		Draw::Line::setLineStroke(4);
+		Graphic::Draw::Overlay::getBatch().switchBlending();
 
 		{
-			static Geom::Matrix3D mat{};
-
-			Graphic::Batch::beginPorj(mat.setOrthogonal(Core::renderer->getSize()));
-			Draw::color();
+			Core::BatchGuard_Proj _{Graphic::Draw::Overlay::getBatch()};
+			_.current.setOrthogonal(Core::renderer->getSize());
 
 			auto [x, y] = Core::renderer->getSize().scl(0.5f);
-			Draw::Line::square(x, y, 50, 45);
-			Draw::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+
+			using Graphic::Draw::Overlay;
+
+			Overlay::color(Graphic::Colors::PALE_GREEN);
+			Overlay::Line::setLineStroke(4.f);
+			Overlay::Line::square(x, y, 50, 45);
+			Overlay::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
 			                 Colors::SKY.copy().setA(0.55f), Colors::ROYAL.copy().setA(0.55f),
 			                 Colors::SKY.copy().setA(0.55f), Colors::WHITE.copy().setA(0.55f),
 			                 Colors::ROYAL.copy().setA(0.55f), Colors::SKY.copy().setA(0.55f)
 			);
-
-			Graphic::Batch::endPorj();
 		}
-
-		Graphic::Batch::flush();
 
 		e.renderer->frameEnd(Assets::PostProcessors::blendMulti.get());
 		e.renderer->frameEnd(Assets::PostProcessors::bloom.get());

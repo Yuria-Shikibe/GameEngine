@@ -49,16 +49,18 @@ void UI::Root::drawCursor() const{
 	const auto& cursor = getCursor(currentCursorType);
 
 	if(Core::input.cursorInbound()){
-		Draw::mixColor();
-		Draw::color(Colors::WHITE);
-		Batch::beginPorj(Geom::MAT3_IDT);
-		Batch::blend(GL::Blendings::Inverse);
+		//TODO not use normalized draw!
+		Draw::Overlay::mixColor();
+		Draw::Overlay::color(Colors::WHITE);
+		Draw::Overlay::getBatch().beginTempProjection(Geom::MAT3_IDT);
+		Draw::Overlay::getBatch().switchBlending(GL::Blendings::Inverse);
 
 		auto [x, y] = Core::renderer->getNormalized(cursorPos);
 		cursor.draw(x, y, Core::renderer->getSize());
 
-		Batch::endPorj();
-		Batch::blend();
+		Draw::Overlay::getBatch().endTempProjection();
+		Draw::Overlay::getBatch().switchBlending();
+
 	}
 }
 

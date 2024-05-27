@@ -115,19 +115,21 @@ export namespace Game {
 		// }
 
 		void drawBeneathUI(Core::Renderer* renderer) const override{
+			using namespace Graphic;
+			using Draw::Overlay;
 			static auto coordText = Font::obtainLayoutPtr();
 			renderer->frameBegin(&renderer->effectBuffer);
 			for(auto& entity : selected){
 				if(!entity->controller->moveCommand.shouldDrawUI())continue;
-				Draw::Line::setLineStroke(3.0f + (entity->controller->moveCommand.isAssigningRoute() ? 0 : 3));
-				Draw::color(Colors::SLATE);
+				Overlay::Line::setLineStroke(3.0f + (entity->controller->moveCommand.isAssigningRoute() ? 0 : 3));
+				Overlay::color(Colors::SLATE);
 
-				Draw::Line::setLerpColor(Colors::SLATE, Colors::AQUA);
-				Draw::Line::beginLineVert();
-				Draw::Line::push(entity->controller->moveCommand.route);
-				Draw::Line::endLineVert([](const Geom::Vec2 p, const Graphic::Color color){
-					Draw::color(color);
-					Draw::Fill::square(p.x, p.y, 14, 45);
+				Overlay::Line::setLerpColor(Colors::SLATE, Colors::AQUA);
+				Overlay::Line::beginLineVert();
+				Overlay::Line::push(entity->controller->moveCommand.route);
+				Overlay::Line::endLineVert([](const Geom::Vec2 p, const Graphic::Color color){
+					Overlay::color(color);
+					Overlay::Fill::square(p.x, p.y, 14, 45);
 				});
 
 				auto dest = entity->controller->moveCommand.destination;
@@ -139,19 +141,19 @@ export namespace Game {
 				coordText->render();
 
 				const auto next = entity->controller->moveCommand.nextDest();
-				Draw::Line::square(next.x, next.y, 25, 45);
+				Overlay::Line::square(next.x, next.y, 25, 45);
 
-				Draw::Line::setLineStroke(5);
-				Draw::color(Colors::BRICK);
-				Draw::Line::line(entity->controller->moveCommand.curTrans.vec, entity->controller->moveCommand.destination);
+				Overlay::Line::setLineStroke(5);
+				Overlay::color(Colors::BRICK);
+				Overlay::Line::line(entity->controller->moveCommand.curTrans.vec, entity->controller->moveCommand.destination);
 			}
 
-			Draw::color(Colors::RED_DUSK);
-			Draw::Line::setLineStroke(3);
+			Overlay::color(Colors::RED_DUSK);
+			Overlay::Line::setLineStroke(3);
 
 			for(auto& realityEntity : selected){
 				for (auto turretTarget : realityEntity->controller->turretTargets){
-					Draw::Line::square(turretTarget.x, turretTarget.y, 32, 45);
+					Overlay::Line::square(turretTarget.x, turretTarget.y, 32, 45);
 				}
 			}
 

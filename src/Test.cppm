@@ -102,8 +102,9 @@ export namespace Test{
 			Core::renderer->registerSynchronizedResizableObject(Core::camera);
 		});
 
-		Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
-		Graphic::Draw::setTexture();
+		Graphic::Draw::World::setDefTexture(&Assets::Textures::whiteRegion);
+		Graphic::Draw::Overlay::setDefTexture(&Assets::Textures::whiteRegion);
+
 		Graphic::Frame::rawMesh = Assets::Meshes::raw.get();
 		Graphic::Frame::blitter = Assets::Shaders::blit;
 
@@ -198,12 +199,18 @@ export namespace Test{
 				texture2D->setScale(GL::TexParams::mipmap_linear_linear);
 			}
 
+
 			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("base-white-solid");
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
-			Graphic::Draw::globalState.defaultSolidTexture = Graphic::Draw::getDefaultTexture();
 
 			auto lightRegion = event.manager->getAtlas().find("base-white-light");
-			Graphic::Draw::globalState.defaultLightTexture = lightRegion;
+
+			Graphic::Draw::Overlay::setDefTexture(&Assets::Textures::whiteRegion);
+
+			Graphic::Draw::World::defaultSolidTexture = Graphic::Draw::Overlay::getDefaultTexture();
+			Graphic::Draw::World::defaultLightTexture = lightRegion;
+			Graphic::Draw::World::setDefTexture(lightRegion);
+
 			const_cast<GL::TextureRegionRect*>(lightRegion)->shrinkEdge(15.0f);
 
 			for(auto& texture : event.manager->getAtlas().getPage("ui").getTextures()){
@@ -213,9 +220,6 @@ export namespace Test{
 			for(auto& texture : event.manager->getAtlas().getPage(MainPageName).getTextures()){
 				texture->setScale(GL::TexParams::mipmap_linear_nearest, GL::TexParams::nearest);
 			}
-
-			Graphic::Draw::setDefTexture(&Assets::Textures::whiteRegion);
-			Graphic::Draw::setTexture();
 
 			UI::Styles::load(event.manager->getAtlas());
 

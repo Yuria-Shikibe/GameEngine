@@ -8,46 +8,47 @@ import UI.ProgressBar;
 import UI.SliderBar;
 
 using namespace Graphic;
+using Draw::Overlay;
 
 void UI::SliderBarDrawer::draw(const SliderBar* sliderBar) const{
 	//TODO trans these into the slide bar drawer
 	Rect rect = sliderBar->getValidBound().move(sliderBar->getAbsSrc());
 
-	Draw::color(Colors::LIGHT_GRAY);
-	Draw::alpha(0.15f + (sliderBar->isPressed() ? 0.1f : 0.0f));
-	Draw::rectOrtho(Draw::getDefaultTexture(), rect);
-	Draw::alpha();
+	Overlay::color(Colors::LIGHT_GRAY);
+	Overlay::alpha(0.15f + (sliderBar->isPressed() ? 0.1f : 0.0f));
+	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect);
+	Overlay::alpha();
 
-	Draw::color(Colors::GRAY);
+	Overlay::color(Colors::GRAY);
 	rect.setSize(sliderBar->getBarDrawSize());
 	rect.move(sliderBar->getBarCurPos());
-	Draw::rectOrtho(Draw::getDefaultTexture(), rect);
+	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect);
 
-	Draw::color(Colors::LIGHT_GRAY);
+	Overlay::color(Colors::LIGHT_GRAY);
 	rect.setSrc(sliderBar->getAbsSrc() + sliderBar->getBorder().bot_lft() + sliderBar->getBarLastPos());
-	Draw::rectOrtho(Draw::getDefaultTexture(), rect);
+	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect);
 }
 
 void UI::ProgressBarDrawer::draw(const ProgressBar* progressBar) const{
 	Rect bound = progressBar->getValidBound().move(progressBar->getAbsSrc());
 
-	Draw::color(Colors::DARK_GRAY);
-	Draw::rectOrtho(Draw::getDefaultTexture(), bound);
+	Overlay::color(Colors::DARK_GRAY);
+	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), bound);
 
 	bound.sclSize(progressBar->getDrawProgress(), 1.0f);
-	Draw::color(Colors::LIGHT_GRAY);
-	Draw::rectOrtho(Draw::getDefaultTexture(), bound);
+	Overlay::color(Colors::LIGHT_GRAY);
+	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), bound);
 }
 
 void UI::TextureRegionRectDrawable::draw(const Geom::OrthoRectFloat rect) const {
 #ifdef _DEBUG
-	if(!texRegion)throw ext::NullPointerException{"Null Tex On Draw Call!"};
+	if(!texRegion)throw ext::NullPointerException{"Null Tex On Overlay Call!"};
 #endif
-	Draw::rectOrtho(texRegion, rect);
+	Overlay::Fill::rectOrtho(texRegion, rect);
 }
 
 void UI::DrawPair::draw(const UI::Elem* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {
-	Draw::color(color, alphaScl * color.a);
+	Overlay::color(color, alphaScl * color.a);
 	region->draw(rect);
 }
 
@@ -57,7 +58,7 @@ void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 
 	float alphaScl = elem->selfMaskOpacity * elem->maskOpacity;
 
-	Draw::mixColor(elem->tempColor);
+	Overlay::mixColor(elem->tempColor);
 	const Rect rect = elem->getBound().setSrc(elem->getAbsSrc());
 	base.draw(elem, alphaScl, rect);
 	edge.draw(elem, alphaScl, rect);
@@ -94,22 +95,22 @@ void UI::EdgeDrawer::drawStyle(const UI::Elem* elem) const {
 	elem->tempColor = elem->color;
 	Color& color = elem->tempColor;
 	elem->tempColor.a *= elem->maskOpacity;
-	Draw::mixColor(elem->tempColor);
+	Overlay::mixColor(elem->tempColor);
 
 	if(elem->isCursorInbound()) {
 		color.mul(1.1f).lerp(Colors::WHITE, 0.3f);
-		Draw::color(color);
-		Draw::alpha(elem->isPressed() ? 0.5f : 0.2f);
-		Draw::rectOrtho(Draw::getDefaultTexture(), elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+		Overlay::color(color);
+		Overlay::alpha(elem->isPressed() ? 0.5f : 0.2f);
+		Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	}
 
 
-	Draw::color(color);
-	Draw::Line::setLineStroke(1.0f);
-	Draw::alpha(color.a * elem->maskOpacity);
-	Draw::Line::rectOrtho(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+	Overlay::color(color);
+	Overlay::Line::setLineStroke(1.0f);
+	Overlay::alpha(color.a * elem->maskOpacity);
+	Overlay::Line::rectOrtho(elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 
-	Draw::reset();
+	Overlay::reset();
 }
 
 void UI::EmptyDrawer::applyToElem(UI::Elem* elem){

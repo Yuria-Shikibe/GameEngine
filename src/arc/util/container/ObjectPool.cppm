@@ -129,12 +129,14 @@ export namespace ext{
         }
 
         void store(std::unique_ptr<T>&& ptr){
+            ptr.get()->~T();
             this->store(ptr.release());
         }
 
-        void store(T* ptr) {
+        void store(ext::Owner<T*> ptr) {
+            ptr->~T();
+
             if(std::lock_guard guard{vaultLock}; vault.size() < maxSize){
-                ptr->~T();
                 vault.push_back(ptr);
                 return;
             }

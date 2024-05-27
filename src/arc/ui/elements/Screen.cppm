@@ -24,6 +24,7 @@ export namespace UI{
 
 		void endDraw_noContextFallback() const;
 	public:
+		int requiredMode = Ctrl::Mode::Ignore;
 		bool focusWhenInbound{true};
 		/** @brief Whether adapt ui bloom effect*/
 		bool usesUIEffect{true};
@@ -34,30 +35,30 @@ export namespace UI{
 		}
 
 		[[nodiscard]] Screen(){
-			inputListener.on<UI::CurosrExbound>([this](const auto&) {
+			inputListener.on<CurosrExbound>([this](const auto&) {
 				if(focusWhenInbound)endCameraFocus();
 			});
 
-			inputListener.on<UI::CurosrInbound>([this](const auto&) {
+			inputListener.on<CurosrInbound>([this](const auto&) {
 				if(focusWhenInbound)beginCameraFocus();
 			});
 
-			inputListener.on<UI::MouseActionDoubleClick>([this](const UI::MouseActionDoubleClick& event) {
+			inputListener.on<MouseActionDoubleClick>([this](const MouseActionDoubleClick& event) {
 
 				if(event.key == Ctrl::Mouse::LMB){
 					camera.setPosition(camera.getMouseToWorld(Geom::Vector2D(event), absoluteSrc));
 				}
 			});
 
-			inputListener.on<UI::MouseActionRelease>([this](const UI::MouseActionRelease& event) {
+			inputListener.on<MouseActionRelease>([this](const MouseActionRelease& event) {
 				if(event.key == Ctrl::Mouse::CMB){
 					lastPos.setNaN();
 				}
 			});
 
-			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
+			inputListener.on<MouseActionDrag>([this](const MouseActionDrag& event) {
 				if(event.key == Ctrl::Mouse::CMB){
-					if(event.mode == Ctrl::Mode::Shift){
+					if(Ctrl::Mode::modeMatch(event.mode, requiredMode)){
 						if(lastPos.isNaN()){
 							lastPos.set(camera.getPosition());
 						}else{

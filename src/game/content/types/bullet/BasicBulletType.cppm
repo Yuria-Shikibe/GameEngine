@@ -57,12 +57,9 @@ export namespace Game::Content{
 			using namespace Graphic;
 			namespace Draw = Graphic::Draw;
 
-			[[maybe_unused]] ext::Guard<Draw::TextureState, &Draw::TextureState::contextTexture> tf
-				{Draw::globalState, Draw::globalState.defaultLightTexture};
 			bullet.trail.each(trailWidth, Graphic::Trail::DefDraw_WithLerp(trailBegin, trailEnd));
-
-			Draw::color(effectColor);
-			Game::Draw::hitbox<Graphic::BatchWorld>(bullet.hitBox);
+			Draw::World::color(effectColor);
+			Game::Draw::hitbox(bullet.hitBox);
 		}
 
 		void despawn(Bullet& bullet) const override{
@@ -76,6 +73,7 @@ export namespace Game::Content{
 	} basicBulletType, basicBulletTypeSlow;
 }
 
+//TODO remove this
 namespace _{
 	struct Temp{
 		[[nodiscard]] Temp(){

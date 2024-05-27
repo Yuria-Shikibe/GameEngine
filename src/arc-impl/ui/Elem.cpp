@@ -47,13 +47,13 @@ void UI::Elem::draw() const {
 	}
 
 
-	Graphic::Draw::mixColor();
-	Graphic::Draw::color(color, color.a * maskOpacity * selfMaskOpacity);
+	Graphic::Draw::Overlay::mixColor();
+	Graphic::Draw::Overlay::color(color, color.a * maskOpacity * selfMaskOpacity);
 
 	drawContent();
 	drawStyle();
 
-	Graphic::Draw::color();
+	Graphic::Draw::Overlay::color();
 }
 
 void UI::Elem::applyDefDrawer() noexcept{

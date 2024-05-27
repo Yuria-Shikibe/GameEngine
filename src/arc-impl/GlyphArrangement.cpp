@@ -23,8 +23,8 @@ void Font::GlyphLayout::render(const float alphaMask) const {
 	if(empty()) return;
 	const Geom::Vec2 off = getDrawOffset();
 	for (auto& glyph : glyphs){
-		Graphic::Draw::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
-		Graphic::Draw::quad(
+		Graphic::Draw::Overlay::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
+		Graphic::Draw::Overlay::Fill::quad(
 			glyph.region,
 			glyph.v00().scl(scale) + off,
 			glyph.v10().scl(scale) + off,
@@ -49,9 +49,9 @@ void Font::GlyphLayout::render(const float alphaMask, float progress) const {
 
 	const Geom::Vec2 off = getDrawOffset();
 	for (auto& glyph : this->glyphs | std::ranges::views::take(static_cast<size_t>(progress * static_cast<float>(glyphs.size())))){
-		Graphic::Draw::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
+		Graphic::Draw::Overlay::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
 
-		Graphic::Draw::quad(
+		Graphic::Draw::Overlay::Fill::quad(
 			glyph.region,
 			glyph.v00().scl(scale) + off,
 			glyph.v10().scl(scale) + off,
@@ -64,7 +64,7 @@ void Font::GlyphLayout::render(const float alphaMask, float progress) const {
 Font::TypesettingContext::TypesettingContext(const FontFlags* const font): defaultFont(font), currentFont(font),
 	fallbackFont(font) {
 	if(!currentFont) throw ext::NullPointerException{};
-	lineSpacing      = currentFont->data->lineSpacingMin * 1.8f;
+	lineSpacing      = currentFont->data->lineSpacingDef * 1.8f;
 	paragraphSpacing = lineSpacing * 1.1f;
 }
 

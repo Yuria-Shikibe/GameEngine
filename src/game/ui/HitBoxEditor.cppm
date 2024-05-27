@@ -31,10 +31,10 @@ export namespace Game{
 		}
 
 		void drawDebug() const override{
-			Graphic::Draw::color();
+			Graphic::Draw::Overlay::color();
 			Game::Draw::hitbox(tempHitbox.hitBoxGroup.back().original);
 
-			if(controller->selected)Graphic::Draw::color(Graphic::Colors::ORANGE);
+			if(controller->selected)Graphic::Draw::Overlay::color(Graphic::Colors::ORANGE);
 			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().original);
 		}
 
@@ -309,19 +309,20 @@ export namespace Game{
 			}
 
 			namespace Draw = Graphic::Draw;
+			using Draw::Overlay;
 
 			if(hasOp()){
 				for (const auto entity : selected){
 					auto trans = entity->hitBox.hitBoxGroup.front().relaTrans;
-					Draw::Line::setLineStroke(2.0f);
+					Overlay::Line::setLineStroke(2.0f);
 					if(!Math::zero(clamp.x)){
-						Draw::color(Graphic::Colors::RED_DUSK);
-						Draw::Line::lineAngleCenter(trans.vec.x, trans.vec.y, 0, 50000);
+						Overlay::color(Graphic::Colors::RED_DUSK);
+						Overlay::Line::lineAngleCenter(trans.vec.x, trans.vec.y, 0, 50000);
 					}
 
 					if(!Math::zero(clamp.y)){
-						Draw::color(Graphic::Colors::FOREST);
-						Draw::Line::lineAngleCenter(trans.vec.x, trans.vec.y, 90, 50000);
+						Overlay::color(Graphic::Colors::FOREST);
+						Overlay::Line::lineAngleCenter(trans.vec.x, trans.vec.y, 90, 50000);
 					}
 				}
 			}
@@ -330,12 +331,12 @@ export namespace Game{
 				Geom::OrthoRectFloat orthoRectBox{};
 				orthoRectBox.setVert(selectionBegin.x, selectionBegin.y, mouseWorldPos.x, mouseWorldPos.y);
 
-				Draw::color(Graphic::Colors::AQUA);
-				Draw::alpha(0.15f);
-				Draw::rectOrtho(Draw::getDefaultTexture(), orthoRectBox);
+				Overlay::color(Graphic::Colors::AQUA);
+				Overlay::alpha(0.15f);
+				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), orthoRectBox);
 
-				Draw::alpha();
-				Draw::Line::rectOrtho(orthoRectBox);
+				Overlay::alpha();
+				Overlay::Line::rectOrtho(orthoRectBox);
 			}
 
 

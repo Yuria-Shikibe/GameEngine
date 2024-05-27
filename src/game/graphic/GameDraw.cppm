@@ -13,31 +13,35 @@ export import Graphic.Draw;
 export import GL.Shader.UniformWrapper;
 export import Assets.Graphic;
 
+import ext.Guard;
+
 namespace Game::Draw{
-	namespace Draw = Graphic::Draw;
 	namespace Colors = Graphic::Colors;
+	namespace Draw = Graphic::Draw;
 
 	export
-	template <std::unique_ptr<Core::Batch> Core::BatchGroup::* ptr = Graphic::BatchOverlay>
 	void hitbox(const ::Game::HitBox& hitBox){
 		for(const auto& data : hitBox.hitBoxGroup){
-			Graphic::Draw::quad<ptr>(Graphic::Draw::getContextTexture(),
-			                    data.original.v0, data.original.v1, data.original.v2, data.original.v3);
+			Draw::World::Fill::quad(Draw::World::getContextTexture(),
+			                               data.original.v0, data.original.v1, data.original.v2, data.original.v3);
 		}
 	}
 
 	export
-	template <std::unique_ptr<Core::Batch> Core::BatchGroup::* ptr = Graphic::BatchOverlay>
 	void hitbox(const ::Geom::QuadBox& hitBox){
-		Graphic::Draw::quad<ptr>(Graphic::Draw::getContextTexture(),
+		Draw::World::Fill::quad(Draw::World::getContextTexture(),
 		                    hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
 	}
 
 	export
 	template <typename Entity>
-	void chamberFrameTile(const ChamberFrameTrans<Entity>& chambers, Core::Renderer* renderer = Core::renderer,
+	void chamberFrameTile(const ChamberGridTrans<Entity>& chambers, Core::Renderer* renderer = Core::renderer,
 	                      const bool disableDrawLimit = false){
-		[[maybe_unused]] auto guard = Draw::genColorGuard();
+		using namespace Graphic;
+		using Draw::Overlay;
+
+		[[maybe_unused]] ext::GuardRef guardRef1{Overlay::contextColor, Overlay::contextColor};
+		[[maybe_unused]] ext::GuardRef guardRef2{Overlay::contextMixColor, Overlay::contextMixColor};
 		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.overlay, chambers.getLocalToWorld()};
 
 		const float chamberTileAlpha = disableDrawLimit ? 1.0f : Math::curve(Core::camera->getScale(), 1.25f, 1.5f);
@@ -45,10 +49,10 @@ namespace Game::Draw{
 		if(chamberTileAlpha > 0.0f){
 			if(renderer){
 				renderer->frameBegin(renderer->effectBuffer);
-				Draw::color(Colors::GRAY, chamberTileAlpha);
+				Overlay::color(Colors::GRAY, chamberTileAlpha);
 
 				for(const auto* tile : chambers.getDrawable().invalids){
-					Draw::rectOrtho(Draw::globalState.defaultTexture, tile->getTileBound());
+					Overlay::Fill::rectOrtho(Overlay::defaultTexture, tile->getTileBound());
 				}
 
 				[[maybe_unused]] GL::UniformGuard guard_outline
@@ -60,21 +64,21 @@ namespace Game::Draw{
 				renderer->frameEnd(Assets::Shaders::outline_ortho);
 			}
 
-			Draw::color(Colors::GRAY, 0.45f * chamberTileAlpha);
-			Draw::Line::setLineStroke(2.0f);
+			Overlay::color(Colors::GRAY, 0.45f * chamberTileAlpha);
+			Overlay::Line::setLineStroke(2.0f);
 			for(const auto* tile : chambers.getDrawable().valids){
-				Draw::Line::rectOrtho(tile->getTileBound());
+				Overlay::Line::rectOrtho(tile->getTileBound());
 			}
 
-			Draw::color(Colors::LIGHT_GRAY, 0.85f * chamberTileAlpha);
+			Overlay::color(Colors::LIGHT_GRAY, 0.85f * chamberTileAlpha);
 			for(const auto* tile : chambers.getDrawable().owners){
-				Draw::Line::rectOrtho(tile->getChamberBound());
+				Overlay::Line::rectOrtho(tile->getEntityBound());
 			}
 
 
 
-			Draw::color(Colors::WHITE, chamberTileAlpha);
-			Draw::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
+			Overlay::color(Colors::WHITE, chamberTileAlpha);
+			Overlay::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
 
 			[[maybe_unused]] GL::UniformGuard guard_slideLine_1{
 					Assets::Shaders::slideLineShaderDrawArgs, 25.0f, 45.0f, Colors::CLEAR
@@ -85,16 +89,19 @@ namespace Game::Draw{
 
 
 			for(const auto* tile : chambers.getDrawable().invalids){
-				Draw::rectOrtho(Draw::getDefaultTexture(), tile->getTileBound());
+				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), tile->getTileBound());
 			}
 		}
 	}
 
 	export
 	template <typename Entity>
-	void chamberFrame(const Entity& entity, const ChamberFrameTrans<Entity>& chambers,
+	void chamberFrame(const Entity& entity, const ChamberGridTrans<Entity>& chambers,
 	                  Core::Renderer* renderer = Core::renderer){
-		[[maybe_unused]] auto guard = Draw::genColorGuard();
+		using Graphic::Draw::Overlay;
+
+		[[maybe_unused]] ext::GuardRef guardRef1{Overlay::contextColor, Overlay::contextColor};
+		[[maybe_unused]] ext::GuardRef guardRef2{Overlay::contextMixColor, Overlay::contextMixColor};
 		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.world, chambers.getLocalToWorld()};
 
 		for(const auto* tile : chambers.getDrawable().owners){

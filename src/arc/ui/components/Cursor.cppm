@@ -7,8 +7,6 @@ import GL.Texture.TextureRegionRect;
 
 import std;
 
-using namespace Graphic;
-
 export namespace UI{
 	struct CursorThoroughSightDrawer : CursorAdditionalDrawer {
 		float stroke{4};
@@ -20,13 +18,14 @@ export namespace UI{
 		}
 
 		void operator()(const float x, const float y, const float w, const float h) override{
-			Draw::Line::setLineStroke(h * 2);
-			Draw::Line::line(-1, y, x - w * margin, y);
-			Draw::Line::line(x + w * margin, y, 1, y);
+			using namespace Graphic;
+			Draw::Overlay::Line::setLineStroke(h * 2);
+			Draw::Overlay::Line::line(-1, y, x - w * margin, y);
+			Draw::Overlay::Line::line(x + w * margin, y, 1, y);
 
-			Draw::Line::setLineStroke(w * 2);
-			Draw::Line::line(x, -1, x, y - margin * h);
-			Draw::Line::line(x, y + margin * h, x, 1);
+			Draw::Overlay::Line::setLineStroke(w * 2);
+			Draw::Overlay::Line::line(x, -1, x, y - margin * h);
+			Draw::Overlay::Line::line(x, y + margin * h, x, 1);
 		}
 	};
 
@@ -56,7 +55,7 @@ export namespace UI{
 			if(drawer){
 				drawer->operator()(drawX, drawY, norX, norY);
 			}
-			Draw::rectOrtho(
+			Graphic::Draw::Overlay::Fill::rectOrtho(
 				image, drawX - width / 2, drawY - height / 2,
 				width, height
 			);

@@ -53,7 +53,7 @@ export namespace Game {
 	class SpaceCraft : public RealityEntity{
 	public:
 		Geom::Transform chamberTrans{};
-		ChamberFrameTrans<SpaceCraft> chambers{};
+		ChamberGridTrans<SpaceCraft> chambers{};
 
 		const SpaceCraftTrait* trait{nullptr};
 
@@ -265,6 +265,9 @@ export namespace Game {
 		}
 
 		void drawDebug() const override {
+			using namespace Graphic;
+			using Graphic::Draw::Overlay;
+
 			Game::Draw::chamberFrameTile(chambers);
 
 			GL::setDepthMask(false);
@@ -275,49 +278,49 @@ export namespace Game {
 			// Graphic::Batch::flush();
 			GL::setDepthMask(true);
 
-			Graphic::Draw::alpha();
-			Graphic::Draw::color(Graphic::Colors::RED);
+			Overlay::alpha();
+			Overlay::color(Graphic::Colors::RED);
 
 			for(const auto& data : intersectedPointWith | std::ranges::views::values) {
-				Graphic::Draw::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
+				Overlay::Fill::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
 			}
 
-			Graphic::Draw::Line::setLineStroke(1.0f);
-			Graphic::Draw::color(Graphic::Colors::MAGENTA);
-			Graphic::Draw::Line::lineAngle(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
+			Overlay::Line::setLineStroke(1.0f);
+			Overlay::color(Graphic::Colors::MAGENTA);
+			Overlay::Line::lineAngle(trans.vec.x, trans.vec.y, trans.rot, std::sqrt(hitBox.getAvgSizeSqr()));
 
-			Graphic::Draw::Line::setLineStroke(2.0f);
+			Overlay::Line::setLineStroke(2.0f);
 
 			for (auto& boxData : hitBox.hitBoxGroup){
 				constexpr Graphic::Color colors[]{Graphic::Colors::ROYAL, Graphic::Colors::PINK, Graphic::Colors::GREEN, Graphic::Colors::PURPLE};
 				auto& cur = boxData.original;
 				for(int i = 0; i < 4; ++i) {
-					Graphic::Draw::color(colors[i]);
-					Graphic::Draw::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);
+					Overlay::color(colors[i]);
+					Overlay::Fill::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);
 
 					const Vec2 begin = cur[i];
 					const Vec2 end = cur[(i + 1) % 4];
 					const Vec2 center = (begin + end) / 2;
 
-					Graphic::Draw::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
+					Overlay::Line::line(center, center + cur.getNormalVec(i).normalize().scl(25));
 				}
 
 				if(controller->selected) {
-					Graphic::Draw::color(Graphic::Colors::TAN);
-				}else Graphic::Draw::color(Graphic::Colors::LIGHT_GRAY);
+					Overlay::color(Graphic::Colors::TAN);
+				}else Overlay::color(Graphic::Colors::LIGHT_GRAY);
 
-				Graphic::Draw::Line::setLineStroke(2);
-				Graphic::Draw::Line::quad(cur);
+				Overlay::Line::setLineStroke(2);
+				Overlay::Line::quad(cur);
 
-				Graphic::Draw::Line::line(cur.v0, cur.originPoint, colors[0], Graphic::Colors::RED);
+				Overlay::Line::line(cur.v0, cur.originPoint, colors[0], Graphic::Colors::RED);
 
-				Graphic::Draw::color(Graphic::Colors::RED);
-				Graphic::Draw::rectOrtho(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
+				Overlay::color(Graphic::Colors::RED);
+				Overlay::Fill::rectOrtho(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
 			}
 
 
-			Graphic::Draw::color(Graphic::Colors::PURPLE);
-			Graphic::Draw::rectOrtho(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
+			Overlay::color(Graphic::Colors::PURPLE);
+			Overlay::Fill::rectOrtho(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->drawDebug();

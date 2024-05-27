@@ -17,12 +17,14 @@ void UI::InputArea::setTextUnfocused() const{
 }
 
 void UI::InputArea::drawContent() const{
-	Graphic::Draw::alpha();
+	using namespace Graphic;
+	using Draw::Overlay;
+	Overlay::alpha();
 
 	if(showingHintText){
-		Graphic::Draw::mixColor(UI::Pal::GRAY.copy().mul(color));
+		Overlay::mixColor(UI::Pal::GRAY.copy().mul(color));
 	}else{
-		Graphic::Draw::mixColor(color);
+		Overlay::mixColor(color);
 	}
 
 	if(!glyphLayout->empty()){
@@ -49,37 +51,37 @@ void UI::InputArea::drawContent() const{
 						curRow++;
 						sectionEnd.set(glyphLayout->getRawBound().getWidth(), data.getBoundEnd().y).scl(glyphLayout->getScale());
 					}
-					Graphic::Draw::color(caret.selectionColor, 0.65f);
-					Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
+					Overlay::color(caret.selectionColor, 0.65f);
+					Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
 					sectionBegin.setNaN();
 				}
 			}
 
 			Rect rect{};
 			sectionEnd.x = to->getBoundSrc().x * glyphLayout->getScale();
-			Graphic::Draw::color(caret.selectionColor, 0.65f);
-			Graphic::Draw::rectOrtho(Graphic::Draw::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
+			Overlay::color(caret.selectionColor, 0.65f);
+			Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect.setVert(sectionBegin + off, sectionEnd + off));
 		}
 	}
 
 	glyphLayout->render(maskOpacity);
 
 	if(isTextFull()){
-		Graphic::Draw::mixColor(Pal::RED_DUSK);
+		Overlay::mixColor(Pal::RED_DUSK);
 	}else if(isTextNearlyFull()){
-		Graphic::Draw::mixColor(Pal::KEY_WORD);
+		Overlay::mixColor(Pal::KEY_WORD);
 	}else{
-		Graphic::Draw::mixColor();
+		Overlay::mixColor();
 	}
-	Graphic::Draw::Line::setLineStroke(2.0f);
+	Overlay::Line::setLineStroke(2.0f);
 	if(isTextFocused() && Math::cycleStep<75, 40>(insertLineTimer)){
 		for (const auto & caret : carets){
-			Graphic::Draw::color(caret.caretColor);
+			Overlay::color(caret.caretColor);
 			const Geom::Vec2 src = caret.getDrawPos() * glyphLayout->getScale() + glyphLayout->offset;
-			Graphic::Draw::Line::line(src, {src.x, src.y + caret.getHeight() * glyphLayout->getScale()});
+			Overlay::Line::line(src, {src.x, src.y + caret.getHeight() * glyphLayout->getScale()});
 		}
 	}
 
-	Graphic::Draw::color();
+	Overlay::color();
 
 }

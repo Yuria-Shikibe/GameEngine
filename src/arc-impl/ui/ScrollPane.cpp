@@ -11,9 +11,9 @@ using UI::Root;
 
 void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
 	if(pane->isPressed()){
-		Graphic::Draw::color(pressedBarColor);
+		Graphic::Draw::Overlay::color(pressedBarColor);
 	}else{
-		Graphic::Draw::color(barColor);
+		Graphic::Draw::Overlay::color(barColor);
 	}
 
 	if(pane->enableHorizonScroll()) {
@@ -106,7 +106,7 @@ void UI::ScrollPane::drawBase() const{
 }
 
 void UI::ScrollPane::drawContent() const{
-	Graphic::Batch::flush();
+	Graphic::Draw::Overlay::getBatch().flush();
 
 	const auto lastRect = GL::getScissorRect();
 
@@ -123,7 +123,7 @@ void UI::ScrollPane::drawContent() const{
 	GL::setScissor(clip);
 
 	drawChildren();
-	Graphic::Batch::flush();
+	Graphic::Draw::Overlay::getBatch().flush();
 
 	GL::forceSetScissor(lastRect);
 	GL::scissorShrinkEnd();

@@ -97,13 +97,14 @@ export namespace Game::Drawer{
 
 		void draw(const DrawParam& param, const T* entity) const override{
 			using namespace Graphic;
+			using Graphic::Draw::World;
 			PartTrans cur = trans | param.trans;
 
 			this->passTrans(param, cur);
 
-			Draw::color(lightColor);
-			Draw::setZ(cur.zOffset + entity->zLayer);
-			Draw::rect<BatchWorld>(mainRegion, cur, scl);
+			World::color(lightColor);
+			World::setZ(cur.zOffset + entity->zLayer);
+			World::Fill::rect(mainRegion, cur, scl);
 		}
 	};
 

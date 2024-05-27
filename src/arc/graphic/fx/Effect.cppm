@@ -143,7 +143,7 @@ export namespace Graphic{
 
 		Math::Timed progress{};
 
-		float zOffset{3};
+		float zLayer{3};
 		Geom::Transform trans{};
 		HandleType handle{};
 

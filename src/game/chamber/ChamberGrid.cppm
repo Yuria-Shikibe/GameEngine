@@ -17,10 +17,10 @@ namespace Game{
 	[[nodiscard]] Geom::Point2 toChamberPos(Geom::Vec2 pos) noexcept{
 		return pos.div(TileSize).trac<int>();
 	}
-
+// using Entity = int;
 	export
 	template <typename Entity>
-	class ChamberFrameData{
+	class ChamberGridData{
 	public:
 		// using Entity = Geom::Vec2;
 		using EntityType = Entity;
@@ -51,52 +51,74 @@ namespace Game{
 
 	protected:
 		[[nodiscard]] static Geom::OrthoRectFloat getBoundOf(const ChamberTile<Entity>& ChamberTile){
-			return ChamberTile.getChamberRealRegion();
+			return ChamberTile.getChamberRegion();
 		}
 
 		Geom::OrthoRectFloat bound{};
 		std::list<Tile> data{};
+		std::unordered_map<Geom::Point2, ItrType> positionRef{};
 
 		//TODO Is all these worth it to sustain this vector?
 		//Maybe directly uses umap is a better choise
 
-		void eraseRef(const Geom::Point2 pos){
+
+		void eraseData(const Geom::Point2 pos){
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
+				data.erase(itr->second);
 				positionRef.erase(itr);
 			}
 		}
 
-		std::unordered_map<Geom::Point2, ItrType> positionRef{};
+		void buildRef(){
+			for(auto cur = data.begin(); cur != data.end(); ++cur){
+				positionRef.try_emplace(cur->pos, cur);
+			}
+		}
 
-		bool shouldInsert(const Tile& tile) const {
-			if(const auto finded = find(tile.pos)){
-				if(!tile.ownsChamber())return false;
+		bool checkOverlap(const Tile& tile) const {
+			if(const auto finded = this->find(tile.pos)){
+				//Invalid tile should not replace the valid one
+				if(!tile.isOwner())return false;
 
+				//Valid tile can replace the invalid one
 				if(!finded->valid()){
 					return true;
 				}
 
+				//Place valid to valid should pop a exception
 				throw ext::IllegalArguments{"Insertion Failed: Cannot Insert Two Valid Tile in the same pos!"};
 			}
 			return true;
 		}
 
-		void updateReference(){
-			for(Tile& tile : data | std::ranges::views::filter(&Tile::ownsChamber)){
-				tile.getChamberRegion().each([this, &tile](const Geom::Point2 pos){
-					if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-						itr->second->referenceTile = &tile;
-					}
-				});
-			}
+		void appendBack(const Tile& tile){
+			data.push_back(tile);
+			positionRef.insert_or_assign(tile.pos, std::prev(data.end()));
 		}
 
-		void padReference(Tile& src){
-			if(src.getChamberRegion().area() <= 1)return;
+		void insertOrAssign(const Tile& tile){
+			auto itr = findItrByPos(tile.pos);
+			if(itr != data.end()){
+				itr->chamber = tile.chamber;
+			}else{
+				this->appendBack(tile);
+			}
+		}
+		/**
+		 * @brief Should always be state like this after pad:
+		 * [..., owner, ref[1], ref[2], ..., ref[owner.area() - 1], ...]
+		 * So owner should be the first of it's ref tiles
+		 *
+		 * @warning Notice that only owners should run this function
+		 *
+		 * @return true if src is owner and insert happens
+		 */
+		bool ownerInsert(const Tile& src){
+			if(!src.isOwner())return false;
 
-			src.getChamberRegion().each([this, &src](const Geom::Point2 pos){
-				if(pos == src.pos)return;
-
+			//Clear the original tiles in the bound
+			src.getChamberGridBound().each([this](const Geom::Point2 pos){
+#if DEBUG_CHECK
 				const Tile* tile{nullptr};
 
 				auto itr = findItrByPos(pos);
@@ -108,17 +130,21 @@ namespace Game{
 					}
 					erase(pos);
 				}
+#else
+				erase(pos);
+#endif
 			});
 
-			src.getChamberRegion().each([this, &src](const Geom::Point2 pos){
-				if(pos == src.pos)return;
-
-				this->insert(Tile{pos, &src});
+			//Insert new tiles
+			src.getChamberGridBound().each([this, chamber = src.chamber](const Geom::Point2 pos){
+				this->appendBack(Tile{pos, chamber});
 			});
+
+			return true;
 		}
 
-		auto findItrByPos(const Geom::Point2 pos){
-			auto itr = positionRef.find(pos);
+		ItrType findItrByPos(const Geom::Point2 pos){
+			const auto itr = positionRef.find(pos);
 
 			if(itr == positionRef.end()){
 				return std::ranges::find(data, pos, &Tile::pos);
@@ -127,28 +153,34 @@ namespace Game{
 			}
 		}
 	public:
-		[[nodiscard]] ChamberFrameData() = default;
+		[[nodiscard]] ChamberGridData() = default;
 
-		ChamberFrameData(const ChamberFrameData& other){
-			this->build(std::list<Tile>{other.data} | std::ranges::views::filter(std::not_fn(&Tile::refOnly)));
+
+		ChamberGridData(ChamberGridData&& other) noexcept
+			: bound{other.bound}, data{std::move(other.data)}{
+			buildRef();
 		}
 
-		ChamberFrameData(ChamberFrameData&& other) noexcept
-			: bound{std::move(other.bound)},
-			  data{std::move(other.data)},
-			  positionRef{std::move(other.positionRef)}{}
-
-		ChamberFrameData& operator=(const ChamberFrameData& other){
+		ChamberGridData& operator=(ChamberGridData&& other) noexcept{
 			if(this == &other) return *this;
-			this->build(std::list<Tile>{other.data} | std::ranges::views::filter(std::not_fn(&Tile::refOnly)));
+			data = std::move(other.data);
+			bound = other.bound;
+
+			buildRef();
 			return *this;
 		}
 
-		ChamberFrameData& operator=(ChamberFrameData&& other) noexcept{
+		ChamberGridData(const ChamberGridData& other) : bound{other.bound}, data{other.data}{
+			buildRef();
+		}
+
+		ChamberGridData& operator=(const ChamberGridData& other){
 			if(this == &other) return *this;
-			bound = std::move(other.bound);
-			data = std::move(other.data);
-			positionRef = std::move(other.positionRef);
+			data = other.data;
+			bound = other.bound;
+
+			buildRef();
+
 			return *this;
 		}
 
@@ -156,7 +188,7 @@ namespace Game{
 			if(brief.dataValid)return;
 
 			for (auto& chamberTile : data){
-				if(chamberTile.ownsChamber()){
+				if(chamberTile.isOwner()){
 					brief.owners.push_back(chamberTile.chamber.get());
 				}
 
@@ -216,16 +248,14 @@ namespace Game{
 
 		[[nodiscard]] Chamber<EntityType>* findChamber(const Geom::Point2 pos){
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-				if(itr->second->ownsChamber())return itr->second->chamber.get();
-				if(itr->second->referenceTile)return itr->second->referenceTile->chamber.get();
+				return itr->second->chamber.get();
 			}
 			return nullptr;
 		}
 
 		[[nodiscard]] const Chamber<EntityType>* findChamber(const Geom::Point2 pos) const{
 			if(const auto itr = positionRef.find(pos); itr != positionRef.end()){
-				if(itr->second->ownsChamber())return itr->second->chamber.get();
-				if(itr->second->referenceTile)return itr->second->referenceTile->chamber.get();
+				return itr->second->chamber.get();
 			}
 			return nullptr;
 		}
@@ -237,14 +267,11 @@ namespace Game{
 		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
 			resetBrief();
 
-			//TODO optm this
-			auto itr = findItrByPos(chamberPos);
-
-			if(itr != data.end()){
+			if(auto itr = findItrByPos(chamberPos); itr != data.end()){
 				const Tile* chamber = itr.operator->();
 
-				if(chamber->refOnly()){
-					itr = findItrByPos(chamber->referenceTile->pos);
+				if(chamber->valid()){
+					itr = this->findItrByPos(chamber->getPosOfRef());
 					if(itr == data.end()){
 						throw ext::IllegalArguments{"Failed to find ref tile!"};
 					}
@@ -252,19 +279,18 @@ namespace Game{
 					chamber = itr.operator->();
 				}
 
-
 				const typename decltype(data)::iterator begin = itr;
 				auto end = begin;
-				std::advance(end, chamber->getChamberRegion().area());
+
+				std::advance(end, chamber->getChamberGridBound().area());
 
 				if(setToInvalid){
-					for(auto& element : std::ranges::subrange{begin, end}){
-						element.setReference(nullptr);
-						element.chamber.reset();
+					for(auto& [pos, chamberPtr] : std::ranges::subrange{begin, end}){
+						chamberPtr.reset();
 					}
 				}else{
-					chamber->getChamberRegion().each([this](const Geom::Point2 subPos){
-						eraseRef(subPos);
+					chamber->getChamberGridBound().each([this](const Geom::Point2 subPos){
+						positionRef.erase(subPos);
 					});
 
 					data.erase(begin, end);
@@ -276,18 +302,18 @@ namespace Game{
 		 * @brief
 		 * @param tile Tile to insert
 		 */
-		void insert(Tile&& tile){
-			if(!this->shouldInsert(tile))return;
+		void insert(const Tile& tile){
+			if(!this->checkOverlap(tile))return;
 
 			resetBrief();
+			bound.expandBy(this->getBoundOf(tile));
 
-			tile.init();
+			if(this->ownerInsert(tile))return;
+
+			auto itr = this->findItrByPos(tile.pos);
+
 			this->erase(tile.pos);
-			data.push_back(std::move(tile));
-			const auto& itr = std::prev(data.end());
-
-			positionRef.insert_or_assign(itr->pos, ItrType{itr});
-			this->padReference(itr.operator*());
+			this->appendBack(tile);
 		}
 
 		void erase(const Tile* val){
@@ -296,30 +322,20 @@ namespace Game{
 
 		template <Concepts::Iterable<Tile> Range>
 		void build(Range&& input){
+			if(std::ranges::empty(input))return;
+
+			resetBrief();
+
+			const Tile& front = std::ranges::begin(input).operator*();
 			positionRef.clear();
 			data.clear();
 
 			//TODO better bound allocation if the origin point of tilemap doesn't begin at (0, 0) [esp > (0, 0)]
-			bound.set(0, 0, 0, 0);
+			bound = getBoundOf(front);
 
 			for(Tile& tile : input){
-				if(!shouldInsert(tile))continue;
-				erase(tile.pos);
-				data.push_back(std::forward<std::ranges::range_value_t<Range>>(tile));
-				positionRef.insert_or_assign(tile.pos, std::prev(data.end()));
-
-				Tile& t = data.back();
-				t.init();
-				t.getChamberRegion().each([this, &t](const Geom::Point2 pos){
-					if(pos == t.pos)return;
-
-					erase(pos);
-					data.emplace_back(pos, &t);
-					positionRef.insert_or_assign(pos, std::prev(data.end()));
-				});
+				insertOrAssign(tile);
 			}
-
-			reMap(true);
 		}
 
 		void resizeBound(){
@@ -392,7 +408,7 @@ namespace Game{
 			static constexpr std::string_view InvalidTiles = "it";
 			static constexpr std::string_view OwnerTiles = "ot";
 
-			static void write(ext::json::JsonValue& jsonValue, const ChamberFrameData& data){
+			static void write(ext::json::JsonValue& jsonValue, const ChamberGridData& data){
 				auto& map = jsonValue.asObject();
 
 				ext::json::JsonValue owners{};
@@ -404,7 +420,7 @@ namespace Game{
 				invalidsArray.reserve(data.getData().size() / 2);
 
 				for(const auto& chamberTile : data.getData()){
-					if(chamberTile.ownsChamber()){
+					if(chamberTile.isOwner()){
 						ownersArray.push_back(ext::json::getJsonOf(chamberTile));
 						continue;
 					}
@@ -418,7 +434,7 @@ namespace Game{
 				map.insert_or_assign(InvalidTiles, std::move(invalids));
 			}
 
-			static void read(const ext::json::JsonValue& jsonValue, ChamberFrameData& data){
+			static void read(const ext::json::JsonValue& jsonValue, ChamberGridData& data){
 				auto& map = jsonValue.asObject();
 				auto& owners = map.at(OwnerTiles).asArray();
 
@@ -442,26 +458,23 @@ namespace Game{
 	 */
 	export
 	template <typename Entity>
-	class ChamberFrame : public ChamberFrameData<Entity>{
+	class ChamberGrid : public ChamberGridData<Entity>{
 	public:
-		using ChamberFrameData<Entity>::ChamberFrameData;
-		using typename ChamberFrameData<Entity>::Tile;
-		using typename ChamberFrameData<Entity>::EntityType;
-		using ChamberFrameData<Entity>::positionRef;
-		using ChamberFrameData<Entity>::data;
-		using ChamberFrameData<Entity>::bound;
+		using ChamberGridData<Entity>::ChamberGridData;
+		using typename ChamberGridData<Entity>::Tile;
+		using typename ChamberGridData<Entity>::EntityType;
+		using ChamberGridData<Entity>::positionRef;
+		using ChamberGridData<Entity>::data;
+		using ChamberGridData<Entity>::bound;
 
-		using TreeType = Geom::QuadTree<Tile, float, &ChamberFrame::getBoundOf>;
+		using TreeType = Geom::QuadTree<Tile, float, &ChamberGrid::getBoundOf>;
 
 	protected:
-		using ChamberFrameData<Entity>::eraseRef;
-		using ChamberFrameData<Entity>::padReference;
-		using ChamberFrameData<Entity>::shouldInsert;
 
 		TreeType quadTree{5};
 
 	public:
-		ChamberFrame(){
+		ChamberGrid(){
 			quadTree.setStrict(false);
 		}
 
@@ -473,26 +486,25 @@ namespace Game{
 		 * @param tile Tile to insert
 		 * @param noTreeInsertion whether to insert tile to the quad tree now, used for IO and editor when quad tree is not needed
 		 */
-		void insert(Tile&& tile, const bool noTreeInsertion = false){
-			ChamberFrameData<Entity>::insert(std::move(tile));
+		void insert(const Tile& tile, const bool noTreeInsertion = false){
+			auto cur = data.end();
 
-			auto& val = data.back();
-			if(!noTreeInsertion)tryInsertTree(val, true);
+			ChamberGridData<Entity>::insert(tile);
+
+			if(!noTreeInsertion)for(auto& val : data
+				| std::ranges::views::reverse
+				| std::ranges::views::take(tile.getChamberGridBound().area())){
+				this->tryInsertTree(val, true);
+			}
 		}
 
 		template <Concepts::Iterable<Tile> Range>
 		void build(Range&& input){
 			quadTree.clear();
-			this->resetBrief();
 
-			ChamberFrameData<Entity>::build(std::move(input));
+			ChamberGridData<Entity>::build(std::move(input));
 
 			reTree();
-		}
-
-		void reMap(const bool resizeBound = false){
-			quadTree.clearItemsOnly();
-			ChamberFrameData<Entity>::reMap(resizeBound);
 		}
 
 		void reTree(){

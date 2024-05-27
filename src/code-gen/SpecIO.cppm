@@ -11,8 +11,8 @@ export import Game.Chamber.Frame;
 
 export
 template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberFrame<
-		Game::SpaceCraft>> : Game::ChamberFrame<Game::SpaceCraft>::JsonSrl{};
+struct ::Core::IO::JsonSerializator<Game::ChamberGrid<
+		Game::SpaceCraft>> : Game::ChamberGrid<Game::SpaceCraft>::JsonSrl{};
 
 export
 template <>

@@ -37,6 +37,11 @@ export namespace Geom{
 			this->setSize(width, height);
 		}
 
+		constexpr Rect_Orthogonal(const typename Vector2D<T>::PassType center, const T size) noexcept{
+			this->setSize(size, size);
+			this->setCenter(center.x, center.y);
+		}
+
 		constexpr explicit Rect_Orthogonal(const T size) noexcept{
 			this->setSize(size, size);
 		}
@@ -579,6 +584,14 @@ export namespace Geom{
 			for(T x = srcX; x < getEndX(); ++x){
 				for(T y = srcY; y < getEndY(); ++y){
 					pred(Vector2D<T>{x, y});
+				}
+			}
+		}
+
+		void each_jumpSrc(Concepts::Invokable<void(Vector2D<T>)> auto&& pred) const requires std::is_integral_v<T>{
+			for(T x = srcX; x < getEndX(); ++x){
+				for(T y = srcY; y < getEndY(); ++y){
+					if(x != srcX && y != srcY)pred(Vector2D<T>{x, y});
 				}
 			}
 		}

@@ -59,9 +59,9 @@ export struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 		}
 
 		void draw(const Game::Chamber<EntityType>* chamber, const EntityType& entity, const TraitDataType& data) const{
-			Graphic::Draw::setZ(entity.zLayer);
-			Graphic::Draw::rectOrtho<&Core::BatchGroup::world>(Graphic::Draw::globalState.defaultSolidTexture,
-															   chamber->getChamberBound());
+			Graphic::Draw::World::setZ(entity.zLayer);
+			Graphic::Draw::World::Fill::rectOrtho(Graphic::Draw::World::defaultSolidTexture,
+															   chamber->getEntityBound());
 		}
 	} baseTraitTest;
 
@@ -78,17 +78,17 @@ REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
 export
 template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberFrameData<Game::SpaceCraft>> : Game::ChamberFrameData<Game::SpaceCraft>::JsonSrl{};
+struct ::Core::IO::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>> : Game::ChamberGridData<Game::SpaceCraft>::JsonSrl{};
 
 export
 template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberFrame<Game::SpaceCraft>>{
-	static void write(ext::json::JsonValue& jsonValue, const Game::ChamberFrame<Game::SpaceCraft>& data){
-		::Core::IO::JsonSerializator<Game::ChamberFrameData<Game::SpaceCraft>>::write(jsonValue, data);
+struct ::Core::IO::JsonSerializator<Game::ChamberGrid<Game::SpaceCraft>>{
+	static void write(ext::json::JsonValue& jsonValue, const Game::ChamberGrid<Game::SpaceCraft>& data){
+		::Core::IO::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>>::write(jsonValue, data);
 	}
 
-	static void read(const ext::json::JsonValue& jsonValue, Game::ChamberFrame<Game::SpaceCraft>& data){
-		::Core::IO::JsonSerializator<Game::ChamberFrameData<Game::SpaceCraft>>::read(jsonValue, data);
+	static void read(const ext::json::JsonValue& jsonValue, Game::ChamberGrid<Game::SpaceCraft>& data){
+		::Core::IO::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>>::read(jsonValue, data);
 		data.reTree();
 	}
 };
@@ -97,7 +97,7 @@ export template<>
 struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
 
 export namespace Test{
-	std::unique_ptr<Game::ChamberFrameTrans<Game::SpaceCraft>> chamberFrame{};
+	std::unique_ptr<Game::ChamberGridTrans<Game::SpaceCraft>> chamberFrame{};
 	std::unique_ptr<Game::ChamberFactory<Game::SpaceCraft>> testFactory{std::make_unique<TestChamberFactory>()};
 
 	void loadChamberTest(){
@@ -174,7 +174,7 @@ export namespace Test{
 		ptr->chambers.operator=(std::move(*chamberFrame));
 		ptr->chamberTrans.vec.x = 85;
 		ptr->physicsBody.inertialMass = 4000;
-		chamberFrame = std::make_unique<Game::ChamberFrameTrans<Game::SpaceCraft>>();
+		chamberFrame = std::make_unique<Game::ChamberGridTrans<Game::SpaceCraft>>();
 		ptr->controller.reset(new Game::PlayerController{ptr.get()});
 
 	}

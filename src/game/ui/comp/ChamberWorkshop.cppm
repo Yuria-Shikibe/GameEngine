@@ -39,7 +39,7 @@ export namespace Game::Scene{
 		}
 
 		using Tile = ChamberTile<T>;
-		using TileFrame = ChamberFrameData<T>;
+		using TileFrame = ChamberGridData<T>;
 
 		//TODO maybe shared_ptr is better?
 		TileFrame frame{};
@@ -113,6 +113,7 @@ export namespace Game::Scene{
 							.builder = [&bar](UI::Table& hint){
 								auto canvas = UI::makeCanvas([&bar](const UI::Elem& elem){
 									using namespace Graphic;
+									using Draw::Overlay;
 
 									Geom::Vec2 offset{};
 
@@ -121,12 +122,12 @@ export namespace Game::Scene{
                                        progress.as<float>().scl(elem.getValidWidth() / MaxTileSize, elem.getValidHeight() / MaxTileSize),
                                        elem.getValidBound().copy().move(elem.getAbsSrc())
 									);
-									Draw::Line::setLineStroke(2.f);
-									Draw::color(UI::Pal::LIGHT_GRAY, elem.maskOpacity);
+									Overlay::Line::setLineStroke(2.f);
+									Overlay::color(UI::Pal::LIGHT_GRAY, elem.maskOpacity);
 
 									for(int x = 0; x < progress.x; ++x){
 										for(int y = 0; y < progress.y; ++y){
-											Draw::Line::rectOrtho(
+											Overlay::Line::rectOrtho(
 												srcX + offset.x,
 												srcY + offset.y,
 												elem.getValidWidth() / MaxTileSize,
@@ -181,7 +182,7 @@ export namespace Game::Scene{
 			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Mode::right).template as<UI::Screen>();
 
 			screen->getInputListener().on<UI::MouseActionPress>([this](const UI::MouseActionPress& e){
-				switch(e.key){
+				if(e.mode == Ctrl::Mode::None)switch(e.key){
 					case Ctrl::Mouse::_2 :{
 						if(!currentFactory)break;
 						const auto pos = toChamberPos(screen->getCursorPosInScreen());
@@ -224,7 +225,7 @@ export namespace Game::Scene{
 			setLayoutByRelative(false);
 		}
 
-		void build(const ChamberFrameData<T>& data){
+		void build(const ChamberGridData<T>& data){
 			frame = data;
 
 			buildElem();
@@ -234,6 +235,7 @@ export namespace Game::Scene{
 			Table::drawChildren();
 
 			using namespace Graphic;
+			using Draw::Overlay;
 
 			screen->beginDraw(&Core::BatchGroup::overlay);
 			const auto& brief = frame.getBrief();
@@ -251,11 +253,11 @@ export namespace Game::Scene{
 				Core::renderer->effectBuffer.bind();
 				Core::renderer->effectBuffer.enableDrawAll();
 				Core::renderer->effectBuffer.clearColorAll();
-				Draw::color(Colors::GRAY);
+				Overlay::color(Colors::GRAY);
 
 				for(const Tile* tile : brief.invalids){
-					if(!screen->getCamera().getViewport().overlap(tile->getChamberRealRegion()))continue;
-					Draw::rectOrtho(Draw::globalState.defaultTexture, tile->getTileBound());
+					if(!screen->getCamera().getViewport().overlap(tile->getTileBound()))continue;
+					Overlay::Fill::rectOrtho(Overlay::defaultTexture, tile->getTileBound());
 				}
 
 				[[maybe_unused]] GL::UniformGuard guard_outline
@@ -271,23 +273,9 @@ export namespace Game::Scene{
 				screen->lockViewport();
 			}
 
-			Draw::color(Colors::GRAY, 0.45f);
-			Draw::Line::setLineStroke(2.0f);
-			for(const auto tile : brief.valids){
-				if(!screen->getCamera().getViewport().overlap(tile->getChamberRealRegion()))continue;
-				Draw::Line::rectOrtho(tile->getTileBound());
-			}
-
-			Draw::color(Colors::LIGHT_GRAY, 0.85f);
-			for(const auto tile : brief.owners){
-				if(!screen->getCamera().getViewport().overlap(tile->getChamberBound()))continue;
-				Draw::Line::rectOrtho(tile->getChamberBound());
-			}
-
-
 			{
-				Draw::color(Colors::WHITE);
-				Draw::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
+				Overlay::color(Colors::WHITE, 0.6f);
+				Overlay::mixColor(Colors::BLACK.createLerp(Colors::RED_DUSK, 0.3f));
 
 				[[maybe_unused]] GL::UniformGuard guard_slideLine_1{
 					Assets::Shaders::slideLineShaderDrawArgs, 25.0f, 45.0f, Colors::CLEAR
@@ -300,34 +288,54 @@ export namespace Game::Scene{
 				};
 
 				for(const auto* tile : brief.invalids){
-					if(!screen->getCamera().getViewport().overlap(tile->getChamberRealRegion()))continue;
-					Draw::rectOrtho(Draw::getDefaultTexture(), tile->getTileBound());
+					if(!screen->getCamera().getViewport().overlap(tile->getChamberRegion()))continue;
+					Overlay::Fill::rectOrtho(Overlay::defaultTexture, tile->getTileBound());
 				}
 			}
 
-			Draw::mixColor();
+			Overlay::mixColor();
+			Overlay::color(Colors::GRAY, 0.45f);
+			Overlay::Line::setLineStroke(1.0f);
+			for(const auto tile : brief.valids){
+				if(!screen->getCamera().getViewport().overlap(tile->getTileBound()))continue;
+				Overlay::Line::rectOrtho(tile->getTileBound());
+			}
+
+			Overlay::Line::setLineStroke(1.0f);
+			Overlay::color(Colors::LIGHT_GRAY, 0.85f);
+			for(const auto tile : brief.owners){
+				if(!screen->getCamera().getViewport().overlap(tile->getEntityBound()))continue;
+				Overlay::Line::rectOrtho(tile->getEntityBound());
+			}
+
+			Overlay::Line::setLineStroke(1.2f);
+			Overlay::color(Colors::AQUA_SKY, 0.85f);
+			for(const Tile& tile : selected | std::ranges::views::values | std::ranges::views::transform(&TileFrame::ItrType::operator*)){
+				if(!screen->getCamera().getViewport().overlap(tile.getTileBound()))continue;
+				Overlay::Line::rectOrtho(tile.getTileBound());
+			}
 
 			const auto pos = toChamberPos(screen->getCursorPosInScreen());
 			Geom::OrthoRectInt bound = getTileBound();
 			bound.setCenter(pos);
 
 			if(const auto finded = frame.find(pos)){
-				Draw::color(Colors::LIGHT_GRAY);
-				Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
+				Overlay::color(Colors::LIGHT_GRAY);
+				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), finded->getTileBound());
 			}
 
 			if(frame.placementValid(bound)){
-				Draw::color(Colors::PALE_GREEN);
+				Overlay::color(Colors::PALE_GREEN);
 			} else{
-				Draw::color(Colors::RED_DUSK);
+				Overlay::color(Colors::RED_DUSK);
 			}
 
-			Draw::Line::setLineStroke(2.f);
-			Draw::Line::rectOrtho(bound.as<float>().scl(TileSize, TileSize));
+			Overlay::Line::setLineStroke(2.f);
+			Overlay::Line::rectOrtho(bound.as<float>().scl(TileSize, TileSize));
 
 			if(isBoxSelecting()){
-				Draw::color(Colors::AQUA_SKY);
-				Draw::Line::rectOrtho(getSelectionRange().as<float>().scl(TileSize, TileSize));
+				Overlay::color(Colors::AQUA_SKY);
+				Overlay::Line::rectOrtho(getSelectionRange().as<float>().scl(TileSize, TileSize));
 			}
 
 			screen->endDraw();

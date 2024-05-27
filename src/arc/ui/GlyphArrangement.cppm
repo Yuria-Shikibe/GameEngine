@@ -291,7 +291,7 @@ export namespace Font {
 
 		void set(const FontFlags* const currentFont) {
 			this->currentFont = currentFont;
-			lineSpacing = currentFont->data->lineSpacingMin * 1.8f;
+			lineSpacing = currentFont->data->lineSpacingDef * 1.8f;
 			paragraphSpacing = lineSpacing * 1.1f;
 		}
 

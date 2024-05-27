@@ -48,7 +48,7 @@ export namespace Ctrl{
 		}
 
 		[[nodiscard]] constexpr bool modeMatch(const int mode, const int expectedMode) noexcept{
-			return (mode & Mask) == (expectedMode & Mask);
+			return (mode & Mask) == (expectedMode & Mask) || expectedMode == Ignore;
 		}
 	}
 

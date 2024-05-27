@@ -132,10 +132,12 @@ export namespace Geom{
 			return obj.hash_value();
 		}
 
-		constexpr std::size_t hash_value() const requires requires{sizeof(T) <= 4;}{
+		constexpr std::size_t hash_value() const requires requires{sizeof(T) == 4;}{
+			constexpr std::hash<std::size_t> hasher{};
 			const std::size_t l = std::bit_cast<unsigned>(x);
 			const std::size_t r = std::bit_cast<unsigned>(y);
-			return l << 32 | r;
+			const std::size_t raw = l << 32 | r;
+			return raw;
 		}
 
 		constexpr Vector2D& set(const T ox, const T oy) noexcept {
@@ -739,7 +741,7 @@ export
 	template<>
 	struct std::hash<Geom::Vec2>{
 		size_t operator()(const Geom::Vec2& v) const noexcept {
-			return *reinterpret_cast<const size_t*>(&v);
+			return v.hash_value();
 		}
 	};
 
@@ -747,7 +749,7 @@ export
 	template<>
 	struct std::hash<Geom::Point2>{
 		size_t operator()(const Geom::Point2& v) const noexcept {
-			return *reinterpret_cast<const size_t*>(&v);
+			return v.hash_value();
 		}
 	};
 
@@ -755,7 +757,7 @@ export
 	template<>
 	struct std::hash<Geom::Point2U>{
 		size_t operator()(const Geom::Point2U& v) const noexcept {
-			return *reinterpret_cast<const size_t*>(&v);
+			return v.hash_value();
 		}
 	};
 
