@@ -57,15 +57,15 @@ void UI::LayoutCell::applyPosToItem(Elem* parent) const{
 	float xMove{};
 	float yMove{};
 
-	if(align & Align::Mode::top) {
+	if(align & Align::Layout::top) {
 		yMove = -(margin.top + getCellHeight() * scale.getSrcY());
-	}else if(align & Align::Mode::bottom){
+	}else if(align & Align::Layout::bottom){
 		yMove = margin.bottom + getCellHeight() * scale.getSrcY();
 	}
 
-	if(align & Align::Mode::right) {
+	if(align & Align::Layout::right) {
 		xMove = -(margin.right + getCellWidth() * scale.getSrcX());
-	}else if(align & Align::Mode::left){
+	}else if(align & Align::Layout::left){
 		xMove = margin.left + getCellWidth() * scale.getSrcX();
 	}
 

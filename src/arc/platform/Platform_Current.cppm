@@ -86,7 +86,7 @@ export namespace GLFW{
 
 namespace Platform_Windows{
 	BOOL USE_DARK_MODE = true;
-	bool setStyleDark(HWND handle){
+	bool setStyleDark(const HWND handle){
 		return SUCCEEDED(DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &USE_DARK_MODE, sizeof(USE_DARK_MODE)));
 	}
 
@@ -147,7 +147,7 @@ export namespace Core{
 		}
 
 		void setVerticalSync() override{
-			glfwSwapInterval(1);
+			glfwSwapInterval(0);
 		}
 
 		void setOpacity(const float opacity) override{
@@ -296,7 +296,7 @@ export namespace Core{
 			return {};
 		}
 
-		void setClipboard(std::string_view text) const override{
+		void setClipboard(const std::string_view text) const override{
 			glfwSetClipboardString(window->as<GLFWwindow>(), text.data());
 		}
 

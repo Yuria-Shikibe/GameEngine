@@ -10,7 +10,7 @@ export import Game.Content.Drawer.DrawParam;
 export import Game.Content.Loadable;
 
 import Geom.Transform;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 import Graphic.TextureAtlas;
 import Graphic.Draw;
 
@@ -69,7 +69,7 @@ export namespace Game::Drawer{
 
 	template <Concepts::Derived<BaseEntity> T>
 	struct TextureDrawer : DrawComponent<T>{
-		GL::TextureRegionRect* mainRegion{};
+		GL::TextureRegion* mainRegion{};
 
 		Geom::Vec2 scl = Geom::norBaseVec2<float>;
 		Graphic::Color lightColor{Graphic::Colors::WHITE};
@@ -104,7 +104,7 @@ export namespace Game::Drawer{
 
 			World::color(lightColor);
 			World::setZ(cur.zOffset + entity->zLayer);
-			World::Fill::rect(mainRegion, cur, scl);
+			World::Fill::rect(*mainRegion, cur, scl);
 		}
 	};
 

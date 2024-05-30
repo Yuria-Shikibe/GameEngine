@@ -34,14 +34,14 @@ export namespace GL{
 
 		[[nodiscard]] constexpr Blending() = default;
 
-		friend constexpr bool operator==(const Blending& lhs, const Blending& rhs){
+		friend constexpr bool operator==(const Blending lhs, const Blending rhs){
 			return lhs.src == rhs.src
 				&& lhs.dst == rhs.dst
 				&& lhs.srcAlpha == rhs.srcAlpha
 				&& lhs.dstAlpha == rhs.dstAlpha;
 		}
 
-		friend constexpr bool operator!=(const Blending& lhs, const Blending& rhs){ return !(lhs == rhs); }
+		friend constexpr bool operator!=(const Blending lhs, const Blending rhs){ return !(lhs == rhs); }
 
 		friend constexpr void swap(Blending& lhs, Blending& rhs) noexcept{
 			using std::swap;
@@ -61,12 +61,12 @@ export namespace GL{
 				              static_cast<GLenum>(dstAlpha));
 			}
 		}
-
-		void apply(const GLuint id) const{
-			GL::enablei(GL::State::BLEND, id);
-			GL::blendFunci(id, static_cast<GLenum>(src), static_cast<GLenum>(dst), static_cast<GLenum>(srcAlpha),
-			               static_cast<GLenum>(dstAlpha));
-		}
+		//
+		// void apply(const GLuint id) const{
+		// 	GL::enablei(GL::State::BLEND, id);
+		// 	GL::blendFunci(id, static_cast<GLenum>(src), static_cast<GLenum>(dst), static_cast<GLenum>(srcAlpha),
+		// 	               static_cast<GLenum>(dstAlpha));
+		// }
 	};
 
 

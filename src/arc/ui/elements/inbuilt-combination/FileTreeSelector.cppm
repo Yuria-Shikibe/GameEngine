@@ -24,7 +24,7 @@ export namespace UI{
 
 		FileTreeSelector(){
 			defaultCellLayout.fillParentX().wrapY().setMargin(5);
-			setCellAlignMode(Align::Mode::top_center);
+			setCellAlignMode(Align::Layout::top_center);
 			Table::setEmptyDrawer();
 		}
 
@@ -68,7 +68,7 @@ export namespace UI{
 						label.setText(std::format("{} {}", ">..", current.filenameFullPure()));
 						label.getGlyphLayout()->setSCale(0.5f);
 					}).wrapY().setMargin(Align::Spacing{.left = 10.0f});
-				}).wrapY().endLine().setAlign(Align::Mode::top_center);
+				}).wrapY().endLine().setAlign(Align::Layout::top_center);
 			}
 
 			add<ScrollPane>([this](ScrollPane& pane){
@@ -90,7 +90,7 @@ export namespace UI{
 						}
 					}
 				});
-			}).setPad({.top = 5}).setAlign(Align::Mode::top_center).fillParentY();
+			}).setPad({.top = 5}).setAlign(Align::Layout::top_center).fillParentY();
 
 			layout();
 		}
@@ -116,8 +116,8 @@ export namespace UI{
 						if(pixmap.valid()){
 							auto drawable = std::make_unique<UniqueRegionDrawable>(
 							std::move(pixmap).genTex());
-							drawable->texture->setScale(GL::mipmap_linear_linear, GL::nearest);
-							hint.setCellAlignMode(Align::Mode::top_left);
+							drawable->texture->setFilter(GL::mipmap_linear_linear, GL::nearest);
+							hint.setCellAlignMode(Align::Layout::top_left);
 							hint.setEmptyDrawer();
 							hint.add<ImageRegion>([drawable = std::move(drawable)](ImageRegion& image) mutable {
 								image.setSize(drawable->texture->getWidth(), drawable->texture->getHeight());
@@ -154,8 +154,8 @@ export namespace UI{
 					}
 					label.setWrap(false, true);
 					label.getGlyphLayout()->setSCale(0.65f);
-					label.setTextAlign(Align::Mode::center_left);
-				}).setMargin(Align::Spacing{.left = 10.0f}).wrapY().setAlign(Align::Mode::center_left); //
+					label.setTextAlign(Align::Layout::center_left);
+				}).setMargin(Align::Spacing{.left = 10.0f}).wrapY().setAlign(Align::Layout::center_left); //
 			}).setHeight(60).endLine().setPad({.bottom = 5.5f,});
 		}
 

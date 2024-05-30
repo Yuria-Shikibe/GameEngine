@@ -277,9 +277,9 @@ export namespace Math {
 		if constexpr(Exponent == 0) {
 			return 1;
 		}else if constexpr (Exponent % 2 == 0) {
-			return powIntegral<Exponent / 2, T>(val) * powIntegral<Exponent / 2, T>(val);
+			return Math::powIntegral<Exponent / 2, T>(val) * Math::powIntegral<Exponent / 2, T>(val);
 		}else {
-			return val * powIntegral<(Exponent - 1) / 2, T>(val) * powIntegral<(Exponent - 1) / 2, T>(val);
+			return val * Math::powIntegral<(Exponent - 1) / 2, T>(val) * Math::powIntegral<(Exponent - 1) / 2, T>(val);
 		}
 	}
 

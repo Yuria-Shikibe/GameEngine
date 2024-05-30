@@ -10,6 +10,8 @@ import UI.Button;
 import UI.Label;
 import UI.Cell;
 import UI.SliderBar;
+import UI.ImageRegion;
+import UI.Icons;
 import UI.Palette;
 import UI.Canvas;
 
@@ -31,6 +33,7 @@ export namespace Game::Scene{
 	};
 
 	template <typename T>
+	// using T = int;
 	class ChamberWorkshop : public UI::Table{
 		static constexpr auto MaxTileSize = 10;
 
@@ -103,68 +106,116 @@ export namespace Game::Scene{
 
 			UI::Table::add<UI::ScrollPane>([this](UI::ScrollPane& pane){
 				pane.setItem<UI::Table>([this](Table& table){
+					table.defaultCellLayout.fillParentX();
+					table.defaultCellLayout.setPad({.bottom = 6.f});
+
 					table.setEmptyDrawer();
-					UI::LayoutCell& cell = table.add<UI::SliderBar>([](UI::SliderBar& bar){
-						bar.setSegments(Geom::norBaseVec2<unsigned>.copy().scl(MaxTileSize - 1));
+					{
+						UI::LayoutCell& cell = table.add<UI::SliderBar>([](UI::SliderBar& bar){
+							bar.setSegments(Geom::norBaseVec2<unsigned>.copy().scl(MaxTileSize - 1));
 
-						bar.setTooltipBuilder({
-							.followTarget = UI::TooltipBuilder::FollowTarget::parent,
-							.minHoverTime = 0.f,
-							.builder = [&bar](UI::Table& hint){
-								auto canvas = UI::makeCanvas([&bar](const UI::Elem& elem){
-									using namespace Graphic;
-									using Draw::Overlay;
+							bar.setTooltipBuilder({
+									.followTarget = UI::TooltipBuilder::FollowTarget::parent,
+									.minHoverTime = 0.f,
+									.followTargetAlign = Align::Layout::top_right,
+									.tooltipSrcAlign = Align::Layout::top_left,
+									.builder = [&bar](UI::Table& hint){
+										auto canvas = UI::makeCanvas([&bar](const UI::Elem& elem){
+											using namespace Graphic;
+											using Draw::Overlay;
 
-									Geom::Vec2 offset{};
+											Geom::Vec2 offset{};
 
-									const auto progress = getSizeFromProgress(bar.getProgress());
-									const auto [srcX, srcY] = Align::getOffsetOf(Align::Mode::center,
-                                       progress.as<float>().scl(elem.getValidWidth() / MaxTileSize, elem.getValidHeight() / MaxTileSize),
-                                       elem.getValidBound().copy().move(elem.getAbsSrc())
-									);
-									Overlay::Line::setLineStroke(2.f);
-									Overlay::color(UI::Pal::LIGHT_GRAY, elem.maskOpacity);
-
-									for(int x = 0; x < progress.x; ++x){
-										for(int y = 0; y < progress.y; ++y){
-											Overlay::Line::rectOrtho(
-												srcX + offset.x,
-												srcY + offset.y,
-												elem.getValidWidth() / MaxTileSize,
-												elem.getValidHeight() / MaxTileSize
+											const auto progress = getSizeFromProgress(bar.getProgress());
+											const auto [srcX, srcY] = Align::getOffsetOf(Align::Layout::center,
+												progress.as<float>().scl(
+													elem.getValidWidth() / MaxTileSize,
+													elem.getValidHeight() / MaxTileSize),
+												elem.getValidBound().copy().move(elem.getAbsSrc())
 											);
+											Overlay::Line::setLineStroke(2.f);
+											Overlay::color(UI::Pal::LIGHT_GRAY, elem.maskOpacity);
 
-											offset.y += elem.getValidHeight() / MaxTileSize;
-										}
+											for(int x = 0; x < progress.x; ++x){
+												for(int y = 0; y < progress.y; ++y){
+													Overlay::Line::rectOrtho(
+														srcX + offset.x,
+														srcY + offset.y,
+														elem.getValidWidth() / MaxTileSize,
+														elem.getValidHeight() / MaxTileSize
+													);
 
-										offset.x += elem.getValidWidth() / MaxTileSize;
-										offset.y = 0.f;
+													offset.y += elem.getValidHeight() / MaxTileSize;
+												}
+
+												offset.x += elem.getValidWidth() / MaxTileSize;
+												offset.y = 0.f;
+											}
+										});
+										canvas->setEmptyDrawer();
+										UI::LayoutCell& c = hint.transferElem(std::move(canvas));
+										c.setSize(300.f, 300.f, true).endLine();
+
+										UI::LayoutCell& c1 = hint.add<UI::Label>([&bar](UI::Label& label){
+											label.setEmptyDrawer();
+											label.setWrap(false, true);
+											label.setTextAlign(Align::Layout::center_left);
+											label.setText([&bar]{
+												auto [x, y] = getSizeFromProgress(bar.getProgress());
+												return std::format(" {}x{} ", x, y);
+											});
+											label.setTextScl(0.7f);
+										});
+										c1.fillParentX().wrapY();
 									}
 								});
-								canvas->setEmptyDrawer();
-								UI::LayoutCell& c = hint.transferElem(std::move(canvas));
-								c.setSize(300.f, 300.f, true).endLine();
-
-								UI::LayoutCell& c1 = hint.add<UI::Label>([&bar](UI::Label& label){
-									label.setEmptyDrawer();
-									label.setWrap(false, true);
-									label.setTextAlign(Align::Mode::center_left);
-									label.setText([&bar]{
-										auto [x, y] = getSizeFromProgress(bar.getProgress());
-										return std::format(" {}x{} ", x, y);
-									});
-									label.setTextScl(0.7f);
-								});
-								c1.fillParentX().wrapY();
-							}
 						});
-					});
+						cell.fillParentX().setHeight(300.0f).endLine();
+						slider = &cell.as<UI::SliderBar>();
+					}
 
-					cell.fillParentX().setHeight(300.0f);
+					{
+						UI::LayoutCell& cell = table.add<UI::Button>([this](UI::Button& button){
+							button.setTooltipBuilder({
+									.followTarget = UI::TooltipBuilder::FollowTarget::parent,
+									.minHoverTime = UI::DisableAutoTooltip,
+									.builder = [this](UI::Table& section){
+										section.setCellAlignMode(Align::Layout::center);
+										for(auto [op, name] : ext::AllNamedBoolOp){
+											section.add<UI::Button>([=, this](UI::Button& select){
+												select.add<UI::ImageRegion>([=, this](UI::ImageRegion& image){
+													image.setEmptyDrawer();
+													image.scaling = Align::Scale::fit;
+													image.setDrawable(UI::Icons::iconMap.at(name).get());
+												}).setSize(64, 64);
 
-					slider = &cell.as<UI::SliderBar>();
+												select.setCall([this, op](auto&, bool){
+													booleanOperation = op;
+												});
+
+												select.setActivatedChecker([this, op, &select]{
+													if(booleanOperation == op){
+														select.color = UI::Pal::PALE_GREEN;
+														return true;
+													} else{
+														select.color = UI::Pal::WHITE;
+														return false;
+													}
+												});
+											}).expand().setPad({.left = 3.f, .right = 3.f});
+										}
+									}
+								});
+
+							button.setCall([](UI::Button& b, bool){
+								b.buildTooltip();
+							});
+						});
+
+						cell.setHeight(60.f).endLine();
+					}
 				});
-			}).setSizeScale(0.2f, 0.9f).setMargin(4.0f).setAlign(Align::Mode::top_left);
+			}).setSizeScale(0.2f, 0.9f).setMargin(4.0f).setAlign(Align::Layout::top_left);
 
 			UI::Table::add<UI::Button>([this](UI::Button& button){
 				// button.add<UI::Label>([](UI::Label& label){
@@ -175,11 +226,11 @@ export namespace Game::Scene{
 				// button.setCall([this](UI::Button& b, bool){
 				// 	if(tryEsc())destroy();
 				// });
-			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Mode::bottom_left);
+			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Layout::bottom_left);
 
 			screen = &UI::Table::add<UI::Screen>([](UI::Screen& screen){
 				screen.usesUIEffect = true;
-			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Mode::right).template as<UI::Screen>();
+			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Layout::right).template as<UI::Screen>();
 
 			screen->getInputListener().on<UI::MouseActionPress>([this](const UI::MouseActionPress& e){
 				if(e.mode == Ctrl::Mode::None)switch(e.key){
@@ -231,8 +282,8 @@ export namespace Game::Scene{
 			buildElem();
 		}
 
-		void drawChildren() const override{
-			Table::drawChildren();
+		void drawContent() const override{
+			Table::drawContent();
 
 			using namespace Graphic;
 			using Draw::Overlay;
@@ -255,9 +306,9 @@ export namespace Game::Scene{
 				Core::renderer->effectBuffer.clearColorAll();
 				Overlay::color(Colors::GRAY);
 
-				for(const Tile* tile : brief.invalids){
-					if(!screen->getCamera().getViewport().overlap(tile->getTileBound()))continue;
-					Overlay::Fill::rectOrtho(Overlay::defaultTexture, tile->getTileBound());
+				for(const Tile& tile : brief.invalids){
+					if(!screen->getCamera().getViewport().overlap(tile.getTileBound()))continue;
+					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.getTileBound());
 				}
 
 				[[maybe_unused]] GL::UniformGuard guard_outline
@@ -287,18 +338,18 @@ export namespace Game::Scene{
 					*Core::batchGroup.overlay, Assets::Shaders::sildeLines
 				};
 
-				for(const auto* tile : brief.invalids){
-					if(!screen->getCamera().getViewport().overlap(tile->getChamberRegion()))continue;
-					Overlay::Fill::rectOrtho(Overlay::defaultTexture, tile->getTileBound());
+				for(const Tile& tile : brief.invalids){
+					if(!screen->getCamera().getViewport().overlap(tile.getChamberRegion()))continue;
+					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.getTileBound());
 				}
 			}
 
 			Overlay::mixColor();
 			Overlay::color(Colors::GRAY, 0.45f);
 			Overlay::Line::setLineStroke(1.0f);
-			for(const auto tile : brief.valids){
-				if(!screen->getCamera().getViewport().overlap(tile->getTileBound()))continue;
-				Overlay::Line::rectOrtho(tile->getTileBound());
+			for(const Tile& tile : brief.valids){
+				if(!screen->getCamera().getViewport().overlap(tile.getTileBound()))continue;
+				Overlay::Line::rectOrtho(tile.getTileBound());
 			}
 
 			Overlay::Line::setLineStroke(1.0f);
@@ -308,11 +359,11 @@ export namespace Game::Scene{
 				Overlay::Line::rectOrtho(tile->getEntityBound());
 			}
 
-			Overlay::Line::setLineStroke(1.2f);
+			Overlay::Line::setLineStroke(0.68f);
 			Overlay::color(Colors::AQUA_SKY, 0.85f);
 			for(const Tile& tile : selected | std::ranges::views::values | std::ranges::views::transform(&TileFrame::ItrType::operator*)){
 				if(!screen->getCamera().getViewport().overlap(tile.getTileBound()))continue;
-				Overlay::Line::rectOrtho(tile.getTileBound());
+				Overlay::Fancy::select_rectOrtho(tile.getTileBound(), 3.f);
 			}
 
 			const auto pos = toChamberPos(screen->getCursorPosInScreen());

@@ -2,11 +2,11 @@ module Core.MainLoopManager;
 
 import OS;
 
-float Core::MainLoopManager::getDeltaTick() noexcept{
+Core::Tick Core::MainLoopManager::getDeltaTick() noexcept{
 	return OS::deltaTick();
 }
 
-float Core::MainLoopManager::getUpdateDeltaTick() noexcept{
+Core::Tick Core::MainLoopManager::getUpdateDeltaTick() noexcept{
 	return OS::updateDeltaTick();
 }
 

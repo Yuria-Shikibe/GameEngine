@@ -61,7 +61,7 @@ export namespace ext::json{
 		explicit IllegalJsonSegment(char const* _Message)
 			: exception{_Message}{}
 
-		IllegalJsonSegment(char const* _Message, int i)
+		IllegalJsonSegment(char const* _Message, const int i)
 			: exception{_Message, i}{}
 
 		explicit IllegalJsonSegment(exception const& _Other)

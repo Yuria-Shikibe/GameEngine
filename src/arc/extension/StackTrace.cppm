@@ -1,8 +1,3 @@
-//
-// Created by Matrix on 2023/11/20.
-//
-module ;
-
 export module StackTrace;
 
 import std;

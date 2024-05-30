@@ -33,7 +33,7 @@ export namespace Assets {
 		const std::shared_ptr<Font::GlyphLayout> loadStatus = Font::obtainLayoutPtr();
 		const std::shared_ptr<Font::GlyphLayout> loadTasks = Font::obtainLayoutPtr();
 
-		std::stringstream ss{};
+		std::ostringstream ss{};
 
 	public:
 		//TODO remove these to settings
@@ -42,6 +42,7 @@ export namespace Assets {
 
 		[[nodiscard]] LoaderRenderer(const int w, const int h, AssetsLoader* const loader)
 			: Renderer(w, h), loader(loader) {
+			GL::Blendings::Normal.apply();
 			GL::setStencilOperation(GL::StencilOperation::KEEP, GL::StencilOperation::KEEP, GL::StencilOperation::REPLACE);
 
 			lastThreshold = PostProcessors::bloom->threshold;
@@ -63,6 +64,17 @@ export namespace Assets {
 			PostProcessors::bloom->threshold = lastThreshold;
 		}
 
+		void update(){
+			if(!loader)return;
+			if(!loader->finished()) {
+				Font::defGlyphParser->parseWith(loadTasks, loader->getTaskNames("$<alp#[0.3]>$<scl#[1.5]>", ">> "));
+				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
+			}else {
+				Font::defGlyphParser->parseWith(loadTasks, "$<alp#[0.3]>$<scl#[1.8]>LOAD DONE");
+				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.15f);
+			}
+		}
+
 		void drawMain() override {
 			using namespace Graphic;
 
@@ -81,15 +93,7 @@ export namespace Assets {
 
 			Overlay::mixColor(Colors::DARK_GRAY);
 
-			if(!loader->finished()) {
-				Font::defGlyphParser->parseWith(loadTasks, loader->getTaskNames("$<alp#[0.3]>$<scl#[1.5]>", ">> "));
-				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
-			}else {
-				Font::defGlyphParser->parseWith(loadTasks, "$<alp#[0.3]>$<scl#[1.8]>LOAD DONE");
-				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.15f);
-			}
-
-			loadTasks->setAlign(Align::Mode::bottom_left);
+			loadTasks->setAlign(Align::Layout::bottom_left);
 			loadTasks->offset.set(w * 0.05f, y * 0.1f);
 			loadTasks->render();
 
@@ -127,7 +131,7 @@ export namespace Assets {
 				[[maybe_unused]] GL::UniformGuard guard{Shaders::slideLineShaderAngle, -135.0f};
 				[[maybe_unused]] Core::BatchGuard_Shader guard_shader{Overlay::getBatch(), Shaders::sildeLines};
 
-				[[maybe_unused]] ext::GuardRef guard1{Overlay::Line::contextStroke, stroke};
+				//[[maybe_unused]] ext::GuardRef guard1{Draw::Overlay::Line::contextStroke, 10.f};
 				[[maybe_unused]] ext::GuardRef guard2{Overlay::contextColor, Colors::GRAY};
 
 				//Begin Mask Draw
@@ -156,7 +160,6 @@ export namespace Assets {
 				GL::setStencilFunc(GL::Func::EQUAL, 0xFF, 0xFF);
 				GL::setStencilMask(0x00);
 
-				Overlay::Line::setLineStroke(stroke * 4);
 				Overlay::alpha(0.9f);
 
 				Overlay::Fill::quad(
@@ -186,7 +189,7 @@ export namespace Assets {
 			Font::defGlyphParser->parseWith(loadStatus, std::move(ss).str());
 			loadStatus->offset.set(x, y - stroke - slideLineSize * 2.0f);
 
-			loadStatus->setAlign(Align::Mode::top_left);
+			loadStatus->setAlign(Align::Layout::top_left);
 			loadStatus->render();
 		}
 

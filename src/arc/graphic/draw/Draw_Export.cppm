@@ -2,9 +2,9 @@
 // Created by Matrix on 2024/5/27.
 //
 
-export module Graphic.Draw:Export;
+export module Graphic.Draw:GeomDrawExport;
 
-import :Base;
+import :GeomDrawBase;
 import :Vertex;
 
 namespace Graphic::Draw{
@@ -56,8 +56,8 @@ namespace Graphic::Draw{
 		static constexpr float DepthNear = 1;
 		static constexpr float DepthFar = 50;
 
-		inline static const GL::TextureRegionRect* defaultLightTexture = nullptr;
-		inline static const GL::TextureRegionRect* defaultSolidTexture = nullptr;
+		inline static const GL::TextureRegion* defaultLightTexture = nullptr;
+		inline static const GL::TextureRegion* defaultSolidTexture = nullptr;
 
 		static inline float contextNorZ;
 

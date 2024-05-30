@@ -19,7 +19,7 @@ using Rect = Geom::OrthoRectFloat;
 export namespace UI {
 	class Table : public Group{
 	protected:
-		Align::Mode cellAlignMode = Align::Mode::center;
+		Align::Layout cellAlignMode = Align::Layout::center;
 		bool relativeLayoutFormat = true;
 
 	public:
@@ -34,11 +34,11 @@ export namespace UI {
 
 		std::vector<LayoutCell> cells{};
 
-		[[nodiscard]] Align::Mode getCellAlignMode() const{
+		[[nodiscard]] Align::Layout getCellAlignMode() const{
 			return cellAlignMode;
 		}
 
-		void setCellAlignMode(const Align::Mode cellAlignMode){
+		void setCellAlignMode(const Align::Layout cellAlignMode){
 			this->cellAlignMode = cellAlignMode;
 		}
 

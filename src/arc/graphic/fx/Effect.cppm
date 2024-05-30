@@ -94,7 +94,7 @@ export namespace Graphic{
 		float near{1000};
 		float far{10000};
 
-		[[nodiscard]] constexpr EffectShake(float defLifetime, float defClipSize)
+		[[nodiscard]] constexpr EffectShake(const float defLifetime, float defClipSize)
 			: EffectDrawer{defLifetime, defClipSize}{
 			defClipSize = far * 2.f;
 		}

@@ -69,7 +69,7 @@ export namespace Game {
 			playerController = nullptr;
 		}
 
-		void update(const float delta) override {
+		void update(::Core::Tick delta) override {
 			//TODO better async
 			std::future<void> fut{};
 			if(!effectManager->activatedEmpty()){
@@ -79,7 +79,7 @@ export namespace Game {
 			if(fut.valid())fut.get();
 		}
 
-		void updateGlobal(const float delta) override{
+		void updateGlobal(const ::Core::Tick delta) override{
 			if(overlayManager->activated)overlayManager->updateGlobal(delta);
 			if(hitBoxEditor->activated)hitBoxEditor->updateGlobal(delta);
 

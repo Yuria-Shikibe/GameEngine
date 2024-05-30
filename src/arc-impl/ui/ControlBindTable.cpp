@@ -9,7 +9,7 @@ void UI::ControlBindTable::beginBind(UI::Button* button, Ctrl::Operation* operat
 
 	currentButton->clearChildrenInstantly();
 	currentButton->add<UI::Label>([](UI::Label& label){
-		label.setTextAlign(Align::Mode::center);
+		label.setTextAlign(Align::Layout::center);
 		label.setText(label.getBundleEntry("binding-ctrl"));
 		label.getGlyphLayout()->setSCale(0.55f);
 		label.setEmptyDrawer();

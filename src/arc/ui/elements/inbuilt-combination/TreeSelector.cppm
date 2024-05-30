@@ -17,7 +17,7 @@ export namespace UI{
 	public:
 		TreeSelector(){
 			defaultCellLayout.fillParentX().wrapY().setMargin(5);
-			setCellAlignMode(Align::Mode::top_center);
+			setCellAlignMode(Align::Layout::top_center);
 		}
 
 		ext::TreeStructure<T, RepresentType> tree{};
@@ -70,7 +70,7 @@ export namespace UI{
 			if(currentParent->parent){
 				Table::add<UI::Button>([this](UI::Button& button){
 					this->buildRetrun(button, *currentParent->parent);
-				}).wrapY().endLine().setAlign(Align::Mode::top_center);
+				}).wrapY().endLine().setAlign(Align::Layout::top_center);
 			}
 
 			Table::add<UI::ScrollPane>([this](UI::ScrollPane& pane){

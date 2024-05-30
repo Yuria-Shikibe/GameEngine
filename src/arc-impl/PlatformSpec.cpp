@@ -16,7 +16,7 @@ void GLFW::charCallback(GLFWwindow* window, unsigned int codepoint){
 
 }
 
-void GLFW::charModCallback(GLFWwindow* window, unsigned int codepoint, int mods){
+void GLFW::charModCallback(GLFWwindow* window, const unsigned int codepoint, const int mods){
 	Core::uiRoot->textInputInform(codepoint, mods);
 }
 
@@ -68,7 +68,7 @@ void GLFW::maximizeCallback(GLFWwindow* window, const int maximized) {
 	}
 }
 
-void GLFW::winPosCallBack(GLFWwindow* window, int xpos, int ypos) {
+void GLFW::winPosCallBack(GLFWwindow* window, const int xpos, const int ypos) {
 	if(Core::platform->window->isSmallWindowed()){
 		Core::platform->window->informMove(xpos, ypos);
 	}

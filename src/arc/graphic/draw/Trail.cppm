@@ -14,12 +14,14 @@ import Graphic.Color;
 export namespace Graphic{
     struct Trail {
         // static constexpr float minSpacingSqr = 36;
+        // [pos, width scl]
         using NodeType = std::pair<Geom::Vec2, float>;
         using DataType = std::deque<NodeType>;
 
     protected:
         DataType points{};
-        Geom::Vec2 lastPos{};
+        Geom::Vec2 latestPos{};
+        Geom::Vec2 earliestPos{};
         float lastAngle{-1};
         float lastwidth{};
         std::size_t length{};
@@ -29,16 +31,14 @@ export namespace Graphic{
          * @return Distance between head and tail
          */
         float getDst() const noexcept{
-            if(points.empty())return 0;
-            return lastPos.dst(points.front().first);
+            return latestPos.dst(earliestPos);
         }
 
         /**
          * @brief Not accurate, but enough
          */
         Geom::OrthoRectFloat getBound() const noexcept{
-            if(points.empty())return {};
-            return Geom::OrthoRectFloat{}.setVert(lastPos, points.front().first);
+            return Geom::OrthoRectFloat{}.setVert(latestPos, earliestPos);
         }
 
         struct DefDraw{
@@ -63,19 +63,21 @@ export namespace Graphic{
         }
 
         /** Adds a new point to the trail at intervals. */
-        void update(const float x, const float y, float width = 1.0f){
+        void update(const float x, const float y, float widthScl = 1.0f){
             // if(lastPos.dst2(x, y) < minSpacingSqr)return;
 
             if(points.size() > maxSize()){
                 points.pop_front();
             }
 
-            points.emplace_back(Geom::Vec2{x, y}, width);
+            points.emplace_back(Geom::Vec2{x, y}, widthScl);
+
+            earliestPos = points.front().first;
 
             //update last position regardless, so it joins
-            lastAngle = Math::angleRad(x - lastPos.x, y - lastPos.y);
-            lastPos.set(x, y);
-            lastwidth = width;
+            lastAngle = Math::angleRad(x - latestPos.x, y - latestPos.y);
+            latestPos.set(x, y);
+            lastwidth = widthScl;
         }
 
         void shorten(){
@@ -104,7 +106,7 @@ export namespace Graphic{
             this->length = length;
         }
 
-        [[nodiscard]] Geom::Vec2 getLastPos() const noexcept{ return lastPos; }
+        [[nodiscard]] Geom::Vec2 getLastPos() const noexcept{ return latestPos; }
 
         template <typename Func, bool requiresProgress = true>
         requires
@@ -130,7 +132,7 @@ export namespace Graphic{
                 if(i < size - 1){
                     std::tie(pos2, w2) = subRange[i + 1];
                 }else{
-                    pos2 = lastPos;
+                    pos2 = latestPos;
                     w2 = lastwidth;
                 }
 

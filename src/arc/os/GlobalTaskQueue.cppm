@@ -67,10 +67,10 @@ export namespace OS{
 
 		{
 			lockAsyncTask.lock();
-			const decltype(postAsyncTasks) tempTask = std::move(postAsyncTasks);
+			decltype(postAsyncTasks) tempTask = std::move(postAsyncTasks);
 			lockAsyncTask.unlock();
 
-			for(auto& [task, promise] : postAsyncTasks){
+			for(auto& [task, promise] : tempTask){
 				try{
 					task();
 				}catch(...){

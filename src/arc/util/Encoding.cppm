@@ -176,7 +176,7 @@ struct std::formatter<ext::CharBuffer> {
 	static constexpr auto parse(auto& ctx){return ctx.begin();}
 
 	template<class FmtContext>
-	static typename FmtContext::iterator format(ext::CharBuffer buffer, FmtContext& ctx){
+	static typename FmtContext::iterator format(const ext::CharBuffer buffer, FmtContext& ctx){
 		std::ostringstream out{};
 		out << std::string_view{buffer.data(), ext::getUnicodeLength(buffer.front())};
 

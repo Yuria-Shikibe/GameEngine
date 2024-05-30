@@ -68,6 +68,7 @@ export namespace Game {
 		std::unordered_map<IDType, std::unique_ptr<RealityEntity>> childrenObjects{};
 		RealityEntity* parent{nullptr};
 
+		//TODO no mutable
 		/**
 		 * \brief Entity collided with self. Modifiy physics should only done to self as the const said.
 		 */
@@ -172,7 +173,7 @@ export namespace Game {
 			(void)localToSuper.setTranslation(trans);
 		}
 
-		void update(const float deltaTick) override {
+		void update(const Core::Tick deltaTick) override {
 			controller->update();
 			updateMovement(deltaTick);
 
@@ -216,15 +217,15 @@ export namespace Game {
 			return hitBox.getRotationalInertia(physicsBody.inertialMass, physicsBody.rotationalInertiaScale);
 		}
 
-		[[nodiscard]] constexpr Geom::Vec2 collideVelAt(Geom::Vec2 dst) const {
+		[[nodiscard]] constexpr Geom::Vec2 collideVelAt(const Geom::Vec2 dst) const {
 			return velocityCollision + dst.cross(vel.rot * Math::DEGREES_TO_RADIANS);
 		}
 
 		/**
 		 * \param object To collide with, when [this] as the true object
 		 */
-		virtual bool ignoreCollisionTo(const Game::RealityEntity* object) const {
-			return !enablePhysics() || physicsBody.inertialMass / object->physicsBody.inertialMass < 0.0005f;
+		virtual bool ignoreCollisionTo(const Game::RealityEntity& object) const {
+			return !enablePhysics() || physicsBody.inertialMass / object.physicsBody.inertialMass < 0.0005f;
 		}
 
 		/*virtual*/ void intersectionCorrection(Geom::Vec2& intersection) const {
@@ -391,15 +392,15 @@ export namespace Game {
 		/**
 		 * @brief WARNING: this function may change the position of an entity enabling CCD!!!
 		 */
-		static bool exactInterscet(const RealityEntity* subject, const RealityEntity* object) {
-			const bool needInterscetPointCalculation_subject = subject->requiresCollisionIntersection();
-			const bool needInterscetPointCalculation_object = subject->requiresCollisionIntersection();
+		static bool exactInterscet(const RealityEntity& subject, const RealityEntity& object) {
+			const bool needInterscetPointCalculation_subject = subject.requiresCollisionIntersection();
+			const bool needInterscetPointCalculation_object = subject.requiresCollisionIntersection();
 
-			CollisionData data = subject->hitBox.collideWithExact(object->hitBox, needInterscetPointCalculation_object || needInterscetPointCalculation_subject);
+			CollisionData data = subject.hitBox.collideWithExact(object.hitBox, needInterscetPointCalculation_object || needInterscetPointCalculation_subject);
 
 			if(data.valid()){
 				if(needInterscetPointCalculation_subject){
-					subject->addIntersection(object, data);
+					subject.addIntersection(&object, data);
 				}
 
 				// if(needInterscetPointCalculation_object){
@@ -417,38 +418,38 @@ export namespace Game {
 			return reality_entity.hitBox.maxBound;
 		}
 
-		static bool roughInterscet(const RealityEntity* subject, const RealityEntity* object) {
-			if(Math::abs(subject->zLayer - object->zLayer) > subject->collisionThickness + subject->collisionThickness)return false;
-			if(subject->deletable() || object->deletable() || subject == object)return false;
-			if(subject->ignoreCollisionTo(object) || object->ignoreCollisionTo(subject))return false;
+		static bool roughInterscet(const RealityEntity& subject, const RealityEntity& object) {
+			if(Math::abs(subject.zLayer - object.zLayer) > subject.collisionThickness + subject.collisionThickness)return false;
+			if(subject.deletable() || object.deletable() || &subject == &object)return false;
+			if(subject.ignoreCollisionTo(object) || object.ignoreCollisionTo(subject))return false;
 			// if(subject->intersectedPointWith.contains(object))return false;
 			return true;
 		}
 
-		static bool pointInterscet(const RealityEntity* subject, const Geom::Vec2 point) {
-			return subject->hitBox.contains(point);
+		static bool pointInterscet(const RealityEntity& subject, const Geom::Vec2 point) {
+			return subject.hitBox.contains(point);
 		}
 
-		static bool within(const float dst, const RealityEntity* subject, const RealityEntity* object) {
-			return subject->trans.vec.within(object->trans.vec, dst);
+		static bool within(const float dst, const RealityEntity& subject, const RealityEntity& object) {
+			return subject.trans.vec.within(object.trans.vec, dst);
 		}
 
-		static void checkStateValid(const RealityEntity* subject) {
+		static void checkStateValid(const RealityEntity& subject) {
 			// return;
 #ifndef _DEBUG
 			return;
 #endif
 
-			if(subject->accel.vec.isNaN() || subject->accel.vec.isInf())
+			if(subject.accel.vec.isNaN() || subject.accel.vec.isInf())
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 
-			if(subject->vel.vec.isNaN() || subject->vel.vec.isInf())
+			if(subject.vel.vec.isNaN() || subject.vel.vec.isInf())
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 
-			if(std::isnan(subject->vel.rot) || std::isinf(subject->vel.rot))
+			if(std::isnan(subject.vel.rot) || std::isinf(subject.vel.rot))
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 
-			if(std::isnan(subject->accel.rot) || std::isinf(subject->accel.rot))
+			if(std::isnan(subject.accel.rot) || std::isinf(subject.accel.rot))
 				throw ext::RuntimeException{"Invalid Entitiy State!"};
 		}
 	};

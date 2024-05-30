@@ -61,4 +61,20 @@ export namespace ext{
 			}
 		}
 	};
+
+	template <typename T>
+		requires std::is_trivial_v<T>
+	class GuardTrivial{
+		T& tgt;
+		T original;
+
+	public:
+		[[nodiscard]] constexpr GuardTrivial(T& tgt, const T& data) : tgt{tgt}, original{tgt}{
+			this->tgt = data;
+		}
+
+		constexpr ~GuardTrivial(){
+			tgt = original;
+		}
+	};
 }

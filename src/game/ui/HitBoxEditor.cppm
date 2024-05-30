@@ -38,11 +38,11 @@ export namespace Game{
 			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().original);
 		}
 
-		bool ignoreCollisionTo(const Game::RealityEntity* object) const override{
+		bool ignoreCollisionTo(const Game::RealityEntity& object) const override{
 			return true;
 		}
 
-		void update(const float deltaTick) override {
+		void update(const Core::Tick deltaTick) override {
 			updateHitbox(deltaTick);
 
 			tempHitbox = hitBox;
@@ -343,7 +343,7 @@ export namespace Game{
 			renderer->frameEnd(Assets::PostProcessors::bloom.get());
 		}
 
-		void updateGlobal(const float delta) override{
+		void updateGlobal(const Core::Tick delta) override{
 			OverlayInterface::updateGlobal(delta);
 
 			for (const auto& entity : allHitboxes | std::ranges::views::values){

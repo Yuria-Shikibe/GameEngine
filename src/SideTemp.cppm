@@ -60,7 +60,7 @@ export struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 
 		void draw(const Game::Chamber<EntityType>* chamber, const EntityType& entity, const TraitDataType& data) const{
 			Graphic::Draw::World::setZ(entity.zLayer);
-			Graphic::Draw::World::Fill::rectOrtho(Graphic::Draw::World::defaultSolidTexture,
+			Graphic::Draw::World::Fill::rectOrtho(*Graphic::Draw::World::defaultSolidTexture,
 															   chamber->getEntityBound());
 		}
 	} baseTraitTest;
@@ -121,6 +121,7 @@ export namespace Test{
 	}
 
 	void genRandomEntities(){
+		// return;
 		loadChamberTest();
 
 		Game::EntityManage::clear();
@@ -201,7 +202,7 @@ void setupUITest_Old(){
 			   pane.setEmptyDrawer();
 		   }).fillParent();
 	   })
-	   .setAlign(Align::top_right)
+	   .setAlign(Align::Layout::top_right)
 	   .setSizeScale(0.3f, 0.575f).setSrcScale(0.0f, 0.25f)
 	   .setMargin(10, 0, 10, 0);
 
@@ -219,7 +220,7 @@ void setupUITest_Old(){
 			   pane.setEmptyDrawer();
 		   });
 	   })
-	   .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
+	   .setAlign(Align::Layout::top_left).setSizeScale(0.25f, 0.2f)
 	   .setMargin(0, 10, 0, 10);
 
 
@@ -237,10 +238,10 @@ void setupUITest_Old(){
 					   button.setTooltipBuilder({
 							   .followTarget = UI::TooltipFollowTarget::parent,
 							   .minHoverTime = UI::DisableAutoTooltip,
-							   .followTargetAlign = Align::Mode::bottom_left,
+							   .followTargetAlign = Align::Layout::bottom_left,
 							   .builder = [i](UI::Table& hint){
 								   // hint.setMinimumSize({600, 300});
-								   hint.setCellAlignMode(Align::Mode::top_left);
+								   hint.setCellAlignMode(Align::Layout::top_left);
 								   hint.add<UI::Label>([i](UI::Label& label){
 									   label.setWrap();
 									   label.setText(
@@ -254,15 +255,15 @@ void setupUITest_Old(){
 										   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
 											   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
 												   selector.gotoFile(Assets::Dir::assets.getParent(), false);
-											   }).fillParent().setAlign(Align::Mode::top_center);
+											   }).fillParent().setAlign(Align::Layout::top_center);
 										   });
 									   });
 									   button.setTooltipBuilder({
 											   .followTarget = UI::TooltipFollowTarget::parent,
-											   .followTargetAlign = Align::Mode::center_right,
-											   .tooltipSrcAlign = Align::Mode::center_left,
+											   .followTargetAlign = Align::Layout::center_right,
+											   .tooltipSrcAlign = Align::Layout::center_left,
 											   .builder = [](UI::Table& hintInner){
-												   hintInner.setCellAlignMode(Align::Mode::top_left);
+												   hintInner.setCellAlignMode(Align::Layout::top_left);
 												   hintInner.add<UI::Label>([](UI::Label& label){
 													   label.setWrap();
 													   label.setText(std::format(
@@ -296,11 +297,11 @@ void setupUITest_Old(){
 
 				   bar.setTooltipBuilder({
 						   .followTarget = UI::TooltipFollowTarget::parent,
-						   .followTargetAlign = Align::Mode::bottom_center,
-						   .tooltipSrcAlign = Align::Mode::top_center,
+						   .followTargetAlign = Align::Layout::bottom_center,
+						   .tooltipSrcAlign = Align::Layout::top_center,
 						   .builder = [&bar](UI::Table& hint){
 							   // hint.setMinimumSize({600, 300});
-							   hint.setCellAlignMode(Align::Mode::top_left);
+							   hint.setCellAlignMode(Align::Layout::top_left);
 							   hint.add<UI::Label>([&bar](UI::Label& label){
 								   label.setWrap();
 								   label.setText([&bar]{
@@ -317,14 +318,14 @@ void setupUITest_Old(){
 			   });
 		   }).fillParent().setPad({.left = 2.0f});
 	   })
-	   .setAlign(Align::Mode::top_left)
+	   .setAlign(Align::Layout::top_left)
 	   .setSizeScale(0.4f, 0.08f)
 	   .setSrcScale(0.25f, 0.0f)
 	   .setMargin(10, 0, 0, 0);
 
 
 	HUD->transferElem(new UI::Table{})
-	   .setAlign(Align::Mode::top_left)
+	   .setAlign(Align::Layout::top_left)
 	   .setSizeScale(0.1f, 0.6f)
 	   .setSrcScale(0.0f, 0.2f)
 	   .setMargin(0, 0, 10, 10);
@@ -336,13 +337,13 @@ void setupUITest_Old(){
 		   // table.add<UI::Elem>();
 		   // table.add<UI::Elem>();
 	   })
-	   .setAlign(Align::Mode::bottom_left)
+	   .setAlign(Align::Layout::bottom_left)
 	   .setSizeScale(0.25f, 0.2f)
 	   .setMargin(0, 10, 10, 10);
 
 
 	HUD->transferElem(new UI::Table{})
-	   .setAlign(Align::Mode::bottom_left)
+	   .setAlign(Align::Layout::bottom_left)
 	   .setSizeScale(0.075f, 0.2f)
 	   .setSrcScale(0.25f, 0.0f)
 	   .setMargin(10, 0, 10, 10);
@@ -372,7 +373,7 @@ void setupUITest_Old(){
 			rt.transferElem(new UI::Elem{});
 		});
 
-		HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
+		HUD->transferElem(pane).setAlign(Align::Layout::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
 	}
 	//
 	HUD->add<UI::Table>([](UI::Table& table){
@@ -381,12 +382,12 @@ void setupUITest_Old(){
 				   // s.setClampedOnHori();
 		}).fillParent().endLine();
 	})
-	   .setAlign(Align::top_right)
+	   .setAlign(Align::Layout::top_right)
 	   .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.3f, 0.25f)
 	   .setMargin(10, 10, 10, 0);
 	//
 	HUD->add<UI::Table>([](UI::Table& table){})
-	   .setAlign(Align::Mode::bottom_right)
+	   .setAlign(Align::Layout::bottom_right)
 	   .setSizeScale(0.3f, 0.15f)
 	   .setMargin(10, 0, 10, 0);
 

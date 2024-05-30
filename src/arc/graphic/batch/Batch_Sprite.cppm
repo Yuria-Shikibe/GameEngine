@@ -1,8 +1,11 @@
 module;
 
+#include <glad/glad.h>
+
 export module Core.Batch.Batch_Sprite;
 
 import std;
+import std.compat;
 export import Core.Batch;
 import GL.Shader;
 import GL.Constants;
@@ -28,7 +31,10 @@ export namespace Core{
 		static constexpr auto maxIndexSize = maxVertSize * GL::ELEMENTS_QUAD_LENGTH;
 
 	protected:
-		std::array<float, maxDataSize> cachedVertices{};
+		GLsync sync;
+
+		// std::array<float, maxDataSize> cachedVertices{};
+
 		static constexpr std::array<GLuint, maxIndexSize> indexRef = {[]{
 			std::array<GLuint, maxIndexSize> arr{};
 
@@ -51,12 +57,21 @@ export namespace Core{
 		}
 
 		SpriteBatch(Concepts::Invokable<GL::ShaderProgram*(const SpriteBatch&)> auto&& shader, Concepts::Invokable<void(GL::AttributeLayout&)> auto&& layouter){
-			mesh.indexBuffer.setDataRaw(this->indexRef.data(), this->indexRef.size(), GL_STATIC_DRAW);
-			mesh.vertexBuffer.setDataRaw(this->cachedVertices.data(), maxDataSize);
+			mesh1.indexBuffer.setDataRaw(indexRef.data(), indexRef.size(), GL_STATIC_DRAW);
+			mesh1.vertexBuffer.allocateStorage(maxDataSize, nullptr,
+				GL_DYNAMIC_STORAGE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT);
 
-			layouter(mesh.vertexArray.getLayout());
+			buffer1 = mesh1.vertexBuffer.enableRangedDataMapping(GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT  | GL_MAP_FLUSH_EXPLICIT_BIT);
+			layouter(mesh1.vertexArray.getLayout());
+			mesh1.applyLayout();
 
-			mesh.applyLayout();
+			mesh2.indexBuffer.setDataRaw(indexRef.data(), indexRef.size(), GL_STATIC_DRAW);
+			mesh2.vertexBuffer.allocateStorage(maxDataSize, nullptr,
+				GL_DYNAMIC_STORAGE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT);
+
+			buffer2 = mesh2.vertexBuffer.enableRangedDataMapping(GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT  | GL_MAP_FLUSH_EXPLICIT_BIT);
+			layouter(mesh2.vertexArray.getLayout());
+			mesh2.applyLayout();
 
 			generalShader = shader(*this);
 		}
@@ -68,7 +83,11 @@ export namespace Core{
 			layout.addFloat(4);
 		}){}
 
-		~SpriteBatch() override = default;
+		~SpriteBatch() override{
+			glFlushMappedNamedBufferRange(mesh1.vertexBuffer.getID(), 0, mesh1.vertexBuffer.getByteSize());
+
+			mesh1.vertexBuffer.unmap();
+		}
 
 		SpriteBatch(const SpriteBatch& other) = delete;
 
@@ -81,14 +100,19 @@ export namespace Core{
 		void flush() override{
 			if(index == 0)return;
 
-			mesh.bind();
-			mesh.vertexBuffer.setDataRaw(cachedVertices.data(), index);
-
+			glFlushMappedNamedBufferRange(getCurrentMesh().vertexBuffer.getID(), 0, index * sizeof(float));
 			bindShader();
 			applyShader();
 
-			mesh.render(Math::min(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH, static_cast<std::size_t>(this->indexRef.size())));
+			// Delete the sync object (cleanup)
+			glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, std::numeric_limits<GLuint64>::max());
+			glDeleteSync(sync);
 
+			getCurrentMesh().render(index / quadGroupSize * GL::ELEMENTS_QUAD_LENGTH);
+
+			sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+			swapBuffer();
 			index = 0;
 		}
 
@@ -102,9 +126,20 @@ export namespace Core{
 				flush();
 			}
 
-			std::memcpy(cachedVertices.data() + index, vertices + offset, count * sizeof(float));
+			std::memcpy(getCurrentMappedPtr() + index, vertices + offset, count * sizeof(float));
 
 			index += count;
+		}
+
+		void checkFlush(const GL::Texture* texture, const unsigned count) override{
+			if(lastTexture != texture){
+				flush();
+				lastTexture = texture;
+			}
+
+			if(index + count > maxDataSize){
+				flush();
+			}
 		}
 	};
 }

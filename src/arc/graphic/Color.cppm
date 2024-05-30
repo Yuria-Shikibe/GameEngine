@@ -17,6 +17,8 @@ export namespace Graphic{
 	 * r value^  g value^  b value^  a value^
 	 *       24        16         8         0
 	 * \endcode
+	 *
+	 * TODO HDR support
 	 */
 	class Color{
 	public:

@@ -29,7 +29,7 @@ export namespace UI{
 					label.setWrap();
 					label.setTextScl(0.75f);
 					label.getBorder().left = 15;
-				}).setAlign(Align::Mode::left).setSizeScale(0.4f, 1.0f);
+				}).setAlign(Align::Layout::left).setSizeScale(0.4f, 1.0f);
 
 				table.add<Button>([&operation, this](Button& button){
 					button.setCall([&operation, this](Button& b, bool){
@@ -46,13 +46,13 @@ export namespace UI{
 							}
 						}
 					};
-				}).setAlign(Align::Mode::right).setSizeScale(0.45f, 1.0f);
+				}).setAlign(Align::Layout::right).setSizeScale(0.45f, 1.0f);
 
 				table.add<Label>([&operation, this](Label& label){
 					label.setText(label.getBundleEntry(Ctrl::ActNames[operation.defaultBind.state()]));
-					label.setTextAlign(Align::Mode::center);
+					label.setTextAlign(Align::Layout::center);
 					label.setTextScl(0.65f);
-				}).setAlign(Align::Mode::right).setMargin({.right = 10.0f}).setSizeScale(0.15f, 1.0f).setSrcScale(0.45f, 0.0f);
+				}).setAlign(Align::Layout::right).setMargin({.right = 10.0f}).setSizeScale(0.15f, 1.0f).setSrcScale(0.45f, 0.0f);
 
 				if(operation.instruction.hasDesc()){
 					table.setTooltipBuilder({
@@ -94,7 +94,7 @@ export namespace UI{
 				}else{
 					label.setText(std::format("[{}] + {}", std::move(full), key));
 				}
-				label.setTextAlign(Align::Mode::center);
+				label.setTextAlign(Align::Layout::center);
 				label.getGlyphLayout()->setSCale(0.5f);
 				label.setEmptyDrawer();
 				label.setFillparent();
@@ -128,7 +128,7 @@ export namespace UI{
 						buildSignle(menu, *bind);
 					}
 				});
-			}).fillParentY().setAlign(Align::Mode::top_center).endLine();
+			}).fillParentY().setAlign(Align::Layout::top_center).endLine();
 
 			add<Table>([this](Table& table){
 				table.setEmptyDrawer();
@@ -139,12 +139,12 @@ export namespace UI{
 					});
 
 					pane.add<Label>([](Label& label){
-						label.setTextAlign(Align::Mode::center);
+						label.setTextAlign(Align::Layout::center);
 						label.setText(label.getBundleEntry("apply"));
 						label.getGlyphLayout()->setSCale(0.65f);
 						label.setEmptyDrawer();
 					}).fillParent();
-				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Mode::right);
+				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Layout::right);
 
 				table.add<Button>([this](Button& pane){
 					pane.setCall([this](auto&, bool){
@@ -153,13 +153,13 @@ export namespace UI{
 					});
 
 					pane.add<Label>([](Label& label){
-						label.setTextAlign(Align::Mode::center);
+						label.setTextAlign(Align::Layout::center);
 						label.setText(label.getBundleEntry("apply-def"));
 						label.getGlyphLayout()->setSCale(0.65f);
 						label.setEmptyDrawer();
 					}).fillParent();
-				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Mode::left);
-			}).setHeight(60.0f).setAlign(Align::Mode::top_center);
+				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Layout::left);
+			}).setHeight(60.0f).setAlign(Align::Layout::top_center);
 		}
 	public:
 		~ControlBindTable() override{endBind();}

@@ -2,7 +2,7 @@ module;
 
 export module Graphic.TextureAtlas;
 
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 import GL.Texture.Texture2D;
 import GL.TextureArray;
 import Assets.TexturePacker;
@@ -30,11 +30,11 @@ export namespace Graphic {
 	class TextureAtlas {
 	protected:
 		std::unordered_map<std::string_view, Assets::TexturePackPage> pages{};
-		ext::StringMap<GL::TextureRegionRect*> regions{};
+		ext::StringMap<GL::TextureRegion*> regions{};
 
 		ext::StringMap<std::unique_ptr<GL::Texture2DArray>> textureGroups{};
 
-		const GL::TextureRegionRect* fallbackTextureRegion{nullptr};
+		const GL::TextureRegion* fallbackTextureRegion{nullptr};
 
 		Assets::TexturePackPage* contextPage{nullptr};
 
@@ -88,8 +88,8 @@ export namespace Graphic {
 			}
 
 			for(auto& data : mainPage.getData() | std::ranges::views::values){
-				const GL::Texture2DArray* textureArray = textureReplaceMap.at(data.textureRegion.getData());
-				data.textureRegion.setData(textureArray);
+				const GL::Texture2DArray* textureArray = textureReplaceMap.at(data.textureRegion.data);
+				data.textureRegion.data = textureArray;
 			}
 
 			//TODO move this other place
@@ -102,11 +102,11 @@ export namespace Graphic {
 			return textureGroups;
 		}
 
-		const GL::TextureRegionRect* load(const OS::File& file, const Assets::PixmapModifer& modifer = nullptr) const { // NOLINT(*-use-nodiscard)
+		const GL::TextureRegion* load(const OS::File& file, const Assets::PixmapModifer& modifer = nullptr) const { // NOLINT(*-use-nodiscard)
 			return contextPage->pushRequest(file, modifer);
 		}
 
-		const GL::TextureRegionRect* load(const std::string_view pageName, const OS::File& file, const Assets::PixmapModifer& modifer = nullptr){
+		const GL::TextureRegion* load(const std::string_view pageName, const OS::File& file, const Assets::PixmapModifer& modifer = nullptr){
 			if(const auto itr = pages.find(pageName); itr != pages.end()) {
 				return itr->second.pushRequest(file, modifer);
 			}
@@ -179,7 +179,7 @@ export namespace Graphic {
 		}
 
 		[[nodiscard]]
-		const GL::TextureRegionRect* find(const std::string_view regionName) {
+		const GL::TextureRegion* find(const std::string_view regionName) {
 			if(const auto itr = regions.find(regionName); itr != regions.end()) {
 				return itr->second;
 			}
@@ -191,11 +191,11 @@ export namespace Graphic {
 			return pages;
 		}
 
-		[[nodiscard]] ext::StringMap<GL::TextureRegionRect*>& getRegions(){
+		[[nodiscard]] ext::StringMap<GL::TextureRegion*>& getRegions(){
 			return regions;
 		}
 
-		[[nodiscard]] const GL::TextureRegionRect* getFailRegionReplacer() const {
+		[[nodiscard]] const GL::TextureRegion* getFailRegionReplacer() const {
 			return fallbackTextureRegion;
 		}
 
@@ -203,7 +203,7 @@ export namespace Graphic {
 			return contextPage;
 		}
 
-		void setFail(const GL::TextureRegionRect* rect) {
+		void setFail(const GL::TextureRegion* rect) {
 			this->fallbackTextureRegion = rect;
 		}
 

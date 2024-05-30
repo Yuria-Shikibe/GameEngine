@@ -1,19 +1,21 @@
 export module OS.ApplicationListener;
 
+export import Core.Unit;
+
 export namespace OS{
 	struct ApplicationListener{
 		bool pauseRestrictable = false;
 		virtual ~ApplicationListener() = default;
 
-		virtual void update(float delta){
+		virtual void update(Core::Tick delta){
 
 		}
 
-		virtual void updateGlobal(float delta){
+		virtual void updateGlobal(Core::Tick delta){
 
 		}
 
-		virtual void updatePost(float delta){
+		virtual void updatePost(Core::Tick delta){
 
 		}
 

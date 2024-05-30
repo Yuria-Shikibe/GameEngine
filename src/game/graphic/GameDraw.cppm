@@ -51,8 +51,8 @@ namespace Game::Draw{
 				renderer->frameBegin(renderer->effectBuffer);
 				Overlay::color(Colors::GRAY, chamberTileAlpha);
 
-				for(const auto* tile : chambers.getDrawable().invalids){
-					Overlay::Fill::rectOrtho(Overlay::defaultTexture, tile->getTileBound());
+				for(const auto& tile : chambers.getDrawable().invalids){
+					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.get().getTileBound());
 				}
 
 				[[maybe_unused]] GL::UniformGuard guard_outline
@@ -66,12 +66,12 @@ namespace Game::Draw{
 
 			Overlay::color(Colors::GRAY, 0.45f * chamberTileAlpha);
 			Overlay::Line::setLineStroke(2.0f);
-			for(const auto* tile : chambers.getDrawable().valids){
-				Overlay::Line::rectOrtho(tile->getTileBound());
+			for(const auto& tile : chambers.getDrawable().valids){
+				Overlay::Line::rectOrtho(tile.get().getTileBound());
 			}
 
 			Overlay::color(Colors::LIGHT_GRAY, 0.85f * chamberTileAlpha);
-			for(const auto* tile : chambers.getDrawable().owners){
+			for(const auto tile : chambers.getDrawable().owners){
 				Overlay::Line::rectOrtho(tile->getEntityBound());
 			}
 
@@ -88,8 +88,8 @@ namespace Game::Draw{
 				};
 
 
-			for(const auto* tile : chambers.getDrawable().invalids){
-				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), tile->getTileBound());
+			for(const auto& tile : chambers.getDrawable().invalids){
+				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), tile.get().getTileBound());
 			}
 		}
 	}
@@ -104,7 +104,7 @@ namespace Game::Draw{
 		[[maybe_unused]] ext::GuardRef guardRef2{Overlay::contextMixColor, Overlay::contextMixColor};
 		[[maybe_unused]] Core::BatchGuard_L2W batchGuard{*Core::batchGroup.world, chambers.getLocalToWorld()};
 
-		for(const auto* tile : chambers.getDrawable().owners){
+		for(const auto tile : chambers.getDrawable().owners){
 			tile->draw(entity);
 		}
 	}

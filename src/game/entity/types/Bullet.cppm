@@ -92,8 +92,8 @@ export namespace Game{
 			return true;
 		}
 
-		bool ignoreCollisionTo(const Game::RealityEntity* object) const override{
-			return removeable || object == shooter || object->getFaction()->isAllyTo(faction);
+		bool ignoreCollisionTo(const Game::RealityEntity& object) const override{
+			return removeable || &object == shooter || object.getFaction()->isAllyTo(faction);
 		}
 
 		void overrideCollisionTo(Game::RealityEntity* object, const Geom::Vec2 intersection) override{
@@ -148,7 +148,7 @@ export namespace Game{
 			trail.update(trans.vec.x, trans.vec.y);
 		}
 
-		void update(const float dt) override{
+		void update(const Core::Tick dt) override{
 			if(removeable){
 				deactivate();
 				return;
@@ -189,7 +189,7 @@ export namespace Game{
 
 		void updateCollision(const float deltaTick) override {
 			intersectedPointWith.clear();
-			EntityManage::realEntities.quadTree->intersectAny(this);
+			EntityManage::realEntities.quadTree->intersectAny(*this);
 
 			RealityEntity::updateCollision(deltaTick);
 		}

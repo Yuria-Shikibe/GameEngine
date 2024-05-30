@@ -2,122 +2,141 @@ module;
 
 export module Game.Delay;
 
-import ext.Container.ObjectPool;
 import ext.Concepts;
-
+import Math.Timed;
 import std;
+import Core.Unit;
 
 export namespace Game {
 	using TickRatio = std::ratio<1, 60>;
+
+	enum struct Priority{
+		unignorable,
+		important,
+		normal,
+		minor,
+
+		last
+	};
+
 	struct DelayAction {
-		float tick{};
+		Math::Timed progress{};
+
+		unsigned int repeatCount{};
+		unsigned int repeatedCount{};
+
 		std::function<void()> action{nullptr};
 
 		[[nodiscard]] DelayAction() = default;
 
-		[[nodiscard]] explicit DelayAction(const std::chrono::duration<float, TickRatio>& tick)
-			: tick(tick.count()) {
+
+		[[nodiscard]] DelayAction(const Core::Tick tick, Concepts::Invokable<void()> auto&& func)
+			: progress(0, tick.count()), action{func} {
 		}
 
-		bool update(const float deltaTick) {
-			tick -= deltaTick;
-			if(tick <= 0) {
+		[[nodiscard]] DelayAction(const Core::Tick tick, std::function<void()>&& func)
+			: progress(0, tick.count()), action{std::move(func)} {
+		}
+
+		[[nodiscard]] DelayAction(const Core::Tick tick, const unsigned repeat, Concepts::Invokable<void()> auto&& func)
+			: progress(0, tick.count()), repeatCount{repeat}, action{func} {
+		}
+
+		[[nodiscard]] DelayAction(const Core::Tick tick, const unsigned repeat, std::function<void()>&& func)
+			: progress(0, tick.count()), repeatCount{repeat}, action{std::move(func)} {
+		}
+
+
+		constexpr bool hasRepeat() const noexcept{
+			return repeatCount > 0;
+		}
+
+		bool update(const Core::Tick deltaTick) {
+			progress.update(deltaTick);
+
+			if(progress) {
 				this->operator()();
-				return true;
+				if(repeatCount - repeatedCount > 0){
+					repeatedCount++;
+					progress.time = 0;
+					return false;
+				}else{
+					return true;
+				}
 			}
+
 			return false;
 		}
 
-		void operator()() {
+		void operator()() const{
 			action();
-			action = nullptr;
-		}
-
-		template <Concepts::Invokable<void()> Func>
-		void set(const float tick, Func&& action) {
-			this->tick = tick;
-			this->action = std::forward<Func>(action);
-		}
-
-		template <typename T>
-		[[nodiscard]] explicit DelayAction(const T& tick)
-			: tick(std::chrono::duration_cast<std::chrono::duration<float, TickRatio>>(tick)) {
-		}
-
-		[[nodiscard]] DelayAction(const std::chrono::duration<float, TickRatio>& tick,
-			std::function<void()>&& action)
-			: tick(tick.count()),
-			action(std::forward<decltype(action)>(action)) {
-		}
-
-		[[nodiscard]] DelayAction(const float tick,
-			std::function<void()>&& action)
-			: tick(tick),
-			action(std::forward<decltype(action)>(action)) {
 		}
 	};
 
 	class DelayActionManager {
-		std::mutex lock{};
-		ext::ObjectPool<DelayAction> actionPools{2000};
+		Priority lowestPriority = Priority::last;
 
-		std::vector<std::unique_ptr<DelayAction, decltype(actionPools)::Deleter>> delayedTasks{};
-		decltype(delayedTasks) toAdd{};
+		using PriorityIndex = std::underlying_type_t<Priority>;
+
+		struct ActionGroup{
+			std::vector<DelayAction> actives{};
+			std::vector<DelayAction> toAdd{};
+			std::mutex mtx{};
+		};
+
+		std::array<ActionGroup, static_cast<std::size_t>(Priority::last) + 1> taskGroup{};
+
+		auto& getGroupAt(const Priority priority){
+			return taskGroup[static_cast<PriorityIndex>(priority)];
+		}
+
+		auto& getGroupAt(const Priority priority) const{
+			return taskGroup[static_cast<PriorityIndex>(priority)];
+		}
 
 	public:
 		[[nodiscard]] DelayActionManager() {
-			delayedTasks.reserve(500);
-			toAdd.reserve(100);
+			for (auto & [actives, toAdd, _] : taskGroup){
+				actives.reserve(500);
+				toAdd.reserve(500);
+			}
 		}
 
-	private:
+		[[nodiscard]] constexpr Priority getPriority() const noexcept{ return lowestPriority; }
+
+		constexpr void setPriority(const Priority lowestPriority) noexcept{ this->lowestPriority = lowestPriority; }
+
 		template <Concepts::Invokable<void()> Func>
-		void suspend(float tick, Func&& action) {
-			DelayAction* ptr;
+		void launch(const Priority priority, Core::Tick tick, unsigned count, Func&& action) {
+			if(priority > lowestPriority)return;
 
-			{
-				std::lock_guard lockGuard{lock};
-				ptr = toAdd.emplace_back(actionPools.obtainUnique()).get();
-			}
-
-			ptr->set(tick, std::forward<Func>(action));
+			auto& group = getGroupAt(priority);
+			std::lock_guard lockGuard{group.mtx};
+			group.toAdd.emplace_back(tick, count, action);
 		}
 
 		void clear() {
-			delayedTasks.clear();
-			toAdd.clear();
+			for (auto & [actives, toAdd, _] : taskGroup){
+				actives.clear();
+				toAdd.clear();
+			}
 		}
 
-		void update(float deltaTick) {
-			delayedTasks.reserve(delayedTasks.size() + toAdd.size());
+		void update(Core::Tick deltaTick) {
+			for(auto& [actives, toAdd, mtx] : std::ranges::subrange{
+				    taskGroup.begin(), taskGroup.begin() +
+				    	(static_cast<PriorityIndex>(lowestPriority) + 1)
+			    }){
+				std::lock_guard lockGuard{mtx};
 
-			std::ranges::move(std::move(toAdd), std::back_inserter(delayedTasks));
-			toAdd.clear();
+				actives.reserve(actives.size() + toAdd.size());
+				std::ranges::move(std::move(toAdd), std::back_inserter(actives));
+				toAdd.clear();
 
-			size_t doneCount = 0;
-			std::for_each(
-				std::execution::par_unseq,
-				delayedTasks.begin(), delayedTasks.end(),
-				[deltaTick, &doneCount, this](decltype(delayedTasks)::value_type& t){
-					if(t->update(deltaTick)) {
-						t.reset(nullptr);
-						doneCount++;
-					}
-			});
-
-			if(delayedTasks.empty() || doneCount == 0)return;
-
-			std::erase_if(delayedTasks,
-			[this, &doneCount](const decltype(delayedTasks)::value_type& ptr) {
-				if(doneCount == 0)return false;
-
-				if(!static_cast<bool>(ptr)) {
-					doneCount--;
-					return true;
-				}
-
-				return false;
-			});
+				std::erase_if(actives, [deltaTick](DelayAction& action){
+					return action.update(deltaTick);
+				});
+			}
 		}
 	};
 }

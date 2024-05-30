@@ -90,16 +90,15 @@ export namespace Game{
 			drawable.reset();
 
 			if(frameData.getData().empty())return;
-			frameBound = {};
 
 			frameData.getQuadTree().intersectRegion(lastViewport, [](const auto& rect, const auto& quad){
 				return quad.overlapRough(rect) && quad.overlapExact(rect);
-			}, [this](const ChamberTile<Entity>* tile, const Geom::QuadBox& view){
-				if(tile->isOwner()){
-					drawable.owners.push_back(tile->chamber.get());
+			}, [this](ChamberTile<Entity>& tile, const Geom::QuadBox& view){
+				if(tile.isOwner()){
+					drawable.owners.push_back(tile.chamber);
 				}
 
-				if(tile->valid()){
+				if(tile.valid()){
 					drawable.valids.push_back(tile);
 				}else{
 					drawable.invalids.push_back(tile);

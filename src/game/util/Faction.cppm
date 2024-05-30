@@ -5,7 +5,7 @@ export module Game.Faction;
 import std;
 
 import Graphic.Color;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 
 export namespace Game {
 	class Faction;
@@ -19,7 +19,7 @@ export namespace Game {
 		std::string_view name{"undefind"};
 
 		Graphic::Color color{};
-		GL::TextureRegionRect* factionIcon{nullptr};
+		GL::TextureRegion* factionIcon{nullptr};
 
 		std::unordered_set<FactionID> ally{};
 		std::unordered_set<FactionID> hostile{};

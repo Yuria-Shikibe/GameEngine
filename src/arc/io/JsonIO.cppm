@@ -36,7 +36,7 @@ export namespace Core::IO{
 		explicit JsonSerializateException(char const* _Message)
 			: exception{_Message}{}
 
-		JsonSerializateException(char const* _Message, int i)
+		JsonSerializateException(char const* _Message, const int i)
 			: exception{_Message, i}{}
 
 		explicit JsonSerializateException(exception const& _Other)

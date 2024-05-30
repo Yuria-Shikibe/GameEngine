@@ -3,7 +3,7 @@ export module UI.Cursor;
 export import UI.CursorType;
 import Geom.Vector2D;
 import Graphic.Draw;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 
 import std;
 
@@ -33,13 +33,13 @@ export namespace UI{
 		~Cursor() override = default;
 
 		//TODO animation?
-		const GL::TextureRegionRect* image{nullptr};
+		const GL::TextureRegion* image{nullptr};
 		Geom::Point2U offset{};
 		Geom::Point2U size{50, 50};
 
 		Cursor() = default;
 
-		explicit Cursor(const GL::TextureRegionRect* image, const Geom::Point2U offset = Geom::ZERO_U, const Geom::Point2U size = {50, 50})
+		explicit Cursor(const GL::TextureRegion* image, const Geom::Point2U offset = Geom::ZERO_U, const Geom::Point2U size = {50, 50})
 			: image(image),
 			  offset(offset),
 			  size(size){
@@ -56,12 +56,12 @@ export namespace UI{
 				drawer->operator()(drawX, drawY, norX, norY);
 			}
 			Graphic::Draw::Overlay::Fill::rectOrtho(
-				image, drawX - width / 2, drawY - height / 2,
+				*image, drawX - width / 2, drawY - height / 2,
 				width, height
 			);
 		}
 
-		void setImage(const GL::TextureRegionRect* const image){
+		void setImage(const GL::TextureRegion* const image){
 			this->image = image;
 			size.x = static_cast<unsigned int>(image->getWidth());
 			size.y = static_cast<unsigned int>(image->getHeight());

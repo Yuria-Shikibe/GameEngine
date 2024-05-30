@@ -39,7 +39,7 @@ export namespace UI{
 							button.add<UI::Label>([&](UI::Label& label){
 								label.setText(group->instruction.name);
 								label.setEmptyDrawer();
-								label.setTextAlign(Align::center);
+								label.setTextAlign(Align::Layout::center);
 							});
 							button.setCall([&, this](UI::Button&, bool){
 								currentSelectedName = group->getName();
@@ -56,26 +56,26 @@ export namespace UI{
 					}
 				});
 
-			}).setSizeScale(0.2f, 0.9f).setMargin(4.0f).setAlign(Align::Mode::top_left);
+			}).setSizeScale(0.2f, 0.9f).setMargin(4.0f).setAlign(Align::Layout::top_left);
 
 			content.add<UI::Button>([this](UI::Button& button){
 				button.add<UI::Label>([](UI::Label& label){
 					label.setText(label.getBundleEntry("exit", true));
 					label.setEmptyDrawer();
-					label.setTextAlign(Align::center);
+					label.setTextAlign(Align::Layout::center);
 				});
 				button.setCall([this](UI::Button& b, bool){
 					if(tryEsc())destroy();
 				});
-			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Mode::bottom_left);
+			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Layout::bottom_left);
 
 			bindMenu = &content.add<UI::Table>([](UI::Table& table){
 				table.add<UI::Label>([](UI::Label& label){
 					label.setText(label.getBundleEntry("unavailable", true));
 					label.setEmptyDrawer();
-					label.setTextAlign(Align::center);
+					label.setTextAlign(Align::Layout::center);
 				});
-			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Mode::right).as<UI::Table>();
+			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Layout::right).as<UI::Table>();
 		}
 
 		bool tryEsc() override{
@@ -91,8 +91,8 @@ export namespace UI{
 								label.setText(label.getBundleEntry("bind-no-confirm-warn", true));
 								label.setTextScl(0.8f);
 								label.setEmptyDrawer();
-								label.setTextAlign(Align::center);
-							}).setSizeScale(1.0f, 0.5f).setAlign(Align::Mode::top_center).endLine();
+								label.setTextAlign(Align::Layout::center);
+							}).setSizeScale(1.0f, 0.5f).setAlign(Align::Layout::top_center).endLine();
 
 							inner.add<UI::Table>([this, &dialog](UI::Table& bt){
 								bt.setEmptyDrawer();
@@ -102,7 +102,7 @@ export namespace UI{
 										label.setText(label.getBundleEntry("yes", true));
 										label.setTextScl(0.8f);
 										label.setEmptyDrawer();
-										label.setTextAlign(Align::center);
+										label.setTextAlign(Align::Layout::center);
 									});
 									confirm.setCall([this](auto&, auto){
 										this->destroy();
@@ -115,14 +115,14 @@ export namespace UI{
 										label.setText(label.getBundleEntry("no", true));
 										label.setTextScl(0.8f);
 										label.setEmptyDrawer();
-										label.setTextAlign(Align::center);
+										label.setTextAlign(Align::Layout::center);
 									});
 									confirm.setCall([&dialog](auto&, auto){
 										dialog.destroy();
 									});
 								}).setMargin({.left = 3});
-							}).setSizeScale(1.0f, 0.4f).setAlign(Align::Mode::bottom_center);
-						}).setSizeScale(0.5f, 0.175f).setAlign(Align::center);
+							}).setSizeScale(1.0f, 0.4f).setAlign(Align::Layout::bottom_center);
+						}).setSizeScale(0.5f, 0.175f).setAlign(Align::Layout::center);
 					});
 
 					return false;

@@ -4,7 +4,7 @@ export import UI.Drawer;
 import UI.RegionDrawable;
 
 import Geom.Rect_Orthogonal;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
 import Graphic.TextureAtlas;
 import Graphic.Color;

@@ -64,7 +64,7 @@ export namespace GL{
 			glNamedBufferSubData(nameID, offset, count * sizeof T, data);
 		}
 
-		void setupStorage(const GLsizei count, const float* data = nullptr, const GLbitfield flag = BasicStorageFlags){
+		void allocateStorage(const GLsizei count, const float* data = nullptr, const GLbitfield flag = BasicStorageFlags){
 			glNamedBufferStorage(nameID, count * sizeof(T), data, flag);
 			bufferSize = count;
 		}
@@ -88,7 +88,7 @@ export namespace GL{
 			}
 		}
 
-		[[nodiscard]] GLsizei getSize() const {
+		[[nodiscard]] GLsizei getCountSize() const {
 			return bufferSize;
 		}
 

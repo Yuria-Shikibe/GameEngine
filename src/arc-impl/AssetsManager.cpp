@@ -57,6 +57,7 @@ void Assets::Manager::load_Visible(const int width, const int height, Core::Rend
 			loader.processRequests();
 		}
 
+		loadRenderer.update();
 		loadRenderer.draw();
 
 		Core::platform->pollEvents();

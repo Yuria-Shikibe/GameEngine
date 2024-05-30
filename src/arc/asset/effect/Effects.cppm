@@ -23,7 +23,7 @@ export namespace Assets::Effects{
 	struct EffectDrawer_TrailFade final : Graphic::EffectDrawer{
 		[[nodiscard]] constexpr EffectDrawer_TrailFade() = default;
 
-		[[nodiscard]] constexpr explicit EffectDrawer_TrailFade(float defaultLifetime)
+		[[nodiscard]] constexpr explicit EffectDrawer_TrailFade(const float defaultLifetime)
 			: EffectDrawer{defaultLifetime}{}
 
 		struct Data{
@@ -46,7 +46,7 @@ export namespace Assets::Effects{
 	struct EffectDrawer_TrailFade_WithLerp final : Graphic::EffectDrawer{
 		[[nodiscard]] constexpr EffectDrawer_TrailFade_WithLerp() = default;
 
-		[[nodiscard]] constexpr explicit EffectDrawer_TrailFade_WithLerp(float defaultLifetime)
+		[[nodiscard]] constexpr explicit EffectDrawer_TrailFade_WithLerp(const float defaultLifetime)
 			: EffectDrawer{defaultLifetime}{}
 
 		struct Data{

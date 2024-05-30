@@ -52,6 +52,8 @@ import Core.IO.JsonIO;
 import ext.Encoding;
 import Image.Svg;
 
+import UI.Icons;
+
 export namespace Test{
 	constexpr std::string_view MainPageName = "base";
 	constexpr std::string_view BindPageName = "bind";
@@ -159,16 +161,18 @@ export namespace Test{
 				});
 
 				Assets::Dir::svg.subFile("binds").forAllSubs([uiPage](OS::File&& file){
-					if(file.extension() != ".svg")return;
-
 					auto pixmap = ext::svgToBitmap(file, 64);
+
 					uiPage->pushRequest(file.stem(), std::move(pixmap));
+					UI::Icons::registerIconName(file.stem());
 				});
 
 				Assets::Dir::svg.subFile("icons").forAllSubs([uiPage](OS::File&& file){
-					auto pixmap = ext::svgToBitmap(file, 48);
+					auto pixmap = ext::svgToBitmap(file, 64);
 					pixmap.mulWhite();
+
 					uiPage->pushRequest(file.stem(), std::move(pixmap));
+					UI::Icons::registerIconName(file.stem());
 				});
 
 				Assets::Dir::texture.subFile("cursor").forAllSubs([uiPage](OS::File&& file){
@@ -196,7 +200,7 @@ export namespace Test{
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const Assets::AssetsLoadEnd& event){
 			for(auto& texture2D : event.manager->getAtlas().getPage("font").getTextures()){
-				texture2D->setScale(GL::TexParams::mipmap_linear_linear);
+				texture2D->setFilter(GL::TexParams::mipmap_linear_linear);
 			}
 
 
@@ -207,18 +211,18 @@ export namespace Test{
 
 			Graphic::Draw::Overlay::setDefTexture(&Assets::Textures::whiteRegion);
 
-			Graphic::Draw::World::defaultSolidTexture = Graphic::Draw::Overlay::getDefaultTexture();
+			Graphic::Draw::World::defaultSolidTexture = &Graphic::Draw::Overlay::getDefaultTexture();
 			Graphic::Draw::World::defaultLightTexture = lightRegion;
 			Graphic::Draw::World::setDefTexture(lightRegion);
 
-			const_cast<GL::TextureRegionRect*>(lightRegion)->shrinkEdge(15.0f);
+			const_cast<GL::TextureRegion*>(lightRegion)->shrinkEdge(15.0f);
 
 			for(auto& texture : event.manager->getAtlas().getPage("ui").getTextures()){
-				texture->setScale(GL::TexParams::linear, GL::TexParams::linear);
+				texture->setFilter(GL::TexParams::linear, GL::TexParams::linear);
 			}
 
 			for(auto& texture : event.manager->getAtlas().getPage(MainPageName).getTextures()){
-				texture->setScale(GL::TexParams::mipmap_linear_nearest, GL::TexParams::nearest);
+				texture->setFilter(GL::TexParams::mipmap_linear_nearest, GL::TexParams::nearest);
 			}
 
 			UI::Styles::load(event.manager->getAtlas());
@@ -262,7 +266,7 @@ export namespace Test{
 
 			event.manager->getAtlas().bindTextureArray(BindPageName, {MainPageName, "normal", "light"},
 			                                           [](GL::Texture2DArray* tex){
-				                                           tex->setScale(GL::mipmap_linear_linear, GL::nearest);
+				                                           tex->setFilter(GL::mipmap_linear_linear, GL::nearest);
 			                                           });
 
 			Core::uiRoot = new UI::Root{};
@@ -274,6 +278,8 @@ export namespace Test{
 
 			Assets::PostProcessors::bloom->setIntensity(1.f);
 			//Core::loopManager->registerListener(Core::uiRoot);
+
+			UI::Icons::load(event.manager->getAtlas());
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPost>([](const auto& event){
@@ -366,6 +372,10 @@ export namespace Test{
 
 		//Majority Load
 		Core::loadAssets();
+
+		// std::filesystem::path path = R"(D:\projects\GameEngine\raw-assets\gen\temp.txt)";
+		// std::ofstream stOfstream{path};
+		// UI::Icons::genCode(stOfstream);
 	}
 
 	void setupAudioTest(){}

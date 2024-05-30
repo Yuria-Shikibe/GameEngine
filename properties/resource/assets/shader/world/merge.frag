@@ -1,7 +1,7 @@
 #version 430 core
 #define HIGHP
 
-#define MaxKernalSize 32
+#define MaxKernalSize 64
 
 in vec2 texCoord;
 

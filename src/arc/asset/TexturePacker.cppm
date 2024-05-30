@@ -9,7 +9,7 @@ import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
 
 import GL.Texture.Texture2D;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 
 import ext.Async;
 import ext.RuntimeException;
@@ -25,7 +25,7 @@ export namespace Assets {
 
 	struct TextureRegionPackData{
 		Geom::OrthoRectInt bound{};
-		GL::TextureRegionRect textureRegion{};
+		GL::TextureRegion textureRegion{};
 		Graphic::Pixmap pixmap{};
 		OS::File sourceFile{};
 
@@ -38,7 +38,7 @@ export namespace Assets {
 		PixmapModifer modifer{nullptr};
 
 		[[nodiscard]] bool valid() const {
-			return textureRegion.getData();
+			return textureRegion.data != nullptr;
 		}
 
 		void write(std::ofstream& stream) const {
@@ -61,7 +61,7 @@ export namespace Assets {
 				bound.addSize(-margin, -margin);
 			}
 
-			textureRegion.setData(tex);
+			textureRegion.data = tex;
 			textureRegion.fetchIntoCurrent(bound);
 
 			return true;
@@ -202,23 +202,23 @@ export namespace Assets {
 			return state;
 		}
 
-		GL::TextureRegionRect* pushRequest(const OS::File& file, const PixmapModifer& modifer = nullptr) {
+		GL::TextureRegion* pushRequest(const OS::File& file, const PixmapModifer& modifer = nullptr) {
 			return &packData.try_emplace(file.stem(), file, modifer).first->second.textureRegion;
 		}
 
-		GL::TextureRegionRect* pushRequest(const std::string& name, const OS::File& file, const PixmapModifer& modifer = nullptr) {
+		GL::TextureRegion* pushRequest(const std::string& name, const OS::File& file, const PixmapModifer& modifer = nullptr) {
 			return &packData.try_emplace(name, name, file, modifer).first->second.textureRegion;
 		}
 
-		GL::TextureRegionRect* pushRequest(const std::string& name, const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr) {
+		GL::TextureRegion* pushRequest(const std::string& name, const Graphic::Pixmap& pixmap, const PixmapModifer& modifer = nullptr) {
 			return &packData.try_emplace(name, pixmap, modifer).first->second.textureRegion;
 		}
 
-		GL::TextureRegionRect* pushRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
+		GL::TextureRegion* pushRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
 			return &packData.try_emplace(name, name, std::move(pixmap), modifer).first->second.textureRegion;
 		}
 
-		GL::TextureRegionRect* overwriteRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
+		GL::TextureRegion* overwriteRequest(const std::string& name, Graphic::Pixmap&& pixmap, const PixmapModifer& modifer = nullptr) {
 			TextureRegionPackData data{name, std::move(pixmap), modifer};
 			const auto itr = packData.insert_or_assign(name, data).first;
 			return &itr->second.textureRegion;
@@ -482,7 +482,7 @@ export namespace Assets {
 			packer.push(remains);
 
 			packer.setMaxSize(texMaxBound.getWidth(), texMaxBound.getHeight());
-			packer.sortDatas();
+			packer.sortData();
 			packer.process();
 			const Geom::OrthoRectInt r = packer.getResultBound();
 

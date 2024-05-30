@@ -24,7 +24,7 @@ export namespace ext::base64{
 		explicit bad_code(char const* _Message)
 			: exception{_Message}{}
 
-		bad_code(char const* _Message, int i)
+		bad_code(char const* _Message, const int i)
 			: exception{_Message, i}{}
 
 		explicit bad_code(exception const& _Other)

@@ -22,9 +22,16 @@ namespace Core{
 	export class Batch
 	{
 	protected:
-		Mesh mesh{};
+		Mesh mesh1{};
+		Mesh mesh2{};
 
+		float* buffer1{nullptr};
+		float* buffer2{nullptr};
+
+		bool swapped = false;
 		const Texture* lastTexture = nullptr;
+
+		unsigned index{0};
 
 		ShaderProgram* generalShader = nullptr;
 		ShaderProgram* customShader = nullptr;
@@ -41,23 +48,37 @@ namespace Core{
 
 		const Geom::Matrix3D* projectionFallback = nullptr;
 
-		unsigned index = 0;
-
 	public:
-		Batch() {
-			setupBlending();
-		}
+		[[nodiscard]] Batch() = default;
 
 		Batch(const Batch& other) = delete;
 
-		Batch(Batch&& other) = delete;
-
 		Batch& operator=(const Batch& other) = delete;
 
-		Batch& operator=(Batch&& other) = delete;
+		constexpr float* getCurrentMappedPtr() const noexcept{
+			return swapped ? buffer1 : buffer2;
+		}
 
-		virtual void bindAll() const {
-			mesh.bind();
+		constexpr float* getCurrentWritePtr() const noexcept{
+			return getCurrentMappedPtr() + index;
+		}
+
+		constexpr GL::Mesh& getCurrentMesh() noexcept{
+			return swapped ? mesh1 : mesh2;
+		}
+
+		constexpr const GL::Mesh& getCurrentMesh() const noexcept{
+			return swapped ? mesh1 : mesh2;
+		}
+
+		constexpr void swapBuffer() noexcept{
+			swapped = !swapped;
+		}
+
+		[[nodiscard]] unsigned getIndex() const noexcept{ return index; }
+
+		constexpr void push(const unsigned count) noexcept{
+			index += count;
 		}
 
 		virtual void reset(){
@@ -137,7 +158,7 @@ namespace Core{
 		}
 
 		[[nodiscard]] const Mesh& getMesh() const {
-			return mesh;
+			return mesh1;
 		}
 
 		void setProjection(const Geom::Matrix3D* porj){
@@ -197,6 +218,8 @@ namespace Core{
 
 		virtual void post(const Texture* texture, float* vertices, int offset, int count) = 0;
 
+		virtual void checkFlush(const Texture* texture, unsigned count) = 0;
+
 		virtual void post(const std::function<void()>& drawPost){
 			drawPost();
 		}
@@ -246,6 +269,10 @@ namespace Core{
 	export struct BatchGuard_Proj : BatchGuard{
 		Geom::Matrix3D current{};
 		const Geom::Matrix3D* originalMat{};
+
+		Geom::Matrix3D* operator ->(){
+			return &current;
+		}
 
 		[[nodiscard]] explicit BatchGuard_Proj(Batch& batch, Concepts::Invokable<void(Geom::Matrix3D&)> auto&& modifier)
 			: BatchGuard{batch}, originalMat{batch.getProjection()}{

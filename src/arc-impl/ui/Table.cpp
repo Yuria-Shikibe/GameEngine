@@ -210,6 +210,8 @@ void UI::Table::layoutRelative() {
 			}
 
 			offset = bound.getSize() - maximumPad;
+			//TODO there must be sth wrong
+			offset.x = 0;
 		}else{
 			offset.setZero();
 		}

@@ -56,8 +56,8 @@ export namespace Ctrl{
 							label.setText(label.getBundleEntry("back-to-main-menu"));
 							label.setTextScl(0.8f);
 							label.setEmptyDrawer();
-							label.setTextAlign(Align::center);
-						}).setSizeScale(1.0f, 0.5f).setAlign(Align::Mode::top_center).endLine();
+							label.setTextAlign(Align::Layout::center);
+						}).setSizeScale(1.0f, 0.5f).setAlign(Align::Layout::top_center).endLine();
 
 						inner.add<UI::Table>([&dialog](UI::Table& bt){
 							bt.setEmptyDrawer();
@@ -67,7 +67,7 @@ export namespace Ctrl{
 									label.setText(label.getBundleEntry("yes"));
 									label.setTextScl(0.8f);
 									label.setEmptyDrawer();
-									label.setTextAlign(Align::center);
+									label.setTextAlign(Align::Layout::center);
 								});
 								confirm.setCall([&dialog](auto&, auto){
 									dialog.destroy();
@@ -81,14 +81,14 @@ export namespace Ctrl{
 									label.setText(label.getBundleEntry("no"));
 									label.setTextScl(0.8f);
 									label.setEmptyDrawer();
-									label.setTextAlign(Align::center);
+									label.setTextAlign(Align::Layout::center);
 								});
 								confirm.setCall([&dialog](auto&, auto){
 									dialog.destroy();
 								});
 							}).setMargin({.left = 3});
-						}).setSizeScale(1.0f, 0.4f).setAlign(Align::Mode::bottom_center);
-					}).setSizeScale(0.5f, 0.175f).setAlign(Align::center);
+						}).setSizeScale(1.0f, 0.4f).setAlign(Align::Layout::bottom_center);
+					}).setSizeScale(0.5f, 0.175f).setAlign(Align::Layout::center);
 				});
 			}
 		});

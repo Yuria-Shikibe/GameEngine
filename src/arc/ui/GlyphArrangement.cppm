@@ -12,7 +12,7 @@ export import Font;
 import Graphic.Color;
 import ext.Container.ObjectPool;
 import Geom.Rect_Orthogonal;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 import Geom.Vector2D;
 
 export import UI.Align;
@@ -49,7 +49,7 @@ export namespace Font {
 		CharCode code{};
 		int index{};
 
-		const GL::TextureRegionRect* region{nullptr};
+		const GL::TextureRegion* region{nullptr};
 		Graphic::Color fontColor{};
 
 		Geom::Vec2 src{};
@@ -219,18 +219,18 @@ export namespace Font {
 			move(vec.x, vec.y);
 		}
 
-		void setAlign(const Align::Mode align) {
-			if(align & Align::Mode::top) {
+		void setAlign(const Align::Layout align) {
+			if(align & Align::Layout::top) {
 				rawBound.setSrcY(-rawBound.getHeight());
-			}else if(align & Align::Mode::bottom){
+			}else if(align & Align::Layout::bottom){
 				rawBound.setSrcY(0.0f);
 			}else { //centerY
 				rawBound.setSrcY(-rawBound.getHeight() * 0.5f);
 			}
 
-			if(align & Align::Mode::right) {
+			if(align & Align::Layout::right) {
 				rawBound.setSrcX(-rawBound.getWidth());
-			}else if(align & Align::Mode::left){
+			}else if(align & Align::Layout::left){
 				rawBound.setSrcX(0.0f);
 			}else { //centerX
 				rawBound.setSrcX(-rawBound.getWidth() * 0.5f);

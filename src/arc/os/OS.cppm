@@ -14,7 +14,9 @@ import OS.ApplicationListener;
 export import OS.GlobalTaskQueue;
 
 import Core.Platform;
+import Core.Unit;
 
+//TODO move these to other place
 namespace OS{
 	float deltaTime_internal = 0.0f;    //InTick | No Pause
 	float deltaTick_internal = 0.0f;    //InTick | NO Pause
@@ -52,7 +54,7 @@ export namespace OS{
 	//Should Be Done In Application Launcher
 	std::function<std::filesystem::path()> crashFileGetter = nullptr;
 
-	constexpr float TicksPerSecond = 60.0f;
+	constexpr float TicksPerSecond{Core::Tick::period::den};
 
 	void resetTimer() {
 		globalTime_internal = globalTick_internal = updateTime_internal = updateTick_internal = 0;
@@ -77,19 +79,19 @@ export namespace OS{
 		return FPS_last;
 	}
 
-	inline float deltaTick(){return deltaTick_internal;}
+	inline Core::Tick deltaTick(){return {deltaTick_internal};}
 
-	inline float updateDelta(){return updateTime_internal;}
+	inline Core::Sec updateDelta(){return updateTime_internal;}
 
-	inline float updateDeltaTick(){return updateDeltaTick_internal;}
+	inline Core::Tick updateDeltaTick(){return {updateDeltaTick_internal};}
 
-	inline float globalTime(){return globalTime_internal;}
+	inline Core::Sec globalTime(){return globalTime_internal;}
 
-	inline float globalTick(){return globalTick_internal;}
+	inline Core::Tick globalTick(){return {globalTick_internal};}
 
-	inline float updateTime(){return updateTime_internal;}
+	inline Core::Sec updateTime(){return updateTime_internal;}
 
-	inline float updateTick(){return updateTick_internal;}
+	inline Core::Tick updateTick(){return {updateTick_internal};}
 
 	inline void pause() {paused = true;}
 

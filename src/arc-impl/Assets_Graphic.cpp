@@ -33,7 +33,7 @@ void Assets::Shaders::loadPrimitive() {
 		}else{
 			shader.setVec2("scale", ~vec);
 		}
-		shader.setFloat("time", OS::globalTick() * slideLineShaderScaleArgs.get<0>());
+		shader.setFloat("time", OS::globalTick().count() * slideLineShaderScaleArgs.get<0>());
 
 		shader.setFloat("angle", slideLineShaderAngle.get<0>() + 45.0f);
 	});
@@ -122,9 +122,9 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setTexture2D("texData", 3);
 		shader.setTexture2D("texBloom", 4);
 
-		constexpr auto roundNear = 12;
-		constexpr auto roundMid = 8;
-		constexpr auto roundFar = 4;
+		constexpr auto roundNear = 16;
+		constexpr auto roundMid = 12;
+		constexpr auto roundFar = 8;
 		constexpr unsigned Size = roundNear + roundMid + roundFar;
 
 		const float cameraScale = Core::camera->getScale();

@@ -118,7 +118,7 @@ export namespace Game {
 
 		void updateCollision(const float deltaTick) override {
 			intersectedPointWith.clear();
-			EntityManage::realEntities.quadTree->intersectAll(this);
+			EntityManage::realEntities.quadTree->intersectAll(*this);
 
 			RealityEntity::updateCollision(deltaTick);
 		}
@@ -223,7 +223,7 @@ export namespace Game {
 			chambers.updateDrawTarget(viewport);
 		}
 
-		void update(const float deltaTick) override {
+		void update(const Core::Tick deltaTick) override {
 			RealityEntity::update(deltaTick);
 
 			// auto t = chamberTrans | trans;
@@ -273,7 +273,7 @@ export namespace Game {
 			GL::setDepthMask(false);
 			Font::defGlyphParser->parseWith(coordText, std::format("$<scl#[0.85]>$<color#[eeeeeeff]>Health: {:.1f}", this->health));
 			coordText->offset.set(this->trans.vec).add(maxBound.getWidth() * 0.55f, maxBound.getHeight() * 0.55f);
-			coordText->setAlign(Align::Mode::bottom_left);
+			coordText->setAlign(Align::Layout::bottom_left);
 			coordText->render();
 			// Graphic::Batch::flush();
 			GL::setDepthMask(true);

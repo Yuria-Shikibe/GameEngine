@@ -79,18 +79,21 @@ namespace Graphic::Vertex{
 		static Core::Batch& getBatch();
 
 		static void vert(const GL::Texture* texture, const auto... args){
-			World::vert(vertices, args...);
-			getBatch().post(texture, vertices, 0, size);
+			getBatch().checkFlush(texture, size);
+			World::vert(getBatch().getCurrentWritePtr(), args...);
+			getBatch().push(size);
 		}
 
 		static void vert_monochromeMix(const GL::Texture* texture, const auto... args){
-			World::vert_monochromeMix(vertices, args...);
-			getBatch().post(texture, vertices, 0, size);
+			getBatch().checkFlush(texture, size);
+			World::vert_monochromeMix(getBatch().getCurrentWritePtr(), args...);
+			getBatch().push(size);
 		}
 
 		static void vert_monochromeAll(const GL::Texture* texture, const auto... args){
-			World::vert_monochromeAll(vertices, args...);
-			getBatch().post(texture, vertices, 0, size);
+			getBatch().checkFlush(texture, size);
+			World::vert_monochromeAll(getBatch().getCurrentWritePtr(), args...);
+			getBatch().push(size);
 		}
 	};
 
@@ -104,18 +107,21 @@ namespace Graphic::Vertex{
 		static Core::Batch& getBatch();
 
 		static void vert(const GL::Texture* texture, const auto... args){
-			Overlay::vert(vertices, args...);
-			getBatch().post(texture, vertices, 0, size);
+			getBatch().checkFlush(texture, size);
+			Overlay::vert(getBatch().getCurrentWritePtr(), args...);
+			getBatch().push(size);
 		}
 
 		static void vert_monochromeMix(const GL::Texture* texture, const auto... args){
-			Overlay::vert_monochromeMix(vertices, args...);
-			getBatch().post(texture, vertices, 0, size);
+			getBatch().checkFlush(texture, size);
+			Overlay::vert_monochromeMix(getBatch().getCurrentWritePtr(), args...);
+			getBatch().push(size);
 		}
 
 		static void vert_monochromeAll(const GL::Texture* texture, const auto... args){
-			Overlay::vert_monochromeAll(vertices, args...);
-			getBatch().post(texture, vertices, 0, size);
+			getBatch().checkFlush(texture, size);
+			Overlay::vert_monochromeAll(getBatch().getCurrentWritePtr(), args...);
+			getBatch().push(size);
 		}
 	};
 }

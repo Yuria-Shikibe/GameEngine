@@ -16,6 +16,26 @@ export namespace ext{
 
 		Reserve = 0b0001'0000,
 	};
+
+	constexpr std::array AllBoolOp{
+		BooleanOperation::Replace,
+		BooleanOperation::Or,
+		BooleanOperation::And,
+		BooleanOperation::Not,
+		BooleanOperation::Xor,
+	};
+
+	constexpr std::array AllNamedBoolOp{
+		std::pair<BooleanOperation, std::string_view>{BooleanOperation::Replace, {"subtract-selection"}},
+		std::pair<BooleanOperation, std::string_view>{BooleanOperation::Or, {"union-selection"}},
+		std::pair<BooleanOperation, std::string_view>{BooleanOperation::And, {"intersect-selection"}},
+		std::pair<BooleanOperation, std::string_view>{BooleanOperation::Not, {"subtract-selection-one"}},
+		std::pair<BooleanOperation, std::string_view>{BooleanOperation::Xor, {"exclude-selection"}},
+		// BooleanOperation::Or,
+		// BooleanOperation::And,
+		// BooleanOperation::Not,
+		// BooleanOperation::Xor,
+	};
 }
 
 export ext::BooleanOperation operator|(const ext::BooleanOperation l, const ext::BooleanOperation r){

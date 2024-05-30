@@ -99,8 +99,6 @@ message(STATUS "Linking...")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDES})
 
-link_directories(${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
-
 set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/modules)
 
 set(BUILD_CLOUD OFF CACHE BOOL "Using Remote Build Mode (Enable Dependency Fetch)")
@@ -124,6 +122,9 @@ message(STATUS "Building...")
 
 # Build .exe
 add_executable(${PROJECT_NAME})
+
+target_link_directories(${PROJECT_NAME}
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 
 target_sources(${PROJECT_NAME}
     PUBLIC
@@ -173,6 +174,12 @@ elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}/ ${EXE_DIR}
     )
 endif()
+#
+#install(
+#    TARGETS ${PROJECT_NAME}
+#    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${RES_DIR}
+#    INCLUDES DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+#)
 
 
 message(STATUS "Configuration Complete...")

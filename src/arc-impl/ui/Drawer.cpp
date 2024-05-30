@@ -44,7 +44,7 @@ void UI::TextureRegionRectDrawable::draw(const Geom::OrthoRectFloat rect) const 
 #ifdef _DEBUG
 	if(!texRegion)throw ext::NullPointerException{"Null Tex On Overlay Call!"};
 #endif
-	Overlay::Fill::rectOrtho(texRegion, rect);
+	Overlay::Fill::rectOrtho(*texRegion, rect);
 }
 
 void UI::DrawPair::draw(const UI::Elem* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {

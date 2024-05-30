@@ -17,7 +17,7 @@ export namespace Graphic {
 			projection.setOrthogonal(bound.getSrcX(), bound.getSrcY(), bound.getWidth(), bound.getHeight());
 		}
 
-		void setOrtho(const float srcX, const float srcY, float width, float height) override {
+		void setOrtho(const float srcX, const float srcY, const float width, const float height) override {
 			bound.set(srcX, srcY, width, height);
 		}
 

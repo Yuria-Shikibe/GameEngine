@@ -4,6 +4,8 @@ import UI.InputArea;
 import UI.Root;
 import SideTemp;
 import UI.Screen;
+import UI.Icons;
+import UI.ImageRegion;
 import Core;
 import Graphic.Draw;
 import Assets.Graphic;
@@ -20,9 +22,9 @@ void func(UI::Table& table){
 		label.getGlyphLayout()->setSCale(0.3f);
 		label.setEmptyDrawer();
 		label.setFillparentX();
-		label.setTextAlign(Align::Mode::bottom_right);
+		label.setTextAlign(Align::Layout::bottom_right);
 		label.setWrap(false);
-	}).wrapY().setAlign(Align::Mode::bottom_right).endLine();
+	}).wrapY().setAlign(Align::Layout::bottom_right).endLine();
 
 	table.add<UI::Label>([](UI::Label& label){
 		label.setText(std::format(
@@ -33,18 +35,18 @@ void func(UI::Table& table){
 		label.getGlyphLayout()->setSCale(0.4f);
 		label.setEmptyDrawer();
 		label.setFillparentX();
-		label.setTextAlign(Align::Mode::bottom_right);
+		label.setTextAlign(Align::Layout::bottom_right);
 		label.setWrap(false);
-	}).wrapY().setAlign(Align::Mode::bottom_right).endLine();
+	}).wrapY().setAlign(Align::Layout::bottom_right).endLine();
 
 	table.add<UI::Label>([](UI::Label& label){
 		label.setText("$<c#LIGHT_GRAY>NUAA $<c#AQUA>162320129");
 		label.getGlyphLayout()->setSCale(0.4f);
 		label.setEmptyDrawer();
 		label.setFillparentX();
-		label.setTextAlign(Align::Mode::bottom_right);
+		label.setTextAlign(Align::Layout::bottom_right);
 		label.setWrap(false);
-	}).wrapY().setAlign(Align::Mode::bottom_right).endLine();
+	}).wrapY().setAlign(Align::Layout::bottom_right).endLine();
 }
 
 void Game::Scenes::MainMenu::build(){
@@ -56,7 +58,7 @@ void Game::Scenes::MainMenu::build(){
 			table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
 				pane.setItem<UI::Table>([](UI::Table& menu){
 					menu.add<UI::Label>([](UI::Label& label){
-						label.setTextAlign(Align::Mode::center);
+						label.setTextAlign(Align::Layout::center);
 						label.setWrap(false);
 						label.setEmptyDrawer();
 
@@ -90,7 +92,7 @@ void Game::Scenes::MainMenu::build(){
 												label.setBorder(4.0f);
 											}).setMargin(4.0f).wrapY().endLine();
 											t.add<UI::Table>(func);
-										}).setSizeScale(0.4f, 0.2f).setAlign(Align::Mode::center);
+										}).setSizeScale(0.4f, 0.2f).setAlign(Align::Layout::center);
 									});
 								}},
 								{"ctrl-settings", [](const UI::Button& b, bool){
@@ -103,14 +105,19 @@ void Game::Scenes::MainMenu::build(){
 
 					for(const auto& [name, func] : tempTestBuilders){
 						menu.add<UI::Button>([&name, &func](UI::Button& button){
+							button.add<UI::ImageRegion>([](UI::ImageRegion& image){
+								image.setEmptyDrawer();
+								image.setDrawable(UI::Icons::right);
+							}).setSize(50, 50);
+
 							button.add<UI::Label>([&name](UI::Label& label){
-								label.setTextAlign(Align::Mode::center);
+								label.setTextAlign(Align::Layout::left);
 								label.setWrap(false, false);
 								label.setEmptyDrawer();
 								label.setTextScl(0.75f);
 
 								label.setText(label.getBundleEntry(name));
-							}).setHeight(50);
+							}).setHeight(50).setPad({.left = 6.f});
 							button.setCall(func);
 						}).wrapY().setMargin(5.0f).setPad({.bottom = 10}).endLine();
 					}
@@ -121,17 +128,17 @@ void Game::Scenes::MainMenu::build(){
 				pane.setEmptyDrawer();
 			});
 		})
-		.setAlign(Align::left).setSizeScale(0.2f, 1.0f)
+		.setAlign(Align::Layout::left).setSizeScale(0.2f, 1.0f)
 		.setMargin(0, 10, 0, 10).setSrcScale(0.075f, 0.0f);
 
 	&add<Game::Scene::ChamberWorkshop<Game::SpaceCraft>>([](Game::Scene::ChamberWorkshop<Game::SpaceCraft>& table){
 			table.build(::Test::chamberFrame->getChambers());
 			table.currentFactory = ::Test::testFactory.get();
 		})
-		.setAlign(Align::Mode::center_left).setSizeScale(0.6f, 1.f).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
+		.setAlign(Align::Layout::center_left).setSizeScale(0.6f, 1.f).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
 
 	add<UI::Table>(func)
-		.setAlign(Align::Mode::bottom_right)
+		.setAlign(Align::Layout::bottom_right)
 		.setSizeScale(0.7f, 0.15f)
 		.setMargin(0, 12, 0, 12);
 }

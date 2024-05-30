@@ -22,15 +22,14 @@ namespace Game{
 	template <typename Entity>
 	class ChamberGridData{
 	public:
-		// using Entity = Geom::Vec2;
 		using EntityType = Entity;
 		using Tile = ChamberTile<Entity>;
 		using ItrType = typename std::list<Tile>::iterator;
 
 		struct TileBrief{
-			std::vector<Game::Chamber<EntityType>*> owners{};
-			std::vector<const Tile*> invalids{};
-			std::vector<const Tile*> valids{};
+			std::vector<std::shared_ptr<Game::Chamber<EntityType>>> owners{};
+			std::vector<std::reference_wrapper<const Tile>> invalids{};
+			std::vector<std::reference_wrapper<const Tile>> valids{};
 
 			bool dataValid{false};
 
@@ -189,13 +188,13 @@ namespace Game{
 
 			for (auto& chamberTile : data){
 				if(chamberTile.isOwner()){
-					brief.owners.push_back(chamberTile.chamber.get());
+					brief.owners.push_back(chamberTile.chamber);
 				}
 
 				if(chamberTile.valid()){
-					brief.valids.push_back(&chamberTile);
+					brief.valids.push_back(chamberTile);
 				}else{
-					brief.invalids.push_back(&chamberTile);
+					brief.invalids.push_back(chamberTile);
 				}
 			}
 
@@ -309,8 +308,6 @@ namespace Game{
 			bound.expandBy(this->getBoundOf(tile));
 
 			if(this->ownerInsert(tile))return;
-
-			auto itr = this->findItrByPos(tile.pos);
 
 			this->erase(tile.pos);
 			this->appendBack(tile);
@@ -487,8 +484,6 @@ namespace Game{
 		 * @param noTreeInsertion whether to insert tile to the quad tree now, used for IO and editor when quad tree is not needed
 		 */
 		void insert(const Tile& tile, const bool noTreeInsertion = false){
-			auto cur = data.end();
-
 			ChamberGridData<Entity>::insert(tile);
 
 			if(!noTreeInsertion)for(auto& val : data
@@ -518,7 +513,7 @@ namespace Game{
 
 		void tryInsertTree(Tile& val, const bool boundCheck = false){
 			// if(val.ownsChamber()){
-				quadTree.insert(&val);
+				quadTree.insert(val);
 
 				if(boundCheck){
 					const auto oriBound = bound;
@@ -528,7 +523,7 @@ namespace Game{
 						quadTree.clear();
 						quadTree.setBoundary(bound);
 						for(auto& bound : data/* | std::ranges::views::filter(&ChamberTile::ownsChamber)*/){
-							quadTree.insert(&bound);
+							quadTree.insert(bound);
 						}
 					}
 				}

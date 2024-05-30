@@ -36,7 +36,7 @@ export namespace UI {
 		//scales are done after margin, so it calculates the size shrunk after margin
 		UI::Rect scale{0, 0.0f, 1.0f, 1.0f};
 
-		Align::Mode align = Align::Mode::bottom_left;
+		Align::Layout align = Align::Layout::bottom_left;
 
 		/**
 		 * \brief When true, the cell will expand parent group when the room isn't enough.
@@ -63,6 +63,13 @@ export namespace UI {
 		LayoutCell& setSize(const float w, const float h, const bool usesExpand = false){
 			setWidth(w, usesExpand);
 			setHeight(h, usesExpand);
+
+			return *this;
+		}
+
+		LayoutCell& setSize(const int w, const int h){
+			setWidth(w, false);
+			setHeight(h, false);
 
 			return *this;
 		}
@@ -189,7 +196,7 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setAlign(const Align::Mode align = Align::Mode::center) {
+		LayoutCell& setAlign(const Align::Layout align = Align::Layout::center) {
 			if(align == this->align)return *this;
 			changed();
 			this->align = align;
@@ -217,23 +224,23 @@ export namespace UI {
 			return *this;
 		}
 
-		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Mode align = Align::Mode::center, const bool needClearRelaMove = true) {
+		LayoutCell& setSizeScale(const float xScl, const float yScl, const Align::Layout align = Align::Layout::center, const bool needClearRelaMove = true) {
 			changed();
 
 			Align::Spacing tempScale{scale.getSrcX(), scale.getEndX(), scale.getSrcY(), scale.getEndY()};
 			
-			if(align & Align::Mode::top) {
+			if(align & Align::Layout::top) {
 				tempScale.bottom = tempScale.top - yScl;
-			}else if(align & Align::Mode::bottom){
+			}else if(align & Align::Layout::bottom){
 				tempScale.top = tempScale.bottom + yScl;
 			}else { //centerY
 				tempScale.top = 0.5f + yScl * 0.5f;
 				tempScale.bottom = 0.5f - yScl * 0.5f;
 			}
 
-			if(align & Align::Mode::right) {
+			if(align & Align::Layout::right) {
 				tempScale.left = tempScale.right - xScl;
-			}else if(align & Align::Mode::left){
+			}else if(align & Align::Layout::left){
 				tempScale.right = tempScale.left + xScl;
 			}else { //centerX
 				tempScale.right = 0.5f + xScl * 0.5f;

@@ -8,7 +8,7 @@ export import Game.Entity.RealityEntity;
 
 import Geom.Vector2D;
 import Math;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 
 export namespace Game{
 	class TurretEntity;
@@ -74,7 +74,7 @@ export namespace Game{
 
 		Geom::Vec2 relativePosition{};
 
-		void update(const float deltaTick) override{
+		void update(const Core::Tick deltaTick) override{
 			firing &= !quitBattle;
 
 			updatePosition();

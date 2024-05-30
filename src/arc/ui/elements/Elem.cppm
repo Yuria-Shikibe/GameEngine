@@ -44,8 +44,8 @@ export namespace UI {
 		bool useStaticTime{true};
 		bool autoRelease{true};
 		Geom::Vec2 offset{};
-		Align::Mode followTargetAlign{Align::Mode::bottom_left};
-		Align::Mode tooltipSrcAlign{Align::Mode::top_left};
+		Align::Layout followTargetAlign{Align::Layout::bottom_left};
+		Align::Layout tooltipSrcAlign{Align::Layout::top_left};
 
 		std::function<void(Table&)> builder{};
 

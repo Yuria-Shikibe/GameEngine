@@ -11,7 +11,6 @@ import ext.Async;
 import Assets.Loader;
 
 import GL.Texture.Texture2D;
-import GL.Texture.TextureRegionRect;
 import GL.Texture.TextureRegion;
 import Assets.TexturePacker;
 import Geom.Rect_Orthogonal;
@@ -123,7 +122,7 @@ export namespace Font{
 
 	struct CharData {
 		FT_Glyph_Metrics glyphMatrices{};
-		GL::TextureRegionRect* region{};
+		GL::TextureRegion* region{};
 
 		template <Concepts::Number T>
 		[[nodiscard]] constexpr Geom::Vector2D<T> getSize() const{
@@ -137,7 +136,7 @@ export namespace Font{
 		CharCode charCode{0};
 		Graphic::Pixmap pixmap{};
 
-		mutable GL::TextureRegionRect* region{};
+		mutable GL::TextureRegion* region{};
 
 		[[nodiscard]] FontData_Preload() = default;
 

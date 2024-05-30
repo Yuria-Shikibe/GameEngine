@@ -59,7 +59,7 @@ export namespace GL{
 		}
 
 		void render() const {
-			render(indexBuffer.getSize());
+			render(indexBuffer.getCountSize());
 		}
 	};
 }

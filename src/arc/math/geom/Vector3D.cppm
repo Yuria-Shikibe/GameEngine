@@ -87,7 +87,7 @@ export namespace Geom {
 		 * @param polarAngle The angle between z-axis in radians [0, pi]
 		 * @return This vector for chaining
 		 */
-		constexpr Vector3D& setFromSpherical(float azimuthalAngle, float polarAngle) {
+		constexpr Vector3D& setFromSpherical(const float azimuthalAngle, const float polarAngle) {
 			const float cosPolar = Math::cos(polarAngle);
 			const float sinPolar = Math::sin(polarAngle);
 

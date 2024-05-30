@@ -44,7 +44,7 @@ export namespace Game::Content{
 				set({.vec = bullet.trans.vec}, effectColor);
 		}
 
-		void hit(Bullet& bullet, RealityEntity& entity, Geom::Vec2 actualPosition) const override{
+		void hit(Bullet& bullet, RealityEntity& entity, const Geom::Vec2 actualPosition) const override{
 			float t = bullet.getTrailLifetime();
 			Assets::Effects::genTrailFade(Game::core->effectManager.get(), std::move(bullet.trail), trailWidth, trailEnd)->setColor(trailBegin)
 				->setLifetime(t);

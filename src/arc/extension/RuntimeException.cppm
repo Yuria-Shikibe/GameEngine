@@ -1,4 +1,3 @@
-//
 export module ext.RuntimeException;
 
 import StackTrace;
@@ -7,7 +6,8 @@ import std;
 export namespace ext{
 	class RuntimeException : public std::exception{
 	public:
-		virtual ~RuntimeException() override = default;
+		~RuntimeException() override = default;
+
 		std::string data{};
 
 		explicit RuntimeException(const std::string& str, const std::source_location& location = std::source_location::current()){
@@ -18,12 +18,13 @@ export namespace ext{
 			ss << "at: " << location.function_name() << '\n';
 			ss << "at: " << location.column() << '\n';
 
-			getStackTraceBrief(ss);
+			ext::getStackTraceBrief(ss);
 
 			data = std::move(ss).str();
 
 			RuntimeException::postProcess();
 		}
+
 
 		[[nodiscard]] char const* what() const override {
 			return data.data();
@@ -64,7 +65,7 @@ export namespace ext{
 			: RuntimeException(str) {
 		}
 
-		[[nodiscard]] ArrayIndexOutOfBound(size_t index, size_t bound) : RuntimeException("Array Index Out Of Bound! : [" + std::to_string(index) + "] Out of " + std::to_string(bound)) {
+		[[nodiscard]] ArrayIndexOutOfBound(const size_t index, const size_t bound) : RuntimeException("Array Index Out Of Bound! : [" + std::to_string(index) + "] Out of " + std::to_string(bound)) {
 
 		}
 	};

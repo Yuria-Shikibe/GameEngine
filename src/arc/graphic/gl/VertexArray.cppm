@@ -11,14 +11,15 @@ import GL.Constants;
 // All VAOs should be constructed at one load function.
 
 export namespace GL{
-	struct VertElem{
-		GLenum type{0};
-		GLboolean normalized{0};
-		GLint size{0};
-	};
-
 	class AttributeLayout //TODO make this impl by template and finish layout in compile
 	{
+	public:
+		struct VertElem{
+			GLenum type{0};
+			GLboolean normalized{0};
+			GLint size{0};
+		};
+
 	protected:
 		GLsizei stride = 0;
 		std::vector<VertElem> elems{};

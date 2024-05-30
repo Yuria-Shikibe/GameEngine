@@ -2,7 +2,7 @@ export module GL.Texture.TextureNineRegion;
 
 import std;
 import Math;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 import GL.Texture;
 import Geom.Rect_Orthogonal;
 import ext.RuntimeException;
@@ -50,7 +50,7 @@ export namespace GL {
 
 		static constexpr int TotalRegions = 9;
 
-		std::array<TextureRegionRect, TotalRegions> regions{};
+		std::array<TextureRegion, TotalRegions> regions{};
 
 		Geom::Vec2 innerSize{};
 
@@ -59,21 +59,21 @@ export namespace GL {
 
 		[[nodiscard]] TextureNineRegion() = default;
 
-		[[nodiscard]] TextureNineRegion(const TextureRegionRect* const rect, HardRect&& innerBound) {
+		[[nodiscard]] TextureNineRegion(const TextureRegion* const rect, HardRect&& innerBound) {
 			loadFrom(rect, std::forward<HardRect>(innerBound));
 		}
 
-		void loadFrom(const TextureRegionRect* const rect, HardRect&& innerBound) {
+		void loadFrom(const TextureRegion* const rect, HardRect&& innerBound) {
 			const HardRect totalBound{
-				Math::round<int>(rect->u00() * static_cast<float>(rect->getData()->getWidth())),
-				Math::round<int>(rect->v00() * static_cast<float>(rect->getData()->getHeight())),
+				Math::round<int>(rect->getSrcX()),
+				Math::round<int>(rect->getSrcY()),
 				Math::round<int>(rect->getWidth()),
 				Math::round<int>(rect->getHeight())
 			};
 
 			innerBound.move(totalBound.getSrcX(), totalBound.getSrcY());
 
-			loadFrom(rect->getData(), totalBound, innerBound);
+			loadFrom(rect->data, totalBound, innerBound);
 		}
 
 		void loadFrom(const Texture* const rect, const HardRect& totalBound, const HardRect& innerBound) {
@@ -86,8 +86,8 @@ export namespace GL {
 			}
 #endif
 
-			for(TextureRegionRect& region : regions) {
-				region.setData(rect);
+			for(TextureRegion& region : regions) {
+				region.data = rect;
 			}
 
 			const int
@@ -112,9 +112,9 @@ export namespace GL {
 			regions[ID_bottomLeft ].fetchIntoCurrent(HardRect{srcX, srcY, left, bottom});
 			regions[ID_bottomRight].fetchIntoCurrent(HardRect{innerBound.getEndX(), srcY, right, bottom});
 
-			for(TextureRegionRect& region : regions) {
+			for(TextureRegion& region : regions) {
 				if(region.getWidth() * region.getHeight() < 0.2f) {
-					region.setData(nullptr);
+					region.data = nullptr;
 				}
 			}
 
@@ -155,7 +155,7 @@ export namespace GL {
 			return Rect{getSrcX(), getSrcY(), getWidth(), getHeight()};
 		}
 
-		void set(const int id, const TextureRegionRect& region) {
+		void set(const int id, const TextureRegion& region) {
 			regions[id] = region;
 		}
 

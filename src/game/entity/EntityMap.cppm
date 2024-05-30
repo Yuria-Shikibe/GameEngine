@@ -51,7 +51,7 @@ export namespace Game {
 			if(const auto pair = idMap.try_emplace(t->getID(), t); pair.second) {
 				addEvent.entity = t.get();
 				groupListener.fire(addEvent);
-				if(quadTree)quadTree->insert(t.get());
+				if(quadTree)quadTree->insert(t.operator*());
 				t->registerGroup(this);
 			}else {
 				//If insert doesn't happen, says the id crushed, should show a warning or sth
@@ -59,9 +59,9 @@ export namespace Game {
 			}
 		}
 
-		virtual void remove(T* t) {
-			if(const auto itr = idMap.find(t->getID()); itr != idMap.end()) {
-				removeEvent.entity = t;
+		virtual void rerove(T& t) {
+			if(const auto itr = idMap.find(t.getID()); itr != idMap.end()) {
+				removeEvent.entity = &t;
 				groupListener.fire(removeEvent);
 				if(quadTree)quadTree->remove(t);
 
@@ -82,7 +82,7 @@ export namespace Game {
 			quadTree->setBoundary(worldBound);
 
 			this->each([this](std::shared_ptr<T>& t) {
-				quadTree->insert(t.get());
+				quadTree->insert(*t);
 			});
 		}
 
@@ -91,7 +91,7 @@ export namespace Game {
 			quadTree->clearItemsOnly();
 
 			this->each([this](std::shared_ptr<T>& t) {
-				quadTree->insert(t.get());
+				quadTree->insert(*t);
 			});
 		}
 
@@ -134,7 +134,7 @@ export namespace Game {
 		void processRemoves() {
 			if(toRemove.empty())return;
 			for(T* entity : toRemove) {
-				this->remove(entity);
+				this->rerove(*entity);
 			}
 			toRemove.clear();
 		}

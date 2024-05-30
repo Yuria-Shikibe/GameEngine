@@ -26,8 +26,12 @@ export namespace Math{
 
 		}
 
+		explicit constexpr operator bool() const noexcept{
+			return time >= lifetime;
+		}
+
 		template <bool autoClamp = false>
-		void update(const float delta){
+		constexpr void update(const float delta) noexcept{
 			time += delta;
 
 			if constexpr (autoClamp){
@@ -36,7 +40,7 @@ export namespace Math{
 		}
 
 		template <bool autoClamp = false>
-		[[nodiscard]] constexpr float get() const{
+		[[nodiscard]] constexpr float get() const noexcept{
 			if constexpr (autoClamp){
 				return clamp(time / lifetime);
 			}
@@ -50,7 +54,7 @@ export namespace Math{
 				return clamp(time / otherLifetime);
 			}
 
-			return time / lifetime;
+			return time / otherLifetime;
 		}
 
 		[[nodiscard]] float get(Concepts::Invokable<float(float)> auto&& interp) const{
@@ -60,15 +64,15 @@ export namespace Math{
 		/**
 		 * @brief [margin, 1]
 		 */
-		[[nodiscard]] float getMargin(const float margin) const{
+		[[nodiscard]] constexpr float getMargin(const float margin) const noexcept{
 			return margin + get() * (1 - margin);
 		}
 
-		[[nodiscard]] constexpr float getInv() const{
+		[[nodiscard]] constexpr float getInv() const noexcept{
 			return 1 - get();
 		}
 
-		[[nodiscard]] float getSlope() const{
+		[[nodiscard]] float getSlope() const noexcept{
 			return slope(get());
 		}
 	};

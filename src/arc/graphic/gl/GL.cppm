@@ -266,7 +266,7 @@ export namespace GL {
             rect.getHeight());
     }
 
-    void setScissor(Geom::OrthoRectInt cur) {
+    void setScissor(const Geom::OrthoRectInt cur) {
         if(cur == scissorRect)return;
         if(scissorShrinkActivatedCount){
             const Geom::OrthoRectInt rect = scissorRect.getOverlap(cur);

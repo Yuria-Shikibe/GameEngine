@@ -9,6 +9,7 @@ export namespace Core{
 		std::vector<::OS::ApplicationListener*> applicationListeners{};
 
 		::OS::ApplicationListener* gameCore{};
+		mutable std::future<void> gameLoopFuture{};
 
 	public:
 		[[nodiscard]] OS::ApplicationListener* getGameCore() const{ return gameCore; }
@@ -26,8 +27,8 @@ export namespace Core{
 		void clearListeners(){applicationListeners.clear();}
 
 		void update() const{
-			std::future<void> gameFuture;
-			if(!isPaused() && gameCore)gameFuture = std::async(&OS::ApplicationListener::update, gameCore, getDeltaTick());
+			if(gameLoopFuture.valid())gameLoopFuture.get();
+			if(!isPaused() && gameCore)gameLoopFuture = std::async(&OS::ApplicationListener::update, gameCore, getDeltaTick());
 
 			handleAsync();
 
@@ -49,12 +50,10 @@ export namespace Core{
 			if(Core::uiRoot)Core::uiRoot->update(getDeltaTick());
 			Core::input.update(getDeltaTick());
 			if(Core::camera)Core::camera->update(getDeltaTick());
-
-			if(gameFuture.valid())gameFuture.get();
 		}
 
-		static float getDeltaTick() noexcept;
-		static float getUpdateDeltaTick() noexcept;
+		static Core::Tick getDeltaTick() noexcept;
+		static Core::Tick getUpdateDeltaTick() noexcept;
 		static bool isPaused() noexcept;
 		static void handleAsync();
 	};

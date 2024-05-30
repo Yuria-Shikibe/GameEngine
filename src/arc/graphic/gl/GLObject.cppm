@@ -5,26 +5,26 @@ import std;
 import GL.Constants;
 
 export namespace GL{
-	struct  GLObject{
+	class GLObject{
 	protected:
 		GLuint nameID = 0;
 		GLenum targetFlag = 0;
 
-		void reset(){
+		constexpr void reset() noexcept{
 			nameID = 0;
 			targetFlag = 0;
 		}
 
 	public:
-		[[nodiscard]] GLObject() = default;
+		[[nodiscard]] constexpr GLObject() = default;
 
-		explicit GLObject(const GLenum targetFlag)
+		constexpr explicit GLObject(const GLenum targetFlag)
 			: targetFlag(targetFlag){
 		}
 
 		GLObject(const GLObject& other) = delete;
 
-		GLObject(GLObject&& other) noexcept
+		constexpr GLObject(GLObject&& other) noexcept
 			: nameID(other.nameID),
 			  targetFlag(other.targetFlag){
 			other.reset();
@@ -32,7 +32,7 @@ export namespace GL{
 
 		GLObject& operator=(const GLObject& other) = delete;
 
-		GLObject& operator=(GLObject&& other) noexcept{
+		constexpr GLObject& operator=(GLObject&& other) noexcept{
 			if(this == &other) return *this;
 			nameID = other.nameID;
 			targetFlag = other.targetFlag;
@@ -40,32 +40,38 @@ export namespace GL{
 			return *this;
 		}
 
-		friend bool operator==(const GLObject& lhs, const GLObject& rhs){
+		[[nodiscard]] friend constexpr bool operator==(const GLObject& lhs, const GLObject& rhs) noexcept{
 			return lhs.nameID == rhs.nameID
 				&& lhs.targetFlag == rhs.targetFlag;
 		}
 
-		friend bool operator!=(const GLObject& lhs, const GLObject& rhs){
+		[[nodiscard]] friend constexpr bool operator!=(const GLObject& lhs, const GLObject& rhs) noexcept{
 			return !(lhs == rhs);
 		}
 
-		[[nodiscard]] GLuint getID() const {
+		[[nodiscard]] constexpr GLuint getID() const noexcept{
 			return nameID;
 		}
 
-		[[nodiscard]] GLenum getTargetFlag() const {
+		[[nodiscard]] constexpr GLenum getTargetFlag() const noexcept{
 			return targetFlag;
 		}
 
-		[[nodiscard]] size_t hashCode() const{
-			return static_cast<size_t>(targetFlag) << 32 | targetFlag;
+		[[nodiscard]] constexpr std::size_t hashCode() const noexcept{
+			return static_cast<std::size_t>(targetFlag) << 32 | targetFlag;
+		}
+
+		friend constexpr void swap(GLObject& lhs, GLObject& rhs) noexcept{
+			using std::swap;
+			swap(lhs.nameID, rhs.nameID);
+			swap(lhs.targetFlag, rhs.targetFlag);
 		}
 	};
 }
 export
 	template<>
 	struct std::hash<GL::GLObject> {
-		[[nodiscard]] size_t operator()(const GL::GLObject& obj) const noexcept{
+		[[nodiscard]] constexpr std::size_t operator()(const GL::GLObject& obj) const noexcept{
 			return obj.hashCode();
 		}
 	};

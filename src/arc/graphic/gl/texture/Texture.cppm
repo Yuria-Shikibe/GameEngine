@@ -74,7 +74,7 @@ export namespace GL{
 			glTextureParameteri(nameID, GL_TEXTURE_WRAP_T, clampY);
 		}
 
-		void setScale(const GLint downScale = GL::mipmap_nearest_linear, const GLint upScale = GL::linear) const{
+		void setFilter(const GLint downScale = GL::mipmap_nearest_linear, const GLint upScale = GL::linear) const{
 			glTextureParameteri(nameID, GL_TEXTURE_MIN_FILTER, downScale);
 			glTextureParameteri(nameID, GL_TEXTURE_MAG_FILTER, upScale);
 		}

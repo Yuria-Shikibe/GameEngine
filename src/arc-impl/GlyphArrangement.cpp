@@ -25,7 +25,7 @@ void Font::GlyphLayout::render(const float alphaMask) const {
 	for (auto& glyph : glyphs){
 		Graphic::Draw::Overlay::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
 		Graphic::Draw::Overlay::Fill::quad(
-			glyph.region,
+			*glyph.region,
 			glyph.v00().scl(scale) + off,
 			glyph.v10().scl(scale) + off,
 			glyph.v11().scl(scale) + off,
@@ -52,7 +52,7 @@ void Font::GlyphLayout::render(const float alphaMask, float progress) const {
 		Graphic::Draw::Overlay::color(glyph.fontColor, glyph.fontColor.a * alphaMask);
 
 		Graphic::Draw::Overlay::Fill::quad(
-			glyph.region,
+			*glyph.region,
 			glyph.v00().scl(scale) + off,
 			glyph.v10().scl(scale) + off,
 			glyph.v11().scl(scale) + off,
@@ -68,7 +68,7 @@ Font::TypesettingContext::TypesettingContext(const FontFlags* const font): defau
 	paragraphSpacing = lineSpacing * 1.1f;
 }
 
-void Font::TokenParser::parse(unsigned curIndex, const Font::TextView token, const ModifierableData& data) const {
+void Font::TokenParser::parse(const unsigned curIndex, const Font::TextView token, const ModifierableData& data) const {
 	const auto hasType = token.find('#');
 
 	if(hasType != Font::TextView::npos) {

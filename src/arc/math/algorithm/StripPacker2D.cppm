@@ -1,9 +1,11 @@
-module;
-
 export module Math.StripPacker2D;
 
-import std;
+
+#if DEBUG_CHECK
 import ext.RuntimeException;
+#endif
+
+import std;
 import ext.Concepts;
 import Geom.Rect_Orthogonal;
 import Math;
@@ -58,7 +60,7 @@ export namespace Math {
     		packed.reserve(all.size());
     	}
 
-		void sortDatas() {
+		void sortData() {
     		std::ranges::sort(boxes_widthAscend , [this](const Rect& r1, const Rect& r2) {
     			return r1.getWidth() > r2.getWidth();
     		}, &obtain);
@@ -116,7 +118,7 @@ export namespace Math {
     	 * @endcode 
     	 */
     	constexpr SubRectArr splitQuad(const Rect& bound, const Rect& box) {
-#ifdef _DEBUG
+#if DEBUG_CHECK
     		if(bound.getSrcX() != box.getSrcX() || box.getSrcY() != box.getSrcY())throw ext::IllegalArguments{"The source of the box and the bound doesn't match"};
 #endif
     		return SubRectArr{

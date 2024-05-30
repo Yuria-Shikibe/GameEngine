@@ -51,8 +51,8 @@ export namespace Graphic::Frame{
 		}
 	}
 
-	void blitCopy(const GL::FrameBuffer* const read, unsigned readAttachmentID, const GL::FrameBuffer* const draw,
-				  unsigned drawAttachmentID,
+	void blitCopy(const GL::FrameBuffer* const read, const unsigned readAttachmentID, const GL::FrameBuffer* const draw,
+	              const unsigned drawAttachmentID,
 				  const GLbitfield mask = GL_COLOR_BUFFER_BIT, const GLenum filter = GL_LINEAR){
 		read->bind(GL::FrameBuffer::READ);
 		draw->bind(GL::FrameBuffer::DRAW);

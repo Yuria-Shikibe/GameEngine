@@ -74,7 +74,7 @@ import Graphic.Color;
 
 import GL.Buffer.MultiSampleFrameBuffer;
 import GL.Buffer.FrameBuffer;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
 import GL.Blending;
 import Event;
@@ -219,7 +219,7 @@ namespace GameCtrl{
 void setupUITest(){
 	const auto HUD = new UI::Table{};
 
-	Core::uiRoot->currentScene->transferElem(HUD).fillParent().setAlign(Align::center);
+	Core::uiRoot->currentScene->transferElem(HUD).fillParent().setAlign(Align::Layout::center);
 
 	HUD->setLayoutByRelative(false);
 	HUD->setBorderZero();
@@ -252,7 +252,7 @@ void setupUITest(){
 			   // });
 		   });
 	   })
-	   .setAlign(Align::top_left).setSizeScale(0.25f, 0.2f)
+	   .setAlign(Align::Layout::top_left).setSizeScale(0.25f, 0.2f)
 	   .setMargin(0, 10, 0, 10);
 
 
@@ -272,11 +272,11 @@ void setupUITest(){
 
 			   bar.setTooltipBuilder({
 					   .followTarget = UI::TooltipFollowTarget::parent,
-					   .followTargetAlign = Align::Mode::bottom_center,
-					   .tooltipSrcAlign = Align::Mode::top_center,
+					   .followTargetAlign = Align::Layout::bottom_center,
+					   .tooltipSrcAlign = Align::Layout::top_center,
 					   .builder = [&bar](UI::Table& hint){
 						   // hint.setMinimumSize({600, 300});
-						   hint.setCellAlignMode(Align::Mode::top_left);
+						   hint.setCellAlignMode(Align::Layout::top_left);
 						   hint.add<UI::Label>([&bar](UI::Label& label){
 							   label.setWrap();
 							   label.setText([&bar]{
@@ -360,7 +360,7 @@ void setupUITest(){
 		   //
 		   // }).fillParent().setPad({.left = 2.0f});
 	   })
-	   .setAlign(Align::Mode::top_left)
+	   .setAlign(Align::Layout::top_left)
 	   .setSizeScale(0.4f, 0.08f)
 	   .setSrcScale(0.25f, 0.0f)
 	   .setMargin(10, 0, 0, 0);
@@ -374,7 +374,7 @@ void setupUITest(){
 				   menu.setEmptyDrawer();
 				   menu.add<UI::Button>([](UI::Button& button){
 					   button.add<UI::Label>([](UI::Label& label){
-						   label.setTextAlign(Align::Mode::center);
+						   label.setTextAlign(Align::Layout::center);
 						   label.setEmptyDrawer();
 						   label.setTextScl(0.65f);
 						   label.setFillparentX();
@@ -392,7 +392,7 @@ void setupUITest(){
 
 				   menu.add<UI::Button>([](UI::Button& button){
 					   button.add<UI::Label>([](UI::Label& label){
-						   label.setTextAlign(Align::Mode::center);
+						   label.setTextAlign(Align::Layout::center);
 						   label.setEmptyDrawer();
 						   label.setTextScl(0.65f);
 						   label.setFillparentX();
@@ -410,7 +410,7 @@ void setupUITest(){
 			   });
 		   });
 	   })
-	   .setAlign(Align::Mode::top_left)
+	   .setAlign(Align::Layout::top_left)
 	   .setSizeScale(0.15f, 0.6f)
 	   .setSrcScale(0.0f, 0.2f)
 	   .setMargin(0, 0, 10, 10);
@@ -641,7 +641,7 @@ int main(const int argc, char* argv[]){
 	GL::MultiSampleFrameBuffer multiSample{Core::renderer->getWidth(), Core::renderer->getHeight()};
 	GL::FrameBuffer frameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight()};
 
-	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, 4, true};
+	GL::MultiSampleFrameBuffer worldFrameBuffer{Core::renderer->getWidth(), Core::renderer->getHeight(), 16, 4, true};
 	GL::FrameBuffer acceptBuffer1{Core::renderer->getWidth(), Core::renderer->getHeight(), 4, true};
 
 	Game::CombinePostProcessor merger{
@@ -649,7 +649,7 @@ int main(const int argc, char* argv[]){
 			Assets::Shaders::merge
 		};
 	merger.blur.setScale(0.5f);
-	merger.blur.setProcessTimes(4);
+	merger.blur.setProcessTimes(3);
 	merger.setTargetState(GL::State::BLEND, true);
 
 	Core::renderer->registerSynchronizedResizableObject(&multiSample);
@@ -673,15 +673,13 @@ int main(const int argc, char* argv[]){
 
 		Draw::Overlay::Line::setLineStroke(5);
 		Draw::Overlay::color(Colors::GRAY);
-		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType* t){
-			Draw::Overlay::Line::rectOrtho(t->getBoundary());
+		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType& t){
+			Draw::Overlay::Line::rectOrtho(t.getBoundary());
 		});
 
 		Game::EntityManage::renderDebug();
 
 		event.renderer->frameEnd(Assets::PostProcessors::bloom.get());
-		// Assets::PostProcessors::blur_Far->apply(&event.renderer->effectBuffer, event.renderer->contextFrameBuffer);
-		// event.renderer->contextFrameBuffer->bind();
 	});
 
 	// glDepthRangef(Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);
@@ -689,7 +687,9 @@ int main(const int argc, char* argv[]){
 		Graphic::Mesh::meshBegin();
 		Graphic::Mesh::meshEnd(true, Assets::Shaders::coordAxis);
 
-		acceptBuffer1.getColorAttachments().at(3)->setScale(GL::nearest, GL::nearest);
+
+
+		acceptBuffer1.getColorAttachments().at(3)->setFilter(GL::nearest, GL::nearest);
 
 		Core::Renderer& renderer = *event.renderer;
 
@@ -723,50 +723,17 @@ int main(const int argc, char* argv[]){
 
 	});
 
-	::Test::chamberFrame->updateChamberFrameData();
-	::Test::chamberFrame->setLocalTrans({});
-	::Test::chamberFrame->getLocalToWorld().scale(10.0f, 10.0f);
-
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
-		// if(!drawDebug) return;
+		if(!drawDebug) return;
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);
 
 		Graphic::Draw::Overlay::getBatch().flush();
-		/*//
-		chamberFrame->updateDrawTarget(Core::camera->getViewportRect());
-		::Game::Draw::chamberFrameTile(*chamberFrame, Core::renderer, true);
-
-		{
-			[[maybe_unused]] Core::BatchGuard_L2W batchGuard{
-					*Core::batchGroup.overlay, chamberFrame->getTransformMat()
-				};
-
-			auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
-
-			const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-			Geom::OrthoRectInt bound{pos, 3, 3};
-
-			if(const auto finded = chamberFrame->getChambers().find(pos)){
-				Draw::color(Colors::LIGHT_GRAY);
-				Draw::rectOrtho(Draw::getDefaultTexture(), finded->getTileBound());
-			}
-
-			if(chamberFrame->getChambers().placementValid(bound)){
-				Draw::color(Colors::PALE_GREEN);
-			} else{
-				Draw::color(Colors::RED_DUSK);
-			}
-
-			Draw::Line::rectOrtho(bound.as<float>().scl(Game::TileSize, Game::TileSize));
-		}
-		*/
-
 		Graphic::Draw::Overlay::getBatch().switchBlending();
 
 		{
 			Core::BatchGuard_Proj _{Graphic::Draw::Overlay::getBatch()};
-			_.current.setOrthogonal(Core::renderer->getSize());
+			_->setOrthogonal(Core::renderer->getSize());
 
 			auto [x, y] = Core::renderer->getSize().scl(0.5f);
 
@@ -775,7 +742,7 @@ int main(const int argc, char* argv[]){
 			Overlay::color(Graphic::Colors::PALE_GREEN);
 			Overlay::Line::setLineStroke(4.f);
 			Overlay::Line::square(x, y, 50, 45);
-			Overlay::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime() / 5.0f, 1.0f)),
+			Overlay::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime().count() / 5.0f, 1.0f)),
 			                 Colors::SKY.copy().setA(0.55f), Colors::ROYAL.copy().setA(0.55f),
 			                 Colors::SKY.copy().setA(0.55f), Colors::WHITE.copy().setA(0.55f),
 			                 Colors::ROYAL.copy().setA(0.55f), Colors::SKY.copy().setA(0.55f)
@@ -792,7 +759,9 @@ int main(const int argc, char* argv[]){
 		Core::loopManager->update();
 
 		Core::audio->setListenerPosition(Core::camera->getPosition().x, Core::camera->getPosition().y);
-		Core::renderer->draw();
+		 Core::renderer->draw();
+
+		// std::println("{}", OS::getFPS());
 
 		Core::platform->pollEvents();
 		OS::pollWindowEvent();

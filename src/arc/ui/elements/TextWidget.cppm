@@ -18,7 +18,7 @@ export namespace UI{
 
 		bool usingGlyphHeight = false;
 		bool usingGlyphWidth = false;
-		Align::Mode textAlignMode{Align::Mode::top_left};
+		Align::Layout textAlignMode{Align::Layout::top_left};
 
 		void updateGlyphPosition() const{
 			const Rect& drawBound = glyphLayout->getDrawBound();
@@ -37,7 +37,7 @@ export namespace UI{
 			}
 
 			defParser->parseWith(glyphLayout, usingGlyphWidth ? std::numeric_limits<float>::max() : expectedWidth, textChanged || forceUpdate);
-			glyphLayout->setAlign(Align::Mode::bottom_left);
+			glyphLayout->setAlign(Align::Layout::bottom_left);
 			textChanged = false;
 
 			if(usingGlyphHeight && !fillParentY){
@@ -56,12 +56,12 @@ export namespace UI{
 			updateGlyphPosition();
 		}
 
-		void setTextAlign(const Align::Mode align){
+		void setTextAlign(const Align::Layout align){
 			textAlignMode = align;
 			updateGlyphPosition();
 		}
 
-		[[nodiscard]] Align::Mode getTextAlignMode() const noexcept{ return textAlignMode; }
+		[[nodiscard]] Align::Layout getTextAlignMode() const noexcept{ return textAlignMode; }
 
 		void layout() override{
 			setTextUpdated();

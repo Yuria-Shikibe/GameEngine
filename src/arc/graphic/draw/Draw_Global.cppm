@@ -1,4 +1,4 @@
-export module Graphic.Draw:General;
+export module Graphic.Draw:GlobalData;
 
 export import Core.Batch;
 export import Geom.Transform;

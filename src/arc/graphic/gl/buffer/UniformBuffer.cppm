@@ -8,7 +8,7 @@ import std;
 export import GL.Buffer.DataBuffer;
 
 export namespace GL{
-	struct UniformElem {
+	struct [[deprecated("Incomplete")]] UniformElem {
 		GLenum type{};
 		GLuint align{};
 

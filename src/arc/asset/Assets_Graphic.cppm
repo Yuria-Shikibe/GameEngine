@@ -16,7 +16,7 @@ import GL.Shader;
 import GL.Uniform;
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
-import GL.Texture.TextureRegionRect;
+import GL.Texture.TextureRegion;
 
 import Geom.Vector2D;
 
@@ -121,13 +121,13 @@ export namespace Assets{
 
 	namespace Textures {
 		inline const GL::Texture2D* whiteTex = nullptr;
-		inline GL::TextureRegionRect whiteRegion{};
+		inline GL::TextureRegion whiteRegion{};
 		Graphic::Pixmap error{};
 
 		void load() {
 			whiteTex = new GL::Texture2D{Dir::texture.find("white.png")};
 			error = Graphic::Pixmap{Dir::texture.find("error.png")};
-			whiteRegion = GL::TextureRegionRect{whiteTex};
+			whiteRegion = GL::TextureRegion{whiteTex};
 			whiteRegion.shrinkEdge(15.0f);
 		}
 

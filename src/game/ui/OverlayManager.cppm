@@ -137,7 +137,7 @@ export namespace Game {
 					"$<scl#[0.55]>$<color#[eeeeeeff]>[{:.1f}, {:.1f}]",
 				dest.x, dest.y));
 				coordText->offset.set(dest).add(45, 45);
-				coordText->setAlign(Align::Mode::bottom_left);
+				coordText->setAlign(Align::Layout::bottom_left);
 				coordText->render();
 
 				const auto next = entity->controller->moveCommand.nextDest();
@@ -212,11 +212,11 @@ export namespace Game {
 			}
 		}
 
-		void update(float delta) override{
+		void update(Core::Tick delta) override{
 
 		}
 
-		void updateGlobal(float delta) override{
+		void updateGlobal(const Core::Tick delta) override{
 			OverlayInterface::updateGlobal(delta);
 
 			// cursorTrail.update(mousePosNormalized.x, mousePosNormalized.y);

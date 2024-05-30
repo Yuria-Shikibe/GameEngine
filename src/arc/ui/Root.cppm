@@ -338,7 +338,7 @@ export namespace UI{
 		void handleSound(SoundSource sound);
 
 	protected:
-		void inform(int keyCode, int action, int mods) override{
+		void inform(const int keyCode, const int action, const int mods) override{
 			if(inputListener){
 				inputListener->inform(keyCode, action, mods);
 			}

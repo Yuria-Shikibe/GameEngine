@@ -5,6 +5,7 @@ import ext.RuntimeException;
 import Geom.Rect_Orthogonal;
 import Event;
 
+export import Core.Unit;
 
 export namespace Game {
 	using IDType = unsigned int;
@@ -54,7 +55,7 @@ export namespace Game {
 
 		//TODO io support
 
-		virtual void update(float deltaTick/*should Delta applied here or globally?*/) = 0;
+		virtual void update(Core::Tick deltaTick/*should Delta applied here or globally?*/) = 0;
 
 		[[nodiscard]] virtual bool deletable() const{
 			return !activated;
