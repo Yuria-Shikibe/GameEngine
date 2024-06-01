@@ -6,9 +6,11 @@ import SideTemp;
 import UI.Screen;
 import UI.Icons;
 import UI.ImageRegion;
+import UI.FileTreeSelector;
 import Core;
 import Graphic.Draw;
 import Assets.Graphic;
+import Assets.Directories;
 import OS;
 
 import Game.UI.ChamberWorkshop;
@@ -101,6 +103,15 @@ void Game::Scenes::MainMenu::build(){
 									UI::Root* root = b.getRoot();
 									root->showDialog<UI::CtrlBindDialog>();
 								}},
+								{
+									"file-tree", [](const UI::Button& b, bool){
+										Core::uiRoot->showDialog(true, [](UI::Table& builder){
+											builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
+												selector.gotoFile(Assets::Dir::assets.getParent(), false);
+											}).fillParent().setAlign(Align::Layout::top_center);
+										});
+									}
+								},
 							};
 
 					for(const auto& [name, func] : tempTestBuilders){

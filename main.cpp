@@ -769,7 +769,7 @@ int main(const int argc, char* argv[]){
 		OS::pollWindowEvent();
 		Core::renderer->drawOverlay();
 
-		Core::loopManager->updateEnd();
+		Core::loopManager->updateTaskEnd();
 
 		Core::renderer->blit();
 	}

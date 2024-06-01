@@ -100,7 +100,7 @@ export namespace UI {
 			ScrollPane::applyDefDrawer();
 		}
 
-		void update(const float delta) override;
+		void update(const Core::Tick delta) override;
 
 		bool isInbound(const Geom::Vec2 screenPos) const noexcept override{
 			if(Elem::isInbound(screenPos) && (enableHorizonScroll() || enableVerticalScroll())) {

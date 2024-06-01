@@ -48,7 +48,7 @@ export namespace UI{
 		[[nodiscard]] float getDrawProgress() const{ return lastProgress; }
 
 
-		void update(const float delta) override{
+		void update(const Core::Tick delta) override{
 			Elem::update(delta);
 
 			if(approachScope == ApproachScope::updating){

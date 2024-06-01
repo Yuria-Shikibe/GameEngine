@@ -19,6 +19,7 @@ import ext.RuntimeException;
 import Assets.Bundle;
 export import OS.Ctrl.Bind.Constants;
 
+export import Core.Unit;
 import std;
 
 export namespace UI {
@@ -482,12 +483,15 @@ export namespace UI {
 
 		[[nodiscard]] bool isActivated() const noexcept{ return activated; }
 
-		virtual void update(const float delta){
+		virtual void update(const Core::Tick delta){
 			if(visibilityChecker) [[unlikely]] setVisible(visibilityChecker());
 			if(disableChecker) [[unlikely]] setDisabled(disableChecker());
 			if(activatedChecker) [[unlikely]] setActivated(activatedChecker());
 			if(appendUpdator) [[unlikely]] appendUpdator();
 
+			if(visiable && layoutChanged) {
+				layout();
+			}
 
 			for(float actionDelta = delta; !actions.empty();){
 				const auto& current = actions.front();

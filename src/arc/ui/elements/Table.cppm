@@ -83,6 +83,14 @@ export namespace UI {
 			return cell;
 		}
 
+		template <Concepts::Derived<Elem> T, typename ...Args>
+		LayoutCell& emplace(Args&& ...args) {
+			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(std::forward<Args>(args) ...)));
+			cell.applyLayout(defaultCellLayout);
+
+			return cell;
+		}
+
 		LayoutCell& transferElem(Elem* elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
 			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
@@ -129,12 +137,8 @@ export namespace UI {
 			changed(ChangeSignal::notifyAll);
 		}
 
-		void update(const float delta) override {
+		void update(const Core::Tick delta) override {
 			//TODO move this into listener
-			if(visiable && layoutChanged) {
-				layout();
-			}
-
 			Group::update(delta);
 		}
 

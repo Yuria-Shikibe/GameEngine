@@ -35,7 +35,7 @@ void UI::Table::layoutRelative() {
 			if(cell.isIgnoreLayout())continue;
 
 			if(!cell.scaleRelativeToParentX) {
-				const float cellWidth = cell.getExpectedItemWidth();
+				const float cellWidth = cell.getDefWidth();
 				const auto curPosX_indexed = rows() + curPos.x;
 				maxSizeArr[curPosX_indexed] = Math::max(maxSizeArr[curPosX_indexed], cellWidth);
 			}else{
@@ -43,7 +43,7 @@ void UI::Table::layoutRelative() {
 			}
 
 			if(!cell.scaleRelativeToParentY) {
-				maxSizeArr[curPos.y] = Math::max(maxSizeArr[curPos.y], cell.getExpectedItemHeight());
+				maxSizeArr[curPos.y] = Math::max(maxSizeArr[curPos.y], cell.getDefHeight());
 			}else{
 				currentLineScaleRequester.y = 1;
 			}
@@ -112,7 +112,7 @@ void UI::Table::layoutRelative() {
 				std::accumulate(maxSizeArr.begin(), maxSizeArr.begin() + rows(), 0.0f)
 			};
 
-		if(expandX){
+		if(expandX && !fillParentX){
 			if(expandX_ifLarger){
 				setWidth(Math::max(cellSize.x + getBorderWidth(), getWidth()));
 			}else{
@@ -120,7 +120,7 @@ void UI::Table::layoutRelative() {
 			}
 		}
 
-		if(expandY){
+		if(expandY && !fillParentY){
 			if(expandY_ifLarger){
 				setHeight(Math::max(cellSize.y + getBorderHeight(), getHeight()));
 			}else{
@@ -193,7 +193,7 @@ void UI::Table::layoutRelative() {
 
 			maximumPad = bound.getSize();
 
-			if(expandX){
+			if(expandX && !fillParentX){
 				if(expandX_ifLarger){
 					setWidth(Math::max(cellSize.x + getBorderWidth(), getWidth()));
 				}else{
@@ -201,7 +201,7 @@ void UI::Table::layoutRelative() {
 				}
 			}
 
-			if(expandY){
+			if(expandY && !fillParentY){
 				if(expandY_ifLarger){
 					setHeight(Math::max(cellSize.y + getBorderHeight(), getHeight()));
 				}else{

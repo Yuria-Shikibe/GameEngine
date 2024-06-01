@@ -29,7 +29,7 @@ import UI.Button;
 import UI.SliderBar;
 import UI.ProgressBar;
 import UI.InputArea;
-import UI.FileTreeSelector;
+// import UI.FileTreeSelector;
 
 import Game.Chamber;
 import Game.Chamber.FrameTrans;
@@ -250,31 +250,7 @@ void setupUITest_Old(){
 									   label.setEmptyDrawer();
 									   label.getBorder().expand(4.0f);
 								   }).expand().endLine();
-								   hint.add<UI::Button>([i](UI::Button& button){
-									   button.setCall([i](UI::Button&, bool){
-										   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
-											   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
-												   selector.gotoFile(Assets::Dir::assets.getParent(), false);
-											   }).fillParent().setAlign(Align::Layout::top_center);
-										   });
-									   });
-									   button.setTooltipBuilder({
-											   .followTarget = UI::TooltipFollowTarget::parent,
-											   .followTargetAlign = Align::Layout::center_right,
-											   .tooltipSrcAlign = Align::Layout::center_left,
-											   .builder = [](UI::Table& hintInner){
-												   hintInner.setCellAlignMode(Align::Layout::top_left);
-												   hintInner.add<UI::Label>([](UI::Label& label){
-													   label.setWrap();
-													   label.setText(std::format(
-														   "<Hover Table>$<sub>$<c#PALE_GREEN>{}$<\\sub>", "Nesting"));
-													   label.getGlyphLayout()->setSCale(0.65f);
-													   label.setEmptyDrawer();
-													   label.getBorder().expand(4.0f);
-												   }).expand().endLine();
-											   }
-										   });
-								   }).setHeight(120.0f).expandY().fillParentX();
+
 								   hint.PointCheck = 180;
 							   }
 						   });

@@ -8,10 +8,27 @@ export namespace Core{
 	class MainLoopManager{
 		std::vector<::OS::ApplicationListener*> applicationListeners{};
 
-		::OS::ApplicationListener* gameCore{};
-		mutable std::future<void> gameLoopFuture{};
+		OS::ApplicationListener* gameCore{};
+		std::binary_semaphore updateBeginSemaphore{0};
+		std::binary_semaphore updateEndSemaphore{0};
+
+		std::jthread taskThread{&MainLoopManager::updateTask, this};
+
+		void updateTask(){
+			while(true){
+				updateBeginSemaphore.acquire();
+				if(taskThread.get_stop_token().stop_requested())break;
+				if(gameCore)gameCore->update(getDeltaTick());
+				updateEndSemaphore.release();
+			}
+		}
 
 	public:
+		~MainLoopManager(){
+			taskThread.get_stop_source().request_stop();
+			updateBeginSemaphore.release();
+		}
+
 		[[nodiscard]] OS::ApplicationListener* getGameCore() const{ return gameCore; }
 
 		void setGameCore(OS::ApplicationListener* const gameCore){ this->gameCore = gameCore; }
@@ -26,9 +43,8 @@ export namespace Core{
 
 		void clearListeners(){applicationListeners.clear();}
 
-		void update() const{
-			// if(gameLoopFuture.valid())gameLoopFuture.get();
-			if(!isPaused() && gameCore)gameLoopFuture = std::async(&OS::ApplicationListener::update, gameCore, getDeltaTick());
+		void update(){
+			updateTaskBegin();
 
 			handleAsync();
 
@@ -47,17 +63,21 @@ export namespace Core{
 			}
 
 			if(gameCore)gameCore->updateGlobal(getDeltaTick());
-			if(Core::uiRoot)Core::uiRoot->update(getDeltaTick());
-			Core::input.update(getDeltaTick());
-			if(Core::camera)Core::camera->update(getDeltaTick());
+			if(uiRoot)uiRoot->update(getDeltaTick());
+			input.update(getDeltaTick());
+			if(camera)camera->update(getDeltaTick());
 		}
 
-		void updateEnd() const{
-			if(gameLoopFuture.valid())gameLoopFuture.get();
+		void updateTaskBegin(){
+			updateBeginSemaphore.release();
 		}
 
-		static Core::Tick getDeltaTick() noexcept;
-		static Core::Tick getUpdateDeltaTick() noexcept;
+		void updateTaskEnd(){
+			updateEndSemaphore.acquire();
+		}
+
+		static Tick getDeltaTick() noexcept;
+		static Tick getUpdateDeltaTick() noexcept;
 		static bool isPaused() noexcept;
 		static void handleAsync();
 	};

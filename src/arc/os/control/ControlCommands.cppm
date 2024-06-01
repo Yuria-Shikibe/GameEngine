@@ -42,9 +42,17 @@ export namespace Ctrl{
 		}
 
 
-		input.binds.registerBind({{Ctrl::Key::Esc, Act::Press}, {Ctrl::Key::Esc, Act::Repeat}}, []{
+		input.binds.registerBind(Ctrl::Key::Esc, Act::Repeat, []{
 			if(Core::uiRoot->onEsc()){
-				if(auto* main = Core::uiRoot->getScenes().tryFind(UI::Menu_Main); !main || Core::uiRoot->currentScene == main->get())return;
+				if(auto* main = Core::uiRoot->getScenes().tryFind(UI::Menu_Main);
+					!main || Core::uiRoot->currentScene == main->get()) return;
+			}
+		});
+
+		input.binds.registerBind(Ctrl::Key::Esc, Act::Press, []{
+			if(Core::uiRoot->onEsc()){
+				if(auto* main = Core::uiRoot->getScenes().tryFind(UI::Menu_Main);
+					!main || Core::uiRoot->currentScene == main->get()) return;
 
 				//TODO Move these to other place
 				Core::uiRoot->showDialog(true, [](UI::Dialog& dialog){
@@ -102,8 +110,9 @@ export namespace Ctrl{
 			if(Core::uiRoot->focusScroll()){
 				Core::uiRoot->mouseScroll.set(x, y);
 				Core::uiRoot->onScroll();
-			}else{
-				if(Core::focus.camera)Core::focus.camera->setTargetScale(Core::focus.camera->getTargetScale() + y * 0.05f);
+			} else{
+				if(Core::focus.camera) Core::focus.camera->setTargetScale(
+					Core::focus.camera->getTargetScale() + y * 0.05f);
 			}
 		});
 	}

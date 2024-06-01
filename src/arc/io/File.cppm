@@ -233,6 +233,19 @@ namespace OS{
 			return files;
 		}
 
+		template <Concepts::Invokable<bool(const OS::File&)> Pred>
+		[[nodiscard]] std::vector<File> subs(Pred&& pred) const{
+			std::vector<File> files;
+			for(const auto& item : fs::directory_iterator(getPath())){
+				OS::File file{item};
+				if (pred(file)){
+					files.push_back(std::move(file));
+				}
+			}
+
+			return files;
+		}
+
 		void forSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
 			for(const auto& item : fs::directory_iterator(getPath())){
 				consumer(File{item});
@@ -373,6 +386,16 @@ namespace OS{
 
 	};
 }
+
+
+export
+template <>
+struct std::hash<OS::File>{
+	std::size_t operator()(const OS::File& p) const noexcept{
+		static constexpr std::hash<std::filesystem::path> hasher{};
+		return hasher(p.getPath());
+	}
+};
 
 export
 template <>

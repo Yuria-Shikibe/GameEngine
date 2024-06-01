@@ -218,7 +218,7 @@ export namespace Test{
 			const_cast<GL::TextureRegion*>(lightRegion)->shrinkEdge(15.0f);
 
 			for(auto& texture : event.manager->getAtlas().getPage("ui").getTextures()){
-				texture->setFilter(GL::TexParams::linear, GL::TexParams::linear);
+				texture->setFilter(GL::TexParams::mipmap_linear_linear, GL::TexParams::linear);
 			}
 
 			for(auto& texture : event.manager->getAtlas().getPage(MainPageName).getTextures()){
@@ -373,7 +373,7 @@ export namespace Test{
 		//Majority Load
 		Core::loadAssets();
 
-		// std::filesystem::path path = R"(D:\projects\GameEngine\raw-assets\gen\temp.txt)";
+		// std::filesystem::path path = R"(D:\projects\GameEngine\src\arc\ui\components\Icons_Assets.cppm)";
 		// std::ofstream stOfstream{path};
 		// UI::Icons::genCode(stOfstream);
 	}

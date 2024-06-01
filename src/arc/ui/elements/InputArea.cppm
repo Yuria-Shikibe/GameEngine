@@ -491,7 +491,7 @@ export namespace UI{
 			setTextUpdated();
 		}
 
-		void update(const float delta) override {
+		void update(const Core::Tick delta) override {
 			updateOperatrion();
 
 			insertLineTimer += delta;

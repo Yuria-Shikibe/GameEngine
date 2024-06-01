@@ -15,7 +15,6 @@ export namespace Game{
 
 	public:
 		std::vector<DrawableEntity*> nextToDraw{};
-		using EntityMap::idMap;
 
 		void updateInScreen(auto& tree){
 

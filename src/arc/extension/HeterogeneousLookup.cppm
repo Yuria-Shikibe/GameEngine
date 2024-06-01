@@ -113,7 +113,8 @@ export namespace ext{
 		}
 	};
 
-
+	template <typename Alloc = std::allocator<std::string>>
+	using StringSet = std::unordered_set<std::string, transparent::StringHasher, transparent::StringEqualComparator>;
 
 	template <typename V>
 	class StringMap : public std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{

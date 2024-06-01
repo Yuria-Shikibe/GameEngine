@@ -7,6 +7,8 @@ import ext.Concepts;
 import UI.Elem;
 import std;
 
+import Geom.Vector2D;
+
 export namespace UI {
 	/**
 	 * @code
@@ -26,6 +28,8 @@ export namespace UI {
 	public:
 		//Weak Reference Object
 		Elem* item{nullptr};
+
+		Geom::Vec2 defSize{Geom::SNAN2};
 
 		UI::Rect allocatedBound{};
 
@@ -55,7 +59,7 @@ export namespace UI {
 		}
 
 		LayoutCell& endLine(){
-			item->setEndRow(true);
+			if(item)item->setEndRow(true);
 
 			return *this;
 		}
@@ -81,14 +85,14 @@ export namespace UI {
 		}
 
 		LayoutCell& setWidth(const float w, const bool usesExpand = false){
-			item->setWidth(w);
+			defSize.x = w;
 			usesExpand ? expandX(true) : wrapX();
 
 			return *this;
 		}
 
 		LayoutCell& setHeight(const float h, const bool usesExpand = false){
-			item->setHeight(h);
+			defSize.y = h;
 			usesExpand ? expandY(true) : wrapY();
 
 			return *this;
@@ -267,13 +271,22 @@ export namespace UI {
 		[[nodiscard]] float getScaledCellHeight() const {return getVertScale() * getCellHeight();}
 		[[nodiscard]] float getScaledCellWidth() const {return getHoriScale() * getCellWidth();}
 
-		[[nodiscard]] float getExpectedItemHeight() const{
-			return item->getHeight();
-		}
-		[[nodiscard]] float getExpectedItemWidth() const{
-			return item->getWidth();
+
+		[[nodiscard]] float getDefWidth() const{
+			return hasDefWidth() ? defSize.x : item ? item->getWidth() : 0;
 		}
 
+		[[nodiscard]] float getDefHeight() const{
+			return hasDefHeight() ? defSize.y : item ? item->getHeight() : 0;
+		}
+
+		[[nodiscard]] bool hasDefHeight() const{
+			return !std::isnan(defSize.y);
+		}
+
+		[[nodiscard]] bool hasDefWidth() const{
+			return !std::isnan(defSize.x);
+		}
 
 		[[nodiscard]] float getHoriScale() const {return scale.getWidth();}
 		[[nodiscard]] float getVertScale() const {return scale.getHeight();}

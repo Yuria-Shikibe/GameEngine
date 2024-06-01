@@ -41,7 +41,7 @@ export namespace UI {
 			setTextUpdated();
 		}
 
-		void update(const float delta) override {
+		void update(const Core::Tick delta) override {
 			if(isDynamic()){
 				if(Font::TextString cur = textSource(); cur != getText()){
 					glyphLayout->lastText = std::move(cur);

@@ -3,30 +3,35 @@ module UI.Cell;
 bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 	const Geom::Vec2 originalSize = allocatedBound.getSize();
 
-	float width = (scaleRelativeToParentX ? allocatedBound.getWidth() : item->getWidth());
-	float height = (scaleRelativeToParentY ? allocatedBound.getHeight() : item->getHeight());
+	if(hasDefWidth()){
+		item->setWidth(defSize.x);
+	}
+
+	if(hasDefHeight()){
+		item->setHeight(defSize.y);
+	}
 
 	//Apply Expansion
 	if(modifyParentX) {
-		width = Math::max(allocatedBound.getWidth(), item->getWidth());
+		const float width = Math::max(allocatedBound.getWidth(), item->getWidth());
 		allocatedBound.setWidth(width * getHoriScale());
 	}else{
 		// allocatedBound.setShorterWidth(item->getWidth());
 	}
 
 	if(modifyParentY) {
-		height = Math::max(allocatedBound.getHeight(), item->getHeight());
+		const float height = Math::max(allocatedBound.getHeight(), item->getHeight());
 		allocatedBound.setHeight(height * getVertScale());
 	}else{
 		// allocatedBound.setShorterHeight(item->getHeight());
 	}
 
 	if(scaleRelativeToParentX){
-		item->setWidth(width * getHoriScale());
+		item->setWidth(allocatedBound.getWidth() * getHoriScale());
 	}
 
 	if(scaleRelativeToParentY){
-		item->setHeight(height * getVertScale());
+		item->setHeight(allocatedBound.getHeight() * getVertScale());
 	}
 
 
@@ -38,7 +43,7 @@ bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 
 	Geom::Vec2 currentSize = item->bound.getSize();
 	if(currentSize == Geom::Vec2{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}){
-		item->setMaximumSize(currentSize);
+		item->setMaximumSize(allocatedBound.getSize());
 	}
 
 	item->changed(ChangeSignal::notifySubs, ChangeSignal::notifyParentOnly);

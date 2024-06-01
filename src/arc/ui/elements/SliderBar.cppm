@@ -177,7 +177,7 @@ export namespace UI{
 		[[nodiscard]] bool isClampedOnVert() const{return Math::zero(slideSensitivity.x);}
 
 
-		void update(const float delta) override{
+		void update(const Core::Tick delta) override{
 			if(isClampedOnVert()){
 				barLastSize.x = getValidWidth();
 			}else{

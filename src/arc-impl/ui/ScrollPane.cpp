@@ -25,7 +25,7 @@ void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
 	}
 }
 
-void UI::ScrollPane::update(const float delta){
+void UI::ScrollPane::update(const Core::Tick delta){
 	if(Elem::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())) {
 		Elem::setFocusedScroll(true);
 	}else{
@@ -34,7 +34,7 @@ void UI::ScrollPane::update(const float delta){
 
 
 
-	scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta)) : 1.0f);
+	scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta.count())) : 1.0f);
 
 	Group::update(delta);
 

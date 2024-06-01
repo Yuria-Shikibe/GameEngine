@@ -20,6 +20,14 @@ export namespace UI{
 		Align::Scale scaling{Align::Scale::fit};
 		Align::Layout imageAlign{Align::Layout::center};
 
+		[[nodiscard]] ImageRegion() = default;
+
+		template <Concepts::Derived<RegionDrawable> Drawable>
+		[[nodiscard]] explicit ImageRegion(const Drawable& drawable, const bool useEmptyDrawer = true){
+			this->setDrawable<Drawable>(drawable);
+			if(useEmptyDrawer)Elem::setEmptyDrawer();
+		}
+
 		[[nodiscard]] const std::unique_ptr<RegionDrawable>& getDrawable() const{ return drawable; }
 
 		bool isDynamic() const noexcept{
@@ -35,7 +43,7 @@ export namespace UI{
 			this->drawable = std::make_unique<Drawable>(drawable);
 		}
 
-		void update(const float delta) override{
+		void update(const Core::Tick delta) override{
 			Elem::update(delta);
 
 			if(isDynamic()){

@@ -30,7 +30,7 @@ export namespace UI{
 
 		bool getRootVisiable() const;
 
-		void update(const float delta) override{
+		void update(const Core::Tick delta) override{
 			if(visiable)Table::update(delta);
 		}
 	};
