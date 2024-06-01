@@ -52,7 +52,7 @@ namespace Game::Draw{
 				Overlay::color(Colors::GRAY, chamberTileAlpha);
 
 				for(const auto& tile : chambers.getDrawable().invalids){
-					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.get().getTileBound());
+					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.get().getBound());
 				}
 
 				[[maybe_unused]] GL::UniformGuard guard_outline
@@ -67,7 +67,7 @@ namespace Game::Draw{
 			Overlay::color(Colors::GRAY, 0.45f * chamberTileAlpha);
 			Overlay::Line::setLineStroke(2.0f);
 			for(const auto& tile : chambers.getDrawable().valids){
-				Overlay::Line::rectOrtho(tile.get().getTileBound());
+				Overlay::Line::rectOrtho(tile.get().getBound());
 			}
 
 			Overlay::color(Colors::LIGHT_GRAY, 0.85f * chamberTileAlpha);
@@ -89,7 +89,7 @@ namespace Game::Draw{
 
 
 			for(const auto& tile : chambers.getDrawable().invalids){
-				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), tile.get().getTileBound());
+				Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), tile.get().getBound());
 			}
 		}
 	}

@@ -42,6 +42,10 @@ export namespace Geom{
 			this->setCenter(center.x, center.y);
 		}
 
+		constexpr Rect_Orthogonal(const typename Vector2D<T>::PassType src, const typename Vector2D<T>::PassType end) noexcept{
+			this->setVert(src, end);
+		}
+
 		constexpr explicit Rect_Orthogonal(const T size) noexcept{
 			this->setSize(size, size);
 		}
@@ -596,7 +600,7 @@ export namespace Geom{
 			}
 		}
 
-		struct iterator{
+		[[deprecated("Unsafe Design")]] struct iterator{
 			Vector2D<T> cur{};
 			T srcX{};
 			T endX{};

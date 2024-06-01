@@ -67,9 +67,9 @@ export namespace Core{
 			shakeCorrectionSpeed = Math::max(ShakeMinCorrectionSpeed, (shakeCorrectionSpeed + Math::ceilPositive(fadeSpeed)) * 0.5f);
 		}
 
-		void setScaleRange(const float min, const float max) noexcept{
-			minScale = std::log(max);
-			maxScale = std::log(min);
+		void setScaleRange(const float min = DefMinimumScale, const float max = DefMaximumScale) noexcept{
+			minScale = std::log(min);
+			maxScale = std::log(max);
 		}
 
 		void resize(const int w, const int h) noexcept override { // NOLINT(*-make-member-function-const)
@@ -193,7 +193,7 @@ export namespace Core{
 		}
 
 		void setTargetScale(const float targetScale) noexcept{
-			this->targetScale = std::exp(std::clamp(targetScale, minScale, maxScale));
+			this->targetScale = std::exp(Math::clamp(targetScale, minScale, maxScale));
 		}
 
 		void setTargetScaleDef() noexcept{

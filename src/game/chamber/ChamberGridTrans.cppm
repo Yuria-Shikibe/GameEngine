@@ -25,11 +25,12 @@ export namespace Game{
 	template <typename Entity>
 	class ChamberGridTrans{
 		static constexpr float ExtendSize{100};
-		using FrameType = ChamberGrid<Entity>;
+		using GridType = ChamberGrid<Entity>;
+		using Tile = typename GridType::Tile;
 
 		Geom::Transform localTrans{};
-		ChamberGrid<Entity> frameData{};
-		typename FrameType::TileBrief drawable{};
+		GridType frameData{};
+		typename GridType::TileBrief drawable{};
 
 		/** @brief Local draw usage*/
 		Geom::Matrix3D localToWorld{};
@@ -63,10 +64,10 @@ export namespace Game{
 		[[nodiscard]] auto& getWorldToLocal() const noexcept{return worldToLocal;}
 		[[nodiscard]] auto& getWorldToLocal() noexcept{return worldToLocal;}
 
-		[[nodiscard]] FrameType& getChambers() noexcept{ return frameData; }
+		[[nodiscard]] GridType& getChambers() noexcept{ return frameData; }
 
-		[[nodiscard]] typename FrameType::TileBrief& getDrawable() noexcept{ return drawable; }
-		[[nodiscard]] const typename FrameType::TileBrief& getDrawable() const noexcept{ return drawable; }
+		[[nodiscard]] typename GridType::TileBrief& getDrawable() noexcept{ return drawable; }
+		[[nodiscard]] const typename GridType::TileBrief& getDrawable() const noexcept{ return drawable; }
 
 		Geom::QuadBox transformViewport(Geom::OrthoRectFloat viewport) const noexcept{
 			viewport.expand(ExtendSize / 2, ExtendSize / 2);
@@ -91,19 +92,23 @@ export namespace Game{
 
 			if(frameData.getData().empty())return;
 
+			std::unordered_set<std::shared_ptr<Chamber<Entity>>> owners{frameData.getBrief().owners.size()};
+
 			frameData.getQuadTree().intersectRegion(lastViewport, [](const auto& rect, const auto& quad){
 				return quad.overlapRough(rect) && quad.overlapExact(rect);
-			}, [this](ChamberTile<Entity>& tile, const Geom::QuadBox& view){
-				if(tile.isOwner()){
-					drawable.owners.push_back(tile.chamber);
-				}
-
+			}, [this, &owners](ChamberTile<Entity>& tile, const Geom::QuadBox& view){
 				if(tile.valid()){
+					owners.insert(tile.chamber);
 					drawable.valids.push_back(tile);
 				}else{
 					drawable.invalids.push_back(tile);
 				}
 			});
+
+			drawable.owners.reserve(owners.size());
+
+			std::ranges::move(owners, std::back_inserter(drawable.owners));
+
 			drawable.dataValid = true;
 		}
 

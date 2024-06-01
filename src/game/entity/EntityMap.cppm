@@ -7,11 +7,10 @@ export import Game.Entity;
 import ext.Container.ObjectPool;
 import Event;
 import ext.Concepts;
-import Geom.QuadTree;
 import std;
 
 export namespace Game {
-	template <Concepts::Derived<Entity> T, auto transformer = nullptr>
+	template <Concepts::Derived<Entity> T>
 	class EntityMap : public RemoveCallalble{
 
 	public:
@@ -31,10 +30,6 @@ export namespace Game {
 	public:
 		std::unordered_map<IDType, std::shared_ptr<T>> idMap{std::unordered_map<IDType, std::shared_ptr<T>>{5000}};
 
-		using TreeType = Geom::QuadTreeF<T, transformer>;
-
-		std::unique_ptr<TreeType> quadTree{nullptr};
-
 		Event::EventManager groupListener{
 			Event::indexOf<AddEvent>(),
 			Event::indexOf<RemoveEvent>()
@@ -51,7 +46,6 @@ export namespace Game {
 			if(const auto pair = idMap.try_emplace(t->getID(), t); pair.second) {
 				addEvent.entity = t.get();
 				groupListener.fire(addEvent);
-				if(quadTree)quadTree->insert(t.operator*());
 				t->registerGroup(this);
 			}else {
 				//If insert doesn't happen, says the id crushed, should show a warning or sth
@@ -63,36 +57,11 @@ export namespace Game {
 			if(const auto itr = idMap.find(t.getID()); itr != idMap.end()) {
 				removeEvent.entity = &t;
 				groupListener.fire(removeEvent);
-				if(quadTree)quadTree->remove(t);
 
 				idMap.erase(itr);
 			}else {
 				//TODO this entity doesn't exist in current group, show a warning or throw an exception.
 			}
-		}
-
-		virtual void buildTree(const Geom::OrthoRectFloat worldBound) {
-			quadTree = std::make_unique<Geom::QuadTreeF<T, transformer>>(worldBound);
-		}
-
-		virtual void resizeTree(const Geom::OrthoRectFloat worldBound) {
-			if(!quadTree)return;
-			quadTree->clear();
-
-			quadTree->setBoundary(worldBound);
-
-			this->each([this](std::shared_ptr<T>& t) {
-				quadTree->insert(*t);
-			});
-		}
-
-		virtual void updateTree() {
-			if(!quadTree)return;
-			quadTree->clearItemsOnly();
-
-			this->each([this](std::shared_ptr<T>& t) {
-				quadTree->insert(*t);
-			});
 		}
 
 		virtual void postRemove(const IDType id) {

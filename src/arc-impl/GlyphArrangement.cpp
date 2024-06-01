@@ -205,7 +205,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 	if(!layout->back().isEndRow() && charParser->contains('\n')) {
 		lastCharData = context.currentFont->getCharData('\n');
 		ParserFunctions::pushData('\n', static_cast<int>(totalSize), lastCharData, { context, currentPosition, lastCharData, *layout });
-		charParser->parse('\n', { context, currentPosition, lastCharData, *layout });
+		ParserFunctions::endLine({ context, currentPosition, lastCharData, *layout });
 	}
 
 	layout->getGlyphs().back().code = 0;
@@ -478,7 +478,7 @@ void Font::ParserFunctions::pushData(const CharCode code, const int index, const
 		throw ext::NullPointerException{std::format("Null CharData with char code: {}",  ext::convertTo<char>(code))};
 	}
 
-	if(data.cursorPos.x + normalizeLen(charData->glyphMatrices.width + charData->glyphMatrices.horiBearingX) * data.context.currentScale * data.layout.getScale() > data.layout.maxWidth){
+	if(code != '\n' && (data.cursorPos.x + normalizeLen(charData->glyphMatrices.width + charData->glyphMatrices.horiBearingX) * data.context.currentScale) * data.layout.getScale() > data.layout.maxWidth){
 		ParserFunctions::endLine({data.context, data.cursorPos, tmpDummyPtr, data.layout});
 	}
 

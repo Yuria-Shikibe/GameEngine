@@ -30,7 +30,7 @@ export namespace UI{
 			textChanged = true;
 		}
 
-		void layoutText(const bool forceUpdate = false){
+		void layoutText(bool forceUpdate = false){
 			float expectedWidth = getValidWidth();
 			if(Math::zero(expectedWidth)){
 				expectedWidth = std::numeric_limits<float>::max();

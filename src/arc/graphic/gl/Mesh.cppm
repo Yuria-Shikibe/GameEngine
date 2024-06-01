@@ -4,6 +4,7 @@ module;
 
 export module GL.Mesh;
 
+import GL;
 import std;
 
 export import GL.Buffer.DataBuffer;
@@ -51,6 +52,7 @@ export namespace GL{
 
 		void render(const GLenum primitiveType, const int offset, const int count) const{
 			bind();
+			GL::incrDrawCallCount();
 			glDrawElements(primitiveType, count, GL_UNSIGNED_INT, offset == 0 ? nullptr : reinterpret_cast<const void*>(offset * sizeof(GLuint)));
 		}
 

@@ -16,8 +16,8 @@ export namespace UI{
 
 	public:
 		using DrawerType = Drawer;
-		[[nodiscard]] explicit Canvas(const Drawer& drawer)
-			: drawer{drawer}{}
+		[[nodiscard]] explicit Canvas(Drawer&& drawer)
+			: drawer{std::forward<Drawer>(drawer)}{}
 
 		void drawContent() const override{
 			drawer(*this);

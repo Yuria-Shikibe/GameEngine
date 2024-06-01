@@ -9,8 +9,8 @@ export import Geom.Vector2D;
 import ext.Concepts;
 import ext.RuntimeException;
 import std;
+import Geom.QuadTree.Interface;
 
-//TODO The design is so bad!
 export namespace Geom{
 
 	// template <typename T>
@@ -20,13 +20,24 @@ export namespace Geom{
 	// 	}
 	// };
 
-	// using ItemTy = int;
+	// struct Test : QuadTreeAdaptable<Test>{
+	// 	Rect_Orthogonal<float> getBound() const noexcept{std::unreachable();}
+	//
+	// 	bool roughIntersectWith(const Test& other) const{std::unreachable();}
+	//
+	// 	bool exactIntersectWith(const Test& other) const{std::unreachable();}
+	//
+	// 	bool containsPoint(Vec2 point) const{std::unreachable();}
+	// };
+
+	// using ItemTy = Test;
+	//
 	// using T = float;
 	// constexpr auto transformer = std::identity{};
 	// using Equal = AddressEqual<ItemTy>;
 
-	template <typename ItemTy, Concepts::Number T, Concepts::InvokeNullable<Rect_Orthogonal<T>(const ItemTy&)> auto
-	          transformer = nullptr>
+	template <typename ItemTy, Concepts::Number T = float>
+		requires Concepts::Derived<ItemTy, QuadTreeAdaptable<ItemTy, T>>
 	class QuadTree{
 	public:
 		using Rect = Geom::Rect_Orthogonal<T>;
@@ -35,53 +46,58 @@ export namespace Geom{
 
 		using PointType = Geom::Vector2D<ArithmeticType>;
 
-		// using Obtainer = std::function<const Rect&(const Cont*)>;
-		using InersectCheckFunc = std::function<bool(const ItemTy&, const ItemTy&)>;
-		using InersectPointCheckFunc = std::function<bool(const ItemTy&, Vec2)>;
+		static constexpr bool HasRoughIntersect = requires(ValueType value){
+			{value.roughIntersectWith(value)} -> std::same_as<bool>;
+		};
 
-		static constexpr bool ValidTrans = !std::same_as<std::nullptr_t, decltype(transformer)>;
+		static constexpr bool HasExactIntersect = requires(ValueType value){
+			{value.exactIntersectWith(value)} -> std::same_as<bool>;
+		};
+
+		static constexpr bool HasPointIntersect = requires(ValueType value, PointType p){
+			{value.containsPoint(p)} -> std::same_as<bool>;
+		};
 
 	protected:
-		// Obtainer transformer{ nullptr };
-		// TODO apply in func params??
-		InersectCheckFunc interscetExactFunc{nullptr};
-		InersectCheckFunc interscetRoughFunc{nullptr};
-
-		InersectPointCheckFunc interscetPointFunc{nullptr};
-
 		// The boundary of this node
 		Rect boundary{};
-
-		// std::mutex containerlock{};
-		// std::mutex subTreelock{};
 
 		mutable std::shared_mutex itemsMtx{};
 		mutable std::shared_mutex leafMtx{};
 
-		void setBoundary_enforce(const Rect& boundary){
-			if(!allChildrenEmpty()) throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
-
-			this->boundary = boundary;
-		}
-
-		bool isInersectedBetween(const ItemTy& subject, const ItemTy& object){
+		bool isInersectedBetween(const ItemTy& subject, const ItemTy& object) const{
 			//TODO equalTy support?
-			if(&subject == &object) return false;
-			const bool intersected =
-				this->obtainBound(subject).overlap(this->obtainBound(object))
-				&& (!interscetRoughFunc || std::invoke(interscetRoughFunc, subject, object))
-				&& (!interscetExactFunc || std::invoke(interscetExactFunc, subject, object));
+			if constexpr(requires(ValueType value){
+				{ value == value } -> std::same_as<bool>;
+			}){
+				if(subject == object) return false;
+			} else{
+				if(&subject == &object) return false;
+			}
+
+			bool intersected = this->obtainItemBound(subject).overlap(this->obtainItemBound(object));
+
+			if constexpr (HasRoughIntersect){
+				if(intersected)intersected &= subject.roughIntersectWith(object);
+			}
+
+			if constexpr (HasExactIntersect){
+				if(intersected)intersected &= subject.exactIntersectWith(object);
+			}
 
 			return intersected;
 		}
 
-		Rect obtainBound(const ItemTy& cont) const{
-			if constexpr(ValidTrans) return transformer(cont);
-			else return boundary;
+		static Rect obtainItemBound(const ItemTy& cont){
+			static_assert(requires(ValueType value){
+				{value.getBound()} -> std::same_as<Rect>;
+			}, "QuadTree Requires ValueType impl at `Rect getBound()` member function");
+
+			return cont.getBound();
 		}
 
 		// The rectangles in this node
-		std::vector<std::reference_wrapper<ItemTy>> items{};
+		std::vector<ItemTy*> items{};
 
 		// The four children of this node
 		std::unique_ptr<QuadTree> topLeft{nullptr};
@@ -96,12 +112,12 @@ export namespace Geom{
 		std::atomic_bool leaf = true;
 
 	public:
+		[[nodiscard]] QuadTree() = default;
+
 		QuadTree(const QuadTree& other) = delete;
 
 		QuadTree(QuadTree&& other) noexcept
-			: interscetExactFunc(std::move(other.interscetExactFunc)),
-			  interscetRoughFunc(std::move(other.interscetRoughFunc)),
-			  interscetPointFunc(std::move(other.interscetPointFunc)),
+			:
 			  boundary(std::move(other.boundary)),
 			  items(std::move(other.items)),
 			  topLeft(std::move(other.topLeft)),
@@ -111,15 +127,13 @@ export namespace Geom{
 			  maximumItemCount(other.maximumItemCount),
 			  strict(other.strict),
 			  currentSize(other.currentSize.load()),
-			  leaf(other.leaf.load()){}
+			  leaf(other.leaf.load()){
+		}
 
 		QuadTree& operator=(const QuadTree& other) = delete;
 
 		QuadTree& operator=(QuadTree&& other) noexcept{
 			if(this == &other) return *this;
-			interscetExactFunc = std::move(other.interscetExactFunc);
-			interscetRoughFunc = std::move(other.interscetRoughFunc);
-			interscetPointFunc = std::move(other.interscetPointFunc);
 			boundary = std::move(other.boundary);
 			items = std::move(other.items);
 			topLeft = std::move(other.topLeft);
@@ -141,44 +155,28 @@ export namespace Geom{
 			return currentSize;
 		}
 
-		void setExactInterscet(const InersectCheckFunc& interscetExactJudger){
-			this->interscetExactFunc = interscetExactJudger;
-		}
-
-		void setRoughInterscet(const InersectCheckFunc& interscetRoughJudger){
-			this->interscetRoughFunc = interscetRoughJudger;
-		}
-
-		void setPointInterscet(const InersectPointCheckFunc& interscetPointJudger){
-			this->interscetPointFunc = interscetPointJudger;
-		}
-
 		explicit QuadTree(const unsigned int maxCount){
-			items.reserve(maxCount);
+			this->items.reserve(maxCount * 2);
 		}
 
 		explicit QuadTree(const Rect& boundary) : boundary(boundary){
-			items.reserve(maximumItemCount);
+			this->items.reserve(maximumItemCount * 2);
 		}
 
-		QuadTree(const Rect& boundary, const unsigned int maxCount,
-		         const InersectCheckFunc& interectRoughJudger,
-		         const InersectCheckFunc& interectExactJudger,
-		         const InersectPointCheckFunc& interectPointJudger
-		) :
-			interscetExactFunc(interectExactJudger),
-			interscetRoughFunc(interectRoughJudger),
-			interscetPointFunc(interectPointJudger),
+		QuadTree(const Rect& boundary, const unsigned int maxCount) :
 			boundary(boundary), maximumItemCount(maxCount){
 			this->items.reserve(maxCount * 2);
 		}
 
-		[[nodiscard]] Rect& getBoundary() noexcept{
+		[[nodiscard]] Rect getBoundary() const noexcept{
 			return boundary;
 		}
 
 		void setBoundary(const Rect& boundary){
-			if(!allChildrenEmpty()) throw ext::RuntimeException{"QuadTree Boundary Should be set initially"};
+			if(!allChildrenEmpty()){
+				clearItemsOnly();
+				//TODO always have problems here...
+			}
 
 			this->boundary = boundary;
 		}
@@ -203,7 +201,7 @@ export namespace Geom{
 					return &o.get() == ptr;
 				}));
 			} else{
-				if(QuadTree* child = this->getFittingChild(this->obtainBound(box))){
+				if(QuadTree* child = this->getFittingChild(this->obtainItemBound(box))){
 					std::shared_lock guard{leafMtx};
 					result = child->remove(box);
 				} else{
@@ -251,7 +249,9 @@ export namespace Geom{
 				return false;
 			}
 
-			if(std::shared_lock _{itemsMtx}; std::ranges::any_of(items, std::bind_front(&QuadTree::isInersectedBetween, this, std::ref(object)))){
+			if(std::shared_lock _{itemsMtx}; std::ranges::any_of(items, [this, &object](const ItemTy* o){
+				return isInersectedBetween(object, *o);
+			})){
 				return true;
 			}
 
@@ -274,7 +274,9 @@ export namespace Geom{
 				return false;
 			}
 
-			if(std::shared_lock _{itemsMtx}; std::ranges::any_of(items, std::bind_front(&QuadTree::intersectWith, this, point))){
+			if(std::shared_lock _{itemsMtx}; std::ranges::any_of(items, [this, point](const ItemTy* o){
+				return intersectWith(point, *o);
+			})){
 				return true;
 			}
 
@@ -295,7 +297,7 @@ export namespace Geom{
 		/**
 		 * @brief Notice that this may have side effects!
 		 */
-		void intersectAll(const ItemTy& object){
+		void intersectAll(const ItemTy& object) const{
 			if(!this->inbound(object)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
@@ -306,8 +308,8 @@ export namespace Geom{
 				this->bottomRight->intersectAll(object);
 			}
 
-			for(std::shared_lock _{itemsMtx}; auto& element : items){
-				this->isInersectedBetween(object, element);
+			for(std::shared_lock _{itemsMtx}; const auto element : items){
+				(void)this->isInersectedBetween(object, *element);
 			}
 		}
 
@@ -323,9 +325,9 @@ export namespace Geom{
 				bottomRight->intersect(object, func);
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto& cont : items){
-				if(this->isInersectedBetween(object, cont)){
-					func(cont);
+			for(std::shared_lock _{itemsMtx}; auto* cont : items){
+				if(this->isInersectedBetween(object, *cont)){
+					func(*cont);
 				}
 			}
 		}
@@ -342,8 +344,8 @@ export namespace Geom{
 				bottomRight->intersectRect(rect, func);
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto& cont : items){
-				func(cont, rect);
+			for(std::shared_lock _{itemsMtx}; auto* cont : items){
+				func(*cont, rect);
 			}
 		}
 
@@ -363,8 +365,8 @@ export namespace Geom{
 				bottomRight->template intersectRegion<Region>(region, boundCheck, pred);
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto& cont : items){
-				if(boundCheck(this->obtainBound(cont), region))pred(cont, region);
+			for(std::shared_lock _{itemsMtx}; auto* cont : items){
+				if(boundCheck(this->obtainItemBound(*cont), region))pred(*cont, region);
 			}
 		}
 
@@ -380,9 +382,9 @@ export namespace Geom{
 				bottomRight->intersectPoint(point, std::forward<Pred>(pred));
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto& cont : items){
-				if(this->intersectWith(point, cont)){
-					pred(cont);
+			for(std::shared_lock _{itemsMtx}; const auto* cont : items){
+				if(this->intersectWith(point, *cont)){
+					pred(*cont);
 				}
 			}
 		}
@@ -399,8 +401,8 @@ export namespace Geom{
 				bottomRight->within(object, dst, pred);
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto& cont : items){
-				pred(cont);
+			for(std::shared_lock _{itemsMtx}; const auto* cont : items){
+				pred(*cont);
 			}
 		}
 
@@ -418,10 +420,10 @@ export namespace Geom{
 
 			bool intersected = false;
 
-			for(std::shared_lock _{itemsMtx}; const auto& cont : items){
-				if(this->isInersectedBetween(object, cont)){
+			for(std::shared_lock _{itemsMtx}; const auto* cont : items){
+				if(this->isInersectedBetween(object, *cont)){
 					intersected = true;
-					pred(cont);
+					pred(*cont);
 					break;
 				}
 			}
@@ -429,9 +431,8 @@ export namespace Geom{
 			return intersected;
 		}
 
-		bool intersectWith(const Vec2 point, const ItemTy& object) const{
-			return this->obtainBound(object).containsPos_edgeExclusive(point) &&
-				(!interscetPointFunc || interscetPointFunc(object, point));
+		bool intersectWith(const Vec2 point, const ItemTy& object) const requires (HasPointIntersect){
+			return this->obtainItemBound(object).containsPos_edgeExclusive(point) && object.containsPoint(point);
 		}
 
 		bool inbound(const Rect& object) const{
@@ -440,8 +441,8 @@ export namespace Geom{
 		}
 
 		bool inbound(const ItemTy& object) const{
-			if(strict) return boundary.contains(this->obtainBound(object));
-			return boundary.overlap(this->obtainBound(object));
+			if(strict) return boundary.contains(this->obtainItemBound(object));
+			return boundary.overlap(this->obtainItemBound(object));
 		}
 
 		bool inbound(const Vec2 object) const{
@@ -449,7 +450,7 @@ export namespace Geom{
 		}
 
 		bool withinBound(const ItemTy& object, const T dst) const{
-			return this->obtainBound(object).getCenter().within(boundary.getCenter(), dst);
+			return this->obtainItemBound(object).getCenter().within(boundary.getCenter(), dst);
 		}
 
 		/**
@@ -471,12 +472,12 @@ export namespace Geom{
 					split();
 				} else{
 					std::unique_lock guard{itemsMtx};
-					items.push_back(box);
+					items.push_back(&box);
 					return true;
 				}
 			}
 
-			const Rect& rect = this->obtainBound(box);
+			const Rect& rect = this->obtainItemBound(box);
 
 			if(QuadTree* child = this->getFittingChild(rect)){
 				return child->insert(box);
@@ -484,7 +485,7 @@ export namespace Geom{
 
 			//Fallback
 			std::unique_lock guard{itemsMtx};
-			items.push_back(box);
+			items.push_back(&box);
 			return true;
 		}
 
@@ -505,6 +506,8 @@ export namespace Geom{
 		}
 
 		void clearItemsOnly(){
+			if(currentSize == 0)return;
+
 			{
 				const bool _isLeaf = leaf.load();
 				leaf = true;
@@ -543,14 +546,10 @@ export namespace Geom{
 				bottomLeft->setBoundary(bl);
 				bottomRight->setBoundary(br);
 			}else{
-				topLeft = std::make_unique<QuadTree>(tl, maximumItemCount, interscetRoughFunc, interscetExactFunc,
-				                                     interscetPointFunc);
-				topRight = std::make_unique<QuadTree>(tr, maximumItemCount, interscetRoughFunc, interscetExactFunc,
-				                                      interscetPointFunc);
-				bottomLeft = std::make_unique<QuadTree>(bl, maximumItemCount, interscetRoughFunc, interscetExactFunc,
-				                                        interscetPointFunc);
-				bottomRight = std::make_unique<QuadTree>(br, maximumItemCount, interscetRoughFunc, interscetExactFunc,
-				                                         interscetPointFunc);
+				topLeft = std::make_unique<QuadTree>(tl, maximumItemCount);
+				topRight = std::make_unique<QuadTree>(tr, maximumItemCount);
+				bottomLeft = std::make_unique<QuadTree>(bl, maximumItemCount);
+				bottomRight = std::make_unique<QuadTree>(br, maximumItemCount);
 			}
 		}
 
@@ -604,8 +603,4 @@ export namespace Geom{
 			return nullptr;
 		}
 	};
-
-
-	template <typename T, auto func>
-	using QuadTreeF = QuadTree<T, float, func>;
 }

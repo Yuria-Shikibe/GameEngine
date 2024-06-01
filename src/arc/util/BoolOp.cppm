@@ -31,11 +31,23 @@ export namespace ext{
 		std::pair<BooleanOperation, std::string_view>{BooleanOperation::And, {"intersect-selection"}},
 		std::pair<BooleanOperation, std::string_view>{BooleanOperation::Not, {"subtract-selection-one"}},
 		std::pair<BooleanOperation, std::string_view>{BooleanOperation::Xor, {"exclude-selection"}},
-		// BooleanOperation::Or,
-		// BooleanOperation::And,
-		// BooleanOperation::Not,
-		// BooleanOperation::Xor,
 	};
+
+	constexpr std::string_view getBoolOpName(BooleanOperation op){
+		op = BooleanOperation{static_cast<std::underlying_type_t<BooleanOperation>>(op) & 0x0fu};
+
+		switch(op){
+			case BooleanOperation::Replace : return AllNamedBoolOp[0].second;
+			case BooleanOperation::Or : return AllNamedBoolOp[1].second;
+			case BooleanOperation::And : return AllNamedBoolOp[2].second;
+			case BooleanOperation::Not : return AllNamedBoolOp[3].second;
+			case BooleanOperation::Xor : return AllNamedBoolOp[4].second;
+
+			default: std::unreachable();
+		}
+
+
+	}
 }
 
 export ext::BooleanOperation operator|(const ext::BooleanOperation l, const ext::BooleanOperation r){

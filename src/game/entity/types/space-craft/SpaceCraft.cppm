@@ -118,7 +118,7 @@ export namespace Game {
 
 		void updateCollision(const float deltaTick) override {
 			intersectedPointWith.clear();
-			EntityManage::realEntities.quadTree->intersectAll(*this);
+			EntityManage::mainTree.intersectAll(*this);
 
 			RealityEntity::updateCollision(deltaTick);
 		}
@@ -257,7 +257,7 @@ export namespace Game {
 
 		void draw() const override {
 			trait->draw(this);
-			Game::Draw::chamberFrame(*this, chambers);
+			// Game::Draw::chamberFrame(*this, chambers);
 
 			for(auto& turretEntity : turretEntities){
 				turretEntity->draw();

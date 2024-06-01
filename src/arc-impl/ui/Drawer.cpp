@@ -48,6 +48,7 @@ void UI::TextureRegionRectDrawable::draw(const Geom::OrthoRectFloat rect) const 
 }
 
 void UI::DrawPair::draw(const UI::Elem* elem, const float alphaScl, const Geom::OrthoRectFloat rect) const {
+	if(!region)return;
 	Overlay::color(color, alphaScl * color.a);
 	region->draw(rect);
 }

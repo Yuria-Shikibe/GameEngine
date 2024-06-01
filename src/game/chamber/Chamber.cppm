@@ -7,6 +7,7 @@ export module Game.Chamber;
 
 export import Geom.Rect_Orthogonal;
 export import Geom.Vector2D;
+export import Geom.QuadTree.Interface;
 import ext.Concepts;
 import ext.Owner;
 import ext.RuntimeException;
@@ -88,12 +89,22 @@ export namespace Game{
 	};
 
 	template <typename Entity>
-	struct ChamberTile{
+	struct ChamberTile : Geom::QuadTreeAdaptable<ChamberTile<Entity>, float>{
 		// using EntityType = int;
 		using EntityType = Entity;
 		Point2 pos{};
 
 		std::shared_ptr<Chamber<EntityType>> chamber{};
+
+		[[nodiscard]] ChamberTile() = default;
+
+		[[nodiscard]] explicit ChamberTile(const Point2 pos)
+			: pos{pos}{}
+
+		[[nodiscard]] ChamberTile(const Point2 pos,
+			 std::shared_ptr<Chamber<EntityType>> chamber)
+			: pos{pos},
+			  chamber{std::move(chamber)}{}
 
 		[[nodiscard]] bool valid() const noexcept{
 			return chamber != nullptr;
@@ -135,21 +146,30 @@ export namespace Game{
 			return {};
 		}
 
-		[[nodiscard]] Geom::OrthoRectFloat getTileBound() const noexcept{
-			return Geom::OrthoRectFloat{TileSize * pos.x, TileSize * pos.y, TileSize, TileSize};
-		}
 
 		[[nodiscard]] Geom::OrthoRectInt getChamberGridBound() const noexcept{
 			return valid() ? chamber->gridBound : Geom::OrthoRectInt{pos.x, pos.y, 1, 1};
 		}
 
 		[[nodiscard]] Geom::OrthoRectFloat getChamberRegion() const noexcept{
-			return valid() ? chamber->getEntityBound() : getTileBound();
+			return valid() ? chamber->getEntityBound() : getBound();
 		}
 
 		friend bool operator==(const ChamberTile& lhs, const ChamberTile& rhs) noexcept { return lhs.pos == rhs.pos; }
 
 		friend bool operator!=(const ChamberTile& lhs, const ChamberTile& rhs) noexcept { return !(lhs == rhs); }
+
+		[[nodiscard]] Geom::OrthoRectFloat getBound() const noexcept{
+			return Geom::OrthoRectFloat{TileSize * pos.x, TileSize * pos.y, TileSize, TileSize};
+		}
+
+		bool roughIntersectWith(const ChamberTile& other) const noexcept{
+			return getBound().overlap(other.getBound());
+		}
+
+		bool containsPoint(Vec2 point) const noexcept{
+			return getBound().contains(point);
+		}
 	};
 
 

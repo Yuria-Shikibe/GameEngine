@@ -15,6 +15,7 @@ import Geom.Shape.RectBox;
 import Geom.Rect_Orthogonal;
 import Geom.Matrix3D;
 import Geom.Vector2D;
+import Geom.QuadTree.Interface;
 import Geom;
 
 import ext.RuntimeException;
@@ -34,7 +35,7 @@ export namespace Game {
 	 *
 	 * TODO z layer necessity?
 	 */
-	class RealityEntity : public BaseEntity {
+	class RealityEntity : public BaseEntity, public Geom::QuadTreeAdaptable<RealityEntity, float>{
 	public:
 		static constexpr float angularVelocityLimit = 0.75f;
 		static constexpr float angularAccelerationLimit = 0.05f;
@@ -385,6 +386,48 @@ export namespace Game {
 
 		float getYawAngle() const noexcept{
 			return vel.vec.angle() - trans.rot;
+		}
+
+		// ReSharper disable once CppHidingFunction
+		Geom::OrthoRectFloat getBound() const {
+			return hitBox.maxBound;
+		}
+
+		// ReSharper disable once CppHidingFunction
+		bool roughIntersectWith(const RealityEntity& object) const{
+			if(Math::abs(zLayer - object.zLayer) > collisionThickness + collisionThickness)return false;
+			if(deletable() || object.deletable() || this == &object)return false;
+			if(ignoreCollisionTo(object) || object.ignoreCollisionTo(*this))return false;
+			// if(subject->intersectedPointWith.contains(object))return false;
+			return true;
+		}
+
+		// ReSharper disable once CppHidingFunction
+		bool exactIntersectWith(const RealityEntity& object) const{
+			const bool needInterscetPointCalculation_subject = requiresCollisionIntersection();
+			const bool needInterscetPointCalculation_object = requiresCollisionIntersection();
+
+			CollisionData data = hitBox.collideWithExact(object.hitBox, needInterscetPointCalculation_object || needInterscetPointCalculation_subject);
+
+			if(data.valid()){
+				if(needInterscetPointCalculation_subject){
+					addIntersection(&object, data);
+				}
+
+				// if(needInterscetPointCalculation_object){
+				// 	data.swapIndex();
+				// 	object->addIntersection(subject, data);
+				// }
+
+				return true;
+			}
+
+			return false;
+		}
+
+		// ReSharper disable once CppHidingFunction
+		bool containsPoint(Geom::Vec2 point) const{
+			return hitBox.contains(point);
 		}
 
 		//TODO abstract these to other classes

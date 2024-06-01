@@ -150,8 +150,6 @@ import SideTemp;
 
 //TODO temp global static mut should be remove
 bool drawDebug{false};
-std::stringstream sstream{};
-
 
 
 namespace GameCtrl{
@@ -229,7 +227,7 @@ void setupUITest(){
 		   label.add<UI::ScrollPane>([](UI::ScrollPane& pane){
 			   pane.setItem<UI::Label>([](UI::Label& label){
 				   label.setText([]{
-					   sstream.str("");
+					   std::ostringstream sstream{};
 					   sstream << "$<scl#[0.55]>(" << std::fixed << std::setprecision(2) << Core::camera->
 						   getPosition().x << ", " <<
 						   Core::camera->getPosition().y << ") | " << std::to_string(OS::getFPS());
@@ -238,6 +236,8 @@ void setupUITest(){
 						   Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{},
 						   &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
 
+					   sstream << "\nDrawCount: " << GL::getDrawCallCount();
+					   GL::resetDrawCallCount();
 					   return std::move(sstream).str();
 				   });
 
@@ -584,6 +584,7 @@ void setupCtrl(){
 
 REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
+
 void setupBaseDraw(){
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
 		Graphic::Draw::Overlay::getBatch().flush();
@@ -660,7 +661,7 @@ int main(const int argc, char* argv[]){
 	// multiSample.getRenderBuffer().reset();
 
 	Game::EntityManage::init();
-	Game::EntityManage::realEntities.resizeTree({-50000, -50000, 100000, 100000});
+	Game::EntityManage::resizeTree({-50000, -50000, 100000, 100000});
 	//
 
 	// GL::Blendings::Disable.apply(worldFrameBuffer.getID());
@@ -673,7 +674,7 @@ int main(const int argc, char* argv[]){
 
 		Draw::Overlay::Line::setLineStroke(5);
 		Draw::Overlay::color(Colors::GRAY);
-		Game::EntityManage::realEntities.quadTree->each([](decltype(Game::EntityManage::realEntities)::TreeType& t){
+		Game::EntityManage::mainTree.each([](const decltype(Game::EntityManage::mainTree)& t){
 			Draw::Overlay::Line::rectOrtho(t.getBoundary());
 		});
 
@@ -720,7 +721,6 @@ int main(const int argc, char* argv[]){
 		renderer.frameEnd(Assets::PostProcessors::multiToBasic.get());
 		renderer.frameEnd(merger);
 		// GL::Blendings::Normal.apply();
-
 	});
 
 	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
@@ -743,9 +743,9 @@ int main(const int argc, char* argv[]){
 			Overlay::Line::setLineStroke(4.f);
 			Overlay::Line::square(x, y, 50, 45);
 			Overlay::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime().count() / 5.0f, 1.0f)),
-			                 Colors::SKY.copy().setA(0.55f), Colors::ROYAL.copy().setA(0.55f),
-			                 Colors::SKY.copy().setA(0.55f), Colors::WHITE.copy().setA(0.55f),
-			                 Colors::ROYAL.copy().setA(0.55f), Colors::SKY.copy().setA(0.55f)
+				Colors::SKY.copy().setA(0.55f), Colors::ROYAL.copy().setA(0.55f),
+				Colors::SKY.copy().setA(0.55f), Colors::WHITE.copy().setA(0.55f),
+				Colors::ROYAL.copy().setA(0.55f), Colors::SKY.copy().setA(0.55f)
 			);
 		}
 
@@ -756,15 +756,22 @@ int main(const int argc, char* argv[]){
 	OS::activateHander();
 
 	while(!Core::platform->shouldExit()){
+		Core::renderer->draw();
+
 		Core::loopManager->update();
 
 		Core::audio->setListenerPosition(Core::camera->getPosition().x, Core::camera->getPosition().y);
-		 Core::renderer->draw();
 
 		// std::println("{}", OS::getFPS());
 
 		Core::platform->pollEvents();
+
 		OS::pollWindowEvent();
+		Core::renderer->drawOverlay();
+
+		Core::loopManager->updateEnd();
+
+		Core::renderer->blit();
 	}
 
 	//Application Exit

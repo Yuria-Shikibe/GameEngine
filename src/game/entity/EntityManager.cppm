@@ -7,6 +7,7 @@ import Game.Entity.RealityEntity;
 import Game.Entity.Drawable;
 export import Game.Pool;
 import ext.Concepts;
+import Geom.QuadTree;
 
 import std;
 
@@ -25,17 +26,34 @@ export namespace Game::EntityManage{
 	/** \brief The only place that update will be called*/
 	EntityMap<::Game::Entity> entities{};
 
-	EntityMap<Game::RealityEntity, RealityEntity::getHitBoound> realEntities{};
+	EntityMap<Game::RealityEntity> realEntities{};
 
-	void init() {
-		realEntities.buildTree({-10000, -10000, 20000, 20000});
-		realEntities.quadTree->setRoughInterscet(RealityEntity::roughInterscet);
-		realEntities.quadTree->setExactInterscet(RealityEntity::exactInterscet);
-		realEntities.quadTree->setPointInterscet(RealityEntity::pointInterscet);
+	Geom::QuadTree<RealityEntity> mainTree{};
+
+	void buildTree(const Geom::OrthoRectFloat worldBound) {
+		mainTree.setBoundary(worldBound);
+	}
+
+	void resizeTree(const Geom::OrthoRectFloat worldBound) {
+		mainTree.clear();
+
+		mainTree.setBoundary(worldBound);
+
+		realEntities.each([](const std::shared_ptr<RealityEntity>& t) {
+			mainTree.insert(*t);
+		});
 	}
 
 	void updateTree() {
-		realEntities.updateTree();
+		mainTree.clearItemsOnly();
+
+		realEntities.each([](const std::shared_ptr<RealityEntity>& t) {
+			mainTree.insert(*t);
+		});
+	}
+
+	void init() {
+		buildTree({-10000, -10000, 20000, 20000});
 	}
 
 	void update(const float delta) {
@@ -49,20 +67,19 @@ export namespace Game::EntityManage{
 
 		updateTree();
 
-
-
 		realEntities.each([delta](const decltype(realEntities)::StoreType& t) {
 			t->updateCollision(delta);
+		});
+
+		mainTree.intersectRect(drawables.getViewPort(), [](RealityEntity& entity, const Geom::OrthoRectFloat& rect){
+			entity.calculateInScreen(rect);
+			if(entity.isInScreen()){
+				drawables.nextToDraw.push_back(&entity);
+			}
 		});
 	}
 
 	void render() {
-		realEntities.quadTree->intersectRect(drawables.getViewPort(), [](RealityEntity& entity, const Geom::OrthoRectFloat& rect){
-			if(entity.getDrawBound().overlap(rect)){
-				entity.setInScreen(true);
-			}
-		});
-
 		drawables.render();
 	}
 

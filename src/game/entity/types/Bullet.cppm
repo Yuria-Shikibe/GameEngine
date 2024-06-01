@@ -189,7 +189,7 @@ export namespace Game{
 
 		void updateCollision(const float deltaTick) override {
 			intersectedPointWith.clear();
-			EntityManage::realEntities.quadTree->intersectAny(*this);
+			EntityManage::mainTree.intersectAny(*this);
 
 			RealityEntity::updateCollision(deltaTick);
 		}

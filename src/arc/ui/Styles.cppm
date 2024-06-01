@@ -10,6 +10,7 @@ import Graphic.TextureAtlas;
 import Graphic.Color;
 import std;
 
+//TODO really bad design seriously
 export namespace UI::Styles {
 	constexpr Graphic::Color uiGeneralColor = Graphic::Colors::AQUA_SKY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.276f).setA(0.875f);
 	
@@ -64,18 +65,22 @@ export namespace UI::Styles {
 	UI::DrawPair drawpair_elem_s1_back_sky;
 
 	std::unique_ptr<UI::UIStyle>
-		style_elem1{std::make_unique<UI::UIStyle>()},
-		style_elem2{std::make_unique<UI::UIStyle>()},
-		style_elem3{std::make_unique<UI::UIStyle>()},
+		// style_elem1{std::make_unique<UI::UIStyle>()},
+		// style_elem2{std::make_unique<UI::UIStyle>()},
+		// style_elem3{std::make_unique<UI::UIStyle>()},
+
 		style_elem_s1{std::make_unique<UI::UIStyle>()},
+		style_elem_s1_noEdge{std::make_unique<UI::UIStyle>()},
 		style_elem_s1_light_gray{std::make_unique<UI::UIStyle>()}
 	;
 
 	std::unique_ptr<UI::WidgetDrawer>
-		drawer_elem1{nullptr},
-		drawer_elem2{nullptr},
-		drawer_elem3{nullptr},
+		// drawer_elem1{nullptr},
+		// drawer_elem2{nullptr},
+		// drawer_elem3{nullptr},
+
 		drawer_elem_s1{nullptr},
+		drawer_elem_s1_noEdge{nullptr},
 		drawer_elem_s1_light_gray{nullptr}
 	;
 
@@ -105,15 +110,15 @@ export namespace UI::Styles {
 			drawpair_elem1_back_white = {drawable_elem1_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.13f)};
 			drawpair_elem1_back_sky = {drawable_elem1_back.get(), Graphic::Color{uiGeneralColor}.setA(0.13f)};
 
-			style_elem1->base = emptyPair;
-			style_elem1->edge = drawpair_elem1_egde_sky;
-			style_elem1->inbound = drawpair_elem1_egde_white;
-			style_elem1->pressed = drawpair_elem1_back_white;
-			style_elem1->disabled = emptyPair;
-
-			applyMargin_16(style_elem1);
-
-			drawer_elem1 = std::make_unique<UI::StyleDrawer>(style_elem1.get());
+			// style_elem1->base = emptyPair;
+			// style_elem1->edge = drawpair_elem1_egde_sky;
+			// style_elem1->inbound = drawpair_elem1_egde_white;
+			// style_elem1->pressed = drawpair_elem1_back_white;
+			// style_elem1->disabled = emptyPair;
+			//
+			// applyMargin_16(style_elem1);
+			//
+			// drawer_elem1 = std::make_unique<UI::StyleDrawer>(style_elem1.get());
 		}
 
 		{
@@ -129,15 +134,15 @@ export namespace UI::Styles {
 			drawpair_elem2_back_white = {drawable_elem2_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.23f)};
 			drawpair_elem2_back_sky = {drawable_elem2_back.get(), Graphic::Color{uiGeneralColor}.setA(0.23f)};
 
-			style_elem2->base = emptyPair;
-			style_elem2->edge = drawpair_elem2_egde_sky;
-			style_elem2->inbound = drawpair_elem2_egde_white;
-			style_elem2->pressed = drawpair_elem2_back_white;
-			style_elem2->disabled = emptyPair;
-
-			applyMargin_16(style_elem2);
-
-			drawer_elem2 = std::make_unique<UI::StyleDrawer>(style_elem2.get());
+			// style_elem2->base = emptyPair;
+			// style_elem2->edge = drawpair_elem2_egde_sky;
+			// style_elem2->inbound = drawpair_elem2_egde_white;
+			// style_elem2->pressed = drawpair_elem2_back_white;
+			// style_elem2->disabled = emptyPair;
+			//
+			// applyMargin_16(style_elem2);
+			//
+			// drawer_elem2 = std::make_unique<UI::StyleDrawer>(style_elem2.get());
 		}
 
 		{
@@ -153,15 +158,15 @@ export namespace UI::Styles {
 			drawpair_elem3_back_white = {drawable_elem3_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.33f)};
 			drawpair_elem3_back_sky = {drawable_elem3_back.get(), Graphic::Color{uiGeneralColor}.setA(0.33f)};
 
-			style_elem3->base = emptyPair;
-			style_elem3->edge = drawpair_elem3_egde_sky;
-			style_elem3->inbound = drawpair_elem3_egde_white;
-			style_elem3->pressed = drawpair_elem3_back_white;
-			style_elem3->disabled = emptyPair;
-
-			applyMargin_16(style_elem3);
-
-			drawer_elem3 = std::make_unique<UI::StyleDrawer>(style_elem3.get());
+			// style_elem3->base = emptyPair;
+			// style_elem3->edge = drawpair_elem3_egde_sky;
+			// style_elem3->inbound = drawpair_elem3_egde_white;
+			// style_elem3->pressed = drawpair_elem3_back_white;
+			// style_elem3->disabled = emptyPair;
+			//
+			// applyMargin_16(style_elem3);
+			//
+			// drawer_elem3 = std::make_unique<UI::StyleDrawer>(style_elem3.get());
 		}
 
 		{
@@ -198,6 +203,12 @@ export namespace UI::Styles {
 			style_elem_s1_light_gray.operator*() = style_elem_s1.operator*();
 			style_elem_s1_light_gray->edge = drawpair_elem_s1_egde_light_gray;
 			drawer_elem_s1_light_gray= std::make_unique<UI::StyleDrawer>(style_elem_s1_light_gray.get());;
+		}
+
+		{
+			style_elem_s1_noEdge.operator*() = style_elem_s1.operator*();
+			style_elem_s1_noEdge->edge = {};
+			drawer_elem_s1_noEdge = std::make_unique<UI::StyleDrawer>(style_elem_s1_noEdge.get());;
 		}
 
 		UI::defDrawer = drawer_elem_s1.get();

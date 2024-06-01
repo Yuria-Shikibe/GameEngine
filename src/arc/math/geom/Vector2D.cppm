@@ -727,6 +727,9 @@ export namespace Geom{
 	template <typename N> constexpr Vector2D<N> minVec2{std::numeric_limits<N>::min(), std::numeric_limits<N>::min()};
 	template <typename N> constexpr Vector2D<N> lowestVec2{std::numeric_limits<N>::lowest(), std::numeric_limits<N>::lowest()};
 
+	template <typename N> constexpr Vector2D<N> signalNanVec2{std::numeric_limits<N>::signaling_NaN(), std::numeric_limits<N>::signaling_NaN()};
+	template <typename N> constexpr Vector2D<N> quietNanVec2{std::numeric_limits<N>::quiet_NaN(), std::numeric_limits<N>::quiet_NaN()};
+
 	constexpr Vec2 ZERO{ 0, 0 };
 	constexpr Point2U ZERO_U{ 0u, 0u };
 	constexpr Vec2 QNAN2{ std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN() };

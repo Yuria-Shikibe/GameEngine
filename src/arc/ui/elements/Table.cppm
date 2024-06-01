@@ -64,7 +64,7 @@ export namespace UI {
 		}
 
 		template <Concepts::Derived<Elem> T>
-		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func = nullptr, const unsigned depth = std::numeric_limits<unsigned>::max()) {
+		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func, const unsigned depth = std::numeric_limits<unsigned>::max()) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
 			cell.applyLayout(defaultCellLayout);
 

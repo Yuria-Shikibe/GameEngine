@@ -33,9 +33,19 @@ namespace GL {
 
     GLenum
         globalBlend_src{}, globalBlend_dst{}, globalBlend_srcAlpha{}, globalBlend_dstAlpha;
+
+    std::size_t globalDrawCall{0};
+
 }
 
 export namespace GL {
+    void incrDrawCallCount(){ ++globalDrawCall; }
+
+    std::size_t getDrawCallCount(){ return globalDrawCall; }
+
+    void resetDrawCallCount(){ globalDrawCall = 0; }
+
+
     void defGlDebugCallback(GLenum source, GLenum type, const GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param){
 #ifndef _DEBUG
         return;

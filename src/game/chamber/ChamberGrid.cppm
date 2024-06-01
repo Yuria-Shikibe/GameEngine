@@ -15,7 +15,7 @@ import ext.Algorithm;
 namespace Game{
 	export
 	[[nodiscard]] Geom::Point2 toChamberPos(Geom::Vec2 pos) noexcept{
-		return pos.div(TileSize).trac<int>();
+		return pos.div(TileSize).round<int>();
 	}
 // using Entity = int;
 	export
@@ -49,10 +49,6 @@ namespace Game{
 		}
 
 	protected:
-		[[nodiscard]] static Geom::OrthoRectFloat getBoundOf(const ChamberTile<Entity>& ChamberTile){
-			return ChamberTile.getChamberRegion();
-		}
-
 		Geom::OrthoRectFloat bound{};
 		std::list<Tile> data{};
 		std::unordered_map<Geom::Point2, ItrType> positionRef{};
@@ -261,22 +257,26 @@ namespace Game{
 
 		/**
 		 * @brief Be cautionous about iterator failure
+		 * @param chamberPos Pos to erase
 		 * @param setToInvalid erase relative tiles or set them to invalid
 		 */
-		void erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
+		Geom::OrthoRectInt erase(const Geom::Point2 chamberPos, const bool setToInvalid = false){
 			resetBrief();
 
 			if(auto itr = findItrByPos(chamberPos); itr != data.end()){
 				const Tile* chamber = itr.operator->();
 
-				if(chamber->valid()){
+				if(chamber->refOnly()){
 					itr = this->findItrByPos(chamber->getPosOfRef());
+
 					if(itr == data.end()){
 						throw ext::IllegalArguments{"Failed to find ref tile!"};
 					}
 
 					chamber = itr.operator->();
 				}
+
+				const Geom::OrthoRectInt region = chamber->getChamberGridBound();
 
 				const typename decltype(data)::iterator begin = itr;
 				auto end = begin;
@@ -294,7 +294,11 @@ namespace Game{
 
 					data.erase(begin, end);
 				}
+
+				return region;
 			}
+
+			return {};
 		}
 
 		/**
@@ -305,7 +309,7 @@ namespace Game{
 			if(!this->checkOverlap(tile))return;
 
 			resetBrief();
-			bound.expandBy(this->getBoundOf(tile));
+			bound.expandBy(tile.getBound());
 
 			if(this->ownerInsert(tile))return;
 
@@ -328,7 +332,7 @@ namespace Game{
 			data.clear();
 
 			//TODO better bound allocation if the origin point of tilemap doesn't begin at (0, 0) [esp > (0, 0)]
-			bound = getBoundOf(front);
+			bound = front.getBound();
 
 			for(Tile& tile : input){
 				insertOrAssign(tile);
@@ -341,9 +345,9 @@ namespace Game{
 				return;
 			}
 
-			bound = data.front().getTileBound();
+			bound = data.front().getBound();
 			for (const auto& val : data){
-				bound.expandBy(this->getBoundOf(val));
+				bound.expandBy(val.getBound());
 			}
 		}
 
@@ -464,7 +468,7 @@ namespace Game{
 		using ChamberGridData<Entity>::data;
 		using ChamberGridData<Entity>::bound;
 
-		using TreeType = Geom::QuadTree<Tile, float, &ChamberGrid::getBoundOf>;
+		using TreeType = Geom::QuadTree<Tile>;
 
 	protected:
 
@@ -518,7 +522,7 @@ namespace Game{
 				if(boundCheck){
 					const auto oriBound = bound;
 
-					bound.expandBy(this->getBoundOf(val));
+					bound.expandBy(val.getBound());
 					if(bound != oriBound){
 						quadTree.clear();
 						quadTree.setBoundary(bound);

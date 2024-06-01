@@ -87,7 +87,7 @@ export namespace Math {
 	}
 
 	constexpr float absin(const float in, const float scl, const float mag) noexcept {
-		return (sin(in, scl * 2.0f, mag) + mag) / 2.0f;
+		return (sin(in, scl * 2.0f / Math::PI2, mag) + mag) / 2.0f;
 	}
 
 	constexpr float tan(const float radians, const float scl, const float mag) noexcept {

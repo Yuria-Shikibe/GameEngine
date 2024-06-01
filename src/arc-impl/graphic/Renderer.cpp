@@ -182,7 +182,6 @@ void Core::Renderer::resize(const int w, const int h) {
 
 void Core::Renderer::draw(){
 	defaultFrameBuffer.bind();
-	GL::viewport(static_cast<int>(width), static_cast<int>(height));
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -192,14 +191,4 @@ void Core::Renderer::draw(){
 	drawMain();
 
 	drawControlHook.fire(draw_post);
-
-	drawControlHook.fire(draw_after);
-
-	renderUI();
-
-	drawControlHook.fire(draw_overlay);
-
-	glBlitNamedFramebuffer(defaultFrameBuffer.getID(), 0,
-	                       0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST
-	);
 }

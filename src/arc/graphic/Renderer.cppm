@@ -177,6 +177,25 @@ export namespace Core{
 
 		virtual void draw();
 
+		virtual void drawOverlay(){
+			drawControlHook.fire(draw_after);
+
+			renderUI();
+
+			drawControlHook.fire(draw_overlay);
+		}
+
+		void blit() const{
+#if DEBUG_CHECK
+			if(&defaultFrameBuffer != contextFrameBuffer){
+				throw ext::RuntimeException{"All context should fallback to default buffer when blit to screen"};
+			}
+#endif
+			glBlitNamedFramebuffer(defaultFrameBuffer.getID(), 0,
+				0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST
+			);
+		}
+
 		[[nodiscard]] std::unique_ptr<unsigned char[]> readScreen() const{
 			glBindFramebuffer(GL::FrameBuffer::READ, defaultFrameBuffer.getID());
 			std::unique_ptr pixels = std::make_unique<unsigned char[]>(width * height * 4);

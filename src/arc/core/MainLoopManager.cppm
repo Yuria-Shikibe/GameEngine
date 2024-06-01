@@ -27,7 +27,7 @@ export namespace Core{
 		void clearListeners(){applicationListeners.clear();}
 
 		void update() const{
-			if(gameLoopFuture.valid())gameLoopFuture.get();
+			// if(gameLoopFuture.valid())gameLoopFuture.get();
 			if(!isPaused() && gameCore)gameLoopFuture = std::async(&OS::ApplicationListener::update, gameCore, getDeltaTick());
 
 			handleAsync();
@@ -50,6 +50,10 @@ export namespace Core{
 			if(Core::uiRoot)Core::uiRoot->update(getDeltaTick());
 			Core::input.update(getDeltaTick());
 			if(Core::camera)Core::camera->update(getDeltaTick());
+		}
+
+		void updateEnd() const{
+			if(gameLoopFuture.valid())gameLoopFuture.get();
 		}
 
 		static Core::Tick getDeltaTick() noexcept;

@@ -4,6 +4,7 @@ export module Game.Entity.DrawMap;
 
 import Game.Entity.EntityMap;
 import Game.Entity.Drawable;
+import Geom.Rect_Orthogonal;
 
 import std;
 
@@ -13,6 +14,7 @@ export namespace Game{
 		Geom::OrthoRectFloat viewPort{};
 
 	public:
+		std::vector<DrawableEntity*> nextToDraw{};
 		using EntityMap::idMap;
 
 		void updateInScreen(auto& tree){
@@ -20,15 +22,14 @@ export namespace Game{
 		}
 
 		void render(){
-			auto view = idMap | std::ranges::views::values;
-
-			std::for_each(std::execution::unseq, view.begin(), view.end(), [this](decltype(idMap)::value_type::second_type& v) {
-				v->calculateInScreen(viewPort);
-			});
-
-			for(const auto& entity : view) {
-				if(entity->isInScreen())entity->draw();
+			for(const auto& entity : nextToDraw) {
+				entity->draw();
 			}
+
+			// for(const auto& entity : nextToDraw) {
+			// 	entity->setInScreen(false);
+			// }
+			nextToDraw.clear();
 		}
 
 		void renderDebug(){
