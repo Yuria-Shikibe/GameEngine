@@ -12,8 +12,8 @@ import std;
 
 export namespace UI::Create{
 
-	template <Concepts::Derived<RegionDrawable> Drawable, Concepts::Invokable<void(Button&, bool)> Func>
-	std::pair<std::unique_ptr<UI::Button>, UI::ImageRegion&> imageButton(const Drawable& drawable, Func&& func){
+	template <Concepts::Derived<RegionDrawable> Drawable, Concepts::Invokable<void(Button&, bool)> Func, Concepts::InvokeNullable<void(Button&)> Initer = std::nullptr_t>
+	std::pair<std::unique_ptr<UI::Button>, UI::ImageRegion&> imageButton(const Drawable& drawable, Func&& func, Initer&& initer = nullptr){
 		auto button = std::make_unique<UI::Button>();
 
 		button->setCall(std::forward<Func>(func));
@@ -24,6 +24,10 @@ export namespace UI::Create{
 		});
 
 		cell.fillParent();
+
+		if constexpr (!std::same_as<std::nullptr_t, Initer>){
+			initer(*button);
+		}
 
 		return {std::move(button), cell.as<UI::ImageRegion>()};
 	}

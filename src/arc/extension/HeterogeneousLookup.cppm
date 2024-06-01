@@ -141,6 +141,13 @@ export namespace ext{
 			return this->find(key)->second;
 		}
 
+		V at(const std::string_view key, const V& def) const requires std::is_copy_assignable_v<V>{
+			if(const auto itr = this->find(key); itr != this->end()){
+				return itr->second;
+			}
+			return def;
+		}
+
 		V* tryFind(const std::string_view key){
 			if(const auto itr = this->find(key); itr != this->end()){
 				return &itr->second;

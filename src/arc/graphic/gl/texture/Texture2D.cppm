@@ -125,10 +125,16 @@ export namespace GL{
 			glTextureStorage2D(nameID, MipMapGeneralLevel, GL_RGBA8,
 				static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 
-			if(localData)glTextureSubImage2D(nameID, 0, 0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
+			if(localData)glTextureSubImage2D(nameID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
 			//TODO : Check if needed here.
 			setWrap();
 			glGenerateTextureMipmap(nameID);
+		}
+
+		void loadData(unsigned char data[]) const{
+			if(data){
+				glTextureSubImage2D(nameID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			}
 		}
 
 		void init() {

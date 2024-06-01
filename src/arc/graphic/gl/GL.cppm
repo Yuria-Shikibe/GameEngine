@@ -259,7 +259,7 @@ export namespace GL {
         }
     }
 
-    unsigned getSrhinkCount(){
+    unsigned getScissorCount(){
         return scissorShrinkActivatedCount;
     }
 

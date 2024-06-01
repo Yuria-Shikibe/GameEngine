@@ -7,6 +7,7 @@ export import UI.Button;
 export import UI.ScrollPane;
 export import UI.ImageRegion;
 export import UI.Label;
+export import UI.Dialog;
 export import OS.File;
 import std;
 import ext.platform;
@@ -16,30 +17,40 @@ import ext.Heterogeneous;
 
 import UI.Icons;
 import UI.ButtonCreation;
+import UI.Palette;
 
 export namespace UI{
 	//TODO uses another class to do things like this for files:
 	//THis cannot support such a hugh range search
 	class FileTreeSelector : public Table{
+	private:
+
+
 		void buildBasic(){
-			sideMenu = &add<UI::Table>([this](UI::Table& sideMenu){
+			sideMenu = &add<Table>([this](Table& sideMenu){
 				sideMenu.setFillparent();
 				sideMenu.setCellAlignMode(Align::Layout::top_center);
-				sideMenu.defaultCellLayout.setPad({.bottom = 6.f}).setSize(90.f);
-				auto [b, a] = UI::Create::imageButton(UI::Icons::new_afferent, [this](auto&, bool){
+				sideMenu.defaultCellLayout.setPad({.bottom = 4.f, .top = 4.f}).setSize(80.f);
 
-				});
-				b->setDrawer(UI::Styles::drawer_elem_s1_noEdge.get());
+				sideMenu.transferElem(Create::imageButton(Icons::search,
+					[this](auto&, bool){
 
-				sideMenu.transferElem(std::move(b));
+					}, std::bind_back(&Button::setDrawer, Styles::drawer_elem_s1_noEdge.get())
+				).first).endLine();
+
+				sideMenu.transferElem(Create::imageButton(Icons::sort_three,
+					[this](auto&, bool){
+
+					}, std::bind_back(&Button::setDrawer, Styles::drawer_elem_s1_noEdge.get())
+				).first).endLine();
 			})
 			.setWidth(120.f)
 			.fillParentY()
-			.as<UI::Table>();
+			.as<Table>();
 
-			selectMenu = &add<UI::Table>([](UI::Table& section){
+			selectMenu = &add<Table>([](Table& section){
 				section.setEmptyDrawer();
-			}).fillParent().as<UI::Table>();
+			}).fillParent().as<Table>();
 		}
 
 	public:
@@ -52,6 +63,14 @@ export namespace UI{
 
 		Table* sideMenu{};
 		Table* selectMenu{};
+
+		void createDialogQuitButton(UI::Dialog& dialog){
+			sideMenu->transferElem(Create::imageButton(Icons::new_afferent,
+				[this, dialog = &dialog](auto&, bool){
+					dialog->destroy();
+				}, std::bind_back(&Button::setDrawer, Styles::drawer_elem_s1_noEdge.get())
+			).first).endLine();
+		}
 
 		FileTreeSelector(){
 			defaultCellLayout.fillParentX().wrapY().setMargin(5);
@@ -99,7 +118,7 @@ export namespace UI{
 						returnToParentDirectory(current == current.getRoot());
 					});
 
-					button.Table::add<Label>([this](Label& label){
+					button.add<Label>([this](Label& label){
 						label.setEmptyDrawer();
 						label.setWrap(false, true);
 						label.setText(std::format("{} {}", ">..", current.filenameFullPure()));
@@ -141,7 +160,7 @@ export namespace UI{
 
 		void buildSingle(Table& table, const OS::File& file, int index){
 			table.add<Button>([this, &file, index](Button& inner){
-				inner.setDrawer(UI::Styles::drawer_elem_s1_noEdge.get());
+				inner.setDrawer(Styles::drawer_elem_s1_noEdge.get());
 				inner.setCall([this, fileCopy = file, index](auto&, auto){
 					gotoFile(fileCopy);
 
@@ -153,28 +172,24 @@ export namespace UI{
 
 				});
 
-				if(auto pixmap = ext::platform::getThumbnail(file); pixmap.valid())
+				if(auto pixmap = ext::platform::getThumbnail(file); pixmap.valid()){
 					inner.setTooltipBuilder({
 							.followTarget = TooltipBuilder::FollowTarget::cursor,
 							.builder = [pixmap = std::move(pixmap)](Table& hint){
-								if(pixmap.valid()){
-									auto drawable = std::make_unique<UniqueRegionDrawable>(
-										std::move(pixmap).genTex());
-									drawable->texture->setFilter(GL::mipmap_linear_linear, GL::nearest);
-									hint.setCellAlignMode(Align::Layout::top_left);
-									hint.setEmptyDrawer();
-									hint.add<ImageRegion>([drawable = std::move(drawable)](ImageRegion& image) mutable{
-										image.setSize(drawable->texture->getWidth(), drawable->texture->getHeight());
-										image.setDrawable(std::move(drawable));
-										image.selfMaskOpacity = image.color.a = 0.85f;
-									}).expand().endLine();
-								} else{
-									hint.setVisible(false);
-									hint.setSize(0);
-									hint.setEmptyDrawer();
-								}
+								auto drawable = std::make_unique<UniqueRegionDrawable>(GL::Texture2D{pixmap.getWidth(), pixmap.getHeight(), nullptr});
+								drawable->texture->loadData(pixmap.data());
+								drawable->texture->setFilter(GL::mipmap_linear_linear, GL::nearest);
+
+
+								hint.add<ImageRegion>([drawable = std::move(drawable)](ImageRegion& image) mutable{
+									image.setSize(drawable->texture->getWidth(), drawable->texture->getHeight());
+									image.setDrawable(std::move(drawable));
+									image.setEmptyDrawer();
+									image.selfMaskOpacity = image.color.a = 0.85f;
+								}).setSize(160.f, 160.f, true).endLine();
 							},
 						});
+				}
 
 				if(!file.isDir()){
 					inner.setActivatedChecker([index, fileCopy = file, this]{
@@ -182,16 +197,22 @@ export namespace UI{
 					});
 				} else{}
 
-				inner.emplace<ImageRegion>(file.isDir() ? UI::Icons::folder_close : UI::Icons::file_question)
+				auto extension = file.extension();
+
+				inner.add<ImageRegion>([&file, extension = std::string_view(extension)](ImageRegion& imageRegion){
+					imageRegion.setDrawable(file.isDir() ? Icons::folder_close : Icons::getIconByFileSuffix(extension));
+					imageRegion.color = (file.isDir() ? Pal::AQUA_SKY : Pal::LIGHT_GRAY).createLerp(Pal::WHITE, 0.25f);
+					imageRegion.setEmptyDrawer();
+				})
 				     .setMargin(2.f)
 				     .setSize(48.f);
 
-				inner.add<Label>([&file](Label& label){
+				inner.add<Label>([&file, extension = std::move(extension)](Label& label){
 					label.setEmptyDrawer();
 					if(file.isDir()){
 						label.setText(std::format("{}$<c#AQUA_SKY>", file.filenameFullPure()));
 					} else{
-						label.setText(std::format("$<c#LIGHT_GRAY>{}$<c#PALE_GREEN>$<sub>{}", file.stem(), file.extension()));
+						label.setText(std::format("$<c#LIGHT_GRAY>{}$<c#PALE_GREEN>$<sub>{}", file.stem(), extension));
 					}
 					label.setWrap(false, true);
 					label.getGlyphLayout()->setSCale(0.65f);

@@ -806,7 +806,8 @@ export Icon zoom_in{};
 export Icon zoom_internal{};
 export Icon zoom_out{};
 	export ext::StringMap<std::reference_wrapper<Icon>> iconMap{};
-export void load(Graphic::TextureAtlas& atlas){
+
+	void loadIcons(Graphic::TextureAtlas& atlas){
 	using namespace std::string_view_literals;
 	keyboard_0.wrapper = *atlas.find("ui-keyboard_0");
 	iconMap.insert_or_assign("keyboard_0"sv, keyboard_0);

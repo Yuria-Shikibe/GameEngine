@@ -70,11 +70,7 @@ export namespace UI {
 			}
 		}
 
-		virtual void drawChildren() const {
-			for(const auto& elem : children) {
-				elem->draw();
-			}
-		}
+		virtual void drawChildren() const;
 
 		virtual void modifyAddedChildren(Elem* elem);
 

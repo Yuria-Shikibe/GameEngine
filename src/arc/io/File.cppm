@@ -54,6 +54,10 @@ namespace OS{
 			return !(lhs == rhs);
 		}
 
+		[[nodiscard]] auto getFileSize() const{
+			return fs::file_size(rawPath);
+		}
+
 		[[nodiscard]]fs::path absolutePath() const{
 			return absolute(getPath());
 		}
@@ -95,13 +99,13 @@ namespace OS{
 		}
 
 		[[nodiscard]] bool exist() const{
-			return fs::exists(rawPath);
+			return exists(rawPath);
 		}
 
 		[[nodiscard]] bool deleteFile() const{
 			return exist() && (isDir()
-				                   ? fs::remove(absolutePath())
-				                   : fs::remove_all(absolutePath()));
+				                   ? remove(absolutePath())
+				                   : remove_all(absolutePath()));
 		}
 
 		void deleteFileQuiet() const{
@@ -138,7 +142,7 @@ namespace OS{
 		}
 
 		[[nodiscard]] bool createDir(const bool autoCreateParents = true) const{
-			return autoCreateParents ? fs::create_directories(getPath()) : fs::create_directory(getPath());
+			return autoCreateParents ? create_directories(getPath()) : create_directory(getPath());
 		}
 
 		void createDirQuiet(const bool autoCreateParents = true) const{
@@ -233,11 +237,11 @@ namespace OS{
 			return files;
 		}
 
-		template <Concepts::Invokable<bool(const OS::File&)> Pred>
+		template <Concepts::Invokable<bool(const File&)> Pred>
 		[[nodiscard]] std::vector<File> subs(Pred&& pred) const{
 			std::vector<File> files;
 			for(const auto& item : fs::directory_iterator(getPath())){
-				OS::File file{item};
+				File file{item};
 				if (pred(file)){
 					files.push_back(std::move(file));
 				}
@@ -385,8 +389,62 @@ namespace OS{
 		}
 
 	};
+
+	export
+	/**
+	 * @brief default is ascend;
+	 * 'ascend' here do actually nothing
+	 */
+	enum struct FileSortFunc : unsigned char{
+		name = 0b0000'0001,
+		time = 0b0000'0010,
+		size = 0b0000'0100,
+
+		ascend = 0,
+		descend = 0b0001'0000
+	};
 }
 
+export OS::FileSortFunc operator|(OS::FileSortFunc l, OS::FileSortFunc r) noexcept{
+	using Ty = std::underlying_type_t<OS::FileSortFunc>;
+	return OS::FileSortFunc{static_cast<Ty>(static_cast<Ty>(l) | static_cast<Ty>(r))};
+}
+
+export bool operator&(OS::FileSortFunc l, OS::FileSortFunc r) noexcept{
+	using Ty = std::underlying_type_t<OS::FileSortFunc>;
+	return static_cast<bool>(static_cast<Ty>(l) & static_cast<Ty>(r));
+}
+
+export namespace OS{
+	std::function<bool(const File&, const File&)> getSortter(FileSortFunc sortFunc){
+		using Func = std::function<bool(const File&, const File&)>;
+		const auto opTy = FileSortFunc{static_cast<std::underlying_type_t<FileSortFunc>>(sortFunc) & 0x0fu};
+
+		const bool descend = sortFunc & FileSortFunc::descend;
+
+		switch(opTy){
+			case FileSortFunc::name:{
+				return descend ? Func{std::greater<File>{}} : Func{std::less<File>{}};
+			}
+			case FileSortFunc::size:{
+				return descend ? [](const File& l, const File& r){
+					return l.getFileSize() < r.getFileSize();
+				} : [](const File& l, const File& r){
+					return l.getFileSize() > r.getFileSize();
+				};
+			}
+			case FileSortFunc::time:{
+				return descend ? [](const File& l, const File& r){
+					return fs::last_write_time(l.getPath()) < fs::last_write_time(r.getPath());
+				} : [](const File& l, const File& r){
+					return fs::last_write_time(l.getPath()) > fs::last_write_time(r.getPath());
+				};
+			}
+
+			default: return descend ? Func{std::greater<File>{}} : Func{std::less<File>{}};
+		}
+	}
+}
 
 export
 template <>

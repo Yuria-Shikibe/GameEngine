@@ -94,6 +94,7 @@ namespace Platform_Windows{
 	ULONG_PTR gdiplusToken;
 
 	void init(){
+
 		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 		if(const auto result = CoInitialize(nullptr);
 			FAILED(result)){

@@ -50,6 +50,7 @@ namespace CurrentPlatform{
 		}
 	}
 
+	//TODO seems broken
 	Graphic::Pixmap getThumbnail(const OS::File& file) {
 		Graphic::Pixmap pixmap{4, 4};
 
@@ -57,7 +58,8 @@ namespace CurrentPlatform{
 
 		if(const auto result = SHCreateItemFromParsingName(file.getPath().wstring().data(), nullptr, IID_PPV_ARGS(&pImgFactory));
 			FAILED(result)){
-			PrintErrorMessage(result);
+			//PrintErrorMessage(result);
+			std::move(pixmap).data().reset();
 		}else{
 			const SIZE size = { 256, 256 }; // Replace with your desired size
 			HBITMAP hBitmap = nullptr;
@@ -82,7 +84,7 @@ namespace CurrentPlatform{
 					pixmap[i * 4 + 3] = toRead[i * 4 + 3];
 				}
 
-				pixmap.flipY();
+				// pixmap.flipY();
 
 				delete pBitmap;
 			}

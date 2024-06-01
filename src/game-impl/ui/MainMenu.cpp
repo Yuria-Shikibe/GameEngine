@@ -105,9 +105,10 @@ void Game::Scenes::MainMenu::build(){
 								}},
 								{
 									"file-tree", [](const UI::Button& b, bool){
-										Core::uiRoot->showDialog(true, [](UI::Table& builder){
-											builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
+										Core::uiRoot->showDialog(true, [](UI::Dialog& dialog){
+											dialog.content.add<UI::FileTreeSelector>([&dialog](UI::FileTreeSelector& selector){
 												selector.gotoFile(Assets::Dir::assets.getParent(), false);
+												selector.createDialogQuitButton(dialog);
 											}).fillParent().setAlign(Align::Layout::top_center);
 										});
 									}

@@ -65,7 +65,9 @@ void UI::ScrollPane::update(const Core::Tick delta){
 
 	const float ratioX = horiScrollRatio(-scrollOffset.x);
 	const float ratioY = vertScrollRatio(scrollOffset.y);
-	constexpr float triggerVal = 0.005f;
+
+	constexpr float triggerVal = 0.00001f;
+
 	if(ratioX > 1.0f - triggerVal || ratioX < triggerVal){
 		scrollVelocity.x = 0;
 	}
@@ -115,7 +117,7 @@ void UI::ScrollPane::drawContent() const{
 	Math::ceilPositive(getContentWidth()), Math::ceilPositive(getContentHeight())
 	};
 
-	const auto count = GL::getSrhinkCount();
+	const auto count = GL::getScissorCount();
 	GL::enable(GL::Test::SCISSOR);
 
 	if(!count)GL::forceSetScissor(clip);
