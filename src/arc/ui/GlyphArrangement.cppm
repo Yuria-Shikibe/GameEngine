@@ -148,8 +148,17 @@ export namespace Font {
 		Geom::Vec2 offset{};
 		float maxWidth{std::numeric_limits<float>::max()};
 
-
 		TextString lastText{};
+
+		TextView getView(bool ignoreLastEnter = true) const{
+			TextView view = lastText;
+			if(!view.empty() && ignoreLastEnter){
+				if(view.back() == '\n'){
+					return view.substr(0, view.size() - 1);
+				}
+			}
+			return view;
+		}
 
 		void updateDrawbound() noexcept{
 			drawBund = rawBound;
@@ -185,7 +194,11 @@ export namespace Font {
 		}
 
 		[[nodiscard]] bool empty() const{
-			return glyphs.empty();
+			return glyphs.empty() || glyphs.front().code == 0;
+		}
+
+		[[nodiscard]] bool ignore() const{
+			return glyphs.empty() || glyphs.front().code == 2;
 		}
 
 		[[nodiscard]] decltype(auto) takeValid() {

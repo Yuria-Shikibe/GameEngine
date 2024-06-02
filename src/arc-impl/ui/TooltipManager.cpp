@@ -17,40 +17,10 @@ void UI::TooltipManager::drop(std::unique_ptr<Table>&& element, const bool insta
 	}
 }
 
-void UI::TooltipManager::dropCurrentAt(const Elem* where, const bool instantDrop){
-	if(focusTableStack.empty())return;
-
-	lastConsumer = nullptr;
-
-	if(where == nullptr){
-		for(auto& element : focusTableStack | std::ranges::views::elements<0> | std::ranges::views::reverse){
-			drop(std::move(element), instantDrop);
-		}
-
-		focusTableStack.clear();
-
-		lastConsumer = getCurrentConsumer();
-	}
-
-	const auto begin =
-		std::ranges::find(focusTableStack | std::ranges::views::elements<0>, where, &std::unique_ptr<Table>::get).base();
-	const auto end = focusTableStack.end();
-
-	for(auto&& element : std::ranges::subrange{begin, end} | std::ranges::views::elements<0> | std::ranges::views::reverse){
-		drop(std::move(element), instantDrop);
-	}
-
-	focusTableStack.erase(begin, end);
-
-	lastConsumer = getCurrentConsumer();
-}
-
 UI::Table* UI::TooltipManager::tryObtain(const Elem* consumer){
 	if(consumer && consumer->getTooltipBuilder() &&
 		obtainValid(
-			consumer,
-			consumer->getTooltipBuilder().minHoverTime,
-			consumer->getTooltipBuilder().useStaticTime)
+			consumer)
 	){
 		root->cursorStrandedTime = root->cursorInBoundTime = 0;
 
@@ -60,14 +30,18 @@ UI::Table* UI::TooltipManager::tryObtain(const Elem* consumer){
 	return nullptr;
 }
 
-bool UI::TooltipManager::obtainValid(const Elem* lastRequester, const float minHoverTime, const bool useStaticTime) const{
-	if(lastRequester == this->lastConsumer)return false;
+bool UI::TooltipManager::obtainValid(const Elem* consumer) const{
+	if(consumer == this->lastConsumer)return false;
+
+	auto& builder = consumer->getTooltipBuilder();
+
+	if(root->tempTooltipBanned && builder.autoBuild())return false;
 
 	if(root->cursorInBoundTime > 0.0f){
-		if(useStaticTime){
-			return root->cursorStrandedTime > minHoverTime;
+		if(builder.useStaticTime){
+			return root->cursorStrandedTime > builder.minHoverTime;
 		}else{
-			return root->cursorInBoundTime > minHoverTime;
+			return root->cursorInBoundTime > builder.minHoverTime;
 		}
 	}
 
@@ -75,10 +49,11 @@ bool UI::TooltipManager::obtainValid(const Elem* lastRequester, const float minH
 }
 
 void UI::TooltipManager::update(const float delta){
-	for(unsigned i = 0; i < nextPopCount; ++i){
-		droppedTables.pop_back();
-	}
-	nextPopCount = 0;
+	std::erase_if(droppedTables, [this](const decltype(droppedTables)::value_type& ptr){
+		return toErase.contains(ptr.get());
+	});
+
+	toErase.clear();
 
 	auto* current = getCurrentFocus();
 	const bool autoRelease = lastConsumer && lastConsumer->getTooltipBuilder().autoRelease;

@@ -57,6 +57,8 @@ export namespace UI{
 
 		bool isHidden = false;
 
+		bool tempTooltipBanned = false;
+
 		[[nodiscard]] Root();
 
 		~Root() override;
@@ -231,7 +233,7 @@ export namespace UI{
 
 		void drawCursor() const;
 
-		void update(float delta);
+		void update(const Core::Tick delta);
 
 		[[nodiscard]] Geom::Matrix3D& getPorj(){
 			return projection;
@@ -292,6 +294,11 @@ export namespace UI{
 			if(this->textInputListener){
 				textInputListener->informEscape(0, 0);
 				this->setTextFocus(nullptr);
+				return false;
+			}
+
+			if(tooltipManager.dropBack()){
+				tempTooltipBanned = true;
 				return false;
 			}
 

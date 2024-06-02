@@ -235,7 +235,7 @@ void Assets::PostProcessors::load(){
 	frostedGlass.reset(new Graphic::ShaderProcessor{Shaders::frostedGlass});
 	frostedGlass->setTargetState(GL::State::BLEND, false);
 
-	frostedGlassBlur.reset(new Graphic::PingPongProcessor{frostedGlass.get(), frostedGlass.get(), 2});
+	frostedGlassBlur.reset(new Graphic::PingPongProcessor{frostedGlass.get(), frostedGlass.get(), 1});
 	frostedGlassBlur->setScale(0.5f);
 	frostedGlassBlur->setTargetState(GL::State::BLEND, false);
 

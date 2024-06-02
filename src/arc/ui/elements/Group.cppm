@@ -160,14 +160,12 @@ export namespace UI {
 		}
 
 		void postChanged() noexcept override{
-			Elem::postChanged();
-
-			if(lastSignal & ChangeSignal::notifyChildrenOnly){
-				for(const auto& element : children){
-					element->changed(lastSignal, ChangeSignal::notifyParentOnly);
-					element->postChanged();
-				}
+			if(lastSignal & ChangeSignal::notifyChildrenOnly)for(const auto& element : children){
+				element->changed(ChangeSignal::notifyNone, ChangeSignal::notifyParentOnly);
+				element->postChanged();
 			}
+
+			Elem::postChanged();
 		}
 
 		bool onEsc() override{

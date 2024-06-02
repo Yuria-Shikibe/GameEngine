@@ -225,7 +225,7 @@ namespace Core{
 		}
 	};
 
-	struct BatchGuard{
+	struct [[jetbrains::guard]] BatchGuard{
 		Batch& batch;
 
 		[[nodiscard]] explicit BatchGuard(Batch& batch) noexcept
@@ -235,7 +235,7 @@ namespace Core{
 	/**
 	 * @brief L2W --- Local Coordinate To World Transformation Matrix(2D)
 	 */
-	export struct BatchGuard_L2W : BatchGuard{
+	export struct [[jetbrains::guard]] BatchGuard_L2W : BatchGuard{
 		const Geom::Matrix3D originalMat{};
 
 		[[nodiscard]] explicit BatchGuard_L2W(Batch& batch, const Geom::Matrix3D& mat)
@@ -250,7 +250,7 @@ namespace Core{
 		}
 	};
 
-	export struct BatchGuard_Blend : BatchGuard{
+	export struct [[jetbrains::guard]] BatchGuard_Blend : BatchGuard{
 		const GL::Blending blending{};
 
 		[[nodiscard]] explicit BatchGuard_Blend(Batch& batch, const GL::Blending blending)
@@ -266,7 +266,7 @@ namespace Core{
 	/**
 	 * @brief L2W --- Local Coordinate To World Transformation Matrix(2D)
 	 */
-	export struct BatchGuard_Proj : BatchGuard{
+	export struct [[jetbrains::guard]] BatchGuard_Proj : BatchGuard{
 		Geom::Matrix3D current{};
 		const Geom::Matrix3D* originalMat{};
 
@@ -299,7 +299,7 @@ namespace Core{
 		}
 	};
 
-	export struct BatchGuard_Shader : BatchGuard{
+	export struct [[jetbrains::guard]] BatchGuard_Shader : BatchGuard{
 		GL::ShaderProgram* originalShader{nullptr};
 
 		[[nodiscard]] explicit BatchGuard_Shader(Batch& batch, GL::ShaderProgram* shader) noexcept

@@ -140,7 +140,7 @@ void Core::Renderer::renderUI() {
 	[[maybe_unused]] Core::BatchGuard_Proj batchGuard_proj{*Core::batchGroup.overlay, Core::uiRoot->getPorj()};
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
-	Assets::PostProcessors::bloom->blur.setProcessTimes(2);
+	Assets::PostProcessors::bloom->blur.setProcessTimes(1);
 
 	processUISperateDraw(Core::uiRoot->currentScene);
 	processUISperateDraw(&Core::uiRoot->rootDialog);

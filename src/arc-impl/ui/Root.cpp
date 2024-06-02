@@ -64,7 +64,7 @@ void UI::Root::drawCursor() const{
 	}
 }
 
-void UI::Root::update(const float delta){
+void UI::Root::update(const Core::Tick delta){
 	cursorPos = Core::input.getCursorPos();
 	if(currentScene == nullptr)return;
 
@@ -75,6 +75,16 @@ void UI::Root::update(const float delta){
 	currentScene->postChanged();
 	currentScene->update(delta);
 
+	rootDialog.each([delta](Dialog& dialog){
+		dialog.content.postChanged();
+		dialog.content.update(delta);
+	});
+
+	tooltipManager.each([delta](Table& table){
+		table.postChanged();
+		table.update(delta);
+	});
+
 	tooltipManager.cursorPos = cursorPos;
 
 	if(tooltipManager.isOccupied(currentCursorFocus)){
@@ -83,12 +93,14 @@ void UI::Root::update(const float delta){
 		if(cursorVel.isZero(0.005f)){
 			cursorStrandedTime += delta;
 		}else{
+			tempTooltipBanned = false;
 			cursorStrandedTime = 0.0f;
 		}
 
 		if(currentCursorFocus){
 			cursorInBoundTime += delta;
 		}else{
+			tempTooltipBanned = false;
 			cursorInBoundTime = 0.0f;
 		}
 	}

@@ -95,8 +95,8 @@ void UI::Elem::callRemove() {
 		parent->postRemove(this);
 	}
 
-	if(hoverTableHandle){
-		root->tooltipManager.forceDrop(hoverTableHandle);
+	if(tooltipHandle){
+		root->tooltipManager.forceDrop(tooltipHandle);
 	}
 }
 
@@ -110,16 +110,14 @@ void UI::Elem::setFocusedScroll(const bool focus) noexcept{
 	this->root->currentScrollFocused = focus ? this : nullptr;
 }
 
+void UI::Elem::changed(const ChangeSignal direction, const ChangeSignal removal) noexcept{
+	lastSignal = lastSignal + direction - removal;
+	if(parent && lastSignal & ChangeSignal::notifyParentOnly)parent->changed(ChangeSignal::notifySelf);
+}
+
 void UI::Elem::postChanged() noexcept{
 	if(lastSignal & ChangeSignal::notifySelf){
-		layoutChanged = true;
-	}
-
-	if(lastSignal & ChangeSignal::notifyParentOnly){
-		if(parent){
-			parent->changed(lastSignal);
-			parent->postChanged();
-		}
+		notifyLayoutChanged();
 	}
 
 	lastSignal = ChangeSignal::notifyNone;
@@ -146,13 +144,23 @@ bool UI::Elem::isCursorInbound() const noexcept{
 void UI::Elem::releaseAllFocus() const noexcept{
 	if(!root)return;
 
-	if(root->tooltipManager.getLastRequester() == this){
-		root->tooltipManager.dropCurrentAt(nullptr, true);
-	}
+	dropTooltip();
 
 	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
 	if(isCursorInbound())root->currentCursorFocus = nullptr;
+}
+
+bool UI::Elem::hasTooltip() const{
+	if(!root)return false;
+
+	return root->tooltipManager.hasTooltipInstanceOf(this);
+}
+
+void UI::Elem::dropTooltip(const bool instant) const{
+	if(hasTooltip()){
+		root->tooltipManager.dropCurrentAt<1>(this, instant);
+	}
 }
 
 Geom::Vec2 UI::Elem::getCursorPos() const noexcept{

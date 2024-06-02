@@ -64,9 +64,10 @@ namespace CurrentPlatform{
 			const SIZE size = { 256, 256 }; // Replace with your desired size
 			HBITMAP hBitmap = nullptr;
 
-			if(const auto hr = pImgFactory->GetImage(size, SIIGBF_RESIZETOFIT, &hBitmap);
+			if(const auto hr = pImgFactory->GetImage(size, SIIGBF_RESIZETOFIT | SIIGBF_INCACHEONLY, &hBitmap);
 				FAILED(hr)){
 				PrintErrorMessage(hr);
+				std::move(pixmap).data().reset();
 			}else{
 				Gdiplus::Bitmap* pBitmap = Gdiplus::Bitmap::FromHBITMAP(hBitmap, nullptr);
 
@@ -84,7 +85,7 @@ namespace CurrentPlatform{
 					pixmap[i * 4 + 3] = toRead[i * 4 + 3];
 				}
 
-				// pixmap.flipY();
+				pixmap.flipY();
 
 				delete pBitmap;
 			}

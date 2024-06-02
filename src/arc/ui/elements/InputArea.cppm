@@ -350,7 +350,7 @@ export namespace UI{
 		std::u32string inputBuffer{};
 
 		[[nodiscard]] bool shouldShowHint() const noexcept{
-			return !hintText.empty() && carets.empty() && (showingHintText || empty());
+			return !hintText.empty() && carets.empty() && (showingHintText || (empty() || getTextRef() == hintText));
 		}
 
 		void enableHint(){
@@ -452,6 +452,11 @@ export namespace UI{
 			}
 		}
 	public:
+		std::unordered_set<char32_t> ignoredText{};
+
+		~InputArea() override{
+			if(isTextFocused())setTextUnfocused();
+		}
 
 		InputArea(){
 			defParser = Font::forwardParser.get();
@@ -473,8 +478,8 @@ export namespace UI{
 
 		[[nodiscard]] constexpr int getMaxTextLength() const noexcept{ return maxTextByteLength; }
 
-		constexpr void setMaxTextLength(const int maxTextLength) noexcept{
-			this->maxTextByteLength = maxTextLength;
+		constexpr void setMaxTextLength(const int maxBytes) noexcept{
+			this->maxTextByteLength = maxBytes;
 		}
 
 		[[nodiscard]] bool isTextNearlyFull() const noexcept{
@@ -675,6 +680,10 @@ export namespace UI{
 
 			std::string str{};
 			str.reserve(inputBuffer.size() * 4);
+
+			std::erase_if(inputBuffer, [this](char32_t c){
+				return ignoredText.contains(c);
+			});
 
 			for(const auto value : inputBuffer){
 				auto buffer = ext::convertTo<char>(value);
@@ -903,8 +912,8 @@ export namespace UI{
 		[[nodiscard]] Font::TextString& getHintText(){ return hintText; }
 		[[nodiscard]] const Font::TextString& getHintText() const { return hintText; }
 
-		void setHintText(const Font::TextString& hintText){ this->hintText = hintText; }
-		void setHintText(Font::TextString&& hintText){ this->hintText = std::move(hintText); }
-		void setHintText(const Font::TextView hintText){ this->hintText = hintText; }
+		void setHintText(const Font::TextString& hintText){ this->hintText = hintText; updateHint();}
+		void setHintText(Font::TextString&& hintText){ this->hintText = std::move(hintText); updateHint();}
+		void setHintText(const Font::TextView hintText){ this->hintText = hintText; updateHint();}
 	};
 }

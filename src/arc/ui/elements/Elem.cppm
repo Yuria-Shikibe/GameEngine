@@ -149,7 +149,7 @@ export namespace UI {
 			return  Math::clamp(h, minimumSize.y, maximumSize.y);
 		}
 
-		Table* hoverTableHandle{nullptr};
+		Table* tooltipHandle{nullptr};
 		TooltipBuilder tooltipbuilder{};
 
 	public:
@@ -177,6 +177,8 @@ export namespace UI {
 		float selfMaskOpacity = 1.0f;
 
 		std::any animationData{};
+
+		[[nodiscard]] ChangeSignal getLastSignal() const{ return lastSignal; }
 
 		[[nodiscard]] constexpr Geom::Vec2 getMinimumSize() const noexcept{ return minimumSize; }
 
@@ -292,7 +294,7 @@ export namespace UI {
 		[[nodiscard]] const TooltipBuilder& getTooltipBuilder() const noexcept{ return tooltipbuilder; }
 
 		void updateHoverTableHandle(Table* handle) noexcept{
-			this->hoverTableHandle = handle;
+			this->tooltipHandle = handle;
 		}
 
 		void setFillparentX(const bool val = true) noexcept{
@@ -452,9 +454,7 @@ export namespace UI {
 		 * This is a post signal function.
 		 * After change is called, layout should be called in the next update to handle the change.
 		 */
-		void changed(const ChangeSignal direction, const ChangeSignal removal = ChangeSignal::notifyNone) noexcept{
-			lastSignal = lastSignal + direction - removal;
-		}
+		void changed(const ChangeSignal direction, const ChangeSignal removal = ChangeSignal::notifyNone) noexcept;
 
 		virtual void postChanged() noexcept;
 
@@ -551,6 +551,10 @@ export namespace UI {
 		void setFocusedScroll(bool focus) noexcept;
 
 		void releaseAllFocus() const noexcept;
+
+		bool hasTooltip() const;
+
+		void dropTooltip(const bool instant = true) const;
 
 		Geom::Vec2 getCursorPos() const noexcept;
 

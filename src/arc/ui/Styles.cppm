@@ -187,7 +187,7 @@ export namespace UI::Styles {
 			style_elem_s1->baseMask = drawpair_elem_s1_back_white_solid;
 			style_elem_s1->base = emptyPair;
 			style_elem_s1->edge = drawpair_elem_s1_egde_sky;
-			style_elem_s1->inbound = drawpair_elem_s1_egde_white;
+			style_elem_s1->inbound = drawpair_elem_s1_egde_light_gray;
 			style_elem_s1->pressed = drawpair_elem_s1_back_sky;
 
 			style_elem_s1->activated = drawpair_elem_s1_egde_white;

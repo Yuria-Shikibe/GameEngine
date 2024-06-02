@@ -86,7 +86,7 @@ export namespace GL{
 			typename WT::ArgsType;
 			requires ext::isArgsSubOf<false, typename WT::ArgsType, Args...>();
 		}
-	struct UniformGuard{
+	struct [[jetbrains::guard]] UniformGuard{
 		using ArgsType = typename WT::ArgsType;
 		using WrapperType = WT;
 

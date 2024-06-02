@@ -67,5 +67,23 @@ export namespace UI{
 		}
 	};
 
+	namespace ButtonFunc{
+		void buildTooltip(Button& b, bool){
+			b.buildTooltip();
+		}
 
+		void buildOrDropTooltip(Button& b, bool){
+			if(b.hasTooltip()){
+				b.dropTooltip(false);
+			}else{
+				b.buildTooltip();
+			}
+		}
+
+		void addButtonTooltipCheck(Button& b){
+			b.setActivatedChecker([&b]{
+				return b.hasTooltip();
+			});
+		}
+	}
 }

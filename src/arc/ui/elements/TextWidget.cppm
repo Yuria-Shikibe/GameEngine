@@ -51,6 +51,7 @@ export namespace UI{
 			updateGlyphPosition();
 		}
 	public:
+
 		void calAbsoluteSrc(Elem* parent) noexcept override {
 			Elem::calAbsoluteSrc(parent);
 			updateGlyphPosition();
@@ -83,8 +84,9 @@ export namespace UI{
 			return glyphLayout;
 		}
 
-		void setLayoutDataPtr(const std::shared_ptr<Font::GlyphLayout>& layoutPtr) noexcept{
+		void setGlyphLayout(const std::shared_ptr<Font::GlyphLayout>& layoutPtr) noexcept{
 			glyphLayout = layoutPtr;
+			layoutText(false);
 		}
 
 		[[nodiscard]] const Font::TextString& getText() const & {

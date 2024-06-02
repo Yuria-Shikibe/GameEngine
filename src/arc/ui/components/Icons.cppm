@@ -15,6 +15,7 @@ export namespace UI::Icons{
 		constexpr std::string_view Code = "code";
 		constexpr std::string_view Image = "image";
 		constexpr std::string_view Text = "txt";
+		constexpr std::string_view Visible = "visible";
 		constexpr std::string_view Unknown = "unknown";
 	}
 
@@ -39,6 +40,8 @@ export namespace UI::Icons{
 			{".ogg", FileType::Audio},
 			{".mp3", FileType::Audio},
 			{".wav", FileType::Audio},
+
+			{".svg", FileType::Visible},
 		};
 
 	ext::StringMap<std::reference_wrapper<Icon>> linkedIcons{};
@@ -102,5 +105,6 @@ export namespace UI::Icons{
 		linkedIcons.try_emplace(std::string(FileType::Text), file_text_one);
 		linkedIcons.try_emplace(std::string(FileType::Image), image_files);
 		linkedIcons.try_emplace(std::string(FileType::Unknown), file_question);
+		linkedIcons.try_emplace(std::string(FileType::Visible), file_display_one);
 	}
 }

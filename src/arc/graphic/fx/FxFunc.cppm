@@ -1,7 +1,4 @@
-//
-// Created by Matrix on 2024/3/26.
-//
-
+// ReSharper disable CppDFAConstantConditions
 export module Graphic.FxFunc;
 
 import ext.Concepts;
@@ -13,12 +10,25 @@ export import Geom.Transform;
 export namespace Graphic{
 	using SeedType = Math::Rand::SeedType;
 
+	namespace FxGlobal{
+		Geom::Vec2 vec2_0{};
+		Geom::Vec2 vec2_1{};
+		Geom::Vec2 vec2_2{};
+		Geom::Vec2 vec2_3{};
+		Geom::Vec2 vec2_4{};
+		Geom::Vec2 vec2_5{};
+
+		Math::Rand rand0{};
+		Math::Rand rand1{};
+		Math::Rand rand2{};
+	}
+
 	struct FxParam{
-		int count{0};
-		float progress{0};
-		float direction{0};
-		float toleranceAngle{180};
-		Math::Range radius{};
+		const int count{0};
+		const float progress{0};
+		const float direction{0};
+		const float toleranceAngle{180};
+		const Math::Range radius{};
 	};
 
 	void splashVec(

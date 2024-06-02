@@ -29,7 +29,7 @@ export namespace UI{
 		Root* root{nullptr};
 		friend class Root;
 
-		unsigned nextPopCount = 0;
+		std::unordered_set<Elem*> toErase{};
 
 		void drop(std::unique_ptr<Table>&& element, const bool instantDrop = false);
 
@@ -44,14 +44,58 @@ export namespace UI{
 			TooltipManager& manager;
 
 			void operator()(Elem* elem) const{
-				manager.nextPopCount++;
+				manager.toErase.insert(elem);
 			}
 		} deleter{*this};
 
 
 		[[nodiscard]] const Elem* getLastRequester() const{ return lastConsumer; }
 
-		void dropCurrentAt(const Elem* where = nullptr, const bool instantDrop = false);
+		[[nodiscard]] bool hasTooltipInstanceOf(const Elem* consumer) const{
+			return std::ranges::find(focusTableStack | std::ranges::views::elements<1>, consumer).base() != focusTableStack.end();
+		}
+
+		/**
+		 * @brief
+		 * @tparam findIndex 0 -> Tooltip, 1 -> Consumer
+		 * @param where Tooltip / Consumer
+		 * @param instantDrop
+		 */
+		template <std::size_t findIndex = 0>
+			requires (findIndex <= 1)
+		void dropCurrentAt(const Elem* where = nullptr, const bool instantDrop = false){
+			if(focusTableStack.empty())return;
+
+			lastConsumer = nullptr;
+
+			if(where == nullptr){
+				for(auto& element : focusTableStack | std::ranges::views::elements<0> | std::ranges::views::reverse){
+					drop(std::move(element), instantDrop);
+				}
+
+				focusTableStack.clear();
+
+				lastConsumer = getTopConsumer();
+			}
+
+			decltype(focusTableStack)::iterator begin{};
+
+			if constexpr (findIndex == 0){
+				begin = std::ranges::find(focusTableStack | std::ranges::views::elements<findIndex>, where, &std::unique_ptr<Table>::get).base();
+			}else{
+				begin = std::ranges::find(focusTableStack | std::ranges::views::elements<findIndex>, where).base();
+			}
+
+			const auto end = focusTableStack.end();
+
+			for(auto&& element : std::ranges::subrange{begin, end} | std::ranges::views::elements<0> | std::ranges::views::reverse){
+				drop(std::move(element), instantDrop);
+			}
+
+			focusTableStack.erase(begin, end);
+
+			lastConsumer = getTopConsumer();
+		}
 
 		/**
 		 * @brief
@@ -84,8 +128,7 @@ export namespace UI{
 
 		Table* tryObtain(const Elem* consumer);
 
-		[[nodiscard]] bool obtainValid(const Elem* lastRequester, const float minHoverTime = 45.0f,
-		                               const bool useStaticTime = true) const;
+		[[nodiscard]] bool obtainValid(const Elem* consumer) const;
 
 		void releaseFocus(const Table* table = nullptr){
 			dropCurrentAt(table);
@@ -112,7 +155,7 @@ export namespace UI{
 			return focusTableStack.empty() ? nullptr : focusTableStack.back().first.get();
 		}
 
-		[[nodiscard]] const Elem* getCurrentConsumer() const{
+		[[nodiscard]] const Elem* getTopConsumer() const{
 			return focusTableStack.empty() ? nullptr : focusTableStack.back().second;
 		}
 
@@ -184,18 +227,55 @@ export namespace UI{
 				return ptr.get() == handle;
 			});
 
-			lastConsumer = getCurrentConsumer();
+			lastConsumer = getTopConsumer();
+		}
+
+		/**
+		 * @brief
+		 * @return true if drop happens
+		 */
+		bool dropBack(){
+			while(!focusEmpty() && !focusTableStack.back().first->isVisiable()){
+				auto [handle, consumer] = std::move(focusTableStack.back());
+				focusTableStack.pop_back();
+				drop(std::move(handle), true);
+			}
+
+			if(!focusEmpty()){
+				auto [handle, consumer] = std::move(focusTableStack.back());
+				focusTableStack.pop_back();
+				drop(std::move(handle));
+				lastConsumer = getTopConsumer();
+
+				return true;
+			}
+
+			lastConsumer = getTopConsumer();
+
+			return false;
 		}
 
 		void clear() noexcept{
 			focusTableStack.clear();
 			droppedTables.clear();
-			nextPopCount = 0;
+			toErase.clear();
 			// lastRequester = nullptr;
 		}
 
+
 		[[nodiscard]] bool isOccupied(const Elem* widget) const noexcept{
 			return widget == lastConsumer;
+		}
+
+		template <Concepts::Invokable<void(Table&)> Func>
+		void each(Func&& func){
+			for (auto& droppedTable : droppedTables){
+				func(*droppedTable);
+			}
+
+			for (auto& droppedTable : focusTableStack | std::ranges::views::elements<0>){
+				func(*droppedTable);
+			}
 		}
 
 		[[nodiscard]] auto getDrawSeq() const{

@@ -97,8 +97,7 @@ import UI.Button;
 import UI.SliderBar;
 import UI.ProgressBar;
 import UI.InputArea;
-import UI.FileTreeSelector;
-
+import UI.InputArea;
 
 import Geom.Shape.RectBox;
 import Geom.QuadTree;
@@ -684,13 +683,13 @@ int main(const int argc, char* argv[]){
 	});
 
 	// glDepthRangef(Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);
-	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
+	if(true)Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
 		Graphic::Mesh::meshBegin();
 		Graphic::Mesh::meshEnd(true, Assets::Shaders::coordAxis);
 
 
 
-		acceptBuffer1.getColorAttachments().at(3)->setFilter(GL::nearest, GL::nearest);
+		// acceptBuffer1.getColorAttachments().at(3)->setFilter(GL::nearest, GL::nearest);
 
 		Core::Renderer& renderer = *event.renderer;
 

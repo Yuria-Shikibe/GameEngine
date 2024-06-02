@@ -35,9 +35,8 @@ void UI::Table::layoutRelative() {
 			if(cell.isIgnoreLayout())continue;
 
 			if(!cell.scaleRelativeToParentX) {
-				const float cellWidth = cell.getDefWidth();
 				const auto curPosX_indexed = rows() + curPos.x;
-				maxSizeArr[curPosX_indexed] = Math::max(maxSizeArr[curPosX_indexed], cellWidth);
+				maxSizeArr[curPosX_indexed] = Math::max(maxSizeArr[curPosX_indexed], cell.getDefWidth());
 			}else{
 				currentLineScaleRequester.x++;
 			}
@@ -248,6 +247,7 @@ void UI::Table::layout(){
 		layoutIrrelative();
 	}
 
+	lastSignal = lastSignal - ChangeSignal::notifySubs;
 	Group::layout();
 }
 

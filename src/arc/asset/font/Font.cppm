@@ -412,6 +412,16 @@ export namespace Font{
 					data.createBlankGlyph();
 				}
 			});
+
+			customeCharDatas.push_back({
+				.code = U'\2',
+				.copyTarget = U'_',
+				.dataModifier = [](CustomeCharData& data){
+					data.glyphMatrices.width /= 4;
+					data.glyphMatrices.horiAdvance /= 4;
+					data.createBlankGlyph();
+				}
+			});
 		}
 
 		[[nodiscard]] const FontFlags* getFallback() const {

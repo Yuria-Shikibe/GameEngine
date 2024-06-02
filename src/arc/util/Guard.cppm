@@ -11,7 +11,7 @@ export namespace ext{
 				(passByMove && std::is_move_assignable_v<typename ext::GetMemberPtrInfo<decltype(mem)>::ValueType>) ||
 				(!passByMove && std::is_copy_assignable_v<typename ext::GetMemberPtrInfo<decltype(mem)>::ValueType>);
 		}
-	class Guard{
+	class [[jetbrains::guard]] Guard{
 		using DataType = typename ext::GetMemberPtrInfo<decltype(mem)>::ValueType;
 
 		T& tgt;
@@ -40,7 +40,7 @@ export namespace ext{
 			(passByMove && std::is_move_assignable_v<T>) ||
 			(!passByMove && std::is_copy_assignable_v<T>);
 		}
-	class GuardRef{
+	class [[jetbrains::guard]] GuardRef{
 		T& tgt;
 		T original;
 

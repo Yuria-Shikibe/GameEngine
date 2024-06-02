@@ -211,6 +211,16 @@ export namespace UI{
 
 		void resize();
 
+		template <Concepts::Invokable<void(Dialog&)> Func>
+		void each(Func&& func){
+			auto current = this;
+
+			while(current){
+				func(*current);
+				current = current->childDialog.get();
+			}
+		}
+
 		// void
 	};
 }
