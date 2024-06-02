@@ -9,6 +9,7 @@ import Assets.Graphic;
 import ext.RuntimeException;
 import Core;
 import Geom.Matrix3D;
+import ext.Guard;
 import UI.SeperateDrawable;
 
 using namespace Graphic;
@@ -106,13 +107,18 @@ GL::FrameBuffer* Core::Renderer::frameEnd_Quiet(){
 
 
 void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
+	if(!drawable->requiresDraw())return;
 	GL::Blendings::Normal.apply();
+
+	auto& t= GL::getDrawCallCount();
 
 	uiBlurMask.bind();
 	uiBlurMask.clearColor();
 
 	drawable->drawBase();
 	Core::batchGroup.flushAll();
+
+	GL::disable(GL::State::BLEND);
 	Assets::PostProcessors::frostedGlassBlur->apply(contextFrameBuffer, &effectBuffer);
 
 
@@ -120,7 +126,6 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 	contextFrameBuffer->getTopTexture().active(1);
 	uiBlurMask.getTopTexture().active(2);
 
-	GL::disable(GL::State::BLEND);
 	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::ShaderProgram& shader){
 		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::DARK_GRAY, 0.55f).setA(0.25f));
 		shader.setColor("srcColor", Colors::GRAY.createLerp(Colors::DARK_GRAY, 0.35f).createLerp(Colors::AQUA_SKY, 0.125f));
@@ -137,7 +142,10 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 void Core::Renderer::renderUI() {
 	if(Core::uiRoot->isHidden)return;
 
-	[[maybe_unused]] Core::BatchGuard_Proj batchGuard_proj{*Core::batchGroup.overlay, Core::uiRoot->getPorj()};
+
+	Core::BatchGuard_Proj batchGuard_proj{*Core::batchGroup.overlay, Core::uiRoot->getPorj()};
+	Draw::Overlay::contextTexture = Draw::Overlay::defaultUIWhiteTexture;
+	ext::GuardRef texGuard{Draw::Overlay::contextTexture, Draw::Overlay::defaultUIWhiteTexture};
 
 	const auto times = Assets::PostProcessors::bloom->blur.getProcessTimes();
 	Assets::PostProcessors::bloom->blur.setProcessTimes(1);

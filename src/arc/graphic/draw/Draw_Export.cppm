@@ -9,6 +9,8 @@ import :Vertex;
 
 namespace Graphic::Draw{
 	struct OverlayBase : VertPostBase<OverlayBase>, HasBatch{
+		inline static const GL::TextureRegion* defaultUIWhiteTexture = nullptr;
+
 		static Core::Batch& getBatch(){
 			return Vertex::VertexPasser<&Core::BatchGroup::overlay>::getBatch();
 		}

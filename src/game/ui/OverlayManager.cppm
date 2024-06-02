@@ -157,7 +157,12 @@ export namespace Game {
 				}
 			}
 
-			renderer->frameEnd(Assets::PostProcessors::bloom.get());
+			if(Overlay::getBatch().requiresFlush()){
+				renderer->frameEnd(Assets::PostProcessors::bloom.get());
+			}else{
+				renderer->frameEnd_Quiet();
+			}
+
 		}
 
 		void assignTarget() const{

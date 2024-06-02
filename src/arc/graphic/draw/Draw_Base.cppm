@@ -749,81 +749,81 @@ export namespace Graphic{
 				outer.expand((1 - offset) * Line::contextStroke, (1 - offset) * Line::contextStroke);
 
 				if(!align){
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_00(), inner.vert_00(),
 						inner.vert_00().add(0, cornerSize), outer.vert_00().add(0, cornerSize)
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_00(), inner.vert_00(),
 						inner.vert_00().add(cornerSize, 0), outer.vert_00().add(cornerSize, 0)
 					);
 
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_10(), inner.vert_10(),
 						inner.vert_10().add(0, cornerSize), outer.vert_10().add(0, cornerSize)
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_10(), inner.vert_10(),
 						inner.vert_10().add(-cornerSize, 0), outer.vert_10().add(-cornerSize, 0)
 					);
 
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_01(), inner.vert_01(),
 						inner.vert_01().add(0, -cornerSize), outer.vert_01().add(0, -cornerSize)
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_01(), inner.vert_01(),
 						inner.vert_01().add(cornerSize, 0), outer.vert_01().add(cornerSize, 0)
 					);
 
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_11(), inner.vert_11(),
 						inner.vert_11().add(0, -cornerSize), outer.vert_11().add(0, -cornerSize)
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_11(), inner.vert_11(),
 						inner.vert_11().add(-cornerSize, 0), outer.vert_11().add(-cornerSize, 0)
 					);
 				}else{
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_00(), inner.vert_00(),
 						Geom::Vec2{inner.vert_00().x, rect.vert_00().y + cornerSize},
 						Geom::Vec2{outer.vert_00().x, rect.vert_00().y + cornerSize}
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_00(), inner.vert_00(),
 						Geom::Vec2{rect.vert_00().x + cornerSize, inner.vert_00().y},
 						Geom::Vec2{rect.vert_00().x + cornerSize, outer.vert_00().y}
 					);
 
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_10(), inner.vert_10(),
 						Geom::Vec2{inner.vert_10().x, rect.vert_10().y + cornerSize},
 						Geom::Vec2{outer.vert_10().x, rect.vert_10().y + cornerSize}
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_10(), inner.vert_10(),
 						Geom::Vec2{rect.vert_10().x - cornerSize, inner.vert_10().y},
 						Geom::Vec2{rect.vert_10().x - cornerSize, outer.vert_10().y}
 					);
 
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_01(), inner.vert_01(),
 						Geom::Vec2{inner.vert_01().x, rect.vert_01().y - cornerSize},
 						Geom::Vec2{outer.vert_01().x, rect.vert_01().y - cornerSize}
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_01(), inner.vert_01(),
 						Geom::Vec2{rect.vert_01().x + cornerSize, inner.vert_01().y},
 						Geom::Vec2{rect.vert_01().x + cornerSize, outer.vert_01().y}
 					);
 
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_11(), inner.vert_11(),
 						Geom::Vec2{inner.vert_11().x, rect.vert_11().y - cornerSize},
 						Geom::Vec2{outer.vert_11().x, rect.vert_11().y - cornerSize}
 					);
-					Fill::quad(*defaultTexture,
+					Fill::quad(*contextTexture,
 						outer.vert_11(), inner.vert_11(),
 						Geom::Vec2{rect.vert_11().x - cornerSize, inner.vert_11().y},
 						Geom::Vec2{rect.vert_11().x - cornerSize, outer.vert_11().y}

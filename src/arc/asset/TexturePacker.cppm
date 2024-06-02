@@ -26,6 +26,8 @@ export namespace Assets {
 	struct TextureRegionPackData{
 		Geom::OrthoRectInt bound{};
 		GL::TextureRegion textureRegion{};
+
+		//TODO replace this with sth like a load_task to support different type of images
 		Graphic::Pixmap pixmap{};
 		OS::File sourceFile{};
 

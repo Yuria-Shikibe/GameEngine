@@ -39,9 +39,11 @@ namespace GL {
 }
 
 export namespace GL {
-    void incrDrawCallCount(){ ++globalDrawCall; }
+    void incrDrawCallCount(){
+        ++globalDrawCall;
+    }
 
-    std::size_t getDrawCallCount(){ return globalDrawCall; }
+    std::size_t& getDrawCallCount(){ return globalDrawCall; }
 
     void resetDrawCallCount(){ globalDrawCall = 0; }
 

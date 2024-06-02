@@ -151,10 +151,9 @@ namespace Core{
 		void switchBlending(const Blending blend = GL::Blendings::Normal){
 			if(blending != blend){
 				flush();
+				blending = blend;
+				blending.apply();
 			}
-
-			blending = blend;
-			blending.apply();
 		}
 
 		[[nodiscard]] const Mesh& getMesh() const {
@@ -215,6 +214,10 @@ namespace Core{
 		virtual ~Batch() = default;
 
 		virtual void flush() = 0;
+
+		[[nodiscard]] constexpr bool requiresFlush() const noexcept{
+			return index > 0;
+		}
 
 		virtual void post(const Texture* texture, float* vertices, int offset, int count) = 0;
 

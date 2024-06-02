@@ -34,11 +34,12 @@ void Assets::Manager::pullRequest() {
 
 	loader.push(&shaders);
 	loader.push(&fonts);
-	fonts.texturePage->setHandler(fonts.getHandler());
 
 	loader.push(&soundLoader);
 
 	loadEvents.fire(AssetsLoadPull{this});
+
+	fonts.texturePage->setHandler(fonts.getHandler());
 	loader.begin();
 }
 

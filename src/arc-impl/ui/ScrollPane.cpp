@@ -9,42 +9,45 @@ import Math;
 
 using UI::Root;
 
-void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const {
+void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const{
 	if(pane->isPressed()){
 		Graphic::Draw::Overlay::color(pressedBarColor);
-	}else{
+	} else{
 		Graphic::Draw::Overlay::color(barColor);
 	}
 
-	if(pane->enableHorizonScroll()) {
-		region.render_RelativeExter(pane->getHoriBarRect().copy().shrink(margin).moveY(pane->getBorder().bottom * -offsetScl.x));
+	if(pane->enableHorizonScroll()){
+		region.render_RelativeExter(
+			pane->getHoriBarRect().copy().shrink(margin).moveY(pane->getBorder().bottom * -offsetScl.x));
 	}
 
-	if(pane->enableVerticalScroll()) {
-		region.render_RelativeExter(pane->getVertBarRect().copy().shrink(margin).moveX(pane->getBorder().right * offsetScl.y));
+	if(pane->enableVerticalScroll()){
+		region.render_RelativeExter(
+			pane->getVertBarRect().copy().shrink(margin).moveX(pane->getBorder().right * offsetScl.y));
 	}
 }
 
 void UI::ScrollPane::update(const Core::Tick delta){
-	if(Elem::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())) {
+	if(Elem::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())){
 		Elem::setFocusedScroll(true);
-	}else{
+	} else{
 		Elem::setFocusedScroll(false);
 	}
 
 
 
-	scrollVelocity.lerp(scrollTargetVelocity, usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta.count())) : 1.0f);
+	scrollVelocity.lerp(scrollTargetVelocity,
+		usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta.count())) : 1.0f);
 
 	Group::update(delta);
 
 	if(scrollTempOffset != scrollOffset){
 		//TODO what...?
-		if(hasChildren()) {
+		if(hasChildren()){
 			itemSize = getItem()->getBound();
 			getItem()->layout_tryFillParent();
 		}
-	}else{
+	} else{
 		scrollOffset.add(scrollVelocity);
 		clamp(scrollOffset);
 
@@ -52,8 +55,8 @@ void UI::ScrollPane::update(const Core::Tick delta){
 			const float deltaH = getItem()->getHeight() - itemSize.getHeight();
 			const float deltaW = getItem()->getWidth() - itemSize.getWidth();
 
-			if(deltaH < getHeight())scrollOffset.y += deltaH;
-			if(deltaW < getWidth())scrollOffset.x += deltaW;
+			if(deltaH < getHeight()) scrollOffset.y += deltaH;
+			if(deltaW < getWidth()) scrollOffset.x += deltaW;
 
 			itemSize = getItem()->getBound();
 			getItem()->layout_tryFillParent();
@@ -78,7 +81,7 @@ void UI::ScrollPane::update(const Core::Tick delta){
 
 	scrollTargetVelocity.setZero();
 
-	if(layoutChanged) {
+	if(layoutChanged){
 		layout();
 	}
 
@@ -108,28 +111,32 @@ void UI::ScrollPane::drawBase() const{
 }
 
 void UI::ScrollPane::drawContent() const{
-	Graphic::Draw::Overlay::getBatch().flush();
+	if(enableHorizonScroll() || enableVerticalScroll()){
+		Graphic::Draw::Overlay::getBatch().flush();
 
-	const auto lastRect = GL::getScissorRect();
+		const auto lastRect = GL::getScissorRect();
 
-	const Geom::OrthoRectInt clip{
-		Math::trac(absoluteSrc.x + border.left), Math::trac(absoluteSrc.y + horiBarStroke() + border.bottom),
-	Math::ceilPositive(getContentWidth()), Math::ceilPositive(getContentHeight())
-	};
+		const Geom::OrthoRectInt clip{
+				Math::trac(absoluteSrc.x + border.left), Math::trac(absoluteSrc.y + horiBarStroke() + border.bottom),
+				Math::ceilPositive(getContentWidth()), Math::ceilPositive(getContentHeight())
+			};
 
-	const auto count = GL::getScissorCount();
-	GL::enable(GL::Test::SCISSOR);
+		const auto count = GL::getScissorCount();
+		GL::enable(GL::Test::SCISSOR);
 
-	if(!count)GL::forceSetScissor(clip);
-	GL::scissorShrinkBegin();
-	GL::setScissor(clip);
+		if(!count) GL::forceSetScissor(clip);
+		GL::scissorShrinkBegin();
+		GL::setScissor(clip);
 
-	drawChildren();
-	Graphic::Draw::Overlay::getBatch().flush();
+		drawChildren();
+		Graphic::Draw::Overlay::getBatch().flush();
 
-	GL::forceSetScissor(lastRect);
-	GL::scissorShrinkEnd();
-	if(!count)GL::disable(GL::Test::SCISSOR);
+		GL::forceSetScissor(lastRect);
+		GL::scissorShrinkEnd();
+		if(!count) GL::disable(GL::Test::SCISSOR);
 
-	scrollBarDrawer->operator()(this);
+		scrollBarDrawer->operator()(this);
+	} else{
+		drawChildren();
+	}
 }

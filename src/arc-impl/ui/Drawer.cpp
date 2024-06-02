@@ -16,28 +16,28 @@ void UI::SliderBarDrawer::draw(const SliderBar* sliderBar) const{
 
 	Overlay::color(Colors::LIGHT_GRAY);
 	Overlay::alpha(0.15f + (sliderBar->isPressed() ? 0.1f : 0.0f));
-	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect);
+	Overlay::Fill::rectOrtho(Overlay::getContextTexture(), rect);
 	Overlay::alpha();
 
 	Overlay::color(Colors::GRAY);
 	rect.setSize(sliderBar->getBarDrawSize());
 	rect.move(sliderBar->getBarCurPos());
-	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect);
+	Overlay::Fill::rectOrtho(Overlay::getContextTexture(), rect);
 
 	Overlay::color(Colors::LIGHT_GRAY);
 	rect.setSrc(sliderBar->getAbsSrc() + sliderBar->getBorder().bot_lft() + sliderBar->getBarLastPos());
-	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), rect);
+	Overlay::Fill::rectOrtho(Overlay::getContextTexture(), rect);
 }
 
 void UI::ProgressBarDrawer::draw(const ProgressBar* progressBar) const{
 	Rect bound = progressBar->getValidBound().move(progressBar->getAbsSrc());
 
 	Overlay::color(Colors::DARK_GRAY);
-	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), bound);
+	Overlay::Fill::rectOrtho(Overlay::getContextTexture(), bound);
 
 	bound.sclSize(progressBar->getDrawProgress(), 1.0f);
 	Overlay::color(Colors::LIGHT_GRAY);
-	Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), bound);
+	Overlay::Fill::rectOrtho(Overlay::getContextTexture(), bound);
 }
 
 void UI::TextureRegionRectDrawable::draw(const Geom::OrthoRectFloat rect) const {
@@ -102,7 +102,7 @@ void UI::EdgeDrawer::drawStyle(const UI::Elem* elem) const {
 		color.mul(1.1f).lerp(Colors::WHITE, 0.3f);
 		Overlay::color(color);
 		Overlay::alpha(elem->isPressed() ? 0.5f : 0.2f);
-		Overlay::Fill::rectOrtho(Overlay::getDefaultTexture(), elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
+		Overlay::Fill::rectOrtho(Overlay::getContextTexture(), elem->drawSrcX(), elem->drawSrcY(), elem->getWidth(), elem->getHeight());
 	}
 
 

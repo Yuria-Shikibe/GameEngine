@@ -145,41 +145,6 @@ export namespace Test{
 				"font-load", cacheDir);
 			event.manager->getFontsManager_Load().texturePage->setMargin(1);
 
-
-			cacheDir = Assets::Dir::cache.subFile("font");
-			if(!cacheDir.exist()) cacheDir.createDirQuiet();
-			event.manager->getFontsManager().rootCacheDir = cacheDir;
-			event.manager->getFontsManager().texturePage = event.manager->getAtlas().registerPage("font", cacheDir);
-			event.manager->getFontsManager_Load().texturePage->setMargin(1);
-
-
-			{
-				Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::Dir::texCache);
-				uiPage->forcePack = true;
-				Assets::Dir::texture.subFile("ui").forAllSubs([uiPage](OS::File&& file){
-					uiPage->pushRequest(file);
-				});
-
-				Assets::Dir::svg.subFile("binds").forAllSubs([uiPage](OS::File&& file){
-					auto pixmap = ext::svgToBitmap(file, 64);
-
-					uiPage->pushRequest(file.stem(), std::move(pixmap));
-					UI::Icons::registerIconName(file.stem());
-				});
-
-				Assets::Dir::svg.subFile("icons").forAllSubs([uiPage](OS::File&& file){
-					auto pixmap = ext::svgToBitmap(file, 64);
-					pixmap.mulWhite();
-
-					uiPage->pushRequest(file.stem(), std::move(pixmap));
-					UI::Icons::registerIconName(file.stem());
-				});
-
-				Assets::Dir::texture.subFile("cursor").forAllSubs([uiPage](OS::File&& file){
-					uiPage->pushRequest(file);
-				});
-			}
-
 			{
 				Assets::TexturePackPage* mainPage = event.manager->getAtlas().registerPage(
 					MainPageName, Assets::Dir::texCache);
@@ -196,20 +161,53 @@ export namespace Test{
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadPull>([](const Assets::AssetsLoadPull& event){
 			Game::core->contentLoader->loadTexture(Assets::textureTree, event.manager->getAtlas());
+
+			Assets::TexturePackPage* uiPage = event.manager->getAtlas().registerPage("ui", Assets::Dir::texCache);
+
+			auto cacheDir = Assets::Dir::cache.subFile("font");
+			if(!cacheDir.exist()) cacheDir.createDirQuiet();
+			event.manager->getFontsManager().rootCacheDir = cacheDir;
+			event.manager->getFontsManager().texturePage = uiPage;
+			event.manager->getFontsManager_Load().texturePage->setMargin(1);
+
+			{
+				uiPage->pushRequest(Assets::Dir::texture.find("white.png"));
+
+				Assets::Dir::texture.subFile("ui").forAllSubs([uiPage](OS::File&& file){
+					uiPage->pushRequest(file);
+				});
+
+				Assets::Dir::svg.subFile("binds").forAllSubs([uiPage](OS::File&& file){
+					auto pixmap = ext::svgToBitmap(file, 64);
+
+					if(pixmap.valid())uiPage->pushRequest(file.stem(), std::move(pixmap));
+					UI::Icons::registerIconName(file.stem());
+				});
+
+				Assets::Dir::svg.subFile("icons").forAllSubs([uiPage](OS::File&& file){
+					auto pixmap = ext::svgToBitmap(file, 64);
+					pixmap.mulWhite();
+
+					if(pixmap.valid())uiPage->pushRequest(file.stem(), std::move(pixmap));
+					UI::Icons::registerIconName(file.stem());
+				});
+
+				Assets::Dir::texture.subFile("cursor").forAllSubs([uiPage](OS::File&& file){
+					uiPage->pushRequest(file);
+				});
+			}
+
 		});
 
 		Core::assetsManager->getEventTrigger().on<Assets::AssetsLoadEnd>([](const Assets::AssetsLoadEnd& event){
-			for(auto& texture2D : event.manager->getAtlas().getPage("font").getTextures()){
-				texture2D->setFilter(GL::TexParams::mipmap_linear_linear);
-			}
-
-
 			Assets::Textures::whiteRegion = *event.manager->getAtlas().find("base-white-solid");
 			Assets::Textures::whiteRegion.shrinkEdge(15.0f);
 
 			auto lightRegion = event.manager->getAtlas().find("base-white-light");
 
 			Graphic::Draw::Overlay::setDefTexture(&Assets::Textures::whiteRegion);
+			Graphic::Draw::Overlay::defaultUIWhiteTexture = event.manager->getAtlas().find("ui-white");
+			const_cast<GL::TextureRegion*>(Graphic::Draw::Overlay::defaultUIWhiteTexture)->shrinkEdge(15.0f);
 
 			Graphic::Draw::World::defaultSolidTexture = &Graphic::Draw::Overlay::getDefaultTexture();
 			Graphic::Draw::World::defaultLightTexture = lightRegion;

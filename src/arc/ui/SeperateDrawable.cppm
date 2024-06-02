@@ -11,5 +11,7 @@ export namespace UI{
 		virtual void draw() const = 0;
 
 		virtual void drawBase() const = 0;
+
+		virtual bool requiresDraw() const {return true;}
 	};
 }

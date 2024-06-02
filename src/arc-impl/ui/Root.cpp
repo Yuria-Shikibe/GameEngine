@@ -51,16 +51,13 @@ void UI::Root::drawCursor() const{
 	if(Core::input.cursorInbound()){
 		//TODO not use normalized draw!
 		Draw::Overlay::mixColor();
-		Draw::Overlay::color(Colors::WHITE);
-		Draw::Overlay::getBatch().beginTempProjection(Geom::MAT3_IDT);
-		Draw::Overlay::getBatch().switchBlending(GL::Blendings::Inverse);
+		Draw::Overlay::color();
+		Core::BatchGuard_Proj guard_proj{Draw::Overlay::getBatch()};
+		Draw::Overlay::getBatch().switchBlending(GL::Blendings::Normal);
+		Core::BatchGuard_Blend guard_blend{Draw::Overlay::getBatch(), GL::Blendings::Inverse};
 
 		auto [x, y] = Core::renderer->getNormalized(cursorPos);
 		cursor.draw(x, y, Core::renderer->getSize());
-
-		Draw::Overlay::getBatch().endTempProjection();
-		Draw::Overlay::getBatch().switchBlending();
-
 	}
 }
 

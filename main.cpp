@@ -236,7 +236,6 @@ void setupUITest(){
 						   &decltype(Game::EntityManage::drawables)::ValueType::isInScreen);
 
 					   sstream << "\nDrawCount: " << GL::getDrawCallCount();
-					   GL::resetDrawCallCount();
 					   return std::move(sstream).str();
 				   });
 
@@ -586,14 +585,12 @@ REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
 
 void setupBaseDraw(){
 	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
-		Graphic::Draw::Overlay::getBatch().flush();
 		Core::uiRoot->drawCursor();
-		Graphic::Draw::Overlay::getBatch().flush();
 	});
 
 	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->drawBeneathUI(e.renderer);
-		Graphic::Draw::Overlay::getBatch().flush();
+		// Graphic::Draw::Overlay::getBatch().flush();
 	});
 }
 
@@ -683,11 +680,11 @@ int main(const int argc, char* argv[]){
 	});
 
 	// glDepthRangef(Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);
-	if(true)Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
+	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
+		GL::Blendings::Normal.apply();
+
 		Graphic::Mesh::meshBegin();
 		Graphic::Mesh::meshEnd(true, Assets::Shaders::coordAxis);
-
-
 
 		// acceptBuffer1.getColorAttachments().at(3)->setFilter(GL::nearest, GL::nearest);
 
@@ -704,7 +701,6 @@ int main(const int argc, char* argv[]){
 
 		GL::setDepthFunc(GL::Func::GEQUAL);
 
-		GL::Blendings::Normal.apply();
 		// GL::blendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 		Game::EntityManage::drawables.setViewport(Core::camera->getViewport());
 		Game::EntityManage::render();
@@ -754,6 +750,7 @@ int main(const int argc, char* argv[]){
 
 	OS::activateHander();
 
+	ext::Timer<1> timer{};
 	while(!Core::platform->shouldExit()){
 		Core::renderer->draw();
 
@@ -766,8 +763,15 @@ int main(const int argc, char* argv[]){
 		Core::platform->pollEvents();
 
 		OS::pollWindowEvent();
+
+		GL::resetDrawCallCount();
+
 		Core::renderer->drawOverlay();
 
+		// timer.run(30.f, OS::deltaTick(), []{
+		// 	std::println("{}", GL::getDrawCallCount());
+		// 	std::cout.flush();
+		// });
 		Core::loopManager->updateTaskEnd();
 
 		Core::renderer->blit();

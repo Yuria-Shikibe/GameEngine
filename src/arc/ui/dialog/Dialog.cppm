@@ -186,6 +186,19 @@ export namespace UI{
 			}
 		}
 
+		bool requiresDraw() const override{
+			auto current = this;
+
+			while(current){
+				if(current->showing && !current->isRootDialog() && current->content.isVisiable()){
+					return true;
+				}
+				current = current->childDialog.get();
+			}
+
+			return false;
+		}
+
 		void draw() const override{
 			if(showing && !isRootDialog()){
 				content.draw();
@@ -210,6 +223,16 @@ export namespace UI{
 		}
 
 		void resize();
+
+		template <Concepts::Invokable<void(const Dialog&)> Func>
+		void each(Func&& func) const{
+			auto current = this;
+
+			while(current){
+				func(*current);
+				current = current->childDialog.get();
+			}
+		}
 
 		template <Concepts::Invokable<void(Dialog&)> Func>
 		void each(Func&& func){
