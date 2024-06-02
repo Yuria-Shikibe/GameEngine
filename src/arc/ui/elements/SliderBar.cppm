@@ -194,10 +194,12 @@ export namespace UI{
 		}
 
 		CursorType getCursorType() const noexcept override{
-			if(touchbility != TouchbilityFlags::enabled){
-				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
-			}
-			return pressed ? CursorType::drag : CursorType::scroll;
+			if(pressed)return CursorType::drag;
+
+			if(isClampedOnHori())return CursorType::scrollHori;
+			if(isClampedOnVert())return CursorType::scrollVert;
+
+			return CursorType::scroll;
 		}
 
 		void applyDefDrawer() noexcept override;

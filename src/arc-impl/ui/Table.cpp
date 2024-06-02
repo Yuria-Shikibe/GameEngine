@@ -140,7 +140,7 @@ void UI::Table::layoutRelative() {
 		
 		Geom::Vec2 currentMaxSize{};
 
-		cellSize.x = cellSize.y = 0;
+		cellSize.setZero();
 
 		for(auto& cell : cells) {
 			if(cell.isIgnoreLayout())continue;
@@ -186,11 +186,11 @@ void UI::Table::layoutRelative() {
 			}
 		}
 
-		if(!maximumPad.isZero(0.005f)){
+		if(!maximumPad.isZero(0.00005f)){
 			cellSize.x += maximumPad.x;
 			cellSize.y += maximumPad.y;
 
-			maximumPad = bound.getSize();
+			const Geom::Vec2 originalSize = bound.getSize();
 
 			if(expandX && !fillParentX){
 				if(expandX_ifLarger){
@@ -208,9 +208,24 @@ void UI::Table::layoutRelative() {
 				}
 			}
 
-			offset = bound.getSize() - maximumPad;
+			offset = bound.getSize() - originalSize;
+
+			if(cellAlignMode & Align::Layout::bottom){
+				offset.y += maximumPad.y;
+			} /*TODO wtf
+			else if(cellAlignMode & Align::Layout::center_y){
+				offset.y -= maximumPad.y / 2.f;
+			}*/
+
+			if(cellAlignMode & Align::Layout::right){
+				offset.x -= maximumPad.x;
+			} else if(cellAlignMode & Align::Layout::center_x){
+				offset.x -= maximumPad.x / 2.f;
+			}
+
+			// offset -= maximumPad;
 			//TODO there must be sth wrong
-			offset.x = 0;
+			// offset.x = 0;
 		}else{
 			offset.setZero();
 		}
