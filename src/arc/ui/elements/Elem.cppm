@@ -23,9 +23,10 @@ export import Core.Unit;
 import std;
 
 export namespace UI {
+	class Elem;
 	using SoundSource = irrklang::ISoundSource*;
 
-	struct WidgetDrawer;
+	struct ElemDrawer;
 	class Group;
 	class Table;
 	class Root;
@@ -44,10 +45,10 @@ export namespace UI {
 		float minHoverTime{DefTooltipHoverTime};
 		bool useStaticTime{true};
 		bool autoRelease{true};
-		Geom::Vec2 offset{};
 		Align::Layout followTargetAlign{Align::Layout::bottom_left};
 		Align::Layout tooltipSrcAlign{Align::Layout::top_left};
 
+		Geom::Vec2 offset{};
 		std::function<void(Table&)> builder{};
 
 		[[nodiscard]] explicit operator bool() const noexcept{
@@ -71,6 +72,43 @@ export namespace UI {
 		inline static std::vector<std::unique_ptr<Elem>> emptyElems{};
 
 	public:
+		struct ChildView{
+			const std::unique_ptr<Elem>* viewHead{};
+			std::size_t count{};
+
+			struct iterator{
+				const std::unique_ptr<Elem>* current{};
+
+				constexpr iterator& operator++(){
+					++current;
+					return *this;
+				}
+
+				constexpr const std::unique_ptr<Elem>& operator*() const{
+					return *current;
+				}
+
+				constexpr Elem* operator->() const{
+					return current->get();
+				}
+
+				constexpr auto operator<=>(const iterator& o) const{
+					return current <=> o.current;
+				}
+
+				friend constexpr bool operator==(const iterator& lhs, const iterator& rhs){ return lhs.current == rhs.current; }
+
+				friend constexpr bool operator!=(const iterator& lhs, const iterator& rhs){ return !(lhs == rhs); }
+			};
+
+			iterator begin() const{
+				return {viewHead};
+			}
+
+			iterator end() const{
+				return {viewHead + count};
+			}
+		};
 		int PointCheck{0};
 
 		~Elem() noexcept override{
@@ -90,7 +128,7 @@ export namespace UI {
 		 */
 		Rect bound{};
 
-		Group* parent{nullptr};
+		Elem* parent{nullptr};
 		mutable ::UI::Root* root{nullptr};
 
 		//TODO is this necessary?
@@ -130,7 +168,7 @@ export namespace UI {
 		Geom::Vec2 minimumSize{};
 		Geom::Vec2 maximumSize{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
 
-		WidgetDrawer* drawer{nullptr};
+		ElemDrawer* drawer{nullptr};
 
 		Align::Spacing border{};
 
@@ -152,6 +190,10 @@ export namespace UI {
 		Table* tooltipHandle{nullptr};
 		TooltipBuilder tooltipbuilder{};
 
+		virtual void postRemove(Elem* elem){
+			throw ext::IllegalArguments{"Elem Cannot Handle Remove!"};
+		}
+
 	public:
 		Elem(const Elem& other) = delete;
 
@@ -163,11 +205,11 @@ export namespace UI {
 
 		std::string name{""};
 
-		std::function<bool()> visibilityChecker{nullptr};
-		std::function<bool()> disableChecker{nullptr};
-		std::function<bool()> activatedChecker{nullptr};
+		std::function<bool(Elem&)> visibilityChecker{nullptr};
+		std::function<bool(Elem&)> disableChecker{nullptr};
+		std::function<bool(Elem&)> activatedChecker{nullptr};
 
-		std::function<void()> appendUpdator{nullptr};
+		std::function<void(Elem&)> appendUpdator{nullptr};
 
 		Graphic::Color color{1.0f, 1.0f, 1.0f, 1.0f};
 
@@ -336,16 +378,16 @@ export namespace UI {
 
 		virtual void drawStyle() const;
 
-		[[nodiscard]] Group* getParent() const;
+		[[nodiscard]] UI::Elem* getParent() const;
 
-		void setDrawer(WidgetDrawer* drawer);
+		void setDrawer(ElemDrawer* drawer);
 
 		virtual void setEmptyDrawer();
 
 		/**
 		 * @return The former parent group
 		 */
-		Group* setParent(Group* parent);
+		Elem* setParent(Elem* const parent);
 
 		virtual void callRemove();
 
@@ -471,9 +513,11 @@ export namespace UI {
 			this->disabled = disabled;
 		}
 
-		[[nodiscard]] std::function<bool()>& getActivatedChecker() noexcept{ return activatedChecker; }
+		[[nodiscard]] bool isDisabled() const noexcept{ return disabled; }
 
-		void setActivatedChecker(const std::function<bool()>& activatedChecker) noexcept{
+		[[nodiscard]] auto& getActivatedChecker() noexcept{ return activatedChecker; }
+
+		void setActivatedChecker(const decltype(activatedChecker)& activatedChecker) noexcept{
 			this->activatedChecker = activatedChecker;
 		}
 
@@ -484,10 +528,10 @@ export namespace UI {
 		[[nodiscard]] bool isActivated() const noexcept{ return activated; }
 
 		virtual void update(const Core::Tick delta){
-			if(visibilityChecker) [[unlikely]] setVisible(visibilityChecker());
-			if(disableChecker) [[unlikely]] setDisabled(disableChecker());
-			if(activatedChecker) [[unlikely]] setActivated(activatedChecker());
-			if(appendUpdator) [[unlikely]] appendUpdator();
+			if(visibilityChecker) [[unlikely]] setVisible(visibilityChecker(*this));
+			if(disableChecker) [[unlikely]] setDisabled(disableChecker(*this));
+			if(activatedChecker) [[unlikely]] setActivated(activatedChecker(*this));
+			if(appendUpdator) [[unlikely]] appendUpdator(*this);
 
 			if(visiable && layoutChanged) {
 				layout();
@@ -520,8 +564,9 @@ export namespace UI {
 			actions.push_range(arr);
 		}
 
-		virtual const std::vector<std::unique_ptr<Elem>>& getChildren() const noexcept{
-			return emptyElems;
+		//TODO bad idea!
+		virtual ChildView getChildrenView() const noexcept{
+			return {emptyElems.data(), 0};
 		}
 
 		virtual bool hasChildren() const noexcept {return false;}
@@ -559,7 +604,7 @@ export namespace UI {
 		Geom::Vec2 getCursorPos() const noexcept;
 
 		virtual CursorType getCursorType() const noexcept{
-			if(touchbility != TouchbilityFlags::enabled){
+			if(touchbility != TouchbilityFlags::enabled || isDisabled() || !isVisiable()){
 				return tooltipbuilder ? CursorType::regular_tip : CursorType::regular;
 			}else{
 				return tooltipbuilder ? CursorType::clickable_tip : CursorType::clickable;
@@ -610,6 +655,7 @@ export namespace UI {
 
 		[[nodiscard]] std::string_view getBundleEntry(std::string_view key, bool fromUICategory = true) const;
 		[[nodiscard]] Assets::Bundle& getBundles(bool fromUICategory = true) const;
+
 
 	protected:
 		virtual void childrenCheck(const Elem* ptr) {

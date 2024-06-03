@@ -5,7 +5,7 @@ import UI.Root;
 import UI.Palette;
 
 bool UI::InputArea::isTextFocused() const{
-	return root->textInputListener == this;
+	return root && root->textInputListener == this;
 }
 
 void UI::InputArea::setTextFocused(){

@@ -74,7 +74,7 @@ export namespace UI::Styles {
 		style_elem_s1_light_gray{std::make_unique<UI::UIStyle>()}
 	;
 
-	std::unique_ptr<UI::WidgetDrawer>
+	std::unique_ptr<UI::ElemDrawer>
 		// drawer_elem1{nullptr},
 		// drawer_elem2{nullptr},
 		// drawer_elem3{nullptr},

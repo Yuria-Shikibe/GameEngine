@@ -41,7 +41,7 @@ export namespace UI{
 								label.setEmptyDrawer();
 								label.setTextAlign(Align::Layout::center);
 							});
-							button.setCall([&, this](UI::Button&, bool){
+							button.setCall([&, this]{
 								currentSelectedName = group->getName();
 								bindMenu->clearChildrenInstantly();
 								currentBindTable = &bindMenu->add<UI::ControlBindTable>([&](UI::ControlBindTable& t){
@@ -49,7 +49,7 @@ export namespace UI{
 									t.setEmptyDrawer();
 								}).as<UI::ControlBindTable>();
 							});
-							button.setActivatedChecker([&, this]{
+							button.setActivatedChecker([&, this](auto&){
 								return group->getName() == currentSelectedName;
 							});
 						}).setHeight(80.0f).setPad({.bottom = 10.0f}).endLine();
@@ -64,7 +64,7 @@ export namespace UI{
 					label.setEmptyDrawer();
 					label.setTextAlign(Align::Layout::center);
 				});
-				button.setCall([this](UI::Button& b, bool){
+				button.setCall([this]{
 					if(tryEsc())destroy();
 				});
 			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Layout::bottom_left);
@@ -104,7 +104,7 @@ export namespace UI{
 										label.setEmptyDrawer();
 										label.setTextAlign(Align::Layout::center);
 									});
-									confirm.setCall([this](auto&, auto){
+									confirm.setCall([this]{
 										this->destroy();
 									});
 								}).setMargin({.right = 3});
@@ -117,7 +117,7 @@ export namespace UI{
 										label.setEmptyDrawer();
 										label.setTextAlign(Align::Layout::center);
 									});
-									confirm.setCall([&dialog](auto&, auto){
+									confirm.setCall([&dialog]{
 										dialog.destroy();
 									});
 								}).setMargin({.left = 3});

@@ -231,7 +231,7 @@ void setupUITest_Old(){
 			   t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
 			   for(int i = 0; i < 8; ++i){
 				   t.add<UI::Button>([i](UI::Button& button){
-					   button.setCall([i](UI::Button& b, bool){
+					   button.setCall([i](UI::Button& b){
 						   b.buildTooltip();
 					   });
 

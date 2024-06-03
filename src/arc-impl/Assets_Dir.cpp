@@ -28,7 +28,7 @@ void Assets::loadDir(){
 	patch(bundle);
 
 
-	cache = mainTree.findDir("cache");
+	cache = mainTree.findDir("resource").subFile("cache");
 	patch(cache);
 
 	texCache = cache.subFile("tex-atlas");
@@ -37,7 +37,7 @@ void Assets::loadDir(){
 	game = assets.subFile("game");
 	patch(game);
 
-	data = mainTree.findDir("data");
+	data = mainTree.findDir("resource").subFile("data");
 	patch(data);
 
 	settings = data.subFile("settings");

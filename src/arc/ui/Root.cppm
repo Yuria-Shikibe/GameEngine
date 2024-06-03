@@ -194,7 +194,7 @@ export namespace UI{
 
 			if(!current->hasChildren()) return;
 
-			for(auto& child : current->getChildren()){
+			for(auto& child : current->getChildrenView()){
 				this->iterateAll_DFS(child.get(), std::forward<decltype(func)>(func));
 			}
 		}

@@ -17,6 +17,7 @@ export namespace UI {
 		std::vector<std::unique_ptr<Elem>> children{};
 		std::unordered_set<Elem*> toRemove{};
 
+
 	public:
 		[[nodiscard]] Group() {
 			touchbility = TouchbilityFlags::childrenOnly;
@@ -28,7 +29,7 @@ export namespace UI {
 			}
 		}
 
-		void postRemove(Elem* elem) {
+		void postRemove(Elem* elem) override {
 			toRemove.insert(elem);
 		}
 
@@ -80,8 +81,8 @@ export namespace UI {
 			});
 		}
 
-		const std::vector<std::unique_ptr<Elem>>& getChildren() const noexcept override {
-			return children;
+		ChildView getChildrenView() const noexcept override{
+			return {children.data(), children.size()};
 		}
 
 		bool hasChildren() const noexcept override {
@@ -94,16 +95,6 @@ export namespace UI {
 			Elem::layout();
 		}
 
-		void iterateAll(Concepts::Invokable<void(Elem*)> auto&& func) {
-			func(this);
-
-			for (const auto& child : getChildren()) {
-				auto* group = dynamic_cast<Group*>(child.get());
-				if(!group)return;
-				group->iterateAll(std::forward<decltype(func)>(func));
-			}
-		}
-
 		virtual void removePosted() {
 			if(toRemove.empty() || children.empty())return;
 			std::erase_if(children, [this](const std::unique_ptr<Elem>& ptr) {
@@ -112,8 +103,8 @@ export namespace UI {
 			toRemove.clear();
 		}
 
-		virtual void updateChildren(const float delta) {
-			for (auto& child : children){
+		void updateChildren(const float delta) const{
+			for (const auto& child : children){
 				if(!child->isSleep())child->update(delta);
 			}
 		}
@@ -133,9 +124,9 @@ export namespace UI {
 		void update(const Core::Tick delta) override {
 			removePosted();
 
-			Elem::update(delta);
-
 			updateChildren(delta);
+
+			Elem::update(delta);
 		}
 
 		void setDisabled(const bool disabled) noexcept override{

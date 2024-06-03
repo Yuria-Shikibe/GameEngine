@@ -59,6 +59,8 @@ void Game::Scenes::MainMenu::build(){
 	add<UI::Table>([](UI::Table& table){
 			table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
 				pane.setItem<UI::Table>([](UI::Table& menu){
+					menu.setEmptyDrawer();
+					menu.setCellAlignMode(Align::Layout::bottom);
 					menu.add<UI::Label>([](UI::Label& label){
 						label.setTextAlign(Align::Layout::center);
 						label.setWrap(false);
@@ -67,19 +69,19 @@ void Game::Scenes::MainMenu::build(){
 						label.setText(label.getBundleEntry("main-test"));
 					}).expandY().setPad({.bottom = 150}).endLine();
 
-					std::vector<std::pair<std::string_view, std::function<void(UI::Button&, bool)>>>
+					std::vector<std::pair<std::string_view, std::function<void(UI::Button&)>>>
 						tempTestBuilders{
-								{"game", [](const UI::Button& b, bool){
+								{"game", [](const UI::Button& b){
 									UI::Root* root = b.getRoot();
 									root->switchScene(UI::In_Game);
 
 									::Test::genRandomEntities();
 								}},
-								{"ui-test", [](const UI::Button& b, bool){
+								{"ui-test", [](const UI::Button& b){
 										UI::Root* root = b.getRoot();
 										root->switchScene("Test");
 									}},
-								{"about", [](const UI::Button& b, bool){
+								{"about", [](const UI::Button& b){
 									UI::Root* root = b.getRoot();
 									root->showDialog(true, [](UI::Dialog& dialog){
 										dialog.content.setLayoutByRelative(false);
@@ -97,14 +99,14 @@ void Game::Scenes::MainMenu::build(){
 										}).setSizeScale(0.4f, 0.2f).setAlign(Align::Layout::center);
 									});
 								}},
-								{"ctrl-settings", [](const UI::Button& b, bool){
+								{"ctrl-settings", [](const UI::Button& b){
 									// b.getRoot()->showDialog<UI::CtrlBindDialog>();
 
 									UI::Root* root = b.getRoot();
 									root->showDialog<UI::CtrlBindDialog>();
 								}},
 								{
-									"file-tree", [](const UI::Button& b, bool){
+									"file-tree", [](const UI::Button& b){
 										Core::uiRoot->showDialog(true, [](UI::Dialog& dialog){
 											dialog.content.add<UI::FileTreeSelector>([&dialog](UI::FileTreeSelector& selector){
 												selector.gotoDirectory(Assets::Dir::assets.getParent(), false);
@@ -133,8 +135,6 @@ void Game::Scenes::MainMenu::build(){
 							button.setCall(func);
 						}).wrapY().setMargin(5.0f).setPad({.bottom = 10}).endLine();
 					}
-
-					menu.setEmptyDrawer();
 				});
 
 				pane.setEmptyDrawer();

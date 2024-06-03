@@ -96,7 +96,9 @@ export namespace UI::Actions{
 	struct RemoveAction : Action<Elem>{
 		RemoveAction() = default;
 
-		void begin(Elem* elem) override;
+		void begin(Elem* elem) override{
+			elem->callRemove();
+		}
 	};
 
 	template <typename T, Concepts::Invokable<void(T*)> Func>

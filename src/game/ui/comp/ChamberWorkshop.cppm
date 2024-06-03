@@ -168,17 +168,17 @@ namespace Game::Scene{
 												image.setDrawable(UI::Icons::iconMap.at(name).get());
 											}).setSize(64, 64);
 
-											select.setCall([this, op, &imageRegion](auto&, bool){
+											select.setCall([this, op, &imageRegion](auto&){
 												booleanOperation = op;
 												imageRegion.setDrawable(UI::Icons::iconMap.at(ext::getBoolOpName(booleanOperation)).get());
 											});
 
-											select.setActivatedChecker([this, op, &select]{
+											select.setActivatedChecker([this, op](UI::Elem& select_1){
 												if(booleanOperation == op){
-													select.color = UI::Pal::PALE_GREEN;
+													select_1.color = UI::Pal::PALE_GREEN;
 													return true;
 												} else{
-													select.color = UI::Pal::WHITE;
+													select_1.color = UI::Pal::WHITE;
 													return false;
 												}
 											});
@@ -187,7 +187,7 @@ namespace Game::Scene{
 								}
 							});
 
-						button.setCall([](UI::Button& b, bool){
+						button.setCall([](UI::Button& b){
 							b.buildTooltip();
 						});
 					}).wrapY().fillParentX().endLine();

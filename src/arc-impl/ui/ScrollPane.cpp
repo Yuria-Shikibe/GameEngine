@@ -27,6 +27,13 @@ void UI::ScrollBarDrawer::operator()(const ScrollPane* pane) const{
 	}
 }
 
+void UI::ScrollPane::modifyItem(){
+	item->setParent(this);
+	changed(ChangeSignal::notifyAll);
+	item->setRoot(root);
+	notifyLayoutChanged();
+}
+
 void UI::ScrollPane::update(const Core::Tick delta){
 	if(Elem::isInbound(root->cursorPos) && (enableHorizonScroll() || enableVerticalScroll())){
 		Elem::setFocusedScroll(true);
@@ -39,7 +46,14 @@ void UI::ScrollPane::update(const Core::Tick delta){
 	scrollVelocity.lerp(scrollTargetVelocity,
 		usingAccel ? (pressed ? 1.0f : Math::clamp(accel * delta.count())) : 1.0f);
 
-	Group::update(delta);
+	if(prepareRemove){
+		item.reset();
+		prepareRemove = false;
+	}
+
+	if(item)item->update(delta);
+
+	Elem::update(delta);
 
 	if(scrollTempOffset != scrollOffset){
 		//TODO what...?
@@ -102,7 +116,7 @@ UI::CursorType UI::ScrollPane::getCursorType() const noexcept{
 }
 
 void UI::ScrollPane::applyDefDrawer() noexcept{
-	Group::applyDefDrawer();
+	Elem::applyDefDrawer();
 	scrollBarDrawer = &UI::defScrollBarDrawer;
 }
 
@@ -111,6 +125,7 @@ void UI::ScrollPane::drawBase() const{
 }
 
 void UI::ScrollPane::drawContent() const{
+	if(!item)return;
 	if(enableHorizonScroll() || enableVerticalScroll()){
 		Graphic::Draw::Overlay::getBatch().flush();
 
@@ -128,7 +143,7 @@ void UI::ScrollPane::drawContent() const{
 		GL::scissorShrinkBegin();
 		GL::setScissor(clip);
 
-		drawChildren();
+		item->draw();
 		Graphic::Draw::Overlay::getBatch().flush();
 
 		GL::forceSetScissor(lastRect);
@@ -137,6 +152,12 @@ void UI::ScrollPane::drawContent() const{
 
 		scrollBarDrawer->operator()(this);
 	} else{
-		drawChildren();
+		item->draw();
 	}
+}
+
+void UI::ScrollPane::setRoot(Root* root) noexcept{
+	Elem::setRoot(root);
+
+	if(hasChildren())item->setRoot(root);
 }

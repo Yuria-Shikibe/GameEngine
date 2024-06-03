@@ -393,13 +393,13 @@ namespace OS{
 	export
 	/**
 	 * @brief default is ascend;
-	 * 'ascend' here do actually nothing
 	 */
 	enum struct FileSortFunc : unsigned char{
 		name = 0b0000'0001,
 		time = 0b0000'0010,
 		size = 0b0000'0100,
 
+		/**	default 'ascend', it here do actually nothing*/
 		ascend = 0,
 		descend = 0b0001'0000
 	};
@@ -416,7 +416,7 @@ export bool operator&(OS::FileSortFunc l, OS::FileSortFunc r) noexcept{
 }
 
 export namespace OS{
-	std::function<bool(const File&, const File&)> getSortter(FileSortFunc sortFunc){
+	std::function<bool(const File&, const File&)> getFileSortter(FileSortFunc sortFunc){
 		using Func = std::function<bool(const File&, const File&)>;
 		const auto opTy = FileSortFunc{static_cast<std::underlying_type_t<FileSortFunc>>(sortFunc) & 0x0fu};
 

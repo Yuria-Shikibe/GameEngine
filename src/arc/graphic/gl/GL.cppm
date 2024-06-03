@@ -241,6 +241,17 @@ export namespace GL {
         viewport_h = height;
     }
 
+    void viewport(const Geom::OrthoRectInt bound) {
+        if(lockViewport)return;
+        if(bound.getSrcX() == viewport_x && bound.getSrcY() == viewport_y && viewport_w == bound.getWidth() && viewport_h == bound.getHeight())return;
+
+        glViewport(bound.getSrcX(), bound.getSrcY(), bound.getWidth(), bound.getHeight());
+        viewport_x = bound.getSrcX();
+        viewport_y = bound.getSrcY();
+        viewport_w = bound.getWidth();
+        viewport_h = bound.getHeight();
+    }
+
     void viewport(const GLsizei width, const GLsizei height) {
         viewport(0, 0, width, height);
     }

@@ -14,7 +14,8 @@ void UI::Table::layoutRelative() {
 	cells.back().item->setEndRow(true);
 
 	// [y0, y1, ... yn, x1, x2, ... xn]
-	std::vector<float> maxSizeArr(columns() + rows());
+	std::basic_string<float> maxSizeArr{};
+	maxSizeArr.resize(columns() + rows());
 
 	//Split all into boxes
 	//TODO should cells have their own column or row data?
@@ -127,14 +128,9 @@ void UI::Table::layoutRelative() {
 			}
 		}
 
-		float currentSpacingX = 0;
-		float currentSpacingY = std::accumulate(maxSizeArr.begin() + 1, maxSizeArr.begin() + rows(), 0.0f);
-
-		Geom::Vec2 offset = Align::getOffsetOf(cellAlignMode, Geom::Vec2{cellSize.x, cellSize.y}, getValidBound());
-
 		//TODO cells may expand during this process
 		//Need another re-layout to handle this
-
+		Geom::Vec2 currentSrc{};
 		Geom::Vec2 currentPad{};
 		Geom::Vec2 maximumPad{};
 		
@@ -150,17 +146,16 @@ void UI::Table::layoutRelative() {
 			cell.allocatedBound.setSize(maxSizeArr[curPosX_indexed], maxSizeArr[curPos.y]);
 
 			cell.allocatedBound.setSrc(
-				currentSpacingX,
-				currentSpacingY //Top src to Bottom src transform
+				currentSrc.x, currentSrc.y - cell.allocatedBound.getHeight() //Top src to Bottom src transform
 			);
 
 			const Geom::Vec2 thisPad{cell.pad.left, -cell.pad.top};
 
 			cell.applySizeToItem();
-			cell.allocatedBound.move(offset + Geom::Vec2{currentPad.x, -maximumPad.y} + thisPad);
+			cell.allocatedBound.move(Geom::Vec2{currentPad.x, -maximumPad.y} + thisPad);
 
 			curPos.x++;
-			currentSpacingX += maxSizeArr[curPosX_indexed];
+			currentSrc.x += maxSizeArr[curPosX_indexed];
 
 			currentPad.x += cell.getPadHori();
 			currentPad.maxY(cell.getPadVert());
@@ -169,9 +164,6 @@ void UI::Table::layoutRelative() {
 			currentMaxSize.maxY(cell.getCellHeight());
 
 			if(cell.isEndRow()) {
-				curPos.y++;
-				curPos.x = 0;
-
 				maximumPad.maxX(currentPad.x);
 				maximumPad.y += currentPad.y;
 
@@ -181,16 +173,16 @@ void UI::Table::layoutRelative() {
 				currentPad.setZero();
 				currentMaxSize.setZero();
 
-				currentSpacingX = 0;
-				currentSpacingY -= maxSizeArr[curPos.y];
+				currentSrc.x = 0;
+				currentSrc.y -= maxSizeArr[curPos.y];
+
+				curPos.y++;
+				curPos.x = 0;
 			}
 		}
 
-		if(!maximumPad.isZero(0.00005f)){
-			cellSize.x += maximumPad.x;
-			cellSize.y += maximumPad.y;
-
-			const Geom::Vec2 originalSize = bound.getSize();
+		if(!maximumPad.isZero()){
+			cellSize += maximumPad;
 
 			if(expandX && !fillParentX){
 				if(expandX_ifLarger){
@@ -207,28 +199,10 @@ void UI::Table::layoutRelative() {
 					if(!scaleRequester.y)setHeight(cellSize.y + getBorderHeight());
 				}
 			}
-
-			offset = bound.getSize() - originalSize;
-
-			if(cellAlignMode & Align::Layout::bottom){
-				offset.y += maximumPad.y;
-			} /*TODO wtf
-			else if(cellAlignMode & Align::Layout::center_y){
-				offset.y -= maximumPad.y / 2.f;
-			}*/
-
-			if(cellAlignMode & Align::Layout::right){
-				offset.x -= maximumPad.x;
-			} else if(cellAlignMode & Align::Layout::center_x){
-				offset.x -= maximumPad.x / 2.f;
-			}
-
-			// offset -= maximumPad;
-			//TODO there must be sth wrong
-			// offset.x = 0;
-		}else{
-			offset.setZero();
 		}
+
+		Geom::Vec2 offset = Align::getOffsetOf(cellAlignMode, cellSize, getValidBound());
+		offset.y += cellSize.y;
 
 		for(auto& cell : cells) {
 			if(cell.isIgnoreLayout())continue;

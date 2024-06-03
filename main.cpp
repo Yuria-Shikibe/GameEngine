@@ -380,10 +380,10 @@ void setupUITest(){
 
 						   label.setText(label.getBundleEntry("sync-camera"));
 					   }).setHeight(60);
-					   button.setCall([](auto&, bool){
+					   button.setCall([]{
 						   Game::core->cameraLock = !Game::core->cameraLock;
 					   });
-					   button.setActivatedChecker([]{
+					   button.setActivatedChecker([](auto&){
 						   return Game::core->cameraLock;
 					   });
 				   }).wrapY().endLine().setPad({.bottom = 10.0f});
@@ -398,10 +398,10 @@ void setupUITest(){
 
 						   label.setText(label.getBundleEntry("draw-debug"));
 					   }).setHeight(60);
-					   button.setCall([](auto&, bool){
+					   button.setCall([]{
 						   drawDebug = !drawDebug;
 					   });
-					   button.setActivatedChecker([]{
+					   button.setActivatedChecker([](auto&){
 						   return drawDebug;
 					   });
 				   }).wrapY().endLine();

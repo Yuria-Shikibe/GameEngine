@@ -64,11 +64,11 @@ void UI::Elem::drawStyle() const {
 	drawer->drawStyle(this);
 }
 
-UI::Group* UI::Elem::getParent() const {
+UI::Elem* UI::Elem::getParent() const {
 	return parent;
 }
 
-void UI::Elem::setDrawer(WidgetDrawer* drawer){
+void UI::Elem::setDrawer(ElemDrawer* drawer){
 	this->drawer = drawer;
 
 	if(drawer) {
@@ -82,8 +82,8 @@ void UI::Elem::setEmptyDrawer(){
 	setDrawer(&UI::emptyDrawer);
 }
 
-UI::Group* UI::Elem::setParent(Group* const parent) {
-	Group* former = parent;
+UI::Elem* UI::Elem::setParent(Elem* const parent) {
+	Elem* former = parent;
 	this->parent = parent;
 	setRoot(parent->root);
 

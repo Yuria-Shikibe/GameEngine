@@ -77,7 +77,7 @@ export namespace Ctrl{
 									label.setEmptyDrawer();
 									label.setTextAlign(Align::Layout::center);
 								});
-								confirm.setCall([&dialog](auto&, auto){
+								confirm.setCall([&dialog](auto&){
 									dialog.destroy();
 									Core::uiRoot->switchScene(UI::Menu_Main);
 								});
@@ -91,7 +91,7 @@ export namespace Ctrl{
 									label.setEmptyDrawer();
 									label.setTextAlign(Align::Layout::center);
 								});
-								confirm.setCall([&dialog](auto&, auto){
+								confirm.setCall([&dialog](auto&){
 									dialog.destroy();
 								});
 							}).setMargin({.left = 3});

@@ -5,6 +5,7 @@ import ext.Heterogeneous;
 import std;
 namespace UI::Icons{
 export Icon keyboard_0{};
+export Icon sort_amount_down{};
 export Icon keyboard_0_outline{};
 export Icon keyboard_1{};
 export Icon keyboard_1_outline{};
@@ -811,6 +812,10 @@ export Icon zoom_out{};
 	using namespace std::string_view_literals;
 	keyboard_0.wrapper = *atlas.find("ui-keyboard_0");
 	iconMap.insert_or_assign("keyboard_0"sv, keyboard_0);
+
+	sort_amount_down.wrapper = *atlas.find("ui-sort-amount-down");
+	iconMap.insert_or_assign("sort-amount-down"sv, sort_amount_down);
+
 	keyboard_0_outline.wrapper = *atlas.find("ui-keyboard_0_outline");
 	iconMap.insert_or_assign("keyboard_0_outline"sv, keyboard_0_outline);
 	keyboard_1.wrapper = *atlas.find("ui-keyboard_1");

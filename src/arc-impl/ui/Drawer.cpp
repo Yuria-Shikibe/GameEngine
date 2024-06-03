@@ -57,16 +57,17 @@ void UI::UIStyle::drawElem(const UI::Elem* elem) const {
 	elem->tempColor = elem->color;
 	elem->tempColor.a *= elem->maskOpacity;
 
-	float alphaScl = elem->selfMaskOpacity * elem->maskOpacity;
+	if(elem->isDisabled())elem->tempColor.mul(0.8f);
+
+	float alphaScl = elem->selfMaskOpacity * elem->maskOpacity * (elem->isDisabled() ? 0.85f : 1.f);
 
 	Overlay::mixColor(elem->tempColor);
 	const Rect rect = elem->getBound().setSrc(elem->getAbsSrc());
 	base.draw(elem, alphaScl, rect);
 	edge.draw(elem, alphaScl, rect);
 
-	if(elem->isCursorInbound())inbound.draw(elem, alphaScl, rect);
+	if(elem->isCursorInbound() && !elem->isDisabled())inbound.draw(elem, alphaScl, rect);
 	if(elem->isActivated()){
-
 		activated.draw(elem, alphaScl, rect);
 	}
 	if(elem->isPressed())pressed.draw(elem, alphaScl, rect);

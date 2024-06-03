@@ -156,7 +156,7 @@ export namespace Core{
 		virtual ~PlatformHandle() = default;
 
 		[[nodiscard]] virtual OS::File getProcessFile() const{
-			return OS::File{appArgs[0]};
+			return OS::File{std::filesystem::current_path()};
 		}
 
 		[[nodiscard]] OS::File getProcessFileDir() const{

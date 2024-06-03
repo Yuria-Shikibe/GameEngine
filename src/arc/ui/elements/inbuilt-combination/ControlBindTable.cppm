@@ -32,15 +32,15 @@ export namespace UI{
 				}).setAlign(Align::Layout::left).setSizeScale(0.4f, 1.0f);
 
 				table.add<Button>([&operation, this](Button& button){
-					button.setCall([&operation, this](Button& b, bool){
+					button.setCall([&operation, this](Button& b){
 						beginBind(&b, &operation);
 						ignoreNext = true;
 					});
 					buildBindInfo(button, operation);
-					button.appendUpdator = [this, &button, &operation](){
-						if(button.isCursorInbound()){
-							if(button.keyDown(Ctrl::Key::Backspace, Ctrl::Act::Release, Ctrl::Mode::Ignore)){
-								beginBind(&button, &operation);
+					button.appendUpdator = [this, &operation](Elem& button_1){
+						if(button_1.isCursorInbound()){
+							if(button_1.keyDown(Ctrl::Key::Backspace, Ctrl::Act::Release, Ctrl::Mode::Ignore)){
+								beginBind(static_cast<Button*>(&button_1), &operation);
 								operation.setDef();
 								endBind();
 							}
@@ -134,7 +134,7 @@ export namespace UI{
 				table.setEmptyDrawer();
 
 				table.add<Button>([this](Button& pane){
-					pane.setCall([this](auto&, bool){
+					pane.setCall([this]{
 						applyBind();
 					});
 
@@ -147,7 +147,7 @@ export namespace UI{
 				}).setSizeScale(0.75f, 1.0f).setPad({.left = 3, .right = 3}).setAlign(Align::Layout::right);
 
 				table.add<Button>([this](Button& pane){
-					pane.setCall([this](auto&, bool){
+					pane.setCall([this]{
 						tempOperations.setDef();
 						buildCur();
 					});

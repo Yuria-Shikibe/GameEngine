@@ -84,10 +84,10 @@ export namespace UI { //TODO bullshit virtual
 		void drawBackground(Geom::OrthoRectFloat rect) const;
 	};
 
-	struct WidgetDrawer {
-		virtual ~WidgetDrawer() = default;
+	struct ElemDrawer {
+		virtual ~ElemDrawer() = default;
 
-		[[nodiscard]] WidgetDrawer() = default;
+		[[nodiscard]] ElemDrawer() = default;
 
 		virtual void drawStyle(const UI::Elem* elem) const = 0;
 
@@ -99,7 +99,7 @@ export namespace UI { //TODO bullshit virtual
 		}
 	};
 
-	struct StyleDrawer : WidgetDrawer{
+	struct StyleDrawer : ElemDrawer{
 		const UIStyle* style{nullptr};
 
 		[[nodiscard]] StyleDrawer() = default;
@@ -123,18 +123,18 @@ export namespace UI { //TODO bullshit virtual
 		void applyToElem(Elem* elem) override;
 	};
 
-	struct EdgeDrawer final : WidgetDrawer{
+	struct EdgeDrawer final : ElemDrawer{
 		void drawStyle(const UI::Elem* elem) const override;
 	};
 
-	struct EmptyDrawer final : WidgetDrawer{
+	struct EmptyDrawer final : ElemDrawer{
 		void drawStyle(const UI::Elem* elem) const override{}
 
 		void applyToElem(Elem* elem) override;
 	};
 
 	// std::unique_ptr<ElemDrawer> defDrawer{std::make_unique<EdgeDrawer>()};
-	WidgetDrawer* defDrawer{nullptr};
+	ElemDrawer* defDrawer{nullptr};
 	EmptyDrawer emptyDrawer{};
 
 	ScrollBarDrawer defScrollBarDrawer{};

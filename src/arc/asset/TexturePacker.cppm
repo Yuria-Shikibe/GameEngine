@@ -23,6 +23,8 @@ import ext.Heterogeneous;
 export namespace Assets {
 	using PixmapModifer = std::function<void(Graphic::Pixmap& modifier)>;
 
+	//TODO redesign these class
+
 	struct TextureRegionPackData{
 		Geom::OrthoRectInt bound{};
 		GL::TextureRegion textureRegion{};
@@ -302,7 +304,7 @@ export namespace Assets {
 			packDone = false;
 
 			while(true) {
-				//TODO there should be a better way.
+				//TODO there should be a better way. no busy wait
 				if(target.done && !target.packDone) {
 					handler->operator()(ext::RuntimeException{"Failed To Pack Linked Texture Atlas: " + pageName});
 				}

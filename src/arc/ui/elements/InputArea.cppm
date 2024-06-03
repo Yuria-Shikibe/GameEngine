@@ -350,19 +350,21 @@ export namespace UI{
 		std::u32string inputBuffer{};
 
 		[[nodiscard]] bool shouldShowHint() const noexcept{
-			return !hintText.empty() && carets.empty() && (showingHintText || (empty() || getTextRef() == hintText));
+			return !hintText.empty() && carets.empty() && (showingHintText || glyphLayout->ignore() || empty() || getTextRef() == hintText);
 		}
 
 		void enableHint(){
 			if(showingHintText && getText() == hintText)return;
 			showingHintText = true;
-			setText(hintText);
+
+			setText(std::format("\2{}", hintText));
 		}
 
 		void disableHint(){
 			if(!showingHintText)return;
 			showingHintText = false;
-			setText("");
+			using std::string_literals::operator ""s;
+			setText(""s);
 		}
 
 		void updateTextLayout(const bool forceUpdate = false) {
@@ -491,8 +493,17 @@ export namespace UI{
 			return getText().size() == maxTextByteLength;
 		}
 
+		void setText(const char* text) {
+			setText(Font::TextView{text});
+		}
+
 		void setText(const Font::TextView text) {
 			getTextRef() = text;
+			setTextUpdated();
+		}
+
+		void setText(Font::TextString&& text) {
+			getTextRef() = std::move(text);
 			setTextUpdated();
 		}
 

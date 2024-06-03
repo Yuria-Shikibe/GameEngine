@@ -51,13 +51,6 @@ export namespace UI{
 			}
 		}
 
-		void drawContent() const override{
-			if(drawable){
-				const auto size = Align::embedTo(scaling, drawable->getDefSize(), getValidSize());
-				const auto offset = Align::getOffsetOf(imageAlign, size, getValidBound());
-
-				drawable->draw(Geom::OrthoRectFloat{size.x, size.y}.setSrc(offset + absoluteSrc));
-			}
-		}
+		void drawContent() const override;
 	};
 }

@@ -15,9 +15,12 @@ import OS.Ctrl.Bind.Constants;
 export namespace UI {
 	struct ScrollBarDrawer;
 
-	class ScrollPane : public Group {
+	class ScrollPane : public Elem {
 
 	protected:
+		bool prepareRemove{false};
+		std::unique_ptr<Elem> item{};
+
 		Geom::Vec2 scrollOffset{};
 		Geom::Vec2 scrollTempOffset{};
 
@@ -42,9 +45,15 @@ export namespace UI {
 
 		ScrollBarDrawer* scrollBarDrawer{nullptr};
 
+		void postRemove(Elem* elem) override{
+			prepareRemove = true;
+		}
+
 		Elem* getItem() const{
-			return children.front().get();
-		};
+			return item.get();
+		}
+
+		void modifyItem();
 
 		void clamp(Geom::Vec2& offset) const{
 			offset.clampX(-Math::max(0.0f, itemSize.getWidth() - getContentWidth()), 0);
@@ -72,7 +81,7 @@ export namespace UI {
 		Geom::Vec2 scrollSensitivity{90.0f, 60.0f};
 		ScrollPane(){
 			inputListener.on<UI::MouseActionDrag>([this](const UI::MouseActionDrag& event) {
-				Geom::Vec2 clamp{Math::num<float>(isInHoriBar(event.begin)), Math::num<float>(isInVertBar(event.begin))};
+				const Geom::Vec2 clamp{Math::num<float>(isInHoriBar(event.begin)), Math::num<float>(isInVertBar(event.begin))};
 				move(event.getRelativeMove() * clamp * Geom::Vec2{-itemSize.getWidth() / getValidWidth(), -itemSize.getHeight() / getValidHeight()});
 				pressed = true;
 			});
@@ -112,11 +121,14 @@ export namespace UI {
 		void layout() override{
 			Elem::layout();
 
-			getItem()->layout_tryFillParent();
+			if(hasChildren()){
+				item->layout_tryFillParent();
 
-			layoutChildren();
+				if(!item->isIgnoreLayout())item->layout();
 
-			itemSize = getItem()->getBound();
+				itemSize = item->getBound();
+			}
+
 
 
 			scrollTempOffset.setZero();
@@ -140,18 +152,21 @@ export namespace UI {
 
 				absoluteSrc.y += getValidHeight() - itemSize.getHeight();
 
-				calAbsoluteChildren();
+				item->calAbsoluteSrc(this);
 
 				absoluteSrc = absOri;
 			}
 		}
 
+		bool hasChildren() const noexcept override{
+			return item != nullptr;
+		}
+
 		template <Concepts::Derived<Elem> T, bool fillX = true, bool fillY = false>
 		T& setItem(Concepts::Invokable<void(T&)> auto&& func) {
-			auto ptr = std::make_unique<T>();
+			item = std::make_unique<T>();
 
-			children.clear();
-			this->addChildren(std::move(ptr));
+			modifyItem();
 
 			getItem()->setFillparentX(fillX);
 			getItem()->setFillparentY(fillY);
@@ -294,8 +309,34 @@ export namespace UI {
 		void drawBase() const override;
 
 		void drawContent() const override;
-	};
 
+		void postChanged() noexcept override{
+			if(lastSignal & ChangeSignal::notifyChildrenOnly && hasChildren()){
+				item->changed(ChangeSignal::notifyNone, ChangeSignal::notifyParentOnly);
+				item->postChanged();
+			}
+
+			Elem::postChanged();
+		}
+
+		bool onEsc() override{
+			if(!hasChildren())return true;
+			return item->onEsc();
+		}
+
+		void setDisabled(const bool disabled) noexcept override{
+			if(this->disabled != disabled){
+				this->disabled = disabled;
+				if(hasChildren())item->setDisabled(disabled);
+			}
+		}
+
+		void setRoot(Root* root) noexcept override;
+
+		ChildView getChildrenView() const noexcept override{
+			return {&item, 1};
+		}
+	};
 
 
 }

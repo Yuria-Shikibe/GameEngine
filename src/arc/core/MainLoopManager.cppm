@@ -25,7 +25,6 @@ export namespace Core{
 
 	public:
 		~MainLoopManager(){
-			taskThread.get_stop_source().request_stop();
 			updateBeginSemaphore.release();
 		}
 
@@ -78,7 +77,10 @@ export namespace Core{
 
 		static Tick getDeltaTick() noexcept;
 		static Tick getUpdateDeltaTick() noexcept;
+
 		static bool isPaused() noexcept;
+
+	private:
 		static void handleAsync();
 	};
 

@@ -55,6 +55,10 @@ export namespace UI {
 
 		void layout() override;
 
+		LayoutCell& getLast(){
+			return cells.empty() ? defaultCellLayout : cells.back();
+		}
+
 		[[nodiscard]] int rows() const {
 			return elemLayoutMaxCount.y;
 		}

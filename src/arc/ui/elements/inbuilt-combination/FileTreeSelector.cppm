@@ -27,90 +27,135 @@ export namespace UI{
 	//TODO uses another class to do things like this for files:
 	//THis cannot support such a hugh range search
 	class FileTreeSelector : public Table{
-	private:
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{};
 		std::stack<OS::File> trace{};
 
 		Table* sideMenu{};
 		Table* selectMenu{};
 
+		UI::Dialog* parentDialog{};
+
+		OS::File current{};
+		OS::FileSortFunc sortFunc_type{OS::FileSortFunc::name};
+		OS::FileSortFunc sortFunc_order{};
+
 		void buildBasic(){
-			sideMenu = &add<Table>([this](Table& sideMenu){
-				sideMenu.setFillparent();
-				sideMenu.setCellAlignMode(Align::Layout::top_center);
-				sideMenu.defaultCellLayout.setPad({.bottom = 4.f, .top = 4.f}).setSize(80.f);
+			sideMenu =
+				&add<Table>([this](Table& sideMenu){
+					 sideMenu.setFillparent();
+					 sideMenu.setCellAlignMode(Align::Layout::top_center);
+					 sideMenu.defaultCellLayout.setPad({.bottom = 4.f, .top = 4.f}).setSize(80.f);
 
-				sideMenu.transferElem(Create::imageButton(Icons::search,
-					ButtonFunc::buildOrDropTooltip, [this](Button& b){
-						b.setTooltipBuilder({
-							.followTarget = TooltipBuilder::FollowTarget::parent,
-							.minHoverTime = UI::DisableAutoTooltip,
-							.autoRelease = false,
-							.followTargetAlign = Align::Layout::top_right,
-							.tooltipSrcAlign = Align::Layout::top_left,
-							.builder = [this](Table& inputTable){
-								inputTable.setFillparent(false, false);
-								inputTable.add<InputArea>([this](InputArea& inputArea){
-									if(glyphLayout){
-										inputArea.setGlyphLayout(glyphLayout);
-									}else{
-										glyphLayout = inputArea.getGlyphLayout();
-									}
+					 sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::search,
+						 ButtonFunc::buildOrDropTooltip, [this](Button& b){
+							 ButtonFunc::setSideMenuBuilder(b,
+								 Align::Layout::top_right, Align::Layout::top_left,
+								 [this](Table& inputTable){
+									 inputTable.setFillparent(false, false);
+									 inputTable.add<InputArea>([this](InputArea& inputArea){
+										 if(glyphLayout){
+											 inputArea.setGlyphLayout(glyphLayout);
+										 } else{
+											 glyphLayout = inputArea.getGlyphLayout();
+										 }
 
-									inputArea.ignoredText = {U'\n'};
-									inputArea.setEmptyDrawer();
-									inputArea.setWrap();
-									inputArea.setTextAlign(Align::Layout::left);
-									inputArea.setMaxTextLength(32);
-									inputArea.setTextScl(0.75f);
-									inputArea.setMinimumSize({10, 10});
-									inputArea.setHintText(inputArea.getBundleEntry("\2search"));
-								}).wrap();
-							}
-						});
+										 inputArea.ignoredText = {U'\n'};
+										 inputArea.setEmptyDrawer();
+										 inputArea.setWrap();
+										 inputArea.setTextAlign(Align::Layout::left);
+										 inputArea.setMaxTextLength(32);
+										 inputArea.setTextScl(0.75f);
+										 inputArea.setMinimumSize({10, 10});
+										 inputArea.setHintText(inputArea.getBundleEntry("search"));
+									 }).wrap();
+								 }, false
+							 );
 
-						ButtonFunc::addButtonTooltipCheck(b);
+							 ButtonFunc::addButtonTooltipCheck(b);
+					 }
+					 ).first).endLine();
 
-						b.setDrawer(Styles::drawer_elem_s1_noEdge.get());
-					}
-				).first).endLine();
+					 sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::sort_three,
+						 ButtonFunc::buildOrDropTooltip, [this](Button& b){
+							 ButtonFunc::setSideMenuBuilder(b,
+								 Align::Layout::top_right, Align::Layout::top_left,
+								 [this](Table& inputTable){
+									 inputTable.defaultCellLayout.setAlign(Align::Layout::center);
+									 inputTable.defaultCellLayout.setMargin(4.f);
+									 inputTable.defaultCellLayout.setSize(72);
+									 inputTable.defaultCellLayout.expand();
 
-				sideMenu.transferElem(Create::imageButton(Icons::sort_three,
-					[this](auto&, bool){
+									 std::array sorts{
+											 std::pair{&Icons::alphabetical_sorting, OS::FileSortFunc::name},
+											 std::pair{&Icons::sort_amount_down, OS::FileSortFunc::size},
+											 std::pair{&Icons::history, OS::FileSortFunc::time},
+										 };
 
-					}, std::bind_back(&Button::setDrawer, Styles::drawer_elem_s1_noEdge.get())
-				).first).endLine();
-			})
-			.setWidth(120.f)
-			.fillParentY()
-			.as<Table>();
+									 for(auto [icon, func] : sorts){
+										 inputTable.transferElem(
+											 Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), *icon,
+												 [this, func]{
+													 sortFunc_type = func;
+													 buildCurrentPage();
+												 }, [this, func](UI::Button& button){
+													 button.setActivatedChecker([this, func](auto&){
+														 return func & sortFunc_type;
+													 });
+												 }).first
+										 ).endLine();
+									 }
+
+									 inputTable.getLast().setPad({.bottom = 20.f});
+
+									 inputTable.transferElem(
+										 Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::up,
+											 [this]{
+												 sortFunc_order = OS::FileSortFunc::ascend;
+												 buildCurrentPage();
+											 }, [this](UI::Button& button){
+												 button.setActivatedChecker([this](auto&){
+													 return OS::FileSortFunc::ascend & sortFunc_order;
+												 });
+											 }).first
+									 ).endLine();
+
+									 inputTable.transferElem(
+										 Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::down,
+											 [this]{
+												 sortFunc_order = OS::FileSortFunc::descend;
+												 buildCurrentPage();
+											 }, [this](UI::Button& button){
+												 button.setActivatedChecker([this](auto&){
+													 return !(OS::FileSortFunc::ascend & sortFunc_order);
+												 });
+											 }).first
+									 ).endLine();
+								 }, false
+							 );
+
+							 ButtonFunc::addButtonTooltipCheck(b);
+						 }
+					 ).first).endLine();
+
+					sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::check,
+						 [this]{
+						 	if(confirmCallback && confirmCallback(selected) && parentDialog){
+						 		parentDialog->destroy();
+						 	}
+						 }, [this](Button& b){
+							 b.disableChecker = [this](auto&){
+								 return (confirmCallback && !confirmCallback(selected));
+							 };
+						 }
+					 ).first).endLine();
+				 })
+				 .setWidth(120.f)
+				 .fillParentY()
+				 .as<Table>();
 
 			selectMenu = &add<Table>([](Table& section){
 				section.setEmptyDrawer();
 			}).fillParent().as<Table>();
-		}
-
-	public:
-		bool singleSelect = true;
-		std::unordered_set<OS::File> selected{};
-		ext::StringSet<> suffixFilter{};
-
-		OS::File current{};
-
-		void createDialogQuitButton(UI::Dialog& dialog){
-			sideMenu->transferElem(Create::imageButton(Icons::new_afferent,
-				[this, dialog = &dialog](auto&, bool){
-					dialog->destroy();
-				}, std::bind_back(&Button::setDrawer, Styles::drawer_elem_s1_noEdge.get())
-			).first).endLine();
-		}
-
-		FileTreeSelector(){
-			defaultCellLayout.fillParentX().wrapY().setMargin(5);
-			setCellAlignMode(Align::Layout::top_center);
-			Table::setEmptyDrawer();
-
-			buildBasic();
 		}
 
 		void clearSelected(){
@@ -121,27 +166,22 @@ export namespace UI{
 			if(singleSelect){
 				clearSelected();
 				selected.insert(file);
-			}else if(const auto itr = selected.find(file); itr != selected.end()){
+			} else if(const auto itr = selected.find(file); itr != selected.end()){
 				selected.erase(itr);
-			}else{
+			} else{
 				selected.insert(itr, file);
 			}
 		}
 
-		void returnToParentDirectory(const bool toRoot = false){
-			if(toRoot){
-				gotoDirectory(OS::File{});
-			} else{
-				gotoDirectory(current.getParent());
-			}
+		void eraseSelected(const OS::File& file){
+			selected.erase(file);
 		}
 
-		void gotoDirectory(const OS::File& file, const bool record = true){
-			if(file.isDir() || file == OS::File{}){
-				if(record) trace.push(current);
-				current = file;
-				buildCurrentPage();
-				clearSelected();
+		void returnToParentDirectory(const bool toRoot = false){
+			if(toRoot){
+				gotoDirectory(OS::File{}, true);
+			} else{
+				gotoDirectory(current.getParent(), true);
 			}
 		}
 
@@ -152,7 +192,7 @@ export namespace UI{
 
 			if(current.exist()){
 				selectMenu->add<Button>([this](Button& button){
-					button.setCall([this](auto&, auto){
+					button.setCall([this](auto&){
 						returnToParentDirectory(current == current.getRoot());
 					});
 
@@ -167,32 +207,33 @@ export namespace UI{
 			}
 
 			selectMenu->add<ScrollPane>([this](ScrollPane& pane){
-				pane.setEmptyDrawer();
-				pane.setItem<Table>([this](Table& table){
-					table.setEmptyDrawer();
-					table.setFillparentX();
-					table.defaultCellLayout.fillParentX().wrapY();
+				            pane.setEmptyDrawer();
+				            pane.setItem<Table>([this](Table& table){
+					            table.setEmptyDrawer();
+					            table.setFillparentX();
+					            table.defaultCellLayout.fillParentX().wrapY();
 
-					if(current.exist()){
-						auto&& subs = current.subs([this](const OS::File& file){
-							if(file.isDir() || suffixFilter.empty()) return true;
+					            if(current.exist()){
+						            auto&& subs = current.subs([this](const OS::File& file){
+							            if(file.isDir() || suffixFilter.empty()) return true;
 
-							const auto ext = file.extension();
-							if(ext.empty()) return false;
-							return suffixFilter.contains(ext);
-						});
+							            const auto ext = file.extension();
+							            if(ext.empty()) return false;
+							            return suffixFilter.contains(ext);
+						            });
 
-						std::ranges::sort(subs);
-						for(auto [index, fi] : subs | std::ranges::views::enumerate){
-							buildSingle(table, fi);
-						}
-					} else{
-						for(auto& fi : ext::platform::getLogicalDrives()){
-							buildSingle(table, fi);
-						}
-					}
-				});
-			}).setPad({.top = 5 * static_cast<float>(current.exist())}).setAlign(Align::Layout::top_center).fillParentY();
+						            std::ranges::sort(subs, OS::getFileSortter(sortFunc_order | sortFunc_type));
+						            for(auto [index, fi] : subs | std::ranges::views::enumerate){
+							            buildSingle(table, fi);
+						            }
+					            } else{
+						            for(auto& fi : ext::platform::getLogicalDrives()){
+							            buildSingle(table, fi);
+						            }
+					            }
+				            });
+			            }).setPad({.top = 5 * static_cast<float>(current.exist())}).setAlign(Align::Layout::top_center).
+			            fillParentY();
 
 			selectMenu->changed(ChangeSignal::notifySelf);
 		}
@@ -201,23 +242,27 @@ export namespace UI{
 			menu.add<Button>([this, &file, &menu](Button& fButton){
 				fButton.setDrawer(Styles::drawer_elem_s1_noEdge.get());
 
-				fButton.visibilityChecker = [this, fileCopy = file, &menu, &fButton]{
+				fButton.visibilityChecker = [this, fileCopy = file, &menu](const UI::Elem& fButton_1){
 					auto result = !glyphLayout || glyphLayout->ignore();
 					if(!result){
 						result = fileCopy.filename().contains(glyphLayout->getView(true));
 					}
 
-					if(result != fButton.isVisiable()){
+					if(result != fButton_1.isVisiable()){
 						menu.notifyLayoutChanged();
 					}
 
 					return result;
 				};
 
-				fButton.setCall([this, fileCopy = file](auto&, auto){
-					gotoDirectory(fileCopy);
+				fButton.setCall([this, fileCopy = file](UI::Button&, int k, int){
+					gotoDirectory(fileCopy, true);
 
-					addSelected(fileCopy);
+					if(k == Ctrl::Mouse::LMB){
+						addSelected(fileCopy);
+					}else{
+						eraseSelected(fileCopy);
+					}
 				});
 
 				fButton.setTooltipBuilder({
@@ -236,14 +281,14 @@ export namespace UI{
 									image.setEmptyDrawer();
 									image.selfMaskOpacity = image.color.a = 0.85f;
 								}).setSize(160.f, 160.f, true).endLine();
-							}else{
+							} else{
 								hint.setVisible(false);
 							}
 						},
 					});
 
 				if(!file.isDir()){
-					fButton.setActivatedChecker([fileCopy = file, this]{
+					fButton.setActivatedChecker([fileCopy = file, this](auto&){
 						return selected.contains(fileCopy);
 					});
 				}
@@ -251,11 +296,14 @@ export namespace UI{
 				auto extension = file.extension();
 
 				fButton.add<ImageRegion>([&file, extension = std::string_view(extension)](ImageRegion& imageRegion){
-					imageRegion.setDrawable(file.isDir() ? Icons::folder_close : Icons::getIconByFileSuffix(extension));
-					imageRegion.color = (file.isDir() ? Pal::AQUA_SKY : Pal::LIGHT_GRAY).createLerp(Pal::WHITE, 0.25f);
-					imageRegion.setEmptyDrawer();
-				}).setMargin(2.f)
-				     .setSize(48.f);
+					       imageRegion.setDrawable(file.isDir()
+						                               ? Icons::folder_close
+						                               : Icons::getIconByFileSuffix(extension));
+					       imageRegion.color = (file.isDir() ? Pal::AQUA_SKY : Pal::LIGHT_GRAY).createLerp(Pal::WHITE,
+						       0.25f);
+					       imageRegion.setEmptyDrawer();
+				       }).setMargin(2.f)
+				       .setSize(48.f);
 
 				fButton.add<Label>([&file, extension = std::move(extension)](Label& label){
 					label.setEmptyDrawer();
@@ -269,6 +317,45 @@ export namespace UI{
 					label.setTextAlign(Align::Layout::center_left);
 				}).setPad({.left = 10.0f}).wrapY();
 			}).setHeight(64).endLine().setPad({.bottom = 3.f, .top = 3.f,});
+		}
+
+	public:
+		bool singleSelect = true;
+		std::unordered_set<OS::File> selected{};
+		ext::StringSet<> suffixFilter{};
+
+		std::function<bool(decltype(selected)&)> confirmCallback{[](const decltype(selected)& files){
+			return !files.empty();
+		}};
+
+		void setDialog(UI::Dialog& dialog){
+			parentDialog = &dialog;
+		}
+
+		void createDialogQuitButton(UI::Dialog& dialog){
+			setDialog(dialog);
+			sideMenu->transferElem(Create::imageButton(Icons::new_afferent,
+				[this]{
+					parentDialog->destroy();
+				}, std::bind_back(&Button::setDrawer, Styles::drawer_elem_s1_noEdge.get())
+			).first).endLine();
+		}
+
+		FileTreeSelector(){
+			defaultCellLayout.fillParentX().wrapY().setMargin(5);
+			setCellAlignMode(Align::Layout::top_center);
+			Table::setEmptyDrawer();
+
+			buildBasic();
+		}
+
+		void gotoDirectory(const OS::File& file, const bool record = false){
+			if(file.isDir() || file == OS::File{}){
+				if(record) trace.push(current);
+				current = file;
+				buildCurrentPage();
+				clearSelected();
+			}
 		}
 
 		void update(const Core::Tick delta) override{

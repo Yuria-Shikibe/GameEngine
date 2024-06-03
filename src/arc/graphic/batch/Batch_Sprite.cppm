@@ -21,7 +21,7 @@ export namespace Core{
 
 	//TODO batch should have their unique shader and manage their lifetime, since the drawer in the shaders may ref the
 	//TODO projections of the batch
-	template <GLsizei vertGroupSize = GL::VERT_GROUP_SIZE_LAYOUT, GLsizei maxVertSize = 8192 * 2>
+	template <GLsizei vertGroupSize = GL::VERT_GROUP_SIZE_LAYOUT, GLsizei maxVertSize = 4096 * GL::QUAD_GROUP_COUNT>
 		requires requires{requires maxVertSize <= std::numeric_limits<GLsizei>::max() / GL::ELEMENTS_QUAD_LENGTH;}
 	class SpriteBatch : public Batch
 	{
