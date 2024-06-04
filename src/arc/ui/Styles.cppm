@@ -1,6 +1,7 @@
 export module UI.Styles;
 
 export import UI.Drawer;
+export import UI.Palette;
 import UI.RegionDrawable;
 
 import Geom.Rect_Orthogonal;
@@ -12,8 +13,7 @@ import std;
 
 //TODO really bad design seriously
 export namespace UI::Styles {
-	constexpr Graphic::Color uiGeneralColor = Graphic::Colors::AQUA_SKY.createLerp(Graphic::Colors::LIGHT_GRAY, 0.276f).setA(0.875f);
-	
+
 	GL::TextureNineRegion
 	tex_elem1_egde,
 	tex_elem1_back,
@@ -105,10 +105,10 @@ export namespace UI::Styles {
 			drawable_elem1_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem1_back);
 
 			drawpair_elem1_egde_white = {drawable_elem1_egde.get(), Graphic::Colors::WHITE};
-			drawpair_elem1_egde_sky = {drawable_elem1_egde.get(), uiGeneralColor};
+			drawpair_elem1_egde_sky = {drawable_elem1_egde.get(), Pal::THEME};
 
 			drawpair_elem1_back_white = {drawable_elem1_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.13f)};
-			drawpair_elem1_back_sky = {drawable_elem1_back.get(), Graphic::Color{uiGeneralColor}.setA(0.13f)};
+			drawpair_elem1_back_sky = {drawable_elem1_back.get(), Graphic::Color{Pal::THEME}.setA(0.13f)};
 
 			// style_elem1->base = emptyPair;
 			// style_elem1->edge = drawpair_elem1_egde_sky;
@@ -129,10 +129,10 @@ export namespace UI::Styles {
 			drawable_elem2_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem2_back);
 
 			drawpair_elem2_egde_white = {drawable_elem2_egde.get(), Graphic::Colors::WHITE};
-			drawpair_elem2_egde_sky = {drawable_elem2_egde.get(), uiGeneralColor};
+			drawpair_elem2_egde_sky = {drawable_elem2_egde.get(), Pal::THEME};
 
 			drawpair_elem2_back_white = {drawable_elem2_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.23f)};
-			drawpair_elem2_back_sky = {drawable_elem2_back.get(), Graphic::Color{uiGeneralColor}.setA(0.23f)};
+			drawpair_elem2_back_sky = {drawable_elem2_back.get(), Graphic::Color{Pal::THEME}.setA(0.23f)};
 
 			// style_elem2->base = emptyPair;
 			// style_elem2->edge = drawpair_elem2_egde_sky;
@@ -153,10 +153,10 @@ export namespace UI::Styles {
 			drawable_elem3_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem3_back);
 
 			drawpair_elem3_egde_white = {drawable_elem3_egde.get(), Graphic::Colors::WHITE};
-			drawpair_elem3_egde_sky = {drawable_elem3_egde.get(), uiGeneralColor};
+			drawpair_elem3_egde_sky = {drawable_elem3_egde.get(), Pal::THEME};
 
 			drawpair_elem3_back_white = {drawable_elem3_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.33f)};
-			drawpair_elem3_back_sky = {drawable_elem3_back.get(), Graphic::Color{uiGeneralColor}.setA(0.33f)};
+			drawpair_elem3_back_sky = {drawable_elem3_back.get(), Graphic::Color{Pal::THEME}.setA(0.33f)};
 
 			// style_elem3->base = emptyPair;
 			// style_elem3->edge = drawpair_elem3_egde_sky;
@@ -170,19 +170,19 @@ export namespace UI::Styles {
 		}
 
 		{
-			tex_elem_s1_egde = GL::TextureNineRegion{atlas.find("ui-elem-s1-edge"), {12, 12, 8, 8}};
-			tex_elem_s1_back = GL::TextureNineRegion{atlas.find("ui-elem-s1-back"), {12, 12, 8, 8}};
+			tex_elem_s1_egde = GL::TextureNineRegion{atlas.find("ui-elem-s1-edge"), {8, 8, 16, 16}};
+			tex_elem_s1_back = GL::TextureNineRegion{atlas.find("ui-elem-s1-back"), {8, 8, 16, 16}};
 
 			drawable_elem_s1_egde = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem_s1_egde);
 			drawable_elem_s1_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem_s1_back);
 
 			drawpair_elem_s1_egde_white = {drawable_elem_s1_egde.get(), Graphic::Colors::WHITE};
 			drawpair_elem_s1_egde_light_gray = {drawable_elem_s1_egde.get(), Graphic::Colors::LIGHT_GRAY};
-			drawpair_elem_s1_egde_sky = {drawable_elem_s1_egde.get(), uiGeneralColor};
+			drawpair_elem_s1_egde_sky = {drawable_elem_s1_egde.get(), Pal::THEME};
 
 			drawpair_elem_s1_back_white = {drawable_elem_s1_back.get(), Graphic::Color{Graphic::Colors::WHITE}.setA(0.13f)};
 			drawpair_elem_s1_back_white_solid = {drawable_elem_s1_back.get(), Graphic::Colors::WHITE};
-			drawpair_elem_s1_back_sky = {drawable_elem_s1_back.get(), Graphic::Color{uiGeneralColor}.setA(0.13f)};
+			drawpair_elem_s1_back_sky = {drawable_elem_s1_back.get(), Graphic::Color{Pal::THEME}.setA(0.13f)};
 
 			style_elem_s1->baseMask = drawpair_elem_s1_back_white_solid;
 			style_elem_s1->base = emptyPair;

@@ -15,9 +15,8 @@ export namespace Core{
 		std::jthread taskThread{&MainLoopManager::updateTask, this};
 
 		void updateTask(){
-			while(true){
+			while(!taskThread.get_stop_token().stop_requested()){
 				updateBeginSemaphore.acquire();
-				if(taskThread.get_stop_token().stop_requested())break;
 				if(gameCore)gameCore->update(getDeltaTick());
 				updateEndSemaphore.release();
 			}
@@ -25,6 +24,7 @@ export namespace Core{
 
 	public:
 		~MainLoopManager(){
+			gameCore = nullptr;
 			updateBeginSemaphore.release();
 		}
 

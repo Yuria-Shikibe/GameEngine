@@ -20,7 +20,7 @@ import Graphic.Color;
 import ext.Heterogeneous;
 
 import UI.Icons;
-import UI.ButtonCreation;
+import UI.Creation;
 import UI.Palette;
 
 export namespace UI{
@@ -105,7 +105,7 @@ export namespace UI{
 										 ).endLine();
 									 }
 
-									 inputTable.getLast().setPad({.bottom = 20.f});
+									 inputTable.emplace(Create::LineCreater{}).setHeight(4.f).fillParentX().setPad({.bottom = 10.f, .top = 10.f}).endLine();
 
 									 inputTable.transferElem(
 										 Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::up,
@@ -299,7 +299,7 @@ export namespace UI{
 					       imageRegion.setDrawable(file.isDir()
 						                               ? Icons::folder_close
 						                               : Icons::getIconByFileSuffix(extension));
-					       imageRegion.color = (file.isDir() ? Pal::AQUA_SKY : Pal::LIGHT_GRAY).createLerp(Pal::WHITE,
+					       imageRegion.color = (file.isDir() ? Pal::THEME : Pal::LIGHT_GRAY).createLerp(Pal::WHITE,
 						       0.25f);
 					       imageRegion.setEmptyDrawer();
 				       }).setMargin(2.f)

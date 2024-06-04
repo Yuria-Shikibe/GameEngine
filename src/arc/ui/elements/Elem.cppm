@@ -72,6 +72,7 @@ export namespace UI {
 		inline static std::vector<std::unique_ptr<Elem>> emptyElems{};
 
 	public:
+		//TODO garbage...
 		struct ChildView{
 			const std::unique_ptr<Elem>* viewHead{};
 			std::size_t count{};

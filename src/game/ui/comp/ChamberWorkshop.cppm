@@ -348,9 +348,9 @@ namespace Game::Scene{
 				Core::renderer->effectBuffer.clearColorAll();
 				Overlay::color(Colors::DARK_GRAY);
 
-				for(const Tile& tile : brief.invalids){
-					if(!screen->getCamera().getViewport().overlap(tile.getBound())) continue;
-					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.getBound());
+				for(const Tile* tile : brief.invalids){
+					if(!screen->getCamera().getViewport().overlap(tile->getBound())) continue;
+					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile->getBound());
 				}
 
 				[[maybe_unused]] GL::UniformGuard guard_outline
@@ -379,9 +379,9 @@ namespace Game::Scene{
 						*Core::batchGroup.overlay, Assets::Shaders::sildeLines
 					};
 
-				for(const Tile& tile : brief.invalids){
-					if(!screen->getCamera().getViewport().overlap(tile.getChamberRegion())) continue;
-					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile.getBound());
+				for(const Tile* tile : brief.invalids){
+					if(!screen->getCamera().getViewport().overlap(tile->getChamberRegion())) continue;
+					Overlay::Fill::rectOrtho(Overlay::getContextTexture(), tile->getBound());
 				}
 			}
 
@@ -389,9 +389,9 @@ namespace Game::Scene{
 
 			Overlay::color(Colors::GRAY, 0.45f);
 			Overlay::Line::setLineStroke(1.0f);
-			for(const Tile& tile : brief.valids){
-				if(!screen->getCamera().getViewport().overlap(tile.getBound())) continue;
-				Overlay::Line::rectOrtho(tile.getBound());
+			for(const Tile* tile : brief.valids){
+				if(!screen->getCamera().getViewport().overlap(tile->getBound())) continue;
+				Overlay::Line::rectOrtho(tile->getBound());
 			}
 
 			Overlay::Line::setLineStroke(1.0f);
@@ -401,7 +401,7 @@ namespace Game::Scene{
 				Overlay::Line::rectOrtho(tile->getEntityBound());
 			}
 
-			Overlay::color(Colors::AQUA_SKY.createLerp(Colors::WHITE, Math::absin(OS::globalTime(), 0.83f, 0.53f)));
+			Overlay::color(UI::Pal::THEME.createLerp(Colors::WHITE, Math::absin(OS::globalTime(), 0.83f, 0.53f)));
 			for(const Tile& tile : selected | std::ranges::views::values | std::ranges::views::transform(
 				    &TileGrid::ItrType::operator*)){
 				const auto region = tile.getChamberRegion();
@@ -440,7 +440,7 @@ namespace Game::Scene{
 			if(boxSelection){
 				const auto region = boxSelection.getRegion(toChamberPos(screen->getCursorPosInScreen())).as<float>().scl(
 						TileSize, TileSize);
-				Overlay::color(Colors::AQUA_SKY);
+				Overlay::color(UI::Pal::THEME);
 				if(region.area() == 0.f){
 					Overlay::Line::line(region.getSrc(), region.getEnd());
 				}else{

@@ -874,10 +874,8 @@ export namespace Graphic{
 		constexpr Color SKY{ 0x87ceebff };
 
 		constexpr Color AQUA{ 0x85A2F3ff };
-
-		constexpr Color AQUA_SKY = Color::createLerp(0.5f, AQUA, SKY);
-
 		constexpr Color BLUE_SKY = Color::createLerp(0.745f, BLUE, SKY);
+		constexpr Color AQUA_SKY = Color::createLerp(0.5f, AQUA, SKY);
 
 		constexpr Color CYAN{ 0, 1, 1, 1 };
 		constexpr Color TEAL{ 0, 0.5f, 0.5f, 1 };

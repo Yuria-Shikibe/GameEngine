@@ -9,22 +9,49 @@ export namespace Core{
 	struct DirectAccessTimeUnit : std::chrono::duration<T, Ratio>{
 		using std::chrono::duration<T, Ratio>::count;
 		using std::chrono::duration<T, Ratio>::rep;
+		using std::chrono::duration<T, Ratio>::duration;
 		[[nodiscard]] constexpr DirectAccessTimeUnit() noexcept = default;
 
 		[[nodiscard]] constexpr DirectAccessTimeUnit(const T _Val) noexcept
 			: std::chrono::duration<T, Ratio>(_Val) {}
 
-		template <class Rep>
-		[[nodiscard]]  constexpr explicit DirectAccessTimeUnit(const Rep& _Val) noexcept(std::is_arithmetic_v<rep> && std::is_arithmetic_v<Rep>) // strengthened
-			: std::chrono::duration<T, Ratio>(static_cast<rep>(_Val)) {}
-
-		template <class Rep, class Period>
-		[[nodiscard]] explicit constexpr DirectAccessTimeUnit(const std::chrono::duration<Rep, Period>& _Dur) noexcept(
-			std::is_arithmetic_v<rep>&& std::is_arithmetic_v<Rep>) // strengthened
-			: std::chrono::duration<T, Ratio>(std::chrono::duration_cast<std::chrono::duration<T, Ratio>>(_Dur).count()) {}
-
 		[[nodiscard]] constexpr operator T() const noexcept{
 			return this->count();
+		}
+
+		using std::chrono::duration<T, Ratio>::operator++;
+		using std::chrono::duration<T, Ratio>::operator--;
+
+		using std::chrono::duration<T, Ratio>::operator%=;
+
+		using std::chrono::duration<T, Ratio>::operator+=;
+		using std::chrono::duration<T, Ratio>::operator-=;
+		using std::chrono::duration<T, Ratio>::operator*=;
+		using std::chrono::duration<T, Ratio>::operator/=;
+
+		using std::chrono::duration<T, Ratio>::operator+;
+		using std::chrono::duration<T, Ratio>::operator-;
+
+		constexpr DirectAccessTimeUnit& operator++() noexcept(std::is_arithmetic_v<rep>) /* strengthened */ {
+			this->std::chrono::duration<T, Ratio>::operator++();
+			return *this;
+		}
+
+		constexpr DirectAccessTimeUnit operator++(int) noexcept(std::is_arithmetic_v<rep>) /* strengthened */ {
+			auto t = *this;
+			this->operator++();
+			return t;
+		}
+
+		constexpr DirectAccessTimeUnit& operator--() noexcept(std::is_arithmetic_v<rep>) /* strengthened */ {
+			this->std::chrono::duration<T, Ratio>::operator--();
+			return *this;
+		}
+
+		constexpr DirectAccessTimeUnit operator--(int) noexcept(std::is_arithmetic_v<rep>) /* strengthened */ {
+			auto t = *this;
+			this->operator--();
+			return t;
 		}
 	};
 

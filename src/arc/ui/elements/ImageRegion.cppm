@@ -39,6 +39,11 @@ export namespace UI{
 		}
 
 		template <Concepts::Derived<RegionDrawable> Drawable>
+		void setDrawable(Drawable&& drawable){ //TODO ?
+			this->drawable = std::make_unique<std::decay_t<Drawable>>(std::forward<Drawable>(drawable));
+		}
+
+		template <Concepts::Derived<RegionDrawable> Drawable>
 		void setDrawable(const Drawable& drawable){
 			this->drawable = std::make_unique<Drawable>(drawable);
 		}

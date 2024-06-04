@@ -17,6 +17,12 @@ using Rect = Geom::OrthoRectFloat;
 
 //TODO Using Pool to avoid heap allocation
 export namespace UI {
+	template <Concepts::Derived<Elem> T>
+	struct ElemCreater{
+		using ElemType = T;
+		void operator()(T& elem) const = delete;
+		void operator()(LayoutCell& cell) const{}
+	};
 	class Table : public Group{
 	protected:
 		Align::Layout cellAlignMode = Align::Layout::center;
@@ -65,6 +71,37 @@ export namespace UI {
 
 		[[nodiscard]] int columns() const {
 			return elemLayoutMaxCount.x;
+		}
+
+
+
+		template <typename Creater = ElemCreater<Elem>, Concepts::InvokeNullable<void(typename Creater::ElemType&)> Func = std::nullptr_t>
+			requires requires(Creater creater){
+				typename Creater::ElemType;
+				requires Concepts::Derived<typename Creater::ElemType, Elem>;
+				requires Concepts::Derived<Creater, ElemCreater<typename Creater::ElemType>>;
+			}
+		LayoutCell& emplace(const Creater& creater, Func&& func = nullptr) {
+			using T = typename Creater::ElemType;
+			static_assert(requires(Creater c, T elem){
+				c(elem);
+			}, "Creater must have the ability to modify the item to emplace");
+			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>()));
+			cell.applyLayout(defaultCellLayout);
+
+			creater(cell.as<T>());
+
+			if constexpr (!std::same_as<Func, std::nullptr_t>){
+				func(cell.as<T>());
+			}
+
+			if constexpr (requires(Creater c, LayoutCell _cell){
+				c(_cell);
+			}){
+				creater(cell);
+			}
+
+			return cell;
 		}
 
 		template <Concepts::Derived<Elem> T>

@@ -99,10 +99,12 @@ export namespace Game{
 			}, [this, &owners](ChamberTile<Entity>& tile, const Geom::QuadBox& view){
 				if(tile.valid()){
 					owners.insert(tile.chamber);
-					drawable.valids.push_back(tile);
+					drawable.valids.push_back(&tile);
 				}else{
-					drawable.invalids.push_back(tile);
+					drawable.invalids.push_back(&tile);
 				}
+
+				drawable.add(tile);
 			});
 
 			drawable.owners.reserve(owners.size());

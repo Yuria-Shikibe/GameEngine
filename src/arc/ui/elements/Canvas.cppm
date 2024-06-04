@@ -11,7 +11,7 @@ import std;
 export namespace UI{
 
 	template <Concepts::Invokable<void(const Elem&)> Drawer>
-	class Canvas : public Elem{
+	class Canvas final : public Elem{
 		Drawer drawer;
 
 	public:

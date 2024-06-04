@@ -772,9 +772,9 @@ int main(const int argc, char* argv[]){
 		// 	std::println("{}", GL::getDrawCallCount());
 		// 	std::cout.flush();
 		// });
-		Core::loopManager->updateTaskEnd();
-
 		Core::renderer->blit();
+
+		Core::loopManager->updateTaskEnd();
 	}
 
 	//Application Exit

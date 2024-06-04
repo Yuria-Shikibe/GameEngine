@@ -28,8 +28,8 @@ namespace Game{
 
 		struct TileBrief{
 			std::vector<std::shared_ptr<Game::Chamber<EntityType>>> owners{};
-			std::vector<std::reference_wrapper<const Tile>> invalids{};
-			std::vector<std::reference_wrapper<const Tile>> valids{};
+			std::vector<const Tile*> invalids{};
+			std::vector<const Tile*> valids{};
 
 			bool dataValid{false};
 
@@ -38,6 +38,15 @@ namespace Game{
 				owners.clear();
 				invalids.clear();
 				valids.clear();
+			}
+
+			void add(const Tile& tile){
+				if(tile.valid()){
+					if(tile.isOwner())owners.push_back(tile.chamber);
+					valids.push_back(&tile);
+				}else{
+					invalids.push_back(&tile);
+				}
 			}
 		};
 
@@ -183,15 +192,7 @@ namespace Game{
 			if(brief.dataValid)return;
 
 			for (auto& chamberTile : data){
-				if(chamberTile.isOwner()){
-					brief.owners.push_back(chamberTile.chamber);
-				}
-
-				if(chamberTile.valid()){
-					brief.valids.push_back(chamberTile);
-				}else{
-					brief.invalids.push_back(chamberTile);
-				}
+				brief.add(chamberTile);
 			}
 
 			brief.dataValid = true;

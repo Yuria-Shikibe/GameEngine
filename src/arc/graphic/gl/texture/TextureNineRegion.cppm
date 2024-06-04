@@ -55,15 +55,16 @@ export namespace GL {
 		Geom::Vec2 innerSize{};
 
 		Align::Spacing edge{};
+		Align::Scale centerScale = Align::Scale::fill;
 
 
 		[[nodiscard]] TextureNineRegion() = default;
 
-		[[nodiscard]] TextureNineRegion(const TextureRegion* const rect, HardRect&& innerBound) {
-			loadFrom(rect, std::forward<HardRect>(innerBound));
+		[[nodiscard]] TextureNineRegion(const TextureRegion* const rect, HardRect&& innerBound, const float maximumShrinkAllowancePercentage = 0.5f) {
+			loadFrom(rect, std::forward<HardRect>(innerBound), maximumShrinkAllowancePercentage);
 		}
 
-		void loadFrom(const TextureRegion* const rect, HardRect&& innerBound) {
+		void loadFrom(const TextureRegion* const rect, HardRect&& innerBound, const float maximumShrinkAllowancePercentage = 0.5f) {
 			const HardRect totalBound{
 				Math::round<int>(rect->getSrcX()),
 				Math::round<int>(rect->getSrcY()),
@@ -73,10 +74,10 @@ export namespace GL {
 
 			innerBound.move(totalBound.getSrcX(), totalBound.getSrcY());
 
-			loadFrom(rect->data, totalBound, innerBound);
+			loadFrom(rect->data, totalBound, innerBound, maximumShrinkAllowancePercentage);
 		}
 
-		void loadFrom(const Texture* const rect, const HardRect& totalBound, const HardRect& innerBound) {
+		void loadFrom(const Texture* const rect, const HardRect& totalBound, const HardRect& innerBound, const float maximumShrinkAllowancePercentage = 0.5f) {
 #ifdef _DEBUG
 			if(
 				totalBound.getSrcX() > innerBound.getSrcX() || totalBound.getSrcY() > innerBound.getSrcY() ||
@@ -119,6 +120,12 @@ export namespace GL {
 			}
 
 			innerSize.set(static_cast<float>(innerWidth), static_cast<float>(innerHeight));
+
+			regions[ID_top   ].shrinkEdge(maximumShrinkAllowancePercentage * innerSize.x, 0);
+			regions[ID_bottom].shrinkEdge(maximumShrinkAllowancePercentage * innerSize.x, 0);
+			regions[ID_right ].shrinkEdge(0, maximumShrinkAllowancePercentage * innerSize.y);
+			regions[ID_left  ].shrinkEdge(0, maximumShrinkAllowancePercentage * innerSize.y);
+
 			edge.set(
 				static_cast<float>(left),
 				static_cast<float>(right),
@@ -127,31 +134,35 @@ export namespace GL {
 			);
 		}
 
-		[[nodiscard]] float getSrcX() const {
+		[[nodiscard]] constexpr float getSrcX() const noexcept{
 			return -edge.left;
 		}
 
-		[[nodiscard]] float getSrcY() const {
+		[[nodiscard]] constexpr float getSrcY() const noexcept{
 			return -edge.bottom;
 		}
 
-		[[nodiscard]] float getEndX() const {
+		[[nodiscard]] constexpr float getEndX() const noexcept{
 			return innerSize.x + edge.right;
 		}
 
-		[[nodiscard]] float getEndY() const {
+		[[nodiscard]] constexpr float getEndY() const noexcept{
 			return innerSize.y + edge.top;
 		}
 
-		[[nodiscard]] float getWidth() const {
+		[[nodiscard]] constexpr float getWidth() const noexcept{
 			return innerSize.x + edge.getWidth();
 		}
 
-		[[nodiscard]] float getHeight() const {
+		[[nodiscard]] constexpr float getHeight() const noexcept{
 			return innerSize.y + edge.getHeight();
 		}
 
-		[[nodiscard]] Rect bound() const {
+		[[nodiscard]] constexpr Geom::Vec2 getSize() const noexcept{
+			return {getWidth(), getHeight()};
+		}
+
+		[[nodiscard]] constexpr Rect bound() const noexcept{
 			return Rect{getSrcX(), getSrcY(), getWidth(), getHeight()};
 		}
 
@@ -190,7 +201,7 @@ export namespace GL {
 		 * \param w Inner Part Width
 		 * \param h Inner Part Height
 		 */
-		void setSize(const float w, const float h) {
+		void setInnerSize(const float w, const float h) {
 			innerSize.set(w, h);
 		}
 	};

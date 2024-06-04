@@ -18,31 +18,39 @@ export namespace Align{
 		/**@brief Top Spacing*/
 		float top{};
 
-		[[nodiscard]] Geom::Vec2 bot_lft() const noexcept{
+		[[nodiscard]] constexpr Geom::Vec2 bot_lft() const noexcept{
 			return {left, bottom};
 		}
 
-		[[nodiscard]] Geom::Vec2 top_rit() const noexcept{
+		[[nodiscard]] constexpr Geom::Vec2 top_rit() const noexcept{
 			return {right, top};
 		}
 
-		friend bool operator==(const Spacing& lhs, const Spacing& rhs) noexcept{
+		[[nodiscard]] constexpr Geom::Vec2 top_lft() const noexcept{
+			return {left, top};
+		}
+
+		[[nodiscard]] constexpr Geom::Vec2 bot_rit() const noexcept{
+			return {right,bottom};
+		}
+
+		[[nodiscard]] friend constexpr bool operator==(const Spacing& lhs, const Spacing& rhs) noexcept{
 			return lhs.left == rhs.left
 				&& lhs.right == rhs.right
 				&& lhs.top == rhs.top
 				&& lhs.bottom == rhs.bottom;
 		}
 
-		friend bool operator!=(const Spacing& lhs, const Spacing& rhs) noexcept{ return !(lhs == rhs); }
+		[[nodiscard]] friend constexpr bool operator!=(const Spacing& lhs, const Spacing& rhs) noexcept{ return !(lhs == rhs); }
 
-		friend bool operator==(const Spacing& lhs, const float val) noexcept{
+		[[nodiscard]] friend constexpr bool operator==(const Spacing& lhs, const float val) noexcept{
 			return lhs.left == val
 				&& lhs.right == val
 				&& lhs.top == val
 				&& lhs.bottom == val;
 		}
 
-		friend bool operator!=(const Spacing& lhs, const float rhs) noexcept{ return !(lhs == rhs); }
+		[[nodiscard]] friend constexpr bool operator!=(const Spacing& lhs, const float rhs) noexcept{ return !(lhs == rhs); }
 
 		constexpr void expand(float x, float y) noexcept{
 			x *= 0.5f;
@@ -74,21 +82,24 @@ export namespace Align{
 			return total - getHeight();
 		}
 
-		constexpr void set(const float val) noexcept{
+		constexpr Spacing& set(const float val) noexcept{
 			bottom = top = left = right = val;
+			return *this;
 		}
 
-		constexpr void set(const float l, const float r, const float b, const float t) noexcept{
+		constexpr Spacing& set(const float l, const float r, const float b, const float t) noexcept{
 			left = l;
 			right = r;
 			bottom = b;
 			top = t;
+			return *this;
 		}
 
-		constexpr void setZero() noexcept{
-			set(0);
+		constexpr Spacing& setZero() noexcept{
+			return set(0);
 		}
 	};
+
 	enum class Layout : unsigned char{
 		left     = 0b0000'0001,
 		right    = 0b0000'0010,

@@ -91,25 +91,25 @@ export namespace Event {
 		};
 
 		void fire(const T signal) {
-			for (const auto& listener : events[static_cast<SignalType>(signal)]) {
+			for (const auto& listener : events[std::to_underlying(signal)]) {
 				listener();
 			}
 		}
 
-		void on(const T signal, Concepts::Invokable<void(const T&)> auto&& func){
-			events[static_cast<SignalType>(signal)].emplace_back(std::forward<decltype(func)>(func));
+		void on(const T signal, Concepts::Invokable<void()> auto&& func){
+			events[std::to_underlying(signal)].emplace_back(std::forward<decltype(func)>(func));
 		}
 
-		template <T signal>
+		template <T signal, Concepts::Invokable<void()> Func>
 			requires isValid<signal>
-		void on(Concepts::Invokable<void(const T&)> auto&& func){
-			events[static_cast<SignalType>(signal)].emplace_back(std::forward<decltype(func)>(func));
+		void on(Func&& func){
+			events[std::to_underlying(signal)].emplace_back(std::forward<Func>(func));
 		}
 
 		template <T signal>
 			requires isValid<signal>
 		void fire(){
-			for (const auto& listener : events[static_cast<SignalType>(signal)]) {
+			for (const auto& listener : events[std::to_underlying(signal)]) {
 				listener();
 			}
 		}
