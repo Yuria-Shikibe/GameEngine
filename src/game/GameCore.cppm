@@ -6,7 +6,7 @@ import OS.ApplicationListener;
 
 export import Game.Entity.EntityManager;
 export import Game.UI.OverlayManager;
-export import Game.UI.HitBoxEditor;
+export import Game.UI.HitBoxEditorLegacy;
 export import Graphic.Effect.Manager;
 export import Game.ContentLoader;
 export import Game.Entity.Controller.Player;

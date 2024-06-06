@@ -43,7 +43,7 @@ export namespace UI{
 		mutable CurosrExbound exboundAction{};
 
 		Geom::Matrix3D projection{};
-		ext::StringMap<std::unique_ptr<Scene>> scenes{};
+		std::unordered_map<const Elem*, OS::InputBindGroup*> customeInputBinds{};
 
 		void setRootOf(Elem* widget);
 
@@ -89,6 +89,9 @@ export namespace UI{
 
 		float cursorStrandedTime{0.0f};
 		float cursorInBoundTime{0.0f};
+
+		void loadBinds(const Elem* elem, OS::InputBindGroup& binds);
+		void unloadBinds(const Elem* elem);
 
 		[[nodiscard]] const ext::StringMap<std::unique_ptr<Scene>>& getScenes() const{ return scenes; }
 
@@ -353,5 +356,7 @@ export namespace UI{
 
 		void setEnter(Elem* elem, bool quiet = false);
 
+		//Make sure it is the first to destruct!
+		ext::StringMap<std::unique_ptr<Scene>> scenes{};
 	};
 }

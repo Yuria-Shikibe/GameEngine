@@ -28,11 +28,22 @@ export namespace UI {
 		Align::Layout cellAlignMode = Align::Layout::center;
 		bool relativeLayoutFormat = true;
 
+		template <typename T>
+		LayoutCell& tryAdd(const unsigned depth = std::numeric_limits<unsigned>::max()){
+			if constexpr (requires(UI::Root* root){
+				T{root};
+			}){
+				return cells.emplace_back(this->addChildren(std::make_unique<T>(getRoot()), depth));
+			}else{
+				return cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
+			}
+		}
+
 	public:
 		std::vector<unsigned> elemLayoutCountData{};
 		Geom::Point2 elemLayoutMaxCount{};
 
-		[[nodiscard]] Table() {
+		[[nodiscard]] explicit Table(UI::Root* root = nullptr) : Group{root}{
 			touchbility = TouchbilityFlags::childrenOnly;
 		}
 
@@ -86,7 +97,7 @@ export namespace UI {
 			static_assert(requires(Creater c, T elem){
 				c(elem);
 			}, "Creater must have the ability to modify the item to emplace");
-			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>()));
+			LayoutCell& cell = tryAdd<T>();
 			cell.applyLayout(defaultCellLayout);
 
 			creater(cell.as<T>());
@@ -106,7 +117,7 @@ export namespace UI {
 
 		template <Concepts::Derived<Elem> T>
 		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func, const unsigned depth = std::numeric_limits<unsigned>::max()) {
-			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(), depth));
+			LayoutCell& cell = tryAdd<T>(depth);
 			cell.applyLayout(defaultCellLayout);
 
 			func(cell.as<T>());

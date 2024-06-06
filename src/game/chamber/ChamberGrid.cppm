@@ -469,7 +469,7 @@ namespace Game{
 		using ChamberGridData<Entity>::data;
 		using ChamberGridData<Entity>::bound;
 
-		using TreeType = Geom::QuadTree<Tile>;
+		using TreeType = Geom::QuadTree<Tile, float, true, false>;
 
 	protected:
 

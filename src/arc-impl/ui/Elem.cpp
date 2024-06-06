@@ -141,10 +141,11 @@ bool UI::Elem::isCursorInbound() const noexcept{
 	return this->root->currentCursorFocus == this;
 }
 
-void UI::Elem::releaseAllFocus() const noexcept{
+void UI::Elem::releaseRelativeRef() const noexcept{
 	if(!root)return;
 
 	dropTooltip();
+	unloadInputBinds();
 
 	if(isFocusedKeyInput())root->currentInputFocused = nullptr;
 	if(isFocusedScroll())root->currentScrollFocused = nullptr;
@@ -187,4 +188,12 @@ Assets::Bundle& UI::Elem::getBundles(const bool fromUICategory) const{
 	}else{
 		return Core::bundle;
 	}
+}
+
+void UI::Elem::loadInputBinds(OS::InputBindGroup& binds) const{
+	if(root)root->loadBinds(this, binds);
+}
+
+void UI::Elem::unloadInputBinds() const{
+	if(root)root->unloadBinds(this);
 }

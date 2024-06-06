@@ -51,6 +51,7 @@ export namespace UI{
 			updateGlyphPosition();
 		}
 	public:
+		using Elem::Elem;
 
 		void calAbsoluteSrc(Elem* parent) noexcept override {
 			Elem::calAbsoluteSrc(parent);

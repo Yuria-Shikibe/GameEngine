@@ -1,4 +1,4 @@
-export module Game.UI.HitBoxEditor;
+export module Game.UI.HitBoxEditorLegacy;
 
 import OS.File;
 import OS.ApplicationListener;
@@ -32,10 +32,10 @@ export namespace Game{
 
 		void drawDebug() const override{
 			Graphic::Draw::Overlay::color();
-			Game::Draw::hitbox(tempHitbox.hitBoxGroup.back().original);
+			Game::Draw::hitbox(tempHitbox.hitBoxGroup.back().boxData);
 
 			if(controller->selected)Graphic::Draw::Overlay::color(Graphic::Colors::ORANGE);
-			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().original);
+			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().boxData);
 		}
 
 		bool ignoreCollisionTo(const Game::RealityEntity& object) const override{
@@ -78,15 +78,14 @@ export namespace Game{
 		};
 
 		Operation curOp = Operation::none;
-
-		bool hasOp() const{
-			return static_cast<int>(curOp) > 1;
-		}
-
 		BoxSelectFunc boxSelectFunc = BoxSelectFunc::reallocate;
 
 		float operationAccuracy = 1.0f;
 		Geom::Vec2 clamp{1, 1};
+
+		bool hasOp() const{
+			return static_cast<int>(curOp) > 1;
+		}
 
 	public:
 		HitBoxEditor(){
@@ -313,7 +312,7 @@ export namespace Game{
 
 			if(hasOp()){
 				for (const auto entity : selected){
-					auto trans = entity->hitBox.hitBoxGroup.front().relaTrans;
+					auto trans = entity->hitBox.hitBoxGroup.front().localTrans;
 					Overlay::Line::setLineStroke(2.0f);
 					if(!Math::zero(clamp.x)){
 						Overlay::color(Graphic::Colors::RED_DUSK);
@@ -374,8 +373,8 @@ export namespace Game{
 			for (const auto& entity : selected){
 				entity->tempHitbox = entity->hitBox;
 
-				entity->tempHitbox.hitBoxGroup.front().relaTrans = entity->hitBox.hitBoxGroup.front().relaTrans;
-				entity->tempHitbox.hitBoxGroup.front().relaTrans.vec += dst;
+				entity->tempHitbox.hitBoxGroup.front().localTrans = entity->hitBox.hitBoxGroup.front().localTrans;
+				entity->tempHitbox.hitBoxGroup.front().localTrans.vec += dst;
 
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
@@ -397,12 +396,19 @@ export namespace Game{
 			for (const auto& entity : selected){
 				auto& data = entity->tempHitbox.hitBoxGroup.front();
 
-				const float ang1 = (opBeginMousePos - data.relaTrans.vec).angle();
-				const float ang2 = (mouseWorldPos - data.relaTrans.vec).angle();
+				const float ang1 = (opBeginMousePos - data.localTrans.vec).angle();
+				const float ang2 = (mouseWorldPos - data.localTrans.vec).angle();
 				const float dst = Math::Angle::angleDstWithSign(ang1, ang2);
 
 				entity->tempHitbox = entity->hitBox;
-				data.relaTrans.rot += dst;
+				data.localTrans.rot += dst;
+				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
+			}
+		}
+
+		void resetTransMove() const{
+			for (const auto& entity : selected){
+				entity->hitBox.hitBoxGroup.front().localTrans.vec.setZero();
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
 		}
@@ -415,16 +421,11 @@ export namespace Game{
 			selected.clear();
 		}
 
-		void resetTransMove() const{
-			for (const auto& entity : selected){
-				entity->hitBox.hitBoxGroup.front().relaTrans.vec.setZero();
-				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
-			}
-		}
+
 
 		void resetRotate() const{
 			for (const auto& entity : selected){
-				entity->hitBox.hitBoxGroup.front().relaTrans.rot = 0;
+				entity->hitBox.hitBoxGroup.front().localTrans.rot = 0;
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
 		}
@@ -484,7 +485,7 @@ export namespace Game{
 
 		void flipX() const{
 			for (const auto& entity : selected){
-				if(Math::zero(entity->hitBox.hitBoxGroup.front().relaTrans.vec.y))continue;
+				if(Math::zero(entity->hitBox.hitBoxGroup.front().localTrans.vec.y))continue;
 				Game::flipX(entity->hitBox);
 				entity->tempHitbox = entity->hitBox;
 			}

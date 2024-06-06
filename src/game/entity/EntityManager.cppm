@@ -28,7 +28,7 @@ export namespace Game::EntityManage{
 
 	EntityMap<Game::RealityEntity> realEntities{};
 
-	Geom::QuadTree<RealityEntity> mainTree{};
+	Geom::QuadTree<RealityEntity, float, true, false> mainTree{};
 
 	void buildTree(const Geom::OrthoRectFloat worldBound) {
 		mainTree.setBoundary(worldBound);

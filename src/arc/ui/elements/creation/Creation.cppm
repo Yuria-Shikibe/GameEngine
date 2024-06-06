@@ -6,6 +6,7 @@ export module UI.Creation;
 
 export import UI.Button;
 export import UI.Cell;
+export import UI.Icons;
 export import UI.Palette;
 export import UI.ImageRegion;
 
@@ -13,6 +14,11 @@ import Graphic.Color;
 import std;
 
 export namespace UI::Create{
+
+	struct CheckBox : UI::ElemCreater<UI::Button>{
+		UI::Icon& icon;
+
+	};
 
 	struct LineCreater : UI::ElemCreater<UI::ImageRegion>{
 		Graphic::Color defColor{UI::Pal::THEME};

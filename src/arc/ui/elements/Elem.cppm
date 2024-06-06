@@ -17,10 +17,15 @@ import Graphic.Color;
 import Geom.Rect_Orthogonal;
 import ext.RuntimeException;
 import Assets.Bundle;
+
 export import OS.Ctrl.Bind.Constants;
 
 export import Core.Unit;
 import std;
+
+export namespace OS{
+	class InputBindGroup;
+}
 
 export namespace UI {
 	class Elem;
@@ -102,21 +107,22 @@ export namespace UI {
 				friend constexpr bool operator!=(const iterator& lhs, const iterator& rhs){ return !(lhs == rhs); }
 			};
 
-			iterator begin() const{
+			[[nodiscard]] iterator begin() const{
 				return {viewHead};
 			}
 
-			iterator end() const{
+			[[nodiscard]] iterator end() const{
 				return {viewHead + count};
 			}
 		};
 		int PointCheck{0};
 
 		~Elem() noexcept override{
-			releaseAllFocus();
+			releaseRelativeRef();
 		}
 
-		[[nodiscard]] Elem(){
+		[[nodiscard]] explicit Elem(UI::Root* root = nullptr)
+			: root{root}{
 			Elem::applyDefDrawer();
 		}
 
@@ -596,7 +602,7 @@ export namespace UI {
 
 		void setFocusedScroll(bool focus) noexcept;
 
-		void releaseAllFocus() const noexcept;
+		void releaseRelativeRef() const noexcept;
 
 		bool hasTooltip() const;
 
@@ -657,6 +663,8 @@ export namespace UI {
 		[[nodiscard]] std::string_view getBundleEntry(std::string_view key, bool fromUICategory = true) const;
 		[[nodiscard]] Assets::Bundle& getBundles(bool fromUICategory = true) const;
 
+		void loadInputBinds(OS::InputBindGroup& binds) const;
+		void unloadInputBinds() const;
 
 	protected:
 		virtual void childrenCheck(const Elem* ptr) {

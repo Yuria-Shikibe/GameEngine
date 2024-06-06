@@ -33,7 +33,7 @@ export namespace UI{
 			src = srcPos;
 		}
 
-		/*constexpr*/ bool isSelecting() const noexcept{
+		/*constexpr*/ [[nodiscard]] bool isSelecting() const noexcept{
 			if constexpr (std::is_floating_point_v<T>){
 				return !src.isNaN();
 			}else{
@@ -41,12 +41,12 @@ export namespace UI{
 			}
 		}
 
-		explicit operator bool() const noexcept{
+		[[nodiscard]] explicit operator bool() const noexcept{
 			return isSelecting();
 		}
 
-		constexpr Rect getRegion(const typename Point::PassType curPos) const noexcept{
-			return {src, curPos};
+		[[nodiscard]] constexpr Rect getRegion(const typename Point::PassType curPos) const noexcept{
+			return Rect{src, curPos};
 		}
 
 		template <Concepts::Invokable<void(Rect)> Func>

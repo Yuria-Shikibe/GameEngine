@@ -293,7 +293,7 @@ export namespace Game {
 
 			for (auto& boxData : hitBox.hitBoxGroup){
 				constexpr Graphic::Color colors[]{Graphic::Colors::ROYAL, Graphic::Colors::PINK, Graphic::Colors::GREEN, Graphic::Colors::PURPLE};
-				auto& cur = boxData.original;
+				auto& cur = boxData.boxData;
 				for(int i = 0; i < 4; ++i) {
 					Overlay::color(colors[i]);
 					Overlay::Fill::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);

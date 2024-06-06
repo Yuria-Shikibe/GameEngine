@@ -78,7 +78,7 @@ void UI::Screen::drawContent() const{
 
 	GL::viewport(absoluteSrc.x, absoluteSrc.y, getWidth(), getHeight());
 
-	// GL::disable(GL::State::BLEND);
+	GL::disable(GL::State::BLEND);
 	Assets::Shaders::mask->bind();
 	Assets::Shaders::mask->applyDynamic([](const GL::ShaderProgram& shader){
 		shader.setColor("mixColor", Colors::CLEAR);
@@ -87,7 +87,7 @@ void UI::Screen::drawContent() const{
 
 	Frame::rawMesh->bind();
 	Frame::rawMesh->render(GL_TRIANGLE_FAN, 0, GL::ELEMENTS_QUAD_STRIP_LENGTH);
-	// GL::enable(GL::State::BLEND);
+	GL::enable(GL::State::BLEND);
 
 	if(cur)Core::renderer->frameBegin_Quiet(cur);
 	else{

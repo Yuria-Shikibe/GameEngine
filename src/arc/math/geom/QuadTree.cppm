@@ -9,36 +9,88 @@ export import Geom.Vector2D;
 import ext.Concepts;
 import ext.RuntimeException;
 import std;
-import Geom.QuadTree.Interface;
+export import Geom.QuadTree.Interface;
 
-export namespace Geom{
+namespace Geom{
+	template <bool enable>
+	struct SharedGuard : std::shared_lock<std::shared_mutex>{
+		using std::shared_lock<std::shared_mutex>::shared_lock;
+	};
 
-	// template <typename T>
-	// struct AddressEqual{
-	// 	bool operator()(const std::reference_wrapper<T>& l, const std::reference_wrapper<T>& r) const noexcept{
-	// 		return &l.get() = &r.get();
-	// 	}
-	// };
+	template <>
+	struct SharedGuard<false>{
+		[[nodiscard]] constexpr SharedGuard() noexcept = default;
 
-	// struct Test : QuadTreeAdaptable<Test>{
-	// 	Rect_Orthogonal<float> getBound() const noexcept{std::unreachable();}
-	//
-	// 	bool roughIntersectWith(const Test& other) const{std::unreachable();}
-	//
-	// 	bool exactIntersectWith(const Test& other) const{std::unreachable();}
-	//
-	// 	bool containsPoint(Vec2 point) const{std::unreachable();}
-	// };
+		[[nodiscard]] explicit constexpr SharedGuard(const auto&) noexcept {};
+	};
 
-	// using ItemTy = Test;
-	//
+	template <bool enable>
+	struct UniqueGuard : std::unique_lock<std::shared_mutex>{
+		using std::unique_lock<std::shared_mutex>::unique_lock;
+	};
+
+	template <>
+	struct UniqueGuard<false>{};
+
+	template <bool enable, bool strict>
+	class MtxBase{
+		static constexpr bool EnableShared = enable && strict;
+
+		using MtxTy = std::conditional_t<strict, std::shared_mutex, std::mutex>;
+		using UniqueLockTy = std::conditional_t<strict, UniqueGuard<true>, std::scoped_lock<MtxTy>>;
+
+		mutable MtxTy itemsMtx{};
+		mutable MtxTy leafMtx{};
+
+	public:
+		auto getItemGruard_Shared() const{
+			return SharedGuard<EnableShared>{itemsMtx};
+		}
+
+		auto getLeafGruard_Shared() const{
+			return SharedGuard<EnableShared>{leafMtx};
+		}
+
+		auto getItemGruard_Unique() const{
+			return UniqueLockTy{itemsMtx};
+		}
+
+		auto getLeafGruard_Unique() const{
+			return UniqueLockTy{leafMtx};
+		}
+	};
+
+	template <>
+	class MtxBase<false, false>{
+	public:
+		static SharedGuard<false> getItemGruard_Shared(){
+			return {};
+		}
+
+		static SharedGuard<false> getLeafGruard_Shared(){
+			return {};
+		}
+
+		static UniqueGuard<false> getItemGruard_Unique(){
+			return {};
+		}
+
+		static UniqueGuard<false> getLeafGruard_Unique(){
+			return {};
+		}
+	};
+
+	template <>
+	class [[deprecated("Should be Sync & Strict")]] MtxBase<false, true>;
+
+	// using ItemTy = int;
 	// using T = float;
-	// constexpr auto transformer = std::identity{};
-	// using Equal = AddressEqual<ItemTy>;
+	// constexpr bool sync = false;
 
-	template <typename ItemTy, Concepts::Number T = float>
+	export
+	template <typename ItemTy, Concepts::Number T = float, bool sync = true, bool strict = false>
 		requires Concepts::Derived<ItemTy, QuadTreeAdaptable<ItemTy, T>>
-	class QuadTree{
+	class QuadTree : MtxBase<sync, strict>{
 	public:
 		using Rect = Geom::Rect_Orthogonal<T>;
 		using ArithmeticType = T;
@@ -46,43 +98,46 @@ export namespace Geom{
 
 		using PointType = Geom::Vector2D<ArithmeticType>;
 
+		static constexpr bool HasSyncLock = sync;
+
 		static constexpr bool HasRoughIntersect = requires(ValueType value){
-			{value.roughIntersectWith(value)} -> std::same_as<bool>;
+			{ value.roughIntersectWith(value) } -> std::same_as<bool>;
 		};
 
 		static constexpr bool HasExactIntersect = requires(ValueType value){
-			{value.exactIntersectWith(value)} -> std::same_as<bool>;
+			{ value.exactIntersectWith(value) } -> std::same_as<bool>;
 		};
 
 		static constexpr bool HasPointIntersect = requires(ValueType value, PointType p){
-			{value.containsPoint(p)} -> std::same_as<bool>;
+			{ value.containsPoint(p) } -> std::same_as<bool>;
 		};
 
 	protected:
 		// The boundary of this node
 		Rect boundary{};
 
-		mutable std::shared_mutex itemsMtx{};
-		mutable std::shared_mutex leafMtx{};
+
 
 		bool isInersectedBetween(const ItemTy& subject, const ItemTy& object) const{
 			//TODO equalTy support?
-			if constexpr(requires(ValueType value){
-				{ value == value } -> std::same_as<bool>;
-			}){
-				if(subject == object) return false;
-			} else{
-				if(&subject == &object) return false;
-			}
+			if(&subject == &object) return false;
+
+			// if constexpr(requires(ValueType value){
+			// 	{ value == value } -> std::same_as<bool>;
+			// }){
+			// 	if(subject == object) return false;
+			// } else{
+			// 	if(&subject == &object) return false;
+			// }
 
 			bool intersected = this->obtainItemBound(subject).overlap(this->obtainItemBound(object));
 
-			if constexpr (HasRoughIntersect){
-				if(intersected)intersected &= subject.roughIntersectWith(object);
+			if constexpr(HasRoughIntersect){
+				if(intersected) intersected &= subject.roughIntersectWith(object);
 			}
 
-			if constexpr (HasExactIntersect){
-				if(intersected)intersected &= subject.exactIntersectWith(object);
+			if constexpr(HasExactIntersect){
+				if(intersected) intersected &= subject.exactIntersectWith(object);
 			}
 
 			return intersected;
@@ -90,7 +145,7 @@ export namespace Geom{
 
 		static Rect obtainItemBound(const ItemTy& cont){
 			static_assert(requires(ValueType value){
-				{value.getBound()} -> std::same_as<Rect>;
+				{ value.getBound() } -> std::same_as<Rect>;
 			}, "QuadTree Requires ValueType impl at `Rect getBound()` member function");
 
 			return cont.getBound();
@@ -118,17 +173,16 @@ export namespace Geom{
 
 		QuadTree(QuadTree&& other) noexcept
 			:
-			  boundary(std::move(other.boundary)),
-			  items(std::move(other.items)),
-			  topLeft(std::move(other.topLeft)),
-			  topRight(std::move(other.topRight)),
-			  bottomLeft(std::move(other.bottomLeft)),
-			  bottomRight(std::move(other.bottomRight)),
-			  maximumItemCount(other.maximumItemCount),
-			  strict(other.strict),
-			  currentSize(other.currentSize.load()),
-			  leaf(other.leaf.load()){
-		}
+			boundary(std::move(other.boundary)),
+			items(std::move(other.items)),
+			topLeft(std::move(other.topLeft)),
+			topRight(std::move(other.topRight)),
+			bottomLeft(std::move(other.bottomLeft)),
+			bottomRight(std::move(other.bottomRight)),
+			maximumItemCount(other.maximumItemCount),
+			strict(other.strict),
+			currentSize(other.currentSize.load()),
+			leaf(other.leaf.load()){}
 
 		QuadTree& operator=(const QuadTree& other) = delete;
 
@@ -196,19 +250,20 @@ export namespace Geom{
 		bool remove(ItemTy& box){
 			bool result;
 			if(isLeaf()){
-				std::unique_lock guard{itemsMtx};
+				auto _ = this->getItemGruard_Unique();
 				result = static_cast<bool>(std::erase_if(items, [ptr = &box](const std::reference_wrapper<ItemTy>& o){
 					return &o.get() == ptr;
 				}));
 			} else{
 				if(QuadTree* child = this->getFittingChild(this->obtainItemBound(box))){
-					std::shared_lock guard{leafMtx};
+					auto _ = this->getLeafGruard_Shared();
 					result = child->remove(box);
 				} else{
-					std::unique_lock guard{itemsMtx};
-					result = static_cast<bool>(std::erase_if(items, [ptr = &box](const std::reference_wrapper<ItemTy>& o){
-						return &o.get() == ptr;
-					}));
+					auto _ = this->getItemGruard_Unique();
+					result = static_cast<bool>(std::erase_if(items,
+						[ptr = &box](const std::reference_wrapper<ItemTy>& o){
+							return &o.get() == ptr;
+						}));
 				}
 
 				if(currentSize <= maximumItemCount) unsplit();
@@ -249,14 +304,14 @@ export namespace Geom{
 				return false;
 			}
 
-			if(std::shared_lock _{itemsMtx}; std::ranges::any_of(items, [this, &object](const ItemTy* o){
+			if(auto _ = this->getItemGruard_Shared(); std::ranges::any_of(items, [this, &object](const ItemTy* o){
 				return isInersectedBetween(object, *o);
 			})){
 				return true;
 			}
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
 				//TODO uses direction vector to get more possible results?
 				return
 					topLeft->intersectAny(object) ||
@@ -274,14 +329,14 @@ export namespace Geom{
 				return false;
 			}
 
-			if(std::shared_lock _{itemsMtx}; std::ranges::any_of(items, [this, point](const ItemTy* o){
+			if(auto _ = this->getItemGruard_Shared(); std::ranges::any_of(items, [this, point](const ItemTy* o){
 				return intersectWith(point, *o);
 			})){
 				return true;
 			}
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
 				//TODO uses direction vector to get more possible results?
 				return
 					topLeft->intersectAny(point) ||
@@ -297,19 +352,57 @@ export namespace Geom{
 		/**
 		 * @brief Notice that this may have side effects!
 		 */
-		void intersectAll(const ItemTy& object) const{
+		template <
+			Concepts::InvokeNullable<void(const ItemTy&, ItemTy&)> Func = std::nullptr_t,
+			Concepts::InvokeNullable<bool(const ItemTy&, const ItemTy&)> Filter = std::nullptr_t>
+		void intersectAll(const ItemTy& object, Func&& func = nullptr, Filter&& filter = nullptr) const{
 			if(!this->inbound(object)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
 				this->topLeft->intersectAll(object);
 				this->topRight->intersectAll(object);
 				this->bottomLeft->intersectAll(object);
 				this->bottomRight->intersectAll(object);
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto element : items){
-				(void)this->isInersectedBetween(object, *element);
+			for(auto _ = this->getItemGruard_Shared(); const auto element : items){
+				if(this->isInersectedBetween(object, *element)){
+					if constexpr (!std::same_as<Func, std::nullptr_t>){
+						if constexpr (!std::same_as<Filter, std::nullptr_t>){
+							if(!filter(object, *element))continue;
+						}
+
+						func(object, *element);
+					}
+				}
+			}
+		}
+
+		template <
+			Concepts::InvokeNullable<void(ItemTy&, ItemTy&)> Func = std::nullptr_t,
+			Concepts::InvokeNullable<bool(ItemTy&, const ItemTy&)> Filter = std::nullptr_t>
+		void intersectAll(ItemTy& object, Func&& func = nullptr, Filter&& filter = nullptr) const{
+			if(!this->inbound(object)) return;
+
+			// If this node has children, check if the rectangle overlaps with any rectangle in the children
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
+				this->topLeft->intersectAll(object);
+				this->topRight->intersectAll(object);
+				this->bottomLeft->intersectAll(object);
+				this->bottomRight->intersectAll(object);
+			}
+
+			for(auto _ = this->getItemGruard_Shared(); const auto element : items){
+				if(this->isInersectedBetween(object, *element)){
+					if constexpr (!std::same_as<Func, std::nullptr_t>){
+						if constexpr (!std::same_as<Filter, std::nullptr_t>){
+							if(!filter(object, *element))continue;
+						}
+
+						func(object, *element);
+					}
+				}
 			}
 		}
 
@@ -318,71 +411,70 @@ export namespace Geom{
 			if(!this->inbound(object)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
 				topLeft->intersect(object, func);
 				topRight->intersect(object, func);
 				bottomLeft->intersect(object, func);
 				bottomRight->intersect(object, func);
 			}
 
-			for(std::shared_lock _{itemsMtx}; auto* cont : items){
+			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
 				if(this->isInersectedBetween(object, *cont)){
 					func(*cont);
 				}
 			}
 		}
 
+
 		template <Concepts::Invokable<void(ItemTy&, const Rect&)> Func>
 		void intersectRect(const Rect& rect, Func&& func){
 			if(!this->inbound(rect)) return;
 
 			//If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
-				topLeft->intersectRect(rect, func);
-				topRight->intersectRect(rect, func);
-				bottomLeft->intersectRect(rect, func);
-				bottomRight->intersectRect(rect, func);
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
+				topLeft->intersectRect(rect, std::forward<decltype(func)>(func));
+				topRight->intersectRect(rect, std::forward<decltype(func)>(func));
+				bottomLeft->intersectRect(rect, std::forward<decltype(func)>(func));
+				bottomRight->intersectRect(rect, std::forward<decltype(func)>(func));
 			}
 
-			for(std::shared_lock _{itemsMtx}; auto* cont : items){
+			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
 				func(*cont, rect);
 			}
 		}
 
-		template <
-			typename Region,
-			Concepts::Invokable<bool(const Rect&, const Region&)> Check,
-			Concepts::Invokable<void(ItemTy&, const Region&)> Pred>
+		template <typename Region>
 			requires !std::same_as<Region, Rect>
-		void intersectRegion(const Region& region, Check&& boundCheck, Pred&& pred){
+		void intersectRegion(const Region& region,
+			Concepts::Invokable<bool(const Rect&, const Region&)> auto&& boundCheck,
+			Concepts::Invokable<void(ItemTy&, const Region&)> auto&& func){
 			if(!boundCheck(boundary, region)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
-				topLeft->template intersectRegion<Region>(region, boundCheck, pred);
-				topRight->template intersectRegion<Region>(region, boundCheck, pred);
-				bottomLeft->template intersectRegion<Region>(region, boundCheck, pred);
-				bottomRight->template intersectRegion<Region>(region, boundCheck, pred);
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
+				topLeft->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
+				topRight->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
+				bottomLeft->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
+				bottomRight->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
 			}
 
-			for(std::shared_lock _{itemsMtx}; auto* cont : items){
-				if(boundCheck(this->obtainItemBound(*cont), region))pred(*cont, region);
+			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
+				if(boundCheck(this->obtainItemBound(*cont), region)) func(*cont, region);
 			}
 		}
 
-		template <Concepts::Invokable<void(ItemTy&)> Pred>
-		void intersectPoint(const Vec2 point, Pred&& pred){
+		void intersectPoint(const Vec2 point, Concepts::Invokable<void(ItemTy&)> auto&& pred){
 			if(!this->inbound(point)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
-				topLeft->intersectPoint(point, std::forward<Pred>(pred));
-				topRight->intersectPoint(point, std::forward<Pred>(pred));
-				bottomLeft->intersectPoint(point, std::forward<Pred>(pred));
-				bottomRight->intersectPoint(point, std::forward<Pred>(pred));
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
+				topLeft->intersectPoint(point, std::forward<decltype(pred)>(pred));
+				topRight->intersectPoint(point, std::forward<decltype(pred)>(pred));
+				bottomLeft->intersectPoint(point, std::forward<decltype(pred)>(pred));
+				bottomRight->intersectPoint(point, std::forward<decltype(pred)>(pred));
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto* cont : items){
+			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
 				if(this->intersectWith(point, *cont)){
 					pred(*cont);
 				}
@@ -394,14 +486,14 @@ export namespace Geom{
 			if(!this->withinBound(object, dst)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
 				topLeft->within(object, dst, pred);
 				topRight->within(object, dst, pred);
 				bottomLeft->within(object, dst, pred);
 				bottomRight->within(object, dst, pred);
 			}
 
-			for(std::shared_lock _{itemsMtx}; const auto* cont : items){
+			for(auto _ = this->getItemGruard_Shared(); const auto* cont : items){
 				pred(*cont);
 			}
 		}
@@ -411,16 +503,16 @@ export namespace Geom{
 			if(!this->inbound(object)) return false;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
-			if(std::shared_lock _{leafMtx}; !isLeaf()){
+			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
 				return topLeft->intersect(object, pred) ||
-					topRight->intersect(object, pred) ||
-					bottomLeft->intersect(object, pred) ||
-					bottomRight->intersect(object, pred);
+				       topRight->intersect(object, pred) ||
+				       bottomLeft->intersect(object, pred) ||
+				       bottomRight->intersect(object, pred);
 			}
 
 			bool intersected = false;
 
-			for(std::shared_lock _{itemsMtx}; const auto* cont : items){
+			for(auto _ = this->getItemGruard_Shared(); const auto* cont : items){
 				if(this->isInersectedBetween(object, *cont)){
 					intersected = true;
 					pred(*cont);
@@ -471,7 +563,7 @@ export namespace Geom{
 				if(items.size() >= maximumItemCount){
 					split();
 				} else{
-					std::unique_lock guard{itemsMtx};
+					auto _ = this->getItemGruard_Unique();
 					items.push_back(&box);
 					return true;
 				}
@@ -484,14 +576,14 @@ export namespace Geom{
 			}
 
 			//Fallback
-			std::unique_lock guard{itemsMtx};
+			auto _ = this->getItemGruard_Unique();
 			items.push_back(&box);
 			return true;
 		}
 
 		void clear(){
 			{
-				std::unique_lock guard{leafMtx};
+				auto _ = this->getLeafGruard_Unique();
 				topLeft.reset(nullptr);
 				topRight.reset(nullptr);
 				bottomLeft.reset(nullptr);
@@ -501,12 +593,12 @@ export namespace Geom{
 
 			currentSize = 0;
 
-			std::unique_lock guard{itemsMtx};
+			auto _ = this->getItemGruard_Unique();
 			items.clear();
 		}
 
 		void clearItemsOnly(){
-			if(currentSize == 0)return;
+			if(currentSize == 0) return;
 
 			{
 				const bool _isLeaf = leaf.load();
@@ -521,7 +613,7 @@ export namespace Geom{
 				}
 			}
 
-			std::unique_lock guard{itemsMtx};
+			auto _ = this->getItemGruard_Unique();
 			items.clear();
 		}
 
@@ -540,12 +632,12 @@ export namespace Geom{
 			const Rect tl{x, y + h, w, h};
 			const Rect tr{x + w, y + h, w, h};
 
-			if(std::unique_lock guard{leafMtx}; topLeft != nullptr){
+			if(auto _ = this->getLeafGruard_Unique(); topLeft != nullptr){
 				topLeft->setBoundary(tl);
 				topRight->setBoundary(tr);
 				bottomLeft->setBoundary(bl);
 				bottomRight->setBoundary(br);
-			}else{
+			} else{
 				topLeft = std::make_unique<QuadTree>(tl, maximumItemCount);
 				topRight = std::make_unique<QuadTree>(tr, maximumItemCount);
 				bottomLeft = std::make_unique<QuadTree>(bl, maximumItemCount);
@@ -558,14 +650,14 @@ export namespace Geom{
 			leaf = true;
 
 			{
-				std::unique_lock _{itemsMtx};
+				auto _ = this->getItemGruard_Unique();
 				std::ranges::copy(topLeft->items, std::back_inserter(items));
 				std::ranges::copy(topRight->items, std::back_inserter(items));
 				std::ranges::copy(bottomLeft->items, std::back_inserter(items));
 				std::ranges::copy(bottomRight->items, std::back_inserter(items));
 			}
 
-			std::unique_lock l{leafMtx};
+			auto _ = this->getLeafGruard_Unique();
 			topLeft->clearItemsOnly();
 			topRight->clearItemsOnly();
 			bottomLeft->clearItemsOnly();
@@ -585,17 +677,21 @@ export namespace Geom{
 
 			// Object can completely fit within the left quadrants
 			if(boundingBox.getSrcX() < midX && boundingBox.getSrcX() + boundingBox.getWidth() <
-				midX){
+			   midX){
 				if(topQuadrant){
 					return topLeft.get();
-				} else if(bottomQuadrant){
+				}
+
+				if(bottomQuadrant){
 					return bottomLeft.get();
 				}
 			} else if(boundingBox.getSrcX() > midX){
 				// Object can completely fit within the right quadrants
 				if(topQuadrant){
 					return topRight.get();
-				} else if(bottomQuadrant){
+				}
+
+				if(bottomQuadrant){
 					return bottomRight.get();
 				}
 			}

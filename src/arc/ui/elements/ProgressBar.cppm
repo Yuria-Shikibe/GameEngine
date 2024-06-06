@@ -38,7 +38,7 @@ export namespace UI{
 		}
 
 	public:
-		ProgressBar(){
+		explicit ProgressBar(Root* root = nullptr) : Elem{root}{
 			ProgressBar::applyDefDrawer();
 		}
 

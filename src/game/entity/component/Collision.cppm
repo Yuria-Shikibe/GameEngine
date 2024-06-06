@@ -45,24 +45,24 @@ export namespace Game{
 	};
 
 	struct HitBoxFragmentData {
-		Geom::Transform relaTrans{};
-		Geom::RectBox original{};
+		Geom::Transform localTrans{};
+		Geom::RectBox boxData{};
 
 		HitBoxFragmentData() = default;
 
 		HitBoxFragmentData(const Geom::Transform relaTrans, const Geom::RectBox& original)
-			: relaTrans(relaTrans),
-			  original(original){
+			: localTrans(relaTrans),
+			  boxData(original){
 		}
 
 		void read(std::istream& reader){
-			reader.read(reinterpret_cast<char*>(&this->relaTrans), sizeof Geom::Transform);
-			reader.read(reinterpret_cast<char*>(static_cast<Geom::RectBoxBrief*>(&this->original)), sizeof Geom::RectBoxBrief);
+			reader.read(reinterpret_cast<char*>(&this->localTrans), sizeof Geom::Transform);
+			reader.read(reinterpret_cast<char*>(static_cast<Geom::RectBoxBrief*>(&this->boxData)), sizeof Geom::RectBoxBrief);
 		}
 
 		void write(std::ostream& writer) const{ //TODO rectbox opt
-			writer.write(reinterpret_cast<const char*>(&this->relaTrans), sizeof Geom::Transform);
-			writer.write(reinterpret_cast<const char*>(static_cast<const Geom::RectBoxBrief*>(&this->original)), sizeof Geom::RectBoxBrief);
+			writer.write(reinterpret_cast<const char*>(&this->localTrans), sizeof Geom::Transform);
+			writer.write(reinterpret_cast<const char*>(static_cast<const Geom::RectBoxBrief*>(&this->boxData)), sizeof Geom::RectBoxBrief);
 		}
 	};
 
@@ -71,11 +71,11 @@ export namespace Game{
 			mutable Geom::RectBox temp{};
 
 			constexpr void reset() const{
-				temp = original;
+				temp = boxData;
 			}
 
 			constexpr void trans(const Geom::Vec2 vec2) const{
-				temp.move(vec2, original);
+				temp.move(vec2, boxData);
 			}
 
 			BoxStateData() = default;
@@ -130,13 +130,8 @@ export namespace Game{
 		void updateHitbox(const Geom::Transform translation){
 			this->trans = translation;
 
-			const float cos = Math::cosDeg(this->trans.rot);
-			const float sin = Math::sinDeg(this->trans.rot);
-
 			for(auto& group : hitBoxGroup){
-				Geom::Vec2 trans = group.relaTrans.vec;
-
-				group.original.update(this->trans.vec + trans.rotate(cos, sin), this->trans.rot + group.relaTrans.rot);
+				group.boxData.update(group.localTrans | trans);
 				group.reset();
 			}
 
@@ -169,8 +164,8 @@ export namespace Game{
 
 		void scl(const Geom::Vec2 scl){
 			for (auto& data : hitBoxGroup){
-				data.original.offset *= scl;
-				data.original.sizeVec2 *= scl;
+				data.boxData.offset *= scl;
+				data.boxData.sizeVec2 *= scl;
 			}
 		}
 
@@ -181,10 +176,10 @@ export namespace Game{
 			float maxY = std::numeric_limits<float>::lowest();
 
 			for(auto& boxData : hitBoxGroup){
-				minX = Math::min(minX, boxData.original.maxOrthoBound.getSrcX());
-				minY = Math::min(minY, boxData.original.maxOrthoBound.getSrcY());
-				maxX = Math::max(maxX, boxData.original.maxOrthoBound.getEndX());
-				maxY = Math::max(maxY, boxData.original.maxOrthoBound.getEndY());
+				minX = Math::min(minX, boxData.boxData.maxOrthoBound.getSrcX());
+				minY = Math::min(minY, boxData.boxData.maxOrthoBound.getSrcY());
+				maxX = Math::max(maxX, boxData.boxData.maxOrthoBound.getEndX());
+				maxY = Math::max(maxY, boxData.boxData.maxOrthoBound.getEndY());
 			}
 
 			maxBound.setVert(minX, minY, maxX, maxY);
@@ -215,8 +210,8 @@ export namespace Game{
 			for(int i = 0; i < sample.size(); ++i){
 				auto& boxData = hitBoxGroup.at(i);
 				auto& [tgtTrans, tgtBox] = sample.at(i);
-				boxData.temp = boxData.original = tgtBox;
-				boxData.relaTrans = tgtTrans;
+				boxData.temp = boxData.boxData = tgtBox;
+				boxData.localTrans = tgtTrans;
 			}
 		}
 
@@ -276,7 +271,7 @@ export namespace Game{
 		}
 
 		[[nodiscard]] Geom::Vec2 getAvgEdgeNormal(const CollisionData data) const{
-			return Geom::avgEdgeNormal(data.intersection, hitBoxGroup.at(data.objectSubBoxIndex).original);
+			return Geom::avgEdgeNormal(data.intersection, hitBoxGroup.at(data.objectSubBoxIndex).boxData);
 		}
 
 		[[nodiscard]] bool collideWithRough(const HitBox& other) const{
@@ -336,13 +331,13 @@ export namespace Game{
 		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
 			return std::accumulate(hitBoxGroup.begin(), hitBoxGroup.end(),
 				1.0f, [mass, scale, lengthRadiusRatio](const float val, const BoxStateData& pair){
-				return val + pair.original.getRotationalInertia(mass, scale, lengthRadiusRatio) + mass * pair.relaTrans.vec.length2();
+				return val + pair.boxData.getRotationalInertia(mass, scale, lengthRadiusRatio) + mass * pair.localTrans.vec.length2();
 			});
 		}
 
 		[[nodiscard]] bool contains(const Geom::Vec2 vec2) const{
 			return std::ranges::any_of(hitBoxGroup, [vec2](const BoxStateData& data){
-				return data.original.contains(vec2);
+				return data.boxData.contains(vec2);
 			});
 		}
 	};
@@ -355,19 +350,19 @@ export namespace Game{
 
 		for(int i = 0; i < size; ++i){
 			auto& dst = datas.at(i + size);
-			dst.relaTrans.vec.y *= -1;
-			dst.relaTrans.rot *= -1;
-			dst.relaTrans.rot = Math::Angle::getAngleInPi2(dst.relaTrans.rot);
-			dst.original.offset.y *= -1;
-			dst.original.sizeVec2.y *= -1;
+			dst.localTrans.vec.y *= -1;
+			dst.localTrans.rot *= -1;
+			dst.localTrans.rot = Math::Angle::getAngleInPi2(dst.localTrans.rot);
+			dst.boxData.offset.y *= -1;
+			dst.boxData.sizeVec2.y *= -1;
 		}
 	}
 
 	void scl(std::vector<HitBoxFragmentData>& datas, const float scl){
 		for (auto& data : datas){
-			data.original.offset *= scl;
-			data.original.sizeVec2 *= scl;
-			data.relaTrans.vec *= scl;
+			data.boxData.offset *= scl;
+			data.boxData.sizeVec2 *= scl;
+			data.localTrans.vec *= scl;
 		}
 	}
 

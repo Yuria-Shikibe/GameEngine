@@ -20,7 +20,7 @@ export namespace UI{
 		Align::Scale scaling{Align::Scale::fit};
 		Align::Layout imageAlign{Align::Layout::center};
 
-		[[nodiscard]] ImageRegion() = default;
+		using Elem::Elem;
 
 		template <Concepts::Derived<RegionDrawable> Drawable>
 		[[nodiscard]] explicit ImageRegion(const Drawable& drawable, const bool useEmptyDrawer = true){

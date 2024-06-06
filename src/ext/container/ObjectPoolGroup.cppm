@@ -5,6 +5,39 @@ import ext.RuntimeException;
 import std;
 
 export namespace ext{
+	class DyVoidWrapper{
+		void* data{};
+		void(*deleter )(void*){};
+
+	public:
+		template <typename T, typename ...Args>
+		void emplace(Args&& ... args){
+			if(deleter)deleter(data);
+			data = new T(std::forward<Args>(args) ...);
+			deleter = +[](void* p){delete static_cast<T*>(p);};
+		}
+
+		~DyVoidWrapper(){
+			deleter(data);
+		}
+
+		DyVoidWrapper(const DyVoidWrapper& other) = delete;
+		DyVoidWrapper& operator=(const DyVoidWrapper& other) = delete;
+
+		DyVoidWrapper(DyVoidWrapper&& other) noexcept
+			: data{other.data},
+			  deleter{other.deleter}{
+			other.data = nullptr;
+		}
+
+		DyVoidWrapper& operator=(DyVoidWrapper&& other) noexcept{
+			if(this == &other) return *this;
+			data = other.data;
+			other.data = nullptr;
+			deleter = other.deleter;
+			return *this;
+		}
+	};
 	class ObjectPoolGroup{
 		struct PoolWrapper {
 			void* poolPtr{nullptr};

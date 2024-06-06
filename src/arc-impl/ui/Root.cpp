@@ -43,6 +43,19 @@ UI::Root::~Root(){
 	std::erase(Core::input.inputMouseListeners, this);
 }
 
+void UI::Root::loadBinds(const Elem* elem, OS::InputBindGroup& binds){
+	if(customeInputBinds.try_emplace(elem, &binds).second){
+		Core::input.registerSubInput(&binds);
+	}
+}
+
+void UI::Root::unloadBinds(const Elem* elem){
+	if(const auto itr = customeInputBinds.find(elem); itr != customeInputBinds.end()){
+		Core::input.eraseSubInput(itr->second);
+		customeInputBinds.erase(itr);
+	}
+}
+
 
 void UI::Root::drawCursor() const{
 	using namespace Graphic;

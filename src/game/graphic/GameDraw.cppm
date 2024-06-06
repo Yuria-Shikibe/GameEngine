@@ -20,16 +20,18 @@ namespace Game::Draw{
 	namespace Draw = Graphic::Draw;
 
 	export
+	template <typename Base = Draw::World>
 	void hitbox(const ::Game::HitBox& hitBox){
 		for(const auto& data : hitBox.hitBoxGroup){
-			Draw::World::Fill::quad(Draw::World::getContextTexture(),
-			                               data.original.v0, data.original.v1, data.original.v2, data.original.v3);
+			Base::Fill::quad(Base::getContextTexture(),
+			                               data.boxData.v0, data.boxData.v1, data.boxData.v2, data.boxData.v3);
 		}
 	}
 
 	export
+	template <typename Base = Draw::World>
 	void hitbox(const ::Geom::QuadBox& hitBox){
-		Draw::World::Fill::quad(Draw::World::getContextTexture(),
+		Base::Fill::quad(Base::getContextTexture(),
 		                    hitBox.v0, hitBox.v1, hitBox.v2, hitBox.v3);
 	}
 

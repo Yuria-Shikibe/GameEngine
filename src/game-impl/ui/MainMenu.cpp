@@ -14,6 +14,7 @@ import Assets.Directories;
 import OS;
 
 import Game.UI.ChamberWorkshop;
+import Game.UI.HitBoxEditor;
 import Game.Entity.SpaceCraft;
 
 void func(UI::Table& table){
@@ -143,11 +144,11 @@ void Game::Scenes::MainMenu::build(){
 		.setAlign(Align::Layout::left).setSizeScale(0.2f, 1.0f)
 		.setMargin(0, 10, 0, 10).setSrcScale(0.075f, 0.0f);
 
-	&add<Game::Scene::ChamberWorkshop<Game::SpaceCraft>>([](Game::Scene::ChamberWorkshop<Game::SpaceCraft>& table){
-			table.build(::Test::chamberFrame->getChambers());
-			table.currentFactory = ::Test::testFactory.get();
+	add<Game::Scene::HitboxEditor>([](Game::Scene::HitboxEditor& table){
+			// table.build(::Test::chamberFrame->getChambers());
+			// table.currentFactory = ::Test::testFactory.get();
 		})
-		.setAlign(Align::Layout::center_left).setSizeScale(0.6f, 1.f).setSrcScale(0.275f, 0.0f).as<UI::Screen>();
+		.setAlign(Align::Layout::center_left).setSizeScale(0.6f, 1.f).setSrcScale(0.275f, 0.0f);
 
 	add<UI::Table>(func)
 		.setAlign(Align::Layout::bottom_right)

@@ -1,6 +1,7 @@
 export module Core.Unit;
 
 import std;
+import Math;
 
 export namespace Core{
 	using TickRatio = std::ratio<1, 60>;
@@ -52,6 +53,46 @@ export namespace Core{
 			auto t = *this;
 			this->operator--();
 			return t;
+		}
+
+		friend T operator%(DirectAccessTimeUnit l, const T val) noexcept{
+			return Math::mod<T>(T(l), val);
+		}
+
+		friend constexpr T operator+(DirectAccessTimeUnit l, const T val) noexcept{
+			return T(l) + val;
+		}
+
+		friend constexpr T operator-(DirectAccessTimeUnit l, const T val) noexcept{
+			return T(l) - val;
+		}
+
+		friend constexpr T operator*(DirectAccessTimeUnit l, const T val) noexcept{
+			return T(l) * val;
+		}
+
+		friend constexpr T operator/(DirectAccessTimeUnit l, const T val) noexcept{
+			return T(l) / val;
+		}
+
+		friend T operator%(const T val, DirectAccessTimeUnit l) noexcept{
+			return Math::mod<T>(val, T(l));
+		}
+
+		friend constexpr T operator+(const T val, DirectAccessTimeUnit l) noexcept{
+			return val + T(l);
+		}
+
+		friend constexpr T operator-(const T val, DirectAccessTimeUnit l) noexcept{
+			return val - T(l);
+		}
+
+		friend constexpr T operator*(const T val, DirectAccessTimeUnit l) noexcept{
+			return val * T(l);
+		}
+
+		friend constexpr T operator/(const T val, DirectAccessTimeUnit l) noexcept{
+			return val / T(l);
 		}
 	};
 

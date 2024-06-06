@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../src/code-gen/ReflectData_Builtin.hpp"
-#include "src/arc/util/ReflectionUtil.hpp"
+#include "src/ext/ReflectionUtil.hpp"
 
 import std;
 import std.compat;

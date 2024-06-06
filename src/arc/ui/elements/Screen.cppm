@@ -44,8 +44,7 @@ export namespace UI{
 			});
 
 			inputListener.on<MouseActionDoubleClick>([this](const MouseActionDoubleClick& event) {
-
-				if(event.key == Ctrl::Mouse::LMB){
+				if(event.key == Ctrl::Mouse::CMB){
 					camera.setPosition(camera.getMouseToWorld(Geom::Vector2D(event), absoluteSrc));
 				}
 			});

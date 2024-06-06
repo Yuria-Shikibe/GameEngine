@@ -19,7 +19,7 @@ export namespace UI {
 
 
 	public:
-		[[nodiscard]] Group() {
+		[[nodiscard]] explicit Group(UI::Root* root = nullptr) : Elem{root}{
 			touchbility = TouchbilityFlags::childrenOnly;
 		}
 

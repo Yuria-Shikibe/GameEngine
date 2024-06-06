@@ -244,6 +244,8 @@ namespace Game::Scene{
 
 			buildElem();
 
+			screen->getCamera().setScaleRange(0.5f, 10.f);
+
 			screen->getInputListener().on<UI::MouseActionPress>([this](const UI::MouseActionPress& e){
 				if(e.mode == Ctrl::Mode::None)
 					switch(e.key){
@@ -292,7 +294,6 @@ namespace Game::Scene{
 				}
 			});
 
-			screen->getCamera().setScaleRange(0.5f, 10.f);
 
 			screen->getInputListener().on<UI::MouseActionRelease>([this](const UI::MouseActionRelease& e){
 				if(e.key == Ctrl::Mouse::_1){

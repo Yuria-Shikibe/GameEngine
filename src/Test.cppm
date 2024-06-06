@@ -115,8 +115,8 @@ export namespace Test{
 		Game::core = std::make_unique<Game::Core>();
 		Core::loopManager->setGameCore(Game::core.get());
 
-		ext::json::Json json{Assets::Dir::settings.subFile("ctrl.json").readString()};
-		ext::json::getValueTo(Assets::Ctrl::basicGroup, json.getData());
+		ext::json::JsonValue json{ext::json::Parser::parse(Assets::Dir::settings.subFile("ctrl.json").quickRead())};
+		ext::json::getValueTo(Assets::Ctrl::basicGroup, json);
 
 		Core::destructors.push_back([]{
 			Assets::Dir::settings.subFile("ctrl.json").writeString(std::format("{:1}", ext::json::getJsonOf(Assets::Ctrl::basicGroup)));

@@ -535,7 +535,10 @@ export namespace Geom{
 		constexpr Rect_Orthogonal& setVert(const T srcX, const T srcY, const T endX, const T endY) noexcept{
 			auto [minX, maxX] = Math::minmax(srcX, endX);
 			auto [minY, maxY] = Math::minmax(srcY, endY);
-			this->set(minX, minY, maxX - minX, maxY - minY);
+			this->srcX = minX;
+			this->srcY = minY;
+			width = maxX - minX;
+			height = maxY - minY;
 
 			return *this;
 		}

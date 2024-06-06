@@ -6,24 +6,9 @@ export module ext.Json;
 
 import std;
 import ext.Heterogeneous;
-import ext.Encoding;
-import ext.StringParse;
 import ext.MetaProgramming;
 
-using namespace ext::string;
-
-namespace ext::json{
-
-	bool hasMeaning(const char c){
-		return !std::isspace(c);
-	}
-}
-
 export namespace ext::json{
-	bool notIgnore(const char c){
-		return c != '\n' && c != '\t' && c != '\r';
-	}
-
 	class JsonValue;
 
 	using Integer = std::int64_t;
@@ -32,40 +17,42 @@ export namespace ext::json{
 	using Array = std::vector<JsonValue>;
 
 	template <typename T>
-	using JsonScalarType = std::conditional_t<std::same_as<T, bool>, bool, std::conditional_t<std::is_floating_point_v<T>, Float, Integer>>;
+	using JsonScalarType = std::conditional_t<std::same_as<T, bool>, bool, std::conditional_t<
+		                                          std::is_floating_point_v<T>, Float, Integer>>;
 
 	namespace keys{
 		/**
 		 * @brief Indeicate this json info refer to a Polymorphic Class
 		 */
 		constexpr std::string_view Typename = "$ty"; //type
-		constexpr std::string_view Tag = "$t"; //tag
-		constexpr std::string_view ID = "$i"; //id
-		constexpr std::string_view Data = "$d"; //data
-		constexpr std::string_view Version = "$v"; //version
-		constexpr std::string_view Pos = "$p"; //position
-		constexpr std::string_view Size2D = "$s2"; //size 2D
-		constexpr std::string_view Size = "$s1"; //size 1D
-		constexpr std::string_view Bound = "$b"; //bound
+		constexpr std::string_view Tag = "$t";       //tag
+		constexpr std::string_view ID = "$i";        //id
+		constexpr std::string_view Data = "$d";      //data
+		constexpr std::string_view Version = "$v";   //version
+		constexpr std::string_view Pos = "$p";       //position
+		constexpr std::string_view Size2D = "$s2";   //size 2D
+		constexpr std::string_view Size = "$s1";     //size 1D
+		constexpr std::string_view Bound = "$b";     //bound
 
-		constexpr std::string_view Key = "$k"; //key
+		constexpr std::string_view Key = "$k";   //key
 		constexpr std::string_view Value = "$v"; //value
 
-		constexpr std::string_view First = "$f"; //first
+		constexpr std::string_view First = "$f";   //first
 		constexpr std::string_view Secound = "$s"; //second
 	}
+
 
 	struct IllegalJsonSegment final : std::exception{
 		IllegalJsonSegment() = default;
 
-		explicit IllegalJsonSegment(char const* _Message)
-			: exception{_Message}{}
+		explicit IllegalJsonSegment(char const* Message)
+			: exception{Message}{}
 
-		IllegalJsonSegment(char const* _Message, const int i)
-			: exception{_Message, i}{}
+		IllegalJsonSegment(char const* Message, const int i)
+			: exception{Message, i}{}
 
-		explicit IllegalJsonSegment(exception const& _Other)
-			: exception{_Other}{}
+		explicit IllegalJsonSegment(exception const& Other)
+			: exception{Other}{}
 	};
 
 	inline Integer parseInt(const std::string_view str, const int base = 10){
@@ -73,7 +60,7 @@ export namespace ext::json{
 		const char* ptr = str.data();
 		char* endPtr{nullptr};
 		errno_ref = 0;
-		const long _Ans = std::strtol(ptr, &endPtr, base);
+		const long ans = std::strtol(ptr, &endPtr, base);
 
 		if(ptr == endPtr){
 			throw IllegalJsonSegment("invalid stoi argument");
@@ -83,7 +70,7 @@ export namespace ext::json{
 			throw IllegalJsonSegment("stoi argument out of range");
 		}
 
-		return _Ans;
+		return ans;
 	}
 
 	inline Float parseFloat(const std::string_view str){
@@ -105,7 +92,7 @@ export namespace ext::json{
 	}
 
 
-	enum struct JsonValueTag : std::size_t {
+	enum struct JsonValueTag : std::size_t{
 		null,
 		arithmetic_int,
 		arithmetic_float,
@@ -174,13 +161,13 @@ export namespace ext::json{
 		}
 
 		template <JsonValueTag tag>
-		bool is() const noexcept{
+		[[nodiscard]] bool is() const noexcept{
 			return getTag() == tag;
 		}
 
 		template <typename T>
 			requires validType<T>
-		bool is() const noexcept{
+		[[nodiscard]] bool is() const noexcept{
 			return getTagIndex() == typeIndex<T>;
 		}
 
@@ -192,13 +179,28 @@ export namespace ext::json{
 			return data.index();
 		}
 
+		JsonValue& operator[](const std::string_view key){
+			if(!is<object>()){
+				throw IllegalJsonSegment{"Illegal access on a non-object jval!"};
+			}
+
+			return asObject().at(key);
+		}
+
+		const JsonValue& operator[](const std::string_view key) const{
+			if(!is<object>()){
+				throw IllegalJsonSegment{"Illegal access on a non-object jval!"};
+			}
+
+			return asObject().at(key);
+		}
 
 		template <typename T>
 			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
 		[[nodiscard]] constexpr decltype(auto) as(){
-			if constexpr (std::is_arithmetic_v<T>){
+			if constexpr(std::is_arithmetic_v<T>){
 				return static_cast<T>(std::get<JsonScalarType<T>>(data));
-			}else{
+			} else{
 				return std::get<T>(data);
 			}
 		}
@@ -206,9 +208,9 @@ export namespace ext::json{
 		template <typename T>
 			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
 		[[nodiscard]] constexpr decltype(auto) as() const{
-			if constexpr (std::is_arithmetic_v<T>){
+			if constexpr(std::is_arithmetic_v<T>){
 				return static_cast<T>(std::get<JsonScalarType<T>>(data));
-			}else{
+			} else{
 				return std::get<T>(data);
 			}
 		}
@@ -231,7 +233,7 @@ export namespace ext::json{
 			return std::get<Object>(data);
 		}
 
-		auto& asObject() const {
+		[[nodiscard]] auto& asObject() const{
 			return std::get<Object>(data);
 		}
 
@@ -243,7 +245,7 @@ export namespace ext::json{
 			return std::get<Array>(data);
 		}
 
-		auto& asArray() const {
+		[[nodiscard]] auto& asArray() const{
 			return std::get<Array>(data);
 		}
 
@@ -258,10 +260,10 @@ export namespace ext::json{
 		template <typename T>
 			requires std::same_as<std::decay_t<T>, JsonValue> || validType<T>
 		void append(const std::string_view name, T&& val){
-			if(getTag() != object)return; //TODO throw maybe?
-			if constexpr (std::same_as<T, JsonValue>){
+			if(getTag() != object) return; //TODO throw maybe?
+			if constexpr(std::same_as<T, JsonValue>){
 				asObject().insert_or_assign(name, std::forward<T>(val));
-			}else{
+			} else{
 				asObject().insert_or_assign(name, JsonValue{std::forward<T>(val)});
 			}
 		}
@@ -269,10 +271,10 @@ export namespace ext::json{
 		template <typename T>
 			requires std::same_as<std::decay_t<T>, JsonValue> || validType<T>
 		void append(std::string&& name, T&& val){
-			if(getTag() != object)return; //TODO throw maybe?
-			if constexpr (std::same_as<T, JsonValue>){
+			if(getTag() != object) return; //TODO throw maybe?
+			if constexpr(std::same_as<T, JsonValue>){
 				asObject().insert_or_assign(std::move(name), std::forward<T>(val));
-			}else{
+			} else{
 				asObject().insert_or_assign(std::move(name), JsonValue{std::forward<T>(val)});
 			}
 		}
@@ -280,13 +282,14 @@ export namespace ext::json{
 		template <typename T>
 			requires std::same_as<T, JsonValue> || validType<T>
 		void push_back(T&& val){
-			if(getTag() != array)return; //TODO throw maybe?
-			if constexpr (std::same_as<T, JsonValue>){
+			if(getTag() != array) return; //TODO throw maybe?
+			if constexpr(std::same_as<T, JsonValue>){
 				asArray().push_back(std::forward<T>(val));
-			}else{
+			} else{
 				asArray().push_back(JsonValue{std::forward<T>(val)});
 			}
 		}
+
 		// ReSharper restore CppDFAConstantConditions
 		// ReSharper restore CppDFAUnreachableCode
 
@@ -295,7 +298,7 @@ export namespace ext::json{
 
 		friend bool operator==(const JsonValue& lhs, const JsonValue& rhs){
 			return lhs.getTagIndex() == rhs.getTagIndex()
-				&& lhs.data == rhs.data;
+			       && lhs.data == rhs.data;
 		}
 
 		friend bool operator!=(const JsonValue& lhs, const JsonValue& rhs){ return !(lhs == rhs); }
@@ -330,187 +333,9 @@ export namespace ext::json{
 			return std::get_if<static_cast<size_t>(tag)>(&data);
 		}
 
-		/**
-		 * @brief
-		 * @param view
-		 * @return KeyName
-		 */
-		std::string parseKV(const std::string_view view){
-			bool escapeTheNext{false};
-			bool parsingString{false};
-
-			auto colonPos = FailedPos;
-			auto nameBegin = FailedPos;
-			auto nameEnd = FailedPos;
-
-			auto dataBegin = FailedPos;
-			auto dataEnd = FailedPos;
-
-			for(int pos = 0; pos < view.size(); ++pos){
-				if(escapeTheNext){
-					escapeTheNext = false;
-					continue;
-				}
-
-				const char character = view[pos];
-
-				if(character == '\\'){
-					escapeTheNext = true;
-					continue;
-				}
-
-				if(character == '"'){
-					if(!parsingString){
-						parsingString = true;
-						if(nameBegin == FailedPos) nameBegin = pos + 1;
-					} else{
-						parsingString = false;
-						if(nameEnd == FailedPos) nameEnd = pos;
-					}
-				}
-
-				if(colonPos == FailedPos){
-					if(!parsingString && character == ':'){
-						colonPos = pos;
-						continue;
-					}
-				} else{
-					if(hasMeaning(character)){
-						dataBegin = pos;
-						break;
-					}
-				}
-			}
-
-			if(dataBegin != FailedPos){
-				for(int pos = view.size() - 1; pos >= 0; --pos){
-					if(hasMeaning(view[pos])){
-						dataEnd = pos + 1;
-						break;
-					}
-				}
-			}
-
-
-			if(colonPos == FailedPos || !(nameBegin < nameEnd && nameEnd < colonPos && colonPos < dataBegin && dataBegin
-				< dataEnd)){
-				asObject();
-				return {""};
-			}
-
-			const auto arg = view.substr(dataBegin, dataEnd - dataBegin);
-
-			setValueBy(arg);
-
-			return static_cast<std::string>(view.substr(nameBegin, nameEnd - nameBegin));
-		}
-
-		/**
-		 * @brief
-		 * @param view {<Begin -- View -- End>}
-		 */
-		void parseObject(const std::string_view view){
-			if(view.empty()){
-				asObject();
-				return;
-			}
-
-			const auto args = splitByComma(view.substr(1, view.size() - 2));
-
-			ext::StringMap<JsonValue> values(args.size());
-
-			for(const auto arg : args){
-				JsonValue value{};
-				auto key = value.parseKV(arg);
-
-				values.insert_or_assign(std::move(key), std::move(value));
-			}
-
-			data.emplace<decltype(values)>(std::move(values));
-		}
-
-		/**
-		 * @brief
-		 * @param view [<Begin -- View -- End>]
-		 */
-		void parseArray(const std::string_view view){
-			const auto args = splitByComma(view.substr(1, view.size() - 2));
-
-			std::vector<JsonValue> values(args.size());
-
-			for(auto [index, jsonValue] : values | std::ranges::views::enumerate){
-				jsonValue.setValueBy(args.at(index));
-			}
-
-			data.emplace<decltype(values)>(std::move(values));
-		}
-
-		void setValueBy(const std::string_view valueView){
-			if(valueView.empty()){
-				throw IllegalJsonSegment{"Json with empty value string"};
-			}
-
-			const auto frontChar = valueView.front();
-
-			switch(frontChar){
-				case '{' : {
-					if(valueView.back() != '}')throw IllegalJsonSegment{"Losing '}' At Json Object Back"};
-
-					parseObject(valueView);
-					return;
-				}
-				case '[' : {
-					if(valueView.back() != ']')throw IllegalJsonSegment{"Losing ']' At Json Array Back"};
-
-					parseArray(valueView);
-					return;
-				}
-				case '"' : {
-					if(valueView.back() != '"' || valueView.size() == 1)throw IllegalJsonSegment{"Losing '\"' At Json String Back"};
-
-					data.emplace<std::string>(std::string(valueView.substr(1, valueView.size() - 2)));
-					return;
-				}
-
-				case 't': data.emplace<bool>(true); return;
-				case 'f': data.emplace<bool>(false); return;
-				case 'n': data.emplace<std::nullptr_t>(nullptr); return;
-				default: break;
-			}
-
-			if(
-				std::ranges::any_of(valueView, [](const char c){
-					return
-						c == '.' ||
-						c == 'f' ||
-						c == 'F' ||
-						c == 'e' ||
-						c == 'E';
-				})){
-				data.emplace<Float>(parseFloat(valueView));
-
-				return;
-			}
-
-			if(frontChar == '0'){
-				if(valueView.size() >= 2){
-					switch(valueView[1]){
-						case 'x' : data.emplace<Integer>(parseInt(valueView.substr(2), 16));
-							break;
-						case 'b' : data.emplace<Integer>(parseInt(valueView.substr(2), 2));
-							break;
-						default : data.emplace<Integer>(parseInt(valueView.substr(1), 8));
-							break;
-					}
-				} else{
-					data.emplace<Integer>(0);
-				}
-			} else{
-				data.emplace<Integer>(parseInt(valueView));
-			}
-		}
-
-		void print(std::ostream& os, const bool flat = false, const bool noSpace = false, const unsigned padSize = 1, const unsigned depth = 1) const{
+		//TODO better format
+		void print(std::ostream& os, const bool flat = false, const bool noSpace = false, const unsigned padSize = 1,
+			const unsigned depth = 1) const{
 			const std::string pad(flat ? 0 : depth * padSize, ' ');
 			const std::string_view endRow =
 				flat
@@ -590,67 +415,207 @@ export namespace ext::json{
 			return os;
 		}
 	};
+}
 
+namespace ext::json{
+	constexpr std::string_view ArraySignature = std::string_view{"$arr"};
 
-	class Json{
-		JsonValue root{};
-		std::string strData{};
+	constexpr std::string_view trim(const std::string_view view, const std::string_view def = {"null"}){
+		constexpr std::string_view Empty = " \t\n\r\f\v";
+		const auto first = view.find_first_not_of(Empty);
 
-		void updateJsonData(){
-			flattenString();
-			root.parseObject(strData);
+		if(first == std::string_view::npos){
+			return {};
 		}
 
-	public:
-		Json() = default;
+		const auto last = view.find_last_not_of(Empty);
+		return view.substr(first, last - first + 1);
+	}
 
-		explicit Json(const JsonValue& root)
-			: root{root}{}
+	struct Scope{
+		// std::vector<std::pair<std::size_t, std::size_t>> jumpPoints{};
+		std::string_view code{};
 
-		explicit Json(const std::string& strData)
-			: strData{strData}{
-			updateJsonData();
+		std::vector<std::pair<std::string_view, Scope>> args{};
+
+		[[nodiscard]] bool isLeaf() const{
+			return args.empty();
 		}
 
-		explicit Json(std::string&& strData)
-			: strData{std::move(strData)}{
-			updateJsonData();
+		[[nodiscard]] bool isArray_OnGenerate() const{
+			return code == ArraySignature;
 		}
 
-		/**
-		 * @brief This is not always valid!
-		 * @return
-		 */
-		[[nodiscard]] constexpr const std::string& getStrData() const noexcept{ return strData; }
-
-		[[nodiscard]] constexpr const JsonValue& getData() const noexcept{ return root; }
-
-		[[nodiscard]] constexpr JsonValue& getData() noexcept{ return root; }
-
-		void parse(const std::string& str){
-			strData = str;
-			updateJsonData();
+		[[nodiscard]] bool isArray() const{
+			return !code.empty() && code.front() == '[';
 		}
 
-		void parse(std::string&& str){
-			strData = std::move(str);
-			updateJsonData();
+		[[nodiscard]] bool isObject() const{
+			return !code.empty() && code.front() == '{';
+		}
+	};
+
+	static JsonValue parseBasicValue(const std::string_view view){
+
+		if(view.empty()){
+			throw IllegalJsonSegment{"Json with empty value string"};
 		}
 
-		constexpr void flattenString(){
-			std::erase_if(strData, std::not_fn(notIgnore));
+		const auto frontChar = view.front();
+
+		switch(frontChar){
+			case '"' :{
+				if(view.back() != '"' || view.size() == 1)
+					throw IllegalJsonSegment{
+						"Losing '\"' At Json String Back"
+					};
+
+				return JsonValue{std::string(view.substr(1, view.size() - 2))};
+			}
+
+			case 't' : return JsonValue(true);
+			case 'f' : return JsonValue(false);
+			case 'n' : return JsonValue(nullptr);
+			default : break;
 		}
 
-		void updateString(){
-			std::ostringstream ss{};
+		if(view.find_first_of(".fFeE") != std::string_view::npos){
+			return JsonValue(parseFloat(view));
+		}
 
-			root.print(ss);
+		if(frontChar == '0'){
+			if(view.size() >= 2){
+				switch(view[1]){
+					case 'x' : return JsonValue(parseInt(view.substr(2), 16));
+					case 'b' : return JsonValue(parseInt(view.substr(2), 2));
+					default : return JsonValue(parseInt(view.substr(1), 8));
+				}
+			} else{
+				return JsonValue(static_cast<Integer>(0));
+			}
+		} else{
+			return JsonValue(parseInt(view));
+		}
+	}
 
-			strData = std::move(ss).str();
+	JsonValue splitTextToScope(std::string_view text){
+		static constexpr auto Invalid = std::string_view::npos;
+
+		bool escapeTheNext{false};
+		bool parsingString{false};
+
+		struct LayerData{
+			std::size_t layerBegin{};
+			JsonValue value{};
+
+			std::size_t layerLastSplit{};
+			JsonValue* last{};
+
+			void processData(const std::size_t index, const std::string_view text){
+				if(layerLastSplit != Invalid){
+					const auto lastCode = trim(text.substr(layerLastSplit + 1, index - layerLastSplit - 1));
+
+					if(lastCode.empty())return;
+
+					if(value.is<object>()){
+						last->operator=(parseBasicValue(lastCode));
+					}
+
+					if(value.is<array>()){
+						value.asArray().push_back(parseBasicValue(lastCode));
+					}
+				}
+
+				layerLastSplit = index;
+			}
+		};
+
+		std::stack<LayerData> layers{};
+
+		for(const auto [index, character] : text | std::ranges::views::enumerate){
+			if(escapeTheNext){
+				escapeTheNext = false;
+				continue;
+			}
+
+			if(character == '\\'){
+				escapeTheNext = true;
+				continue;
+			}
+
+			if(character == '"'){
+				if(!parsingString){
+					parsingString = true;
+				} else{
+					parsingString = false;
+				}
+			}
+
+			if(parsingString) continue;
+
+			switch(character){
+				case ':' :{
+					auto& [begin, layer, split, last] = layers.top();
+					auto lastKey = trim(text.substr(split + 1, index - split - 1));
+					last = &layer.asObject().insert_or_assign(lastKey.substr(1, lastKey.size() - 2), JsonValue{nullptr}).first->second;
+
+					split = index;
+
+					break;
+				}
+
+				case '[' :{
+					layers.emplace(index, JsonValue{Array{}}, index);
+					break;
+				}
+
+				case '{' :{
+					layers.emplace(index, JsonValue{Object{}}, index);
+					break;
+				}
+
+				case ']' :
+				case '}' :{
+					auto lastLayer = std::move(layers.top());
+					layers.pop();
+
+					lastLayer.processData(index, text);
+
+					if(layers.empty()) return std::move(lastLayer.value);
+
+					auto& [pos, ly, split, last] = layers.top();
+
+					if(ly.is<object>()){
+						last->operator=(std::move(lastLayer.value));
+					}
+
+					if(ly.is<array>()){
+						ly.asArray().push_back(std::move(lastLayer.value));
+					}
+
+					split = Invalid;
+
+					break;
+				}
+
+				case ',' :{
+					layers.top().processData(index, text);
+				}
+				default : break;
+			}
+		}
+
+		std::unreachable();
+	}
+}
+
+export namespace ext::json{
+	struct Parser{
+		static JsonValue parse(const std::string_view view){
+			return splitTextToScope(view);
 		}
 	};
 }
-
 
 export
 template <>
@@ -659,33 +624,30 @@ struct ::std::formatter<ext::json::JsonValue>{
 		return context.begin();
 	}
 
-	bool flat{ false };
-	bool noSpace{ false };
+	bool flat{false};
+	bool noSpace{false};
 	int pad{2};
 
-	constexpr auto parse(std::format_parse_context& context)
-	{
+	constexpr auto parse(std::format_parse_context& context){
 		auto it = context.begin();
-		if (it == context.end())
-			return it;
+		if(it == context.end()) return it;
 
-		if (*it == 'n'){
+		if(*it == 'n'){
 			noSpace = true;
 			++it;
 		}
 
-		if (*it == 'f'){
+		if(*it == 'f'){
 			flat = true;
 			++it;
 		}
 
-		if (*it >= '0' && *it <= '9'){
+		if(*it >= '0' && *it <= '9'){
 			pad = *it - '0';
 			++it;
 		}
 
-		if (it != context.end() && *it != '}')
-			throw std::format_error("Invalid format");
+		if(it != context.end() && *it != '}') throw std::format_error("Invalid format");
 
 		return it;
 	}

@@ -2,8 +2,8 @@ module;
 
 export module Geom.Shape.RectBox;
 
-import Geom.Vector2D;
 import Geom.Rect_Orthogonal;
+import Geom.Transform;
 
 import Math;
 import std;
@@ -286,6 +286,10 @@ export namespace Geom {
 		 */
 		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
 			return sizeVec2.length2() * (scale + lengthRadiusRatio) * mass;
+		}
+
+		constexpr void update(const Transform transform){
+			update(transform.vec, transform.rot);
 		}
 
 		constexpr void update(const Vec2 pos, const float rot) {

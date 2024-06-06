@@ -1,7 +1,7 @@
 module;
 
 #include "../src/code-gen/ReflectData_Builtin.hpp"
-#include "../src/arc/util/ReflectionUtil.hpp"
+#include "../src/ext/ReflectionUtil.hpp"
 
 export module SideTemp;
 
@@ -104,7 +104,6 @@ export namespace Test{
 		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
 		OS::File pixmap{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
 
-
 		if constexpr(false){
 			auto pixmap_ = Graphic::Pixmap{pixmap};
 			::Test::chamberFrame->getChambers() = Game::ChamberUtil::genFrameFromPixmap<Game::SpaceCraft>(
@@ -114,10 +113,18 @@ export namespace Test{
 
 			fi.writeString(std::format("{:nf0}", jval));
 		} else{
-			ext::json::Json json{fi.quickRead()};
+			auto str = fi.quickRead();
 
-			ext::json::getValueTo(::Test::chamberFrame->getChambers(), json.getData());
+			auto cur = std::chrono::high_resolution_clock::now();
+
+			ext::json::JsonValue jval{ext::json::Parser::parse(str)};
+
+			auto dur = std::chrono::high_resolution_clock::now() - cur;
+			std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(dur) << std::endl;
+
+			ext::json::getValueTo(::Test::chamberFrame->getChambers(), jval);
 		}
+
 	}
 
 	void genRandomEntities(){

@@ -2,6 +2,7 @@ module;
 
 export module Graphic.Pixmap;
 
+import Geom.Vector2D;
 import ext.RuntimeException;
 import GL.Texture.Texture2D;
 import GL.Buffer.FrameBuffer;
@@ -39,6 +40,10 @@ export namespace Graphic{
 
         [[nodiscard]] int getHeight() const {
             return height;
+        }
+
+        [[nodiscard]] Geom::Point2 getSize() const{
+            return {width, height};
         }
 
         // [[nodiscard]] unsigned getBpp() const {
@@ -148,10 +153,10 @@ export namespace Graphic{
             return bitmapData[index];
         }
 
-        void mix(const Color color, const float t) const{
+        void mix(const Color color, const float alpha) const{
             for(int i = 0; i < pixelSize(); ++i){
                 Color src = get(i);
-                set(i, src.lerpRGB(color, t));
+                set(i, src.lerpRGB(color, alpha));
             }
         }
 
