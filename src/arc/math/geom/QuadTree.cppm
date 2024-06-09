@@ -292,10 +292,10 @@ namespace Geom{
 			func(*this);
 
 			if(!isLeaf()){
-				topLeft->each(std::forward<Func>(func));
-				topRight->each(std::forward<Func>(func));
-				bottomLeft->each(std::forward<Func>(func));
-				bottomRight->each(std::forward<Func>(func));
+				topLeft->each(func);
+				topRight->each(func);
+				bottomLeft->each(func);
+				bottomRight->each(func);
 			}
 		}
 
@@ -432,10 +432,10 @@ namespace Geom{
 
 			//If this node has children, check if the rectangle overlaps with any rectangle in the children
 			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
-				topLeft->intersectRect(rect, std::forward<decltype(func)>(func));
-				topRight->intersectRect(rect, std::forward<decltype(func)>(func));
-				bottomLeft->intersectRect(rect, std::forward<decltype(func)>(func));
-				bottomRight->intersectRect(rect, std::forward<decltype(func)>(func));
+				topLeft->intersectRect(rect, func);
+				topRight->intersectRect(rect, func);
+				bottomLeft->intersectRect(rect, func);
+				bottomRight->intersectRect(rect, func);
 			}
 
 			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
@@ -452,10 +452,10 @@ namespace Geom{
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
 			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
-				topLeft->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
-				topRight->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
-				bottomLeft->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
-				bottomRight->template intersectRegion<Region>(region, std::forward<decltype(boundCheck)>(boundCheck), std::forward<decltype(func)>(func));
+				topLeft->template intersectRegion<Region>(region, boundCheck, func);
+				topRight->template intersectRegion<Region>(region, boundCheck, func);
+				bottomLeft->template intersectRegion<Region>(region, boundCheck, func);
+				bottomRight->template intersectRegion<Region>(region, boundCheck, func);
 			}
 
 			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
@@ -463,20 +463,20 @@ namespace Geom{
 			}
 		}
 
-		void intersectPoint(const Vec2 point, Concepts::Invokable<void(ItemTy&)> auto&& pred){
+		void intersectPoint(const Vec2 point, Concepts::Invokable<void(ItemTy&)> auto&& func){
 			if(!this->inbound(point)) return;
 
 			// If this node has children, check if the rectangle overlaps with any rectangle in the children
 			if(auto _ = this->getLeafGruard_Shared(); !isLeaf()){
-				topLeft->intersectPoint(point, std::forward<decltype(pred)>(pred));
-				topRight->intersectPoint(point, std::forward<decltype(pred)>(pred));
-				bottomLeft->intersectPoint(point, std::forward<decltype(pred)>(pred));
-				bottomRight->intersectPoint(point, std::forward<decltype(pred)>(pred));
+				topLeft->intersectPoint(point, func);
+				topRight->intersectPoint(point, func);
+				bottomLeft->intersectPoint(point, func);
+				bottomRight->intersectPoint(point, func);
 			}
 
 			for(auto _ = this->getItemGruard_Shared(); auto* cont : items){
 				if(this->intersectWith(point, *cont)){
-					pred(*cont);
+					func(*cont);
 				}
 			}
 		}

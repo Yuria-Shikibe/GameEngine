@@ -5,7 +5,7 @@ export module Game.Entity.EntityMap;
 
 export import Game.Entity;
 import ext.Container.ObjectPool;
-import Event;
+import ext.Event;
 import ext.Concepts;
 import std;
 
@@ -19,8 +19,8 @@ export namespace Game {
 		using StoreType = std::shared_ptr<T>;
 		using ValueType = T;
 
-		struct AddEvent final : Event::EventType {T* entity{nullptr};};
-		struct RemoveEvent final : Event::EventType {T* entity{nullptr};};
+		struct AddEvent final : ext::EventType {T* entity{nullptr};};
+		struct RemoveEvent final : ext::EventType {T* entity{nullptr};};
 
 	protected:
 		AddEvent addEvent{};
@@ -30,9 +30,9 @@ export namespace Game {
 	public:
 		std::unordered_map<IDType, std::shared_ptr<T>> idMap{std::unordered_map<IDType, std::shared_ptr<T>>{5000}};
 
-		Event::EventManager groupListener{
-			Event::indexOf<AddEvent>(),
-			Event::indexOf<RemoveEvent>()
+		ext::EventManager groupListener{
+			ext::indexOf<AddEvent>(),
+			ext::indexOf<RemoveEvent>()
 		};
 
 		std::mutex removeLock{};

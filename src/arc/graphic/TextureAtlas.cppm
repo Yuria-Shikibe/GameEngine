@@ -30,9 +30,9 @@ export namespace Graphic {
 	class TextureAtlas {
 	protected:
 		std::unordered_map<std::string_view, Assets::TexturePackPage> pages{};
-		ext::StringMap<GL::TextureRegion*> regions{};
+		ext::StringHashMap<GL::TextureRegion*> regions{};
 
-		ext::StringMap<std::unique_ptr<GL::Texture2DArray>> textureGroups{};
+		ext::StringHashMap<std::unique_ptr<GL::Texture2DArray>> textureGroups{};
 
 		const GL::TextureRegion* fallbackTextureRegion{nullptr};
 
@@ -191,7 +191,7 @@ export namespace Graphic {
 			return pages;
 		}
 
-		[[nodiscard]] ext::StringMap<GL::TextureRegion*>& getRegions(){
+		[[nodiscard]] ext::StringHashMap<GL::TextureRegion*>& getRegions(){
 			return regions;
 		}
 

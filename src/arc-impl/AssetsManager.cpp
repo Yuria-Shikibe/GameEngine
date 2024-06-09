@@ -16,7 +16,7 @@ import Font;
 import OS.File;
 import Font.GlyphArrangement;
 import OS;
-import Event;
+import ext.Event;
 
 void Assets::Manager::pullRequest() {
 	loadEvents.fire(AssetsLoadInit{this});
@@ -86,7 +86,7 @@ void Assets::Manager::loadPost() {
 	Assets::loadAfter();
 
 	Font::defGlyphParser->context.defaultFont = Assets::Fonts::telegrama;
-	Font::defGlyphParser->fontLib = fonts.atlas.get();
+	Font::defGlyphParser->loadedFonts = fonts.atlas.get();
 }
 
 void Assets::Manager::loadEnd() {

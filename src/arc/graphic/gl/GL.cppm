@@ -135,7 +135,7 @@ export namespace GL {
         INVERT = GL_INVERT,
     };
 
-    int getMaxTextureSize() {
+    int getMaxTextureSize() noexcept{
         return maxTexSize;
     }
     

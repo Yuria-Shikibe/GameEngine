@@ -2,11 +2,11 @@ module;
 
 export module UI.Flags;
 
-import Event;
+import ext.Event;
 import Geom.Vector2D;
 
 export namespace UI {
-	using Event::EventType;
+	using ext::EventType;
 
 	enum class MouseInbound {
 		inbound = 1, outbound = 0

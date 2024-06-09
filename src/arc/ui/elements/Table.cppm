@@ -116,7 +116,7 @@ export namespace UI {
 		}
 
 		template <Concepts::Derived<Elem> T>
-		LayoutCell& add(Concepts::Invokable<void(T&)> auto&& func, const unsigned depth = std::numeric_limits<unsigned>::max()) {
+		LayoutCell& add(std::invocable<T&> auto&& func, const unsigned depth = std::numeric_limits<unsigned>::max()) {
 			LayoutCell& cell = tryAdd<T>(depth);
 			cell.applyLayout(defaultCellLayout);
 
@@ -125,8 +125,8 @@ export namespace UI {
 			return cell;
 		}
 
-		template <Concepts::Derived<Elem> T, Concepts::Invokable<void(T&)> Func, typename ...Args>
-		LayoutCell& emplace(Func&& func, Args&& ...args) {
+		template <Concepts::Derived<Elem> T, std::invocable<T&> Func, typename ...Args>
+		LayoutCell& emplace(Func func, Args&& ...args) {
 			LayoutCell& cell = cells.emplace_back(this->addChildren(std::make_unique<T>(std::forward<Args>(args) ...)));
 			cell.applyLayout(defaultCellLayout);
 
@@ -181,12 +181,13 @@ export namespace UI {
 			cells.clear();
 		}
 
-		void lineFeed() {
-			if(!relativeLayoutFormat || children.empty())return;
+		Table& endline() {
+			if(!relativeLayoutFormat || children.empty() || children.back()->isEndingRow())return *this;
 
 			elemLayoutMaxCount.y++;
 			children.back()->setEndRow(true);
 			changed(ChangeSignal::notifyAll);
+			return *this;
 		}
 
 		void update(const Core::Tick delta) override {

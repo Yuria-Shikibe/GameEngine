@@ -8,7 +8,7 @@ import std;
 import GL.Buffer.FrameBuffer;
 import GL;
 import GL.Shader;
-import Event;
+import ext.Event;
 import Graphic.Color;
 import Graphic.Resizeable;
 import Graphic.PostProcessor;
@@ -24,8 +24,8 @@ export namespace Core{
 	class Renderer;
 }
 
-export namespace Event{
-	struct DrawEvent : Event::EventType{
+export namespace ext{
+	struct DrawEvent : ext::EventType{
 		::Core::Renderer* const renderer;
 
 		[[nodiscard]] explicit DrawEvent(::Core::Renderer* const renderer)
@@ -63,17 +63,17 @@ export namespace Core{
 		std::vector<Resizeable*> synchronizedSizedObjects{};
 
 		int width{200}, height{200};
-		Event::EventManager drawControlHook{
-				Event::indexOf<Event::Draw_After>(),
-				Event::indexOf<Event::Draw_Post>(),
-				Event::indexOf<Event::Draw_Prepare>(),
-				Event::indexOf<Event::Draw_Overlay>()
+		ext::EventManager drawControlHook{
+				ext::indexOf<ext::Draw_After>(),
+				ext::indexOf<ext::Draw_Post>(),
+				ext::indexOf<ext::Draw_Prepare>(),
+				ext::indexOf<ext::Draw_Overlay>()
 			};
 
-		Event::Draw_Post draw_post{this};
-		Event::Draw_Prepare draw_prepare{this};
-		Event::Draw_After draw_after{this};
-		Event::Draw_Overlay draw_overlay{this};
+		ext::Draw_Post draw_post{this};
+		ext::Draw_Prepare draw_prepare{this};
+		ext::Draw_After draw_after{this};
+		ext::Draw_Overlay draw_overlay{this};
 
 	public:
 		GL::FrameBuffer defaultFrameBuffer{};
@@ -98,7 +98,7 @@ export namespace Core{
 			Renderer::resize(w, h);
 		}
 
-		Event::EventManager& getListener(){
+		ext::EventManager& getListener(){
 			return drawControlHook;
 		}
 

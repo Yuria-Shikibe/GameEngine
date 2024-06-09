@@ -7,7 +7,7 @@ export module OS;
 import std;
 import std.compat;
 
-import Event;
+import ext.Event;
 import StackTrace;
 import ext.Concepts;
 import OS.ApplicationListener;
@@ -46,7 +46,7 @@ export namespace OS{
 
 	void exitApplication(const int s) {exitApplication(s, "");}
 
-	Event::CycleSignalManager updateSignalManager{};
+	ext::CycleSignalManager updateSignalManager{};
 
 	Core::PlatformHandle::DeltaSetter deltaSetter;
 	Core::PlatformHandle::TimerSetter timerSetter;
@@ -142,7 +142,7 @@ export namespace OS{
 	}
 
 	void update(){
-		updateSignalManager.fire(Event::CycleSignalState::begin);
+		updateSignalManager.fire(ext::CycleSignalState::begin);
 
 		handleTasks();
 
@@ -160,7 +160,7 @@ export namespace OS{
 		// 	listener->updatePost(deltaTick_internal);
 		// }
 
-		updateSignalManager.fire(Event::CycleSignalState::end);
+		updateSignalManager.fire(ext::CycleSignalState::end);
 	}
 }
 

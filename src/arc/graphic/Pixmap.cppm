@@ -42,7 +42,7 @@ export namespace Graphic{
             return height;
         }
 
-        [[nodiscard]] Geom::Point2 getSize() const{
+        [[nodiscard]] Geom::Point2 size2D() const{
             return {width, height};
         }
 
@@ -125,7 +125,7 @@ export namespace Graphic{
             return *this;
         }
 
-        [[nodiscard]] bool valid() const {
+        [[nodiscard]] constexpr bool valid() const noexcept{
             return bitmapData != nullptr && pixelSize() > 0;
         }
 
@@ -142,7 +142,7 @@ export namespace Graphic{
 
         void free() {
             width = height = 0;
-            if(bitmapData)bitmapData.reset(nullptr);
+            bitmapData.reset(nullptr);
         }
 
         void fill(const Color color) const{

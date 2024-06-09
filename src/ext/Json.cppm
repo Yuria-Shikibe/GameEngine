@@ -13,7 +13,7 @@ export namespace ext::json{
 
 	using Integer = std::int64_t;
 	using Float = std::double_t;
-	using Object = StringMap<JsonValue>;
+	using Object = StringHashMap<JsonValue>;
 	using Array = std::vector<JsonValue>;
 
 	template <typename T>
@@ -25,20 +25,21 @@ export namespace ext::json{
 		 * @brief Indeicate this json info refer to a Polymorphic Class
 		 */
 		constexpr std::string_view Typename = "$ty"; //type
-		constexpr std::string_view Tag = "$t";       //tag
-		constexpr std::string_view ID = "$i";        //id
+		constexpr std::string_view Tag = "$tag";       //tag
+		constexpr std::string_view ID = "$id";        //id
 		constexpr std::string_view Data = "$d";      //data
-		constexpr std::string_view Version = "$v";   //version
-		constexpr std::string_view Pos = "$p";       //position
-		constexpr std::string_view Size2D = "$s2";   //size 2D
-		constexpr std::string_view Size = "$s1";     //size 1D
+		constexpr std::string_view Version = "$ver";   //version
+		constexpr std::string_view Pos = "$pos";       //position
+		constexpr std::string_view Size2D = "$sz2";   //size 2D
+		constexpr std::string_view Size = "$sz1";     //size 1D
 		constexpr std::string_view Bound = "$b";     //bound
 
-		constexpr std::string_view Key = "$k";   //key
-		constexpr std::string_view Value = "$v"; //value
+		constexpr std::string_view Key = "$key";   //key
+		constexpr std::string_view Value = "$val"; //value
 
-		constexpr std::string_view First = "$f";   //first
-		constexpr std::string_view Secound = "$s"; //second
+		constexpr std::string_view First = "$fst";   //first
+		constexpr std::string_view Secound = "$sec"; //second
+		constexpr std::string_view Count = "$cnt"; //second
 	}
 
 
@@ -126,7 +127,7 @@ export namespace ext::json{
 
 		static constexpr auto VariantSize = std::variant_size_v<decltype(data)>;
 
-		JsonValue() = default;
+		constexpr JsonValue() = default;
 
 		template <typename T>
 			requires validType<T> && !std::is_arithmetic_v<T>
@@ -196,6 +197,14 @@ export namespace ext::json{
 		}
 
 		template <typename T>
+			requires std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>
+		[[nodiscard]] constexpr JsonScalarType<T> getOr(const T def) const noexcept{
+			auto* val = tryGetValue<JsonScalarType<T>>();
+			if(val)return *val;
+			return def;
+		}
+
+		template <typename T>
 			requires JsonValue::validType<T> || (std::is_arithmetic_v<T> && JsonValue::validType<JsonScalarType<T>>)
 		[[nodiscard]] constexpr decltype(auto) as(){
 			if constexpr(std::is_arithmetic_v<T>){
@@ -227,7 +236,7 @@ export namespace ext::json{
 
 		auto& asObject(){
 			if(getTag() != object){
-				setData(ext::StringMap<JsonValue>{});
+				setData(ext::StringHashMap<JsonValue>{});
 			}
 
 			return std::get<Object>(data);
@@ -415,6 +424,8 @@ export namespace ext::json{
 			return os;
 		}
 	};
+
+	constexpr JsonValue NullJval{};
 }
 
 namespace ext::json{
@@ -498,7 +509,7 @@ namespace ext::json{
 		}
 	}
 
-	JsonValue splitTextToScope(std::string_view text){
+	JsonValue parseJsonFromString(std::string_view text){
 		static constexpr auto Invalid = std::string_view::npos;
 
 		bool escapeTheNext{false};
@@ -610,11 +621,9 @@ namespace ext::json{
 }
 
 export namespace ext::json{
-	struct Parser{
-		static JsonValue parse(const std::string_view view){
-			return splitTextToScope(view);
-		}
-	};
+	[[nodiscard]] JsonValue parse(const std::string_view view){
+		return parseJsonFromString(view);
+	}
 }
 
 export

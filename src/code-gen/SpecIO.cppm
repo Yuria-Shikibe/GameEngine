@@ -9,12 +9,12 @@ export import Game.Entity.SpaceCraft;
 export import Game.Chamber;
 export import Game.Chamber.Frame;
 
-export
-template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberGrid<
-		Game::SpaceCraft>> : Game::ChamberGrid<Game::SpaceCraft>::JsonSrl{};
-
-export
-template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
+// export
+// template <>
+// struct ::Core::IO::JsonSerializator<Game::ChamberGrid<
+// 		Game::SpaceCraft>> : Game::ChamberGrid<Game::SpaceCraft>::JsonSrl{};
+//
+// export
+// template <>
+// struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
 

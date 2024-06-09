@@ -25,7 +25,7 @@ import Graphic.Draw;
 import Assets.Graphic;
 import GL.Shader.UniformWrapper;
 
-import ext.BooleanOperation;
+import ext.bool_merge;
 
 //TODO move the timer to other place
 //TODO continas a timer in root maybe
@@ -57,7 +57,7 @@ namespace Game::Scene{
 
 		UI::BoxSelection<int> boxSelection{};
 		ChamberFilter filterType{};
-		ext::BooleanOperation booleanOperation{};
+		ext::algo::merge_policy booleanOperation{};
 
 		Geom::OrthoRectInt getTileBound() const{
 			if(slider){
@@ -142,13 +142,13 @@ namespace Game::Scene{
 						auto& imageRegion = button.add<UI::ImageRegion>([this](UI::ImageRegion& image){
 							image.setEmptyDrawer();
 							image.scaling = Align::Scale::fit;
-							image.setDrawable(UI::Icons::iconMap.at(ext::getBoolOpName(booleanOperation)).get());
+							image.setDrawable(UI::Icons::iconMap.at(ext::algo::getBoolOpName(booleanOperation)).get());
 						}).setSize(60.f).as<UI::ImageRegion>();
 
 						button.add<UI::Label>([this](UI::Label& label){
 							label.setEmptyDrawer();
 							label.setText([this]{
-								return std::string(getBundleEntry(ext::getBoolOpName(booleanOperation)));
+								return std::string(getBundleEntry(ext::algo::getBoolOpName(booleanOperation)));
 							});
 							label.setTextAlign(Align::Layout::top_left);
 							label.setTextScl(0.4f);
@@ -159,7 +159,7 @@ namespace Game::Scene{
 								.minHoverTime = UI::DisableAutoTooltip,
 								.builder = [this, &imageRegion](UI::Table& section){
 									section.setCellAlignMode(Align::Layout::center);
-									for(auto [op, name] : ext::AllNamedBoolOp){
+									for(auto [op, name] : ext::algo::AllNamedBoolOp){
 										section.add<UI::Button>([op, name, this, &imageRegion](UI::Button& select){
 											select.setDrawer(UI::Styles::drawer_elem_s1_noEdge.get());
 											select.add<UI::ImageRegion>([op, name, this](UI::ImageRegion& image){
@@ -170,7 +170,7 @@ namespace Game::Scene{
 
 											select.setCall([this, op, &imageRegion](auto&){
 												booleanOperation = op;
-												imageRegion.setDrawable(UI::Icons::iconMap.at(ext::getBoolOpName(booleanOperation)).get());
+												imageRegion.setDrawable(UI::Icons::iconMap.at(ext::algo::getBoolOpName(booleanOperation)).get());
 											});
 
 											select.setActivatedChecker([this, op](UI::Elem& select_1){
@@ -319,7 +319,7 @@ namespace Game::Scene{
 									}
 								});
 
-								ext::booleanConj(booleanOperation, selected, std::move(newSelected));
+								ext::algo::bool_merge(booleanOperation, selected, std::move(newSelected));
 							});
 				}
 			});

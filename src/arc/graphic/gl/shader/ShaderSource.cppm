@@ -86,12 +86,12 @@ export namespace GL {
 		};
 
 	protected:
-		ext::StringMap<UniformInfo> uniformInfoMap{};
+		ext::StringHashMap<UniformInfo> uniformInfoMap{};
 		GLuint programID = 0;
 		std::function<void(const ShaderProgram&)> uniformSetter = [](const ShaderProgram&){};
 
 	public:
-		[[nodiscard]] ext::StringMap<UniformInfo>& getUniformInfoMap() noexcept{ return uniformInfoMap; }
+		[[nodiscard]] ext::StringHashMap<UniformInfo>& getUniformInfoMap() noexcept{ return uniformInfoMap; }
 
 		[[nodiscard]] GLuint getProgramId() const noexcept{ return programID; }
 
@@ -381,7 +381,7 @@ export namespace GL {
 		void readSource() {
 			for(auto& [file, source] : typeList | std::views::values) {
 
-				source = shaderDir.find(file).quickRead();
+				source = shaderDir.find(file).readString();
 			}
 		}
 

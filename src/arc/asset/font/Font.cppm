@@ -9,6 +9,7 @@ import std;
 
 import ext.Async;
 import Assets.Loader;
+// import Assets.Load.Core;
 
 import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
@@ -19,7 +20,7 @@ import Graphic.Pixmap;
 import ext.RuntimeException;
 import OS.File;
 import Image;
-import Event;
+import ext.Event;
 import Math;
 import ext.Heterogeneous;
 
@@ -29,31 +30,6 @@ using Graphic::Pixmap;
 namespace Font {
 	void exitLoad(const std::string& fontName) {
 		throw ext::RuntimeException{"Font Load Failed : " + fontName};
-	}
-
-	std::fstream obtainStream(const OS::File& file) {
-		return std::fstream{file.absolutePath(), std::ios::binary | std::ios::in | std::ios::out};
-	}
-
-	void readCacheVersion(std::istream& stream, unsigned char& version) {
-		stream.read(reinterpret_cast<char*>(&version), sizeof(version));
-	}
-
-	void readCacheVersion(std::istream&& stream, unsigned char& version) {
-		stream.read(reinterpret_cast<char*>(&version), sizeof(version));
-	}
-
-	void saveCacheVersion(std::ostream& stream, const unsigned char& version) {
-		stream.write(reinterpret_cast<const char*>(&version), sizeof(version));
-	}
-
-	//Just use 'size', not EOF, just my preference...
-	void readCacheDataSize(std::istream& stream, size_t& size) {
-		stream.read(reinterpret_cast<char*>(&size  ), sizeof(size  ));
-	}
-
-	void saveCacheDataSize(std::ostream& stream, const size_t size) {
-		stream.write(reinterpret_cast<const char*>(&size  ), sizeof(size  ));
 	}
 
 	void writeIntoPixmap(const FT_Bitmap& map, unsigned char* data) {
@@ -124,6 +100,11 @@ export namespace Font{
 		FT_Glyph_Metrics glyphMatrices{};
 		GL::TextureRegion* region{};
 
+		[[nodiscard]] CharData() = default;
+
+		[[nodiscard]] explicit CharData(const FT_Glyph_Metrics& glyphMatrices)
+			: glyphMatrices{glyphMatrices}{}
+
 		template <Concepts::Number T>
 		[[nodiscard]] constexpr Geom::Vector2D<T> getSize() const{
 			return {normalizeLen<T>(glyphMatrices.width), normalizeLen<T>(glyphMatrices.height)};
@@ -132,17 +113,15 @@ export namespace Font{
 
 	//TODO Should this be exported?
 	struct FontData_Preload{
-		FT_Glyph_Metrics glyphMatrices{};
+		mutable CharData charData{};
 		CharCode charCode{0};
 		Graphic::Pixmap pixmap{};
-
-		mutable GL::TextureRegion* region{};
 
 		[[nodiscard]] FontData_Preload() = default;
 
 		[[nodiscard]] FontData_Preload(const CharCode charCode, const FT_GlyphSlot glyph) : // NOLINT(*-misplaced-const)
+			charData(glyph->metrics),
 			charCode(charCode),
-			glyphMatrices(glyph->metrics),
 			pixmap(glyph->bitmap.width, glyph->bitmap.rows)
 		{
 			if(glyph->bitmap.buffer) {
@@ -151,22 +130,12 @@ export namespace Font{
 		}
 
 		FontData_Preload(const FT_Glyph_Metrics& glyphMatrices, const CharCode charCode, Graphic::Pixmap&& pixmap)
-			: glyphMatrices{glyphMatrices},
+			: charData{glyphMatrices},
 			  charCode{charCode},
 			  pixmap{std::move(pixmap)}{}
 
 		[[nodiscard]] Geom::Point2U getSize() const{
-			return {normalizeLen<unsigned>(glyphMatrices.width), normalizeLen<unsigned>(glyphMatrices.height)};
-		}
-
-		void write(std::ostream& ostream) const{
-			ostream.write(reinterpret_cast<const char*>(&charCode), sizeof(charCode));
-			ostream.write(reinterpret_cast<const char*>(&glyphMatrices), sizeof(glyphMatrices));
-		}
-
-		void read(std::istream& istream){
-			istream.read(reinterpret_cast<char*>(&charCode), sizeof(charCode));
-			istream.read(reinterpret_cast<char*>(&glyphMatrices), sizeof(glyphMatrices));
+			return {normalizeLen<unsigned>(charData.glyphMatrices.width), normalizeLen<unsigned>(charData.glyphMatrices.height)};
 		}
 
 		friend bool operator==(const FontData_Preload& lhs, const FontData_Preload& rhs){
@@ -187,46 +156,26 @@ struct std::hash<Font::FontData_Preload>{
 	}
 };
 
-using PreloadDataSet = std::unordered_set<Font::FontData_Preload,
-ext::MemberHasher<Font::FontData_Preload, &Font::FontData_Preload::charCode>,
-ext::MemberEqualTo<Font::FontData_Preload, &Font::FontData_Preload::charCode>>;
 
-export namespace Font{
+
+namespace Font{
+	export using PreloadDataSet = std::unordered_set<Font::FontData_Preload,
+		ext::MemberHasher<Font::FontData_Preload, &Font::FontData_Preload::charCode>,
+		ext::MemberEqualTo<Font::FontData_Preload, &Font::FontData_Preload::charCode>>;
+
+	export
 	struct FontData {
 		std::unordered_map<CharCode, CharData> charDatas{};
 		float lineSpacingDef{-1};
 
 		explicit FontData(const PreloadDataSet& datas){
 			for (auto&& data : datas){
-				charDatas.try_emplace(data.charCode, data.glyphMatrices, data.region);
-			}
-		}
-
-		void write(std::ostream& ostream) const{
-			const size_t size = charDatas.size();
-			ostream.write(reinterpret_cast<const char*>(&size), sizeof(size));
-
-			for(const auto& [key, value]: charDatas) {
-				ostream.write(reinterpret_cast<const char*>(&key		   ), sizeof(key           ));
-				ostream.write(reinterpret_cast<const char*>(&value.glyphMatrices), sizeof(value.glyphMatrices));
-			}
-		}
-
-		void read(std::istream& istream){
-			size_t size = 0;
-			istream.read(reinterpret_cast<char*>(&size), sizeof(size));
-			charDatas.reserve(size);
-
-			for(size_t i = 0; i < size; ++i) {
-				CharCode key;
-				istream.read(reinterpret_cast<char*>(&key		    ), sizeof(key           ));
-				auto [kv, success] = charDatas.try_emplace(key);
-
-				istream.read(reinterpret_cast<char*>(&kv->second.glyphMatrices), sizeof(kv->second.glyphMatrices));
+				charDatas.try_emplace(data.charCode, data.charData);
 			}
 		}
 	};
 
+	export
 	struct CustomeCharData{
 		CharCode code{};
 		Graphic::Pixmap data{};
@@ -247,23 +196,24 @@ export namespace Font{
 		}
 	};
 
+	export
 	constexpr CharData emptyCharData{};
 
-	struct FontFlags {
+	export
+	struct FontFace {
 		static constexpr auto styleOffset = 16;
 		static constexpr auto familyOffset = 8;
 		static constexpr auto fontOffset = 0;
 
 		OS::File fontFile{};
 		std::vector<CharCode> segments{};
-		FT_Int loadFlags = FT_LOAD_RENDER; //
+		FT_Int loadFlags = FT_LOAD_RENDER;
 		FT_UInt size = 48;
 
 		unsigned char version{};
-
+		unsigned char expectedVersion{};
 
 		FT_Face face{nullptr};
-		unsigned char expectedVersion{};
 
 		std::string styleName{regular};
 		std::string familyName{};
@@ -280,16 +230,12 @@ export namespace Font{
 		FT_UInt internalID{0}; //This should be assigned by internal operation!
 
 		std::unique_ptr<FontData> data{nullptr};
-
 		std::vector<CustomeCharData> customeCharDatas{};
-
 		std::function<bool(FT_Face)> loader = nullptr;
 
-		const FontFlags* fallback{nullptr};
+		const FontFace* fallback{nullptr};
 
-
-
-		[[nodiscard]] FontFlags(
+		[[nodiscard]] FontFace(
 			const OS::File& fontFile,
 			const std::vector<CharCode>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
@@ -305,7 +251,7 @@ export namespace Font{
 			genDefNecessaryCharData();
 		}
 
-		[[nodiscard]] FontFlags(
+		[[nodiscard]] FontFace(
 			OS::File&& fontFile,
 			const std::vector<CharCode>& segments,
 			const FT_Int loadFlags = FT_LOAD_RENDER,
@@ -332,7 +278,7 @@ export namespace Font{
 			if(const auto state = FT_Load_Char(face, charCode, loadFlags); state != 0) {
 				if(state == FT_Err_Invalid_Glyph_Index) {
 					if(fallback){ //Seriously I don't want to use const cast
-						return const_cast<FontFlags*>(fallback)->tryLoad(charCode);
+						return const_cast<FontFace*>(fallback)->tryLoad(charCode);
 					}
 
 					const std::string str = FT_Error_String(state);
@@ -424,11 +370,11 @@ export namespace Font{
 			});
 		}
 
-		[[nodiscard]] const FontFlags* getFallback() const {
+		[[nodiscard]] const FontFace* getFallback() const {
 			return fallback;
 		}
 
-		void setFallback(const FontFlags* const fallback) {
+		void setFallback(const FontFace* const fallback) {
 			this->fallback = fallback;
 		}
 
@@ -476,25 +422,31 @@ export namespace Font{
 			face = nullptr;
 		}
 
-		~FontFlags() {
+		FontFace(const FontFace& other) = delete;
+
+		FontFace(FontFace&& other) noexcept = delete;
+
+		FontFace& operator=(const FontFace& other) = delete;
+
+		FontFace& operator=(FontFace&& other) noexcept = delete;
+
+		~FontFace() {
 			if(!face)FT_Done_Face(face);
 			face = nullptr;
 		}
 	};
 
+	export
 	//this will contain all the fonts with a single texture, for fast batch process
-	struct FontAtlas {
+	struct FontStorage {
 	protected:
 		std::unordered_map<CharCode, std::set<FT_UInt>> supportedFonts{};
-		std::unordered_map<FT_UInt, std::unique_ptr<FontFlags>> fonts{}; //Access it by FontFlags.internalID
+		std::unordered_map<FT_UInt, std::unique_ptr<FontFace>> fonts{}; //Access it by FontFlags.internalID
 
 	public:
-		[[nodiscard]] FontAtlas() = default;
+		[[nodiscard]] FontStorage() = default;
 
-		[[nodiscard]] explicit FontAtlas(std::vector<std::unique_ptr<FontFlags>>& fontsRaw){
-
-			// fontTexture->setScale(GL::TexParams::mipmap_linear_linear);
-
+		[[nodiscard]] explicit FontStorage(std::vector<std::unique_ptr<FontFace>>& fontsRaw){
 			fonts.reserve(fontsRaw.size());
 			for(auto& value: fontsRaw) {
 				//Register valid chars
@@ -506,18 +458,15 @@ export namespace Font{
 					value->data->lineSpacingDef = normalizeLen(value->face->size->metrics.ascender);
 				}
 
-				//The pixmap data for a single font wont be needed anymore in all cases, release it if possible;
-				// if(value->data->fontPixmap)value->data->fontPixmap->free();
-
 				fonts[value->internalID] = std::move(value);
 			}
 		}
 
-		[[nodiscard]] const FontFlags* obtain(const FontFlags* const flag) const {
+		[[nodiscard]] const FontFace* obtain(const FontFace* const flag) const {
 			return obtain(flag->internalID);
 		}
 
-		[[nodiscard]] const FontFlags* obtain(const FT_UInt id) const {
+		[[nodiscard]] const FontFace* obtain(const FT_UInt id) const {
 			if(const auto itr = fonts.find(id); itr != fonts.end()) {
 				return itr->second.get();
 			}
@@ -534,13 +483,13 @@ export namespace Font{
 		}
 	};
 
-	class FontManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
+	class [[deprecated]] FontManager final : public ext::ProgressTask<void, Assets::AssetsTaskHandler>{
 	public: //TODO no public
 		bool quickInit = false;
-		std::vector<std::unique_ptr<FontFlags>> flags{};
-		Event::CycleSignalManager fontLoadListeners{};
+		std::vector<std::unique_ptr<FontFace>> flags{};
+		ext::CycleSignalManager fontLoadListeners{};
 		OS::File rootCacheDir{};
-		std::unique_ptr<FontAtlas> atlas{nullptr};
+		std::unique_ptr<FontStorage> atlas{nullptr};
 		Assets::TexturePackPage* texturePage{nullptr};
 
 		[[nodiscard]] FontManager() = default;
@@ -553,7 +502,7 @@ export namespace Font{
 			rootCacheDir(root_cache_dir), texturePage{texturePage}{
 		}
 
-		FontFlags* registerFont(FontFlags* fontFlags) {
+		FontFace* registerFont(FontFace* fontFlags) {
 			flags.emplace_back(fontFlags);
 			return fontFlags;
 		}
@@ -563,7 +512,7 @@ export namespace Font{
 		}
 
 	private:
-		void loadFont(FontFlags& params) const{
+		void loadFont(FontFace& params) const{
 			const std::string fontFullName = params.fullname();
 
 			if(!params.face)exitLoad(fontFullName);
@@ -700,16 +649,16 @@ export namespace Font{
 					loadedFamily.push_back(flag.familyName);
 				}
 
-				flag.internalID |= static_cast<unsigned char>(i) << FontFlags::fontOffset;
-				flag.internalID |= static_cast<unsigned char>(dst) << FontFlags::familyOffset;
-				flag.internalID |= getStyleID(flag.styleName) << FontFlags::styleOffset;
+				flag.internalID |= static_cast<unsigned char>(i) << FontFace::fontOffset;
+				flag.internalID |= static_cast<unsigned char>(dst) << FontFace::familyOffset;
+				flag.internalID |= getStyleID(flag.styleName) << FontFace::styleOffset;
 			}
 		}
 
 	public:
 		void load() { //Dose not support hot load!
 			//User Customized fonts to load;
-			fontLoadListeners.fire(Event::begin);
+			fontLoadListeners.fire(ext::begin);
 
 			loadAllFace();
 			//Init face data;
@@ -731,10 +680,10 @@ export namespace Font{
 			//Now only [loadTargets, mergedMap] matters. All remain operations should be done in the memory;
 			//FontsManager obtain the texture from the total cache; before this no texture should be generated!
 			if(quickInit) {
-				atlas = std::make_unique<FontAtlas>(flags);
+				atlas = std::make_unique<FontStorage>(flags);
 			}else {
 				postToHandler([this] {
-					atlas = std::make_unique<FontAtlas>(flags);
+					atlas = std::make_unique<FontStorage>(flags);
 				}).get();
 			}
 
@@ -747,7 +696,7 @@ export namespace Font{
 
 			//Release resouces
 
-			fontLoadListeners.fire(Event::end);
+			fontLoadListeners.fire(ext::end);
 			setProgress(1.0f);
 
 			setDone();
@@ -755,7 +704,7 @@ export namespace Font{
 			//Load End
 		}
 
-		std::unique_ptr<FontAtlas> getManager() && {
+		std::unique_ptr<FontStorage> getManager() && {
 			return std::move(atlas);
 		}
 

@@ -45,12 +45,15 @@ export namespace GL{
 		 * \param h
 		 * \param data
 		 */
-		Texture2D(const int w, const int h, unsigned char*&& data) : Texture(GL_TEXTURE_2D, w, h){
-			init(std::forward<unsigned char*>(data));
+		Texture2D(const int w, const int h, const unsigned char* data, const bool initInstantly = true) : Texture(GL_TEXTURE_2D, w, h){
+			if(initInstantly)init(data);
 		}
 
-		Texture2D(const int w, const int h, std::unique_ptr<unsigned char[]>&& data) :
-		Texture2D(w, h, data.release()) {}
+		Texture2D(const int w, const int h, std::unique_ptr<unsigned char[]>&& data, const bool initInstantly = true) : Texture(GL_TEXTURE_2D, w, h), localData{std::move(data)}{
+			if(initInstantly){
+				init();
+			}
+		}
 
 		Texture2D(const int w, const int h) : Texture2D(w, h, nullptr) {
 
@@ -118,14 +121,11 @@ export namespace GL{
 		 * \brief The data will be released after init, uses rv-ref to pass the pointer
 		 * \param data
 		 */
-		void init(unsigned char*&& data){
-			if(data != localData.get())localData.reset(data);
-
+		void init(const unsigned char* data){
 			glCreateTextures(targetFlag, 1, &nameID);
-			glTextureStorage2D(nameID, MipMapGeneralLevel, GL_RGBA8,
-				static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+			glTextureStorage2D(nameID, MipMapGeneralLevel, GL_RGBA8, width, height);
 
-			if(localData)glTextureSubImage2D(nameID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, localData.get());
+			if(data)glTextureSubImage2D(nameID, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
 			//TODO : Check if needed here.
 			setWrap();
 			glGenerateTextureMipmap(nameID);

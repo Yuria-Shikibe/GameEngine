@@ -61,7 +61,7 @@ void Font::GlyphLayout::render(const float alphaMask, float progress) const {
 	}
 }
 
-Font::TypesettingContext::TypesettingContext(const FontFlags* const font): defaultFont(font), currentFont(font),
+Font::TypesettingContext::TypesettingContext(const FontFace* const font): defaultFont(font), currentFont(font),
 	fallbackFont(font) {
 	if(!currentFont) throw ext::NullPointerException{};
 	lineSpacing      = currentFont->data->lineSpacingDef * 1.8f;
@@ -223,7 +223,7 @@ void Font::GlyphParser::parse(const std::shared_ptr<GlyphLayout>& layout) const 
 	layout->updateDrawbound();
 }
 
-void Font::initParser(const FontFlags* const defFont) {
+void Font::initParser(const FontFace* const defFont) {
 	defGlyphParser = std::make_unique<GlyphParser>(defFont);
 
 	defGlyphParser->charParser->registerDefParser();
@@ -253,7 +253,7 @@ void Font::initParser(const FontFlags* const defFont) {
 			} else {
 				data.context.fallbackFont = data.context.currentFont;
 				try {
-					data.context.currentFont = defGlyphParser->fontLib->obtain(std::stoi(static_cast<Font::TextString>(sub)));
+					data.context.currentFont = defGlyphParser->loadedFonts->obtain(std::stoi(static_cast<Font::TextString>(sub)));
 				} catch([[maybe_unused]] std::invalid_argument& e) {
 					//TODO throw maybe ?
 				}

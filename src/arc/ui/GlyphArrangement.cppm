@@ -29,14 +29,14 @@ export namespace Font {
 	using TextLayoutPos = Geom::Point2US;
 
 
-	std::unordered_map<TextView, const FontFlags*> parserableFonts{};
+	std::unordered_map<TextView, const FontFace*> parserableFonts{};
 	std::unordered_map<TextView, Graphic::Color> parserableColors{};
 
-	void registerParserableFont(const Font::FontFlags* const flag) {
+	void registerParserableFont(const Font::FontFace* const flag) {
 		parserableFonts.insert_or_assign(flag->fullname(), flag);
 	}
 
-	void registerParserableFont(const TextView name, const Font::FontFlags* const flag) {
+	void registerParserableFont(const TextView name, const Font::FontFace* const flag) {
 		parserableFonts.insert_or_assign(name, flag);
 	}
 
@@ -294,15 +294,15 @@ export namespace Font {
 		Graphic::Color currentColor = Graphic::Colors::WHITE;
 		Graphic::Color fallbackColor = Graphic::Colors::WHITE;
 
-		const FontFlags* defaultFont{nullptr};
-		const FontFlags* currentFont{nullptr};
-		const FontFlags* fallbackFont{nullptr};
+		const FontFace* defaultFont{nullptr};
+		const FontFace* currentFont{nullptr};
+		const FontFace* fallbackFont{nullptr};
 
-		[[nodiscard]] explicit TypesettingContext(const FontFlags* font);
+		[[nodiscard]] explicit TypesettingContext(const FontFace* font);
 
 		[[nodiscard]] TypesettingContext() = default;
 
-		void set(const FontFlags* const currentFont) {
+		void set(const FontFace* const currentFont) {
 			this->currentFont = currentFont;
 			lineSpacing = currentFont->data->lineSpacingDef * 1.8f;
 			paragraphSpacing = lineSpacing * 1.1f;
@@ -417,7 +417,7 @@ namespace ParserFunctions {
 		static constexpr char TokenBeginCode = '<';
 		static constexpr char TokenEndCode = '>';
 
-		Font::FontAtlas* fontLib{nullptr};
+		Font::FontStorage* loadedFonts{nullptr};
 
 		mutable TypesettingContext context{};
 
@@ -427,7 +427,7 @@ namespace ParserFunctions {
 		/**
 		 * \brief Customizable Fields
 		 */
-		[[nodiscard]] explicit GlyphParser(const FontFlags* const defFont) : context{defFont}{}
+		[[nodiscard]] explicit GlyphParser(const FontFace* const defFont) : context{defFont}{}
 
 		virtual void parse(const std::shared_ptr<GlyphLayout>& layout) const;
 
@@ -501,5 +501,5 @@ namespace ParserFunctions {
 	std::unique_ptr<GlyphParser> defGlyphParser = nullptr;
 	std::unique_ptr<GlyphParser> forwardParser = nullptr;
 
-	void initParser(const FontFlags* defFont);
+	void initParser(const FontFace* defFont);
 }

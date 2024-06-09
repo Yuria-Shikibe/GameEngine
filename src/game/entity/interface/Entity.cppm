@@ -3,7 +3,7 @@ export module Game.Entity;
 import std;
 import ext.RuntimeException;
 import Geom.Rect_Orthogonal;
-import Event;
+import ext.Event;
 
 export import Core.Unit;
 
@@ -38,7 +38,7 @@ export namespace Game {
 
 		std::vector<RemoveCallalble*> sharedGroup{};
 
-		Event::EventManager listener{};
+		ext::EventManager listener{};
 
 	public:
 		[[nodiscard]] bool serializable() const {
@@ -49,7 +49,7 @@ export namespace Game {
 			this->serializationID = serializationID;
 		}
 
-		[[nodiscard]] Event::EventManager& getListener() {
+		[[nodiscard]] ext::EventManager& getListener() {
 			return listener;
 		}
 

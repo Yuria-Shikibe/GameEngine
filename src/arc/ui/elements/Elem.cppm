@@ -10,7 +10,7 @@ export import UI.Action;
 export import UI.CursorType;
 export import UI.Align;
 import UI.SeperateDrawable;
-import Event;
+import ext.Event;
 import Math;
 import Geom.Vector2D;
 import Graphic.Color;
@@ -141,14 +141,14 @@ export namespace UI {
 		//TODO is this necessary?
 		// std::unordered_set<Widget*> focusTarget{};
 
-		Event::EventManager inputListener{
-			Event::indexOf<UI::MouseActionPress>(),
-			Event::indexOf<UI::MouseActionRelease>(),
-			Event::indexOf<UI::MouseActionDrag>(),
-			Event::indexOf<UI::MouseActionDoubleClick>(),
-			Event::indexOf<UI::MouseActionScroll>(),
-			Event::indexOf<UI::CurosrInbound>(),
-			Event::indexOf<UI::CurosrExbound>(),
+		ext::EventManager inputListener{
+			ext::indexOf<UI::MouseActionPress>(),
+			ext::indexOf<UI::MouseActionRelease>(),
+			ext::indexOf<UI::MouseActionDrag>(),
+			ext::indexOf<UI::MouseActionDoubleClick>(),
+			ext::indexOf<UI::MouseActionScroll>(),
+			ext::indexOf<UI::CurosrInbound>(),
+			ext::indexOf<UI::CurosrExbound>(),
 		};
 
 		TouchbilityFlags touchbility = TouchbilityFlags::disabled;
@@ -231,7 +231,7 @@ export namespace UI {
 
 		[[nodiscard]] constexpr Geom::Vec2 getMinimumSize() const noexcept{ return minimumSize; }
 
-		constexpr void setMinimumSize(const Geom::Vec2 minimumSize) noexcept{
+		void setMinimumSize(const Geom::Vec2 minimumSize){
 			this->minimumSize = minimumSize;
 			setWidth(Math::max(minimumSize.x, getWidth()));
 			setHeight(Math::max(minimumSize.y, getHeight()));
@@ -239,7 +239,7 @@ export namespace UI {
 
 		[[nodiscard]] constexpr Geom::Vec2 getMaximumSize() const noexcept{ return maximumSize; }
 
-		constexpr void setMaximumSize(const Geom::Vec2 maximumSize) noexcept{
+		void setMaximumSize(const Geom::Vec2 maximumSize){
 			this->maximumSize = maximumSize;
 			setWidth(Math::min(maximumSize.x, getWidth()));
 			setHeight(Math::min(maximumSize.y, getHeight()));
@@ -424,22 +424,37 @@ export namespace UI {
 			changed(UI::ChangeSignal::notifyAll);
 		}
 
-		/** @return true if changed */
-		virtual bool setWidth(float w) noexcept{
-			w = clampTargetWidth(w);
-			if(Math::equal(bound.getWidth(), w))return false;
-			bound.setWidth(w);
-			changed(UI::ChangeSignal::notifyAll);
-			return true;
-		}
-
-		/** @return true if changed */
-		virtual bool setHeight(float h) noexcept{
+	protected:
+		virtual bool setHeight_Quiet(float h){
 			h = clampTargetHeight(h);
 			if(Math::equal(bound.getHeight(), h))return false;
 			bound.setHeight(h);
-			changed(UI::ChangeSignal::notifyAll);
 			return true;
+		}
+
+		virtual bool setWidth_Quiet(float w){
+			w = clampTargetWidth(w);
+			if(Math::equal(bound.getWidth(), w))return false;
+			bound.setWidth(w);
+			return true;
+		}
+	public:
+		/** @return true if changed */
+		bool setWidth(float w){
+			if(setWidth_Quiet(w)){
+				changed(UI::ChangeSignal::notifyAll);
+				return true;
+			}
+			return false;
+		}
+
+		/** @return true if changed */
+		bool setHeight(float h){
+			if(setHeight_Quiet(h)){
+				changed(UI::ChangeSignal::notifyAll);
+				return true;
+			}
+			return false;
 		}
 
 		/** @return true if changed */
@@ -526,6 +541,10 @@ export namespace UI {
 
 		void setActivatedChecker(const decltype(activatedChecker)& activatedChecker) noexcept{
 			this->activatedChecker = activatedChecker;
+		}
+
+		void setActivatedChecker(decltype(activatedChecker)&& activatedChecker) noexcept{
+			this->activatedChecker = std::move(activatedChecker);
 		}
 
 		virtual void setActivated(const bool activated) noexcept{

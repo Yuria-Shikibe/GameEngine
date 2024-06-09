@@ -20,7 +20,7 @@ export namespace UI::Icons{
 	}
 
 
-	ext::StringMap<std::string_view> categoryMap{
+	ext::StringHashMap<std::string_view> categoryMap{
 			{".json", FileType::Code},
 			{".yaml", FileType::Code},
 			{".cppm", FileType::Code},
@@ -44,7 +44,7 @@ export namespace UI::Icons{
 			{".svg", FileType::Visible},
 		};
 
-	ext::StringMap<std::reference_wrapper<Icon>> linkedIcons{};
+	ext::StringHashMap<std::reference_wrapper<Icon>> linkedIcons{};
 
 	Icon& getIconByFileSuffix(std::string_view suffix){
 		const auto categroy = categoryMap.at(suffix, FileType::Unknown);

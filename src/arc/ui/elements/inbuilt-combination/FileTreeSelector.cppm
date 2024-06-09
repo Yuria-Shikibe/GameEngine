@@ -322,7 +322,7 @@ export namespace UI{
 	public:
 		bool singleSelect = true;
 		std::unordered_set<OS::File> selected{};
-		ext::StringSet<> suffixFilter{};
+		ext::StringHashSet<> suffixFilter{};
 
 		std::function<bool(decltype(selected)&)> confirmCallback{[](const decltype(selected)& files){
 			return !files.empty();

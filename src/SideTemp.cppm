@@ -74,27 +74,91 @@ export struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 	}
 };
 
-REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
+export {
+	REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
+}
+
+
+export namespace GameCtrl{
+	::Ctrl::Operation moveLeft{
+		"move-left", OS::KeyBind(::Ctrl::Key::A, ::Ctrl::Act::Continuous, +[]{
+			Game::core->sendPlayerMoveAct(Geom::left<float>);
+		})
+	};
+
+	::Ctrl::Operation moveRight{
+		"move-right", OS::KeyBind(::Ctrl::Key::D, ::Ctrl::Act::Continuous, +[]{
+			Game::core->sendPlayerMoveAct(Geom::right<float>);
+		})
+	};
+
+	::Ctrl::Operation moveForward{
+		"move-up", OS::KeyBind(::Ctrl::Key::W, ::Ctrl::Act::Continuous, +[]{
+			Game::core->sendPlayerMoveAct(Geom::up<float>);
+		})
+	};
+
+	::Ctrl::Operation moveBack{
+		"move-down", OS::KeyBind(::Ctrl::Key::S, ::Ctrl::Act::Continuous, +[]{
+			Game::core->sendPlayerMoveAct(Geom::down<float>);
+		})
+	};
+
+	::Ctrl::Operation shoot_rls{
+		"shoot-rls", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Release, +[]{
+			if(Game::core->playerController){
+				Game::core->playerController->shoot = false;
+			}
+		})
+	};
+
+	::Ctrl::Operation shoot_prs{
+		"shoot-prs", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Press, +[]{
+			if(Game::core->playerController && !Core::uiRoot->cursorCaptured()){
+				Game::core->playerController->shoot = true;
+			}
+		}),
+		{shoot_rls.name}
+	};
+
+
+	::Ctrl::Operation moveTrans_rls{
+		"move-trans-rls", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Release, +[]{
+			if(Game::core->playerController){
+				Game::core->playerController->moveCommand.translatory = false;
+			}
+		})
+	};
+
+	::Ctrl::Operation moveTrans_prs{
+		"move-trans-prs", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Press, +[]{
+			if(Game::core->playerController){
+				Game::core->playerController->moveCommand.translatory = true;
+			}
+		}),
+		{moveTrans_rls.name}
+	};
+}
 
 export
 template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>> : Game::ChamberGridData<Game::SpaceCraft>::JsonSrl{};
+struct ::ext::json::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>> : Game::ChamberGridData<Game::SpaceCraft>::JsonSrl{};
 
 export
 template <>
-struct ::Core::IO::JsonSerializator<Game::ChamberGrid<Game::SpaceCraft>>{
+struct ::ext::json::JsonSerializator<Game::ChamberGrid<Game::SpaceCraft>>{
 	static void write(ext::json::JsonValue& jsonValue, const Game::ChamberGrid<Game::SpaceCraft>& data){
-		::Core::IO::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>>::write(jsonValue, data);
+		::ext::json::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>>::write(jsonValue, data);
 	}
 
 	static void read(const ext::json::JsonValue& jsonValue, Game::ChamberGrid<Game::SpaceCraft>& data){
-		::Core::IO::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>>::read(jsonValue, data);
+		::ext::json::JsonSerializator<Game::ChamberGridData<Game::SpaceCraft>>::read(jsonValue, data);
 		data.reTree();
 	}
 };
 
 export template<>
-struct ::Core::IO::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
+struct ::ext::json::JsonSerializator<Game::ChamberTile<Game::SpaceCraft>> : Game::ChamberJsonSrl<Game::SpaceCraft>{};
 
 export namespace Test{
 	std::unique_ptr<Game::ChamberGridTrans<Game::SpaceCraft>> chamberFrame{};
@@ -113,11 +177,11 @@ export namespace Test{
 
 			fi.writeString(std::format("{:nf0}", jval));
 		} else{
-			auto str = fi.quickRead();
+			auto str = fi.readString();
 
 			auto cur = std::chrono::high_resolution_clock::now();
 
-			ext::json::JsonValue jval{ext::json::Parser::parse(str)};
+			ext::json::JsonValue jval{ext::json::parse(str)};
 
 			auto dur = std::chrono::high_resolution_clock::now() - cur;
 			std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(dur) << std::endl;
@@ -351,7 +415,7 @@ void setupUITest_Old(){
 				});
 			});
 			// rt->add(new UI::Elem);
-			rt.lineFeed();
+			rt.endline();
 			rt.transferElem(new UI::Elem{});
 			rt.transferElem(new UI::Elem{});
 		});

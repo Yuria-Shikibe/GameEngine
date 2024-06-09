@@ -148,6 +148,13 @@ export namespace ext{
 		using ValueType = T;
 	};
 
+	template <typename C, typename T, typename ...Args>
+	struct GetMemberPtrInfo<T (C::*)(Args...)>{
+		using ClassType = C;
+		using ValueType = T;
+		using FuncArgs = std::tuple<Args...>;
+	};
+
 	template <typename C, typename T>
 	struct GetMemberPtrInfo<T C::* const> : GetMemberPtrInfo<T C::*>{};
 

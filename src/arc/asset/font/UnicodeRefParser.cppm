@@ -10,7 +10,7 @@ import OS.File;
 
 export namespace Font{
 	std::vector<unsigned> genRefTable(const OS::File& reference){
-		const std::string src = reference.quickRead();
+		const std::string src = reference.readString();
 		std::vector<unsigned> dest{};
 		dest.reserve(src.size() * 4);
 

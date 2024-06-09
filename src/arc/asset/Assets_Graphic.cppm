@@ -147,7 +147,7 @@ export namespace Assets{
 		const std::vector<Font::CharCode> targetChars = std::ranges::views::iota(' ' + 1, '~' + 1) | std::ranges::to<std::vector<Font::CharCode>>();// {{' ' + 1, '~'}};
 		std::vector<Font::CharCode> targetChars_withChinese = std::vector{targetChars};
 
-		Font::FontFlags
+		Font::FontFace
 			*sourceHan_SC_SB{nullptr},
 
 			*consola_Regular{nullptr},
@@ -173,7 +173,7 @@ export namespace Assets{
 			loader->quickInit = true;
 
 			telegrama =
-				 loader->registerFont(new Font::FontFlags{Dir::font.subFile("telegrama.otf"),  targetChars, DefFlag, 120});
+				 loader->registerFont(new Font::FontFace{Dir::font.subFile("telegrama.otf"),  targetChars, DefFlag, 120});
 
 			loader->load();
 
@@ -184,39 +184,39 @@ export namespace Assets{
 			targetChars_withChinese.append_range(Font::genRefTable(unicodeRefDir.find("zh_cn.txt")));
 
 			sourceHan_SC_SB =
-				loader->registerFont(new Font::FontFlags{Dir::font.subFile("SourceHanSerifSC-SemiBold.otf" ),  targetChars_withChinese});
+				loader->registerFont(new Font::FontFace{Dir::font.subFile("SourceHanSerifSC-SemiBold.otf" ),  targetChars_withChinese});
 			sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
 
 			consola_Regular =
-				loader->registerFont(new Font::FontFlags{Dir::font.subFile("consola.ttf" ),  targetChars});
+				loader->registerFont(new Font::FontFace{Dir::font.subFile("consola.ttf" ),  targetChars});
 			consola_Italic =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("consolai.ttf"),  targetChars});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("consolai.ttf"),  targetChars});
 			consola_Bold =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("consolab.ttf"),  targetChars});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("consolab.ttf"),  targetChars});
 			consola_Bold_Italic =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("consolaz.ttf"),  targetChars});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("consolaz.ttf"),  targetChars});
 
 			times_Regular =
-				loader->registerFont(new Font::FontFlags{Dir::font.subFile("times.ttf" ),  targetChars});
+				loader->registerFont(new Font::FontFace{Dir::font.subFile("times.ttf" ),  targetChars});
 			times_Italic =
-				loader->registerFont(new Font::FontFlags{Dir::font.subFile("timesi.ttf"),  targetChars});
+				loader->registerFont(new Font::FontFace{Dir::font.subFile("timesi.ttf"),  targetChars});
 			times_Bold =
-				loader->registerFont(new Font::FontFlags{Dir::font.subFile("timesbd.ttf"),  targetChars});
+				loader->registerFont(new Font::FontFace{Dir::font.subFile("timesbd.ttf"),  targetChars});
 			times_Bold_Italic =
-				loader->registerFont(new Font::FontFlags{Dir::font.subFile("timesbi.ttf"),  targetChars});
+				loader->registerFont(new Font::FontFace{Dir::font.subFile("timesbi.ttf"),  targetChars});
 
 			josefinSans_Regular =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars});
 			josefinSans_Bold =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars});
 
 			josefinSans_Regular_Large =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars, DefFlag, 90});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars, DefFlag, 90});
 			josefinSans_Bold_Large =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars, DefFlag, 90});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars, DefFlag, 90});
 
 			telegrama =
-			 	loader->registerFont(new Font::FontFlags{Dir::font.subFile("telegrama.otf"),  targetChars});
+			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("telegrama.otf"),  targetChars});
 
 			telegrama->fallback = sourceHan_SC_SB;
 

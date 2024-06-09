@@ -25,9 +25,9 @@ export namespace OS{
 		/**
 		 * \brief Key - directory name | Value - File
 		 * */
-		ext::StringMap<std::vector<File>> files{};
+		ext::StringHashMap<std::vector<File>> files{};
 
-		ext::StringMap<File> flatView{};
+		ext::StringHashMap<File> flatView{};
 
 		File root{};
 
@@ -71,7 +71,7 @@ export namespace OS{
 			return os;
 		}
 
-		[[nodiscard]] const ext::StringMap<std::vector<File>>& getFiles() const{
+		[[nodiscard]] const ext::StringHashMap<std::vector<File>>& getFiles() const{
 			return files;
 		}
 
@@ -97,7 +97,7 @@ export namespace OS{
 			}
 		}
 
-		[[nodiscard]] ext::StringMap<File>& getFlatView(){ return flatView; }
+		[[nodiscard]] ext::StringHashMap<File>& getFlatView(){ return flatView; }
 
 		template <bool quiet = false>
 		OS::File flatFind(const std::string_view fileName) const {

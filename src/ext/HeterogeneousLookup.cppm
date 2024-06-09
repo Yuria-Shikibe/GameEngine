@@ -28,15 +28,37 @@ export namespace ext::transparent{
 		}
 	};
 
+	template <template <typename > typename Comp>
+		requires std::regular_invocable<Comp<std::string_view>, std::string_view, std::string_view>
+	struct StringComparator{
+		static constexpr Comp<std::string_view> comp{};
+		using is_transparent = void;
+		auto operator()(const std::string_view a, const std::string_view b) const noexcept {
+			return comp(a, b);
+		}
+
+		auto operator()(const std::string_view a, const std::string& b) const noexcept {
+			return comp(a, b);
+		}
+
+		auto operator()(const std::string& a, const std::string_view b) const noexcept {
+			return comp(a, b);
+		}
+
+		auto operator()(const std::string& a, const std::string& b) const noexcept {
+			return comp(a, b);
+		}
+	};
+
 	struct StringHasher{
 		using is_transparent = void;
 
-		size_t operator()(const std::string_view val) const noexcept {
+		std::size_t operator()(const std::string_view val) const noexcept {
 			static constexpr std::hash<std::string_view> hasher{};
 			return hasher(val);
 		}
 
-		size_t operator()(const std::string& val) const noexcept {
+		std::size_t operator()(const std::string& val) const noexcept {
 			static constexpr std::hash<std::string> hasher{};
 			return hasher(val);
 		}
@@ -64,11 +86,11 @@ export namespace ext::transparent{
 		using is_transparent = void;
 		static constexpr std::hash<const T*> hasher{};
 
-		size_t operator()(const T* a) const noexcept {
+		std::size_t operator()(const T* a) const noexcept {
 			return hasher(a);
 		}
 
-		size_t operator()(const std::unique_ptr<T, Deleter>& a) const noexcept {
+		std::size_t operator()(const std::unique_ptr<T, Deleter>& a) const noexcept {
 			return hasher(a.get());
 		}
 	};
@@ -83,12 +105,12 @@ export namespace ext{
 		using MemberType = typename GetMemberPtrInfo<decltype(ptr)>::ValueType;
 		using is_transparent = void;
 
-		size_t operator()(const T& val) const noexcept {
+		std::size_t operator()(const T& val) const noexcept {
 			static constexpr std::hash<T> hasher{};
 			return hasher(val);
 		}
 
-		size_t operator()(const MemberType& val) const noexcept {
+		std::size_t operator()(const MemberType& val) const noexcept {
 			static constexpr std::hash<MemberType> hasher{};
 			return hasher(val);
 		}
@@ -114,24 +136,20 @@ export namespace ext{
 	};
 
 	template <typename Alloc = std::allocator<std::string>>
-	using StringSet = std::unordered_set<std::string, transparent::StringHasher, transparent::StringEqualComparator>;
+	using StringHashSet = std::unordered_set<std::string, transparent::StringHasher, transparent::StringEqualComparator>;
+
+	template <template<typename > typename Comp = std::less, typename Alloc = std::allocator<std::string>>
+	using StringSet = std::set<std::string, transparent::StringComparator<Comp>, Alloc>;
+
+	template <typename V, template<typename > typename Comp = std::less, typename Alloc = std::allocator<std::pair<const std::string, V>>>
+	using StringMap = std::map<std::string, V, transparent::StringComparator<Comp>, Alloc>;
 
 	template <typename V>
-	class StringMap : public std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{
+	class StringHashMap : public std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{
 	private:
 		using SelfType = std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>;
 	public:
-		StringMap() = default;
-
-		explicit StringMap(typename std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>::size_type _Buckets)
-			: std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{_Buckets}{}
-
-		explicit StringMap(const std::initializer_list<std::pair<const std::string, V>>& _Ilist)
-			: std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{_Ilist}{}
-
-		StringMap(const std::initializer_list<std::pair<const std::string, V>>& _Ilist,
-		          typename std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>::size_type _Buckets)
-			: std::unordered_map<std::string, V, transparent::StringHasher, transparent::StringEqualComparator>{_Ilist, _Buckets}{}
+		using SelfType::unordered_map;
 
 		V& at(const std::string_view key){
 			return this->find(key)->second;
@@ -169,7 +187,13 @@ export namespace ext{
 			return this->insert_or_assign(static_cast<std::string>(key), std::forward<Arg>(val));
 		}
 
+		using SelfType::operator[];
+
+		V& operator[](const std::string_view key) {
+			return this->try_emplace(std::string(key)).first->second;
+		}
 	};
+
 
 	template <typename T, typename Deleter = std::default_delete<T>>
 	using UniquePtrHashMap = std::unordered_map<std::unique_ptr<T, Deleter>, transparent::UniqueHasher<T, Deleter>, transparent::UniquePtrEqualer<T, Deleter>>;

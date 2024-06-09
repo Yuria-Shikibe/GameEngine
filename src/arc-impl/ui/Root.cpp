@@ -5,6 +5,7 @@ import UI.Drawer;
 import std;
 import Core;
 import OS.ApplicationListenerSetter;
+import ext.algorithm;
 
 void UI::Root::setRootOf(Elem* widget){
 	widget->setRoot(this);
@@ -39,8 +40,8 @@ UI::Root::Root(): tooltipManager{this}{
 UI::Root::~Root(){
 	Core::input.eraseSubInput(&uiInput);
 
-	std::erase(Core::input.inputKeyListeners, this);
-	std::erase(Core::input.inputMouseListeners, this);
+	ext::algo::erase_unique_unstable(Core::input.inputKeyListeners, this);
+	ext::algo::erase_unique_unstable(Core::input.inputMouseListeners, this);
 }
 
 void UI::Root::loadBinds(const Elem* elem, OS::InputBindGroup& binds){

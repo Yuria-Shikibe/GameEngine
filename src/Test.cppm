@@ -48,7 +48,7 @@ import Game.Entity.Controller.Player;
 import Game.Entity.Controller.AI;
 
 import Core.IO.Specialized;
-import Core.IO.JsonIO;
+import ext.json.io;
 import ext.Encoding;
 import Image.Svg;
 
@@ -115,7 +115,7 @@ export namespace Test{
 		Game::core = std::make_unique<Game::Core>();
 		Core::loopManager->setGameCore(Game::core.get());
 
-		ext::json::JsonValue json{ext::json::Parser::parse(Assets::Dir::settings.subFile("ctrl.json").quickRead())};
+		ext::json::JsonValue json{ext::json::parse(Assets::Dir::settings.subFile("ctrl.json").readString())};
 		ext::json::getValueTo(Assets::Ctrl::basicGroup, json);
 
 		Core::destructors.push_back([]{

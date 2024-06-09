@@ -37,6 +37,10 @@ export namespace Geom{
 			this->setSize(width, height);
 		}
 
+		constexpr explicit Rect_Orthogonal(const typename Vector2D<T>::PassType size) noexcept{
+			this->setSize(size);
+		}
+
 		constexpr Rect_Orthogonal(const typename Vector2D<T>::PassType center, const T size) noexcept{
 			this->setSize(size, size);
 			this->setCenter(center.x, center.y);

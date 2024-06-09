@@ -12,12 +12,33 @@ export import UI.ImageRegion;
 
 import Graphic.Color;
 import std;
+import ext.MetaProgramming;
 
 export namespace UI::Create{
 
+	template <auto mptr>
+		requires std::equality_comparable<typename ext::GetMemberPtrInfo<decltype(mptr)>::ValueType>
+	struct ValueChecker{
+		using V = typename ext::GetMemberPtrInfo<decltype(mptr)>::ValueType;
+		using T = typename ext::GetMemberPtrInfo<decltype(mptr)>::ClassType;
+
+		const T& src;
+		V val{};
+
+		[[nodiscard]] ValueChecker(const T& src, const V& val) noexcept
+			: src{src},
+			  val{val}{}
+
+		[[nodiscard]] ValueChecker(const T* src, const V& val) noexcept
+			: ValueChecker{*src, val}{}
+
+		bool operator()(const Elem&) const noexcept{
+			return (std::invoke(mptr, src) == val);
+		}
+	};
+
 	struct CheckBox : UI::ElemCreater<UI::Button>{
 		UI::Icon& icon;
-
 	};
 
 	struct LineCreater : UI::ElemCreater<UI::ImageRegion>{

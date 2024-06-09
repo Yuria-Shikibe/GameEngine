@@ -18,7 +18,7 @@ export namespace Assets{
 	};
 
 
-	struct AssetsTaskHandler: ext::TaskHandler {
+	struct [[deprecated]] AssetsTaskHandler: ext::TaskHandler {
 		std::exception_ptr lastExceptionPtr{};
 
 		AssetsLoader* target{nullptr};
@@ -44,7 +44,7 @@ export namespace Assets{
 
 		static constexpr auto maxLoadSpacing = ::std::chrono::milliseconds(330);
 
-		ext::Timestamper timer{};
+		ext::TimeStamper timer{};
 		std::unordered_map<Task, TaskFuture> tasks{};
 
 		AssetsTaskHandler postHandler{this};
@@ -79,7 +79,7 @@ export namespace Assets{
 			}
 		}
 
-		[[nodiscard]] ext::Timestamper& getTimer() {
+		[[nodiscard]] ext::TimeStamper& getTimer() {
 			return timer;
 		}
 
@@ -153,7 +153,7 @@ export namespace Assets{
 					task();
 				}catch(...){
 					//TODO exception handle
-					throw std::current_exception();
+					throw;
 				}
 			}
 		}

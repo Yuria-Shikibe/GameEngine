@@ -93,12 +93,12 @@ namespace Assets::Ctrl{
 
 		::Ctrl::OperationGroup gameGroup{"game-group"};
 
-		ext::StringMap<::Ctrl::OperationGroup*> allGroups{
+		ext::StringHashMap<::Ctrl::OperationGroup*> allGroups{
 			{basicGroup.getName(), &basicGroup},
 			{gameGroup.getName(), &gameGroup}
 		};
 
-		ext::StringMap<OS::InputBindGroup*> relatives{};
+		ext::StringHashMap<OS::InputBindGroup*> relatives{};
 
 		void apply(){
 			mainControlGroup.clearAllBinds();

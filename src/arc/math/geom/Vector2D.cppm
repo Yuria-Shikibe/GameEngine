@@ -320,7 +320,7 @@ export namespace Geom{
 			return *this;
 		}
 
-		Vector2D& rotateRad(const float rad) noexcept{
+		constexpr Vector2D& rotateRad(const float rad) noexcept{
 			//  Matrix Multi
 			//  cos rad		-sin rad	x    crx   -sry
 			//	sin rad		 cos rad	y	 srx	cry
@@ -338,11 +338,11 @@ export namespace Geom{
 			}
 		}
 
-		Vector2D& rotate(const float degree) noexcept{
+		constexpr Vector2D& rotate(const float degree) noexcept{
 			return rotateRad(degree * Math::DEGREES_TO_RADIANS);
 		}
 
-		Vector2D& lerp(const PassType tgt, const float alpha) noexcept{
+		constexpr Vector2D& lerp(const PassType tgt, const float alpha) noexcept{
 			return this->set(Math::lerp(x, tgt.x, alpha), Math::lerp(y, tgt.y, alpha));
 		}
 
@@ -656,6 +656,10 @@ export namespace Geom{
 			return Vector2D<N>{Math::trac<N>(x), Math::trac<N>(y)};
 		}
 
+		[[nodiscard]] constexpr T area() const noexcept {
+			return x * y;
+		}
+
 		[[nodiscard]] constexpr bool isZero() const noexcept {
 			return length2() == static_cast<T>(0);
 		}
@@ -764,24 +768,22 @@ export
 		}
 	};
 
+template <template <typename T> typename V, typename T>
+	requires std::convertible_to<V<T>, Geom::Vector2D<T>>
+struct formatter_base{
+	template <typename Context>
+	constexpr auto parse(Context& context) const{
+		return context.begin();
+	}
 
-// template <template <typename T> typename V, typename T>
-// 	requires std::convertible_to<V<T>, Geom::Vector2D<T>>
-// struct formatter_base{
-// 	constexpr auto parse(std::format_parse_context& context) const{
-// 		return context.begin();
-// 	}
-//
-// 	auto format(const V<T>& p, auto& context) const{
-// 		return std::format_to(context.out(), "({}, {})", p.x, p.y);
-// 	}
-// };
-//
-//
-// export template <>
-// struct std::formatter<Geom::Vec2> : formatter_base<Geom::Vector2D, float>{
-// 	using formatter_base::parse;
-// 	using formatter_base::format;
-// };
+	template <typename Context>
+	auto format(const V<T>& p, Context& context) const{
+		return std::format_to(context.out(), "({}, {})", p.x, p.y);
+	}
+};
+
+
+export template <>
+struct std::formatter<Geom::Vec2>: formatter_base<Geom::Vector2D, float>{};
 
 

@@ -29,6 +29,10 @@ export namespace UI {
 		//Weak Reference Object
 		Elem* item{nullptr};
 
+		/**
+		 * Nan for disable
+		 * Negative for ratio
+		 */
 		Geom::Vec2 defSize{Geom::SNAN2};
 
 		UI::Rect allocatedBound{};
@@ -172,6 +176,27 @@ export namespace UI {
 			return *this;
 		}
 
+		LayoutCell& setXRatio(const float y2xRatio = 1.f){
+			defSize.x = -y2xRatio;
+			wrapX();
+
+			if(defSize.x < 0 && defSize.y < 0){
+				throw ext::IllegalArguments{"Layout Cannot Have To Loop-Referenced Ratio!"};
+			}
+
+			return *this;
+		}
+
+		LayoutCell& setYRatio(const float x2yRatio = 1.f){
+			defSize.y = -x2yRatio;
+			wrapY();
+
+			if(defSize.x < 0 && defSize.y < 0){
+				throw ext::IllegalArguments{"Layout Cannot Have To Loop-Referenced Ratio!"};
+			}
+
+			return *this;
+		}
 
 		LayoutCell& expandX(const bool val = true) {
 			val ? wrapX() : fillParentX();
@@ -280,12 +305,64 @@ export namespace UI {
 			return hasDefHeight() ? defSize.y : item ? item->getHeight() : 0;
 		}
 
-		[[nodiscard]] bool hasDefHeight() const{
-			return !std::isnan(defSize.y);
+		[[nodiscard]] float getExportWidth() const{
+			float width = 0;
+			if(hasDefWidth())width = defSize.x;
+			else if(item)width = item->getWidth();
+
+			if(hasRatioFromHeight())width = getRatioedWidth();
+			return width;
+		}
+
+		[[nodiscard]] float getExportHeight() const{
+			float height = 0;
+			if(hasDefHeight())height = defSize.y;
+			else if(item)height = item->getHeight();
+
+			if(hasRatioFromWidth())height = getRatioedHeight();
+			return height;
+		}
+
+		void applyRatio(){
+			if(hasRatioFromHeight()){
+				allocatedBound.setWidth(allocatedBound.getHeight() * getRatio_H2W());
+			}
+
+			if(hasRatioFromWidth()){
+				allocatedBound.setHeight(allocatedBound.getWidth() * getRatio_W2H());
+			}
 		}
 
 		[[nodiscard]] bool hasDefWidth() const{
-			return !std::isnan(defSize.x);
+			return !std::isnan(defSize.x) && defSize.x > 0;
+		}
+
+		[[nodiscard]] bool hasDefHeight() const{
+			return !std::isnan(defSize.y) && defSize.y > 0;
+		}
+
+		[[nodiscard]] bool hasRatioFromHeight() const{
+			return !std::isnan(defSize.x) && (defSize.area() <= 0 || std::isnan(defSize.y)) && defSize.x < 0;
+		}
+
+		[[nodiscard]] bool hasRatioFromWidth() const{
+			return !std::isnan(defSize.y) && (defSize.area() <= 0 || std::isnan(defSize.x)) && defSize.y < 0;
+		}
+
+		[[nodiscard]] float getRatioedWidth() const{
+			return hasRatioFromHeight() ? 0 : getExportHeight() * getRatio_H2W();
+		}
+
+		[[nodiscard]] float getRatioedHeight() const{
+			return hasRatioFromWidth() ? 0 : getExportWidth() * getRatio_W2H();
+		}
+
+		[[nodiscard]] float getRatio_H2W() const{
+			return -defSize.x;
+		}
+
+		[[nodiscard]] float getRatio_W2H() const{
+			return -defSize.y;
 		}
 
 		[[nodiscard]] float getHoriScale() const {return scale.getWidth();}

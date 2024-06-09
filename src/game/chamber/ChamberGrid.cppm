@@ -10,7 +10,7 @@ import Geom.QuadTree;
 import ext.Concepts;
 import ext.RuntimeException;
 import Math;
-import ext.Algorithm;
+import ext.algorithm;
 
 namespace Game{
 	export
@@ -390,12 +390,12 @@ namespace Game{
 
 		/** @return [compliant, not] */
 		auto getPartedTiles(Concepts::Invokable<bool(const Tile&)> auto&& pred) const{
-			return ext::partBy(data, pred);
+			return ext::algo::partBy(data, pred);
 		}
 
 		/** @return [compliant, not] */
 		auto getPartedTiles(Concepts::Invokable<bool(const Tile&)> auto&& pred){
-			return ext::partBy(data, pred);
+			return ext::algo::partBy(data, pred);
 		}
 
 		[[nodiscard]] const Geom::OrthoRectFloat& getBound() const{ return bound; }

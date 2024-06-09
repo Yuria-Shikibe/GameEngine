@@ -3,46 +3,52 @@ module UI.Cell;
 bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 	const Geom::Vec2 originalSize = allocatedBound.getSize();
 
+	Geom::Vec2 exportSize{};
+
 	if(hasDefWidth()){
-		item->setWidth(defSize.x);
+		exportSize.x = defSize.x;
 	}
 
 	if(hasDefHeight()){
-		item->setHeight(defSize.y);
+		exportSize.y = defSize.y;
 	}
 
 	//Apply Expansion
 	if(modifyParentX) {
-		const float width = Math::max(allocatedBound.getWidth(), item->getWidth());
+		const float width = Math::max(allocatedBound.getWidth(), exportSize.x);
 		allocatedBound.setWidth(width * getHoriScale());
 	}else{
 		// allocatedBound.setShorterWidth(item->getWidth());
 	}
 
 	if(modifyParentY) {
-		const float height = Math::max(allocatedBound.getHeight(), item->getHeight());
+		const float height = Math::max(allocatedBound.getHeight(), exportSize.y);
 		allocatedBound.setHeight(height * getVertScale());
 	}else{
 		// allocatedBound.setShorterHeight(item->getHeight());
 	}
 
 	if(scaleRelativeToParentX){
-		item->setWidth(allocatedBound.getWidth() * getHoriScale());
+		exportSize.x = allocatedBound.getWidth() * getHoriScale();
 	}
 
 	if(scaleRelativeToParentY){
-		item->setHeight(allocatedBound.getHeight() * getVertScale());
+		exportSize.y = allocatedBound.getHeight() * getVertScale();
 	}
 
+	if(hasRatioFromWidth()){
+		exportSize.y = exportSize.x * getRatio_W2H();
+	}
 
-	//TODO uses validsize instead
-	item->setSize(
-		Math::clampPositive(item->getWidth() - getMarginHori()),
-		Math::clampPositive(item->getHeight() - getMarginVert())
-	);
+	if(hasRatioFromHeight()){
+		exportSize.x = exportSize.y * getRatio_H2W();
+	}
 
-	Geom::Vec2 currentSize = item->bound.getSize();
-	if(currentSize == Geom::Vec2{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}){
+	item->setWidth_Quiet(Math::clampPositive(exportSize.x - getMarginHori()));
+	item->setHeight_Quiet(Math::clampPositive(exportSize.y - getMarginVert()));
+
+	const Geom::Vec2 currentSize = item->bound.getSize();
+	if(currentSize == Geom::maxVec2<float>){
 		item->setMaximumSize(allocatedBound.getSize());
 	}
 

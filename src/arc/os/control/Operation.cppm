@@ -103,7 +103,7 @@ export namespace Ctrl{
 	class OperationGroup{
 		std::string name{};
 
-		ext::StringMap<Operation> binds{};
+		ext::StringHashMap<Operation> binds{};
 
 		std::unordered_map<int, unsigned> groupOccupiedKeys{};
 
@@ -165,8 +165,8 @@ export namespace Ctrl{
 			hideRelatived<false>();
 		}
 
-		[[nodiscard]] ext::StringMap<Operation>& getBinds(){ return binds; }
-		[[nodiscard]] const ext::StringMap<Operation>& getBinds() const{ return binds; }
+		[[nodiscard]] ext::StringHashMap<Operation>& getBinds(){ return binds; }
+		[[nodiscard]] const ext::StringHashMap<Operation>& getBinds() const{ return binds; }
 
 		OperationGroup(const OperationGroup& other)
 			: name(other.name),
@@ -296,7 +296,7 @@ export namespace Ctrl{
 	void Operation::updateRelativeBinds() const{
 		if(!group)return;
 
-		ext::StringMap<Operation>& bind = group->getBinds();
+		ext::StringHashMap<Operation>& bind = group->getBinds();
 
 		for (const auto& relativeOperation : relativeOperations){
 			if(auto itr = bind.find(relativeOperation); itr != bind.end()){

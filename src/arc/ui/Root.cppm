@@ -93,7 +93,7 @@ export namespace UI{
 		void loadBinds(const Elem* elem, OS::InputBindGroup& binds);
 		void unloadBinds(const Elem* elem);
 
-		[[nodiscard]] const ext::StringMap<std::unique_ptr<Scene>>& getScenes() const{ return scenes; }
+		[[nodiscard]] const ext::StringHashMap<std::unique_ptr<Scene>>& getScenes() const{ return scenes; }
 
 		[[nodiscard]] constexpr bool noMousePress() const noexcept{
 			return std::ranges::all_of(pressedMouseButtons, Ctrl::Mode::isDisabled);
@@ -357,6 +357,6 @@ export namespace UI{
 		void setEnter(Elem* elem, bool quiet = false);
 
 		//Make sure it is the first to destruct!
-		ext::StringMap<std::unique_ptr<Scene>> scenes{};
+		ext::StringHashMap<std::unique_ptr<Scene>> scenes{};
 	};
 }

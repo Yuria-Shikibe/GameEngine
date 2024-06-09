@@ -46,7 +46,7 @@ export namespace Game{
 	struct ChamberTile;
 
 	template <typename Entity>
-	struct Chamber : ChamberBase, Core::IO::DynamicJsonSerializable{
+	struct Chamber : ChamberBase, ext::json::DynamicJsonSerializable{
 		using EntityType = Entity;
 
 		std::vector<Chamber*> proximity{};

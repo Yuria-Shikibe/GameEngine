@@ -9,7 +9,6 @@
 #include "src/ext/ReflectionUtil.hpp"
 
 import std;
-import std.compat;
 
 import Assets.LoaderRenderer;
 
@@ -19,7 +18,7 @@ import Core.Platform;
 import OS.File;
 import ext.Concepts;
 import ext.Container.ObjectPool;
-import Event;
+import ext.Event;
 import StackTrace;
 
 import Graphic.Draw;
@@ -38,7 +37,7 @@ import Font;
 
 import Math;
 import Math.Rand;
-import Math.StripPacker2D;
+import Math.Algo.StripPacker2D;
 import Geom.Vector2D;
 import Geom.Matrix3D;
 import Geom.Rect_Orthogonal;
@@ -77,7 +76,7 @@ import GL.Buffer.FrameBuffer;
 import GL.Texture.TextureRegion;
 import GL.Texture.TextureNineRegion;
 import GL.Blending;
-import Event;
+import ext.Event;
 import Font.GlyphArrangement;
 import ext.Timer;
 
@@ -113,7 +112,6 @@ import Game.Entity.Turret;
 import Game.Entity.Controller.AI;
 import Game.Entity.Controller.Player;
 
-
 import Game.Content.Type.BasicBulletType;
 import Game.Content.Type.Turret.BasicTurretType;
 import Game.Content.Builtin.SpaceCrafts;
@@ -130,7 +128,7 @@ import Game.Scene.MainMenu;
 
 import ext.Encoding;
 import ext.TreeStructure;
-import ext.Algorithm;
+import ext.algorithm;
 import ext.Heterogeneous;
 import ext.Json;
 import ext.Base64;
@@ -138,7 +136,7 @@ import ext.StringParse;
 import ext.StaticReflection;
 import ext.ReflectData;
 
-import Core.IO.JsonIO;
+import ext.json.io;
 import ext.SpecIOSummary;
 
 using namespace Graphic;
@@ -146,71 +144,128 @@ using namespace GL;
 using Geom::Vec2;
 
 import SideTemp;
-
-//TODO temp global static mut should be remove
 bool drawDebug{false};
 
+import Assets.Load.State;
+import Assets.Load.Core;
+import Assets.Load.Misc;
 
-namespace GameCtrl{
-	::Ctrl::Operation moveLeft{
-			"move-left", OS::KeyBind(::Ctrl::Key::A, ::Ctrl::Act::Continuous, +[]{
-				Game::core->sendPlayerMoveAct(Geom::left<float>);
-			})
-		};
+import Assets.Load.TexturePacker;
+import Assets.TexturePage;
 
-	::Ctrl::Operation moveRight{
-			"move-right", OS::KeyBind(::Ctrl::Key::D, ::Ctrl::Act::Continuous, +[]{
-				Game::core->sendPlayerMoveAct(Geom::right<float>);
-			})
-		};
+import Math.Algo.TopologicalSort;
 
-	::Ctrl::Operation moveForward{
-			"move-up", OS::KeyBind(::Ctrl::Key::W, ::Ctrl::Act::Continuous, +[]{
-				Game::core->sendPlayerMoveAct(Geom::up<float>);
-			})
-		};
-
-	::Ctrl::Operation moveBack{
-			"move-down", OS::KeyBind(::Ctrl::Key::S, ::Ctrl::Act::Continuous, +[]{
-				Game::core->sendPlayerMoveAct(Geom::down<float>);
-			})
-		};
-
-	::Ctrl::Operation shoot_rls{
-			"shoot-rls", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Release, +[]{
-				if(Game::core->playerController){
-					Game::core->playerController->shoot = false;
-				}
-			})
-		};
-
-	::Ctrl::Operation shoot_prs{
-			"shoot-prs", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::Press, +[]{
-				if(Game::core->playerController && !Core::uiRoot->cursorCaptured()){
-					Game::core->playerController->shoot = true;
-				}
-			}),
-			{shoot_rls.name}
-		};
+template <auto what>
+struct Print{
+	void operator ()() const{
+		std::println("{}", what);
+		std::cout.flush();
+	}
+};
 
 
-	::Ctrl::Operation moveTrans_rls{
-			"move-trans-rls", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Release, +[]{
-				if(Game::core->playerController){
-					Game::core->playerController->moveCommand.translatory = false;
-				}
-			})
-		};
 
-	::Ctrl::Operation moveTrans_prs{
-			"move-trans-prs", OS::KeyBind(::Ctrl::Key::Left_Shift, ::Ctrl::Act::Press, +[]{
-				if(Game::core->playerController){
-					Game::core->playerController->moveCommand.translatory = true;
-				}
-			}),
-			{moveTrans_rls.name}
-		};
+int main(){
+	// ext::StringMap<int> map{};
+
+	Assets::TexturePage mainPage{"main"};
+	Assets::TexturePage lightPage{"light"};
+
+	OS::File testTextureDir{R"(D:\projects\GameEngine\properties\resource\assets\texture\main)"};
+
+
+	using namespace Assets::Load;
+	//
+	LoadManager loadManager{};
+	TexturePacker packer{};
+
+	packer.setCacheDir(OS::File{R"(D:\projects\GameEngine\properties\resource\cache)"});
+
+	testTextureDir.subFile("base").forAllSubs([&](auto&& file){
+		mainPage.pullRequest<Assets::FileImportData>(file.stem(), file);
+	});
+
+	testTextureDir.subFile("light").forAllSubs([&](auto&& file){
+		auto name = file.stem();
+		auto pos = name.find_first_of('.');
+		name = name.substr(0, pos);
+
+		lightPage.pullRequest<Assets::FileImportData>(name, file);
+	});
+
+	lightPage.dependency = &mainPage;
+	packer.pushPage(&mainPage);
+	packer.pushPage(&lightPage);
+	loadManager.registerTask(packer);
+
+	loadManager.launch();
+
+	while(!loadManager.isFinished()){
+		loadManager.processRequests();
+	}
+
+	loadManager.requestDone();
+	// page.p
+
+
+	// Math::TestT _1{nullptr, 1};
+	// Math::TestT _2{nullptr, 2};
+	// Math::TestT _3{nullptr, 3};
+	// Math::TestT _4{nullptr, 4};
+	// Math::TestT _5{nullptr, 5};
+	//
+	// std::vector<Math::TestT*> arr{
+	// 	&_1,
+	// 	&_2,
+	// 	&_3,
+	// 	&_4,
+	// 	&_5,
+	// };
+	//
+	// arr[0]->dependencyTarget = arr[4];
+	// arr[4]->dependencyTarget = arr[2];
+	// arr[2]->dependencyTarget = arr[3];
+	// arr[3]->dependencyTarget = arr[1];
+	// Math::sort_topological<std::less>(arr, &Math::TestT::dependencyTarget);
+	// for (auto value : arr){
+	// 	std::println("{}", value->val);
+	// }
+
+	// MiscTaskManager miscTaskManager1{};
+	// MiscTaskManager miscTaskManager2{};
+	//
+	// miscTaskManager1.push(Phase::init, Print<1>{});
+	// miscTaskManager1.push(Phase::pull, Print<2>{});
+	// miscTaskManager1.push(Phase::load, Print<3>{});
+	// miscTaskManager1.push(Phase::load, Print<4>{});
+	// miscTaskManager1.push(Phase::post_load, Print<5>{});
+	// miscTaskManager1.push(Phase::end, Print<6>{});
+	// miscTaskManager1.push(Phase::clear, Print<7>{});
+	//
+	// miscTaskManager2.push(Phase::init, Print<11>{});
+	// miscTaskManager2.push(Phase::pull, Print<12>{});
+	// miscTaskManager2.push(Phase::load, Print<13>{});
+	// miscTaskManager2.push(Phase::load, Print<14>{});
+	// miscTaskManager2.push(Phase::post_load, Print<15>{});
+	// miscTaskManager2.push(Phase::end, Print<16>{});
+	// miscTaskManager2.push(Phase::clear, Print<17>{});
+	// // std::ranges::find_if()
+	// auto& t =miscTaskManager1.eventManager;
+	// auto i = std::to_underlying(Phase::end);
+	//
+	// miscTaskManager1.eventManager.on(Phase::end, []{
+	// 	std::println("Manager 1 End Call");
+	// });
+	//
+	// loadManager.registerTask(miscTaskManager1);
+	// loadManager.registerTask(miscTaskManager2);
+	//
+	// loadManager.launch();
+	//
+	// loadManager.requestDone();
 }
+
+//TODO temp global static mut should be remove
 
 
 void setupUITest(){
@@ -254,7 +309,6 @@ void setupUITest(){
 	   .setMargin(0, 10, 0, 10);
 
 
-
 	HUD->add<UI::Table>([](UI::Table& table){
 		   table.add<UI::ProgressBar>([](UI::ProgressBar& bar){
 			   bar.progressGetter = []{
@@ -289,74 +343,7 @@ void setupUITest(){
 					   }
 				   });
 		   });
-		   // table.add<UI::Table>([](UI::Table& t){
-		   // t.selfMaskOpacity = 0.0f;
-		   // t.setBorderZero();
-		   // t.defaultCellLayout.setMargin({.left = 2.0f, .right = 2.f});
-		   //  for(int i = 0; i < 8; ++i){
-		   //   t.add<UI::Button>([i](UI::Button& button){
-		   //    button.setCall([i](UI::Button& b, bool){
-		   // 	   b.buildTooltip();
-		   //    });
-		   //
-		   //    button.setTooltipBuilder({
-		   // 		   .followTarget = UI::TooltipFollowTarget::parent,
-		   // 		   .minHoverTime = UI::DisableAutoTooltip,
-		   // 		   .followTargetAlign = Align::Mode::bottom_left,
-		   // 		   .builder = [i](UI::Table& hint){
-		   // 			   // hint.setMinimumSize({600, 300});
-		   // 			   hint.setCellAlignMode(Align::Mode::top_left);
-		   // 			   hint.add<UI::Label>([i](UI::Label& label){
-		   // 				   label.usingGlyphHeight = label.usingGlyphWidth = true;
-		   // 				   label.setText(
-		   // 					   std::format("<Hint Hover Table>\nButton$<sub>$<c#PALE_GREEN>{}$<\\sub>", i));
-		   // 				   label.getGlyphLayout()->setSCale(0.65f);
-		   // 				   label.setEmptyDrawer();
-		   // 				   label.getBorder().expand(4.0f);
-		   // 			   }).expand().endLine();
-		   // 			   hint.add<UI::Button>([i](UI::Button& button){
-		   // 				   button.setCall([i](UI::Button&, bool){
-		   // 					   Core::uiRoot->showDialog(true, [i](UI::Table& builder){
-		   // 						   builder.add<UI::FileTreeSelector>([](UI::FileTreeSelector& selector){
-		   // 							   const OS::File src{
-		   // 									   R"(D:\projects\GameEngine\properties\resource\assets)"
-		   // 								   };
-		   // 							   selector.gotoFile(src, false);
-		   // 						   }).fillParent().setAlign(Align::Mode::top_center);
-		   // 					   });
-		   // 				   });
-		   // 				   button.setTooltipBuilder({
-		   // 						   .followTarget = UI::TooltipFollowTarget::parent,
-		   // 						   .followTargetAlign = Align::Mode::center_right,
-		   // 						   .tooltipSrcAlign = Align::Mode::center_left,
-		   // 						   .builder = [](UI::Table& hintInner){
-		   // 							   hintInner.setCellAlignMode(Align::Mode::top_left);
-		   // 							   hintInner.add<UI::Label>([](UI::Label& label){
-		   // 								   label.usingGlyphHeight = label.usingGlyphWidth = true;
-		   // 								   label.setText(std::format(
-		   // 									   "<Hover Table>$<sub>$<c#PALE_GREEN>{}$<\\sub>", "Nesting"));
-		   // 								   label.getGlyphLayout()->setSCale(0.65f);
-		   // 								   label.setEmptyDrawer();
-		   // 								   label.getBorder().expand(4.0f);
-		   // 							   }).expand().endLine();
-		   // 						   }
-		   // 					   });
-		   // 			   }).setHeight(120.0f).expandY().fillParentX();
-		   // 			   hint.PointCheck = 180;
-		   // 		   }
-		   // 	   });
-		   //   });
-		   //  }
-		   // }).fillParent();
-		   //
-		   // table.add<UI::Table>([](UI::Table& t){
-		   //  t.setEmptyDrawer();
-		   //  auto& slider = t.add<UI::SliderBar>([](UI::SliderBar& s){
-		   //   s.setClampedOnHori();
-		   //  }).fillParent().endLine().as<UI::SliderBar>();
-		   //
-		   //
-		   // }).fillParent().setPad({.left = 2.0f});
+
 	   })
 	   .setAlign(Align::Layout::top_left)
 	   .setSizeScale(0.4f, 0.08f)
@@ -412,71 +399,6 @@ void setupUITest(){
 	   .setSizeScale(0.15f, 0.6f)
 	   .setSrcScale(0.0f, 0.2f)
 	   .setMargin(0, 0, 10, 10);
-
-
-	// HUD->add<UI::Table>([](UI::Table& table){})
-	//    .setAlign(Align::Mode::bottom_left)
-	//    .setSizeScale(0.25f, 0.2f)
-	//    .setMargin(0, 10, 10, 10);
-	//
-	//
-	// HUD->transferElem(new UI::Table{})
-	//    .setAlign(Align::Mode::bottom_left)
-	//    .setSizeScale(0.075f, 0.2f)
-	//    .setSrcScale(0.25f, 0.0f)
-	//    .setMargin(10, 0, 10, 10);
-
-
-	// {
-	// 	auto pane = new UI::ScrollPane{};
-	//
-	// 	pane->setItem<UI::Table>([](UI::Table& rt){
-	// 		rt.setSize(400, 900);
-	// 		// rt.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-	// 		// 	pane.setItem<UI::Table>([](UI::Table& paneT){
-	// 		// 		paneT.setHeight(600);
-	// 		// 		paneT.setFillparentX();
-	// 		//
-	// 		// 		paneT.add<UI::Widget>();
-	// 		// 		paneT.lineFeed();
-	// 		// 		paneT.add<UI::Widget>();
-	// 		// 		paneT.add<UI::Widget>();
-	// 		// 	});
-	// 		// });
-	// 		// // rt->add(new UI::Elem);
-	// 		// rt.lineFeed();
-	// 		// rt.transferElem(new UI::Widget{});
-	// 		// rt.transferElem(new UI::Widget{});
-	// 	});
-	//
-	// 	HUD->transferElem(pane).setAlign(Align::Mode::top_right).setSizeScale(0.225f, 0.25f).setMargin(10, 0, 0, 10);
-	// }
-
-	// HUD->add<UI::Table>([](UI::Table& table){
-	// 	   table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
-	// 		   pane.setItem<UI::InputArea, false, false>([](UI::InputArea& area){
-	// 			   area.usingGlyphWidth = area.usingGlyphHeight = true;
-	// 			   area.setMaxTextLength(1000);
-	//
-	// 			   area.getGlyphLayout()->setSCale(0.75f);
-	// 			   area.setText("Input Test\n");
-	// 		   });
-	// 		   pane.setEmptyDrawer();
-	// 	   }).fillParent();
-	//    })
-	//    .setAlign(Align::top_right)
-	//    .setSizeScale(0.185f, 0.575f).setSrcScale(0.0f, 0.25f)
-	//    .setMargin(10, 0, 10, 0);
-	//
-	// HUD->transferElem(new UI::Table{})
-	//    .setAlign(Align::top_right)
-	//    .setSizeScale(0.225f - 0.185f, 0.45f).setSrcScale(0.185f, 0.25f)
-	//    .setMargin(10, 10, 10, 0);
-	//
-	// HUD->add<UI::Table>([](UI::Table& table){})
-	//    .setAlign(Align::Mode::bottom_right)
-	//    .setSizeScale(0.3f, 0.15f)
-	//    .setMargin(10, 0, 10, 0);
 }
 
 void setupCtrl(){
@@ -497,104 +419,20 @@ void setupCtrl(){
 	Assets::Ctrl::gameGroup.loadInstruction(Core::bundle);
 	Assets::Ctrl::gameGroup.targetGroup = &Game::core->gameBinds;
 	Assets::Ctrl::gameGroup.applyToTarget();
-
-	//
-	// Core::input.binds.registerBind(Ctrl::Mouse::_2, Ctrl::Act::Press, []{
-	// 	const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
-	//
-	// 	const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-	// 	Geom::OrthoRectInt bound{pos, 3, 3};
-	//
-	// 	if(chamberFrame->getChambers().placementValid(bound)){
-	// 		chamberFrame->getChambers().insert(testFactory->genChamberTile(bound));
-	// 	}
-	// });
-	//
-	// Core::input.binds.registerBind(Ctrl::Mouse::_3, Ctrl::Act::Press, []{
-	// 	const auto transed = chamberFrame->getWorldToLocal<false>(Core::Util::getMouseToWorld());
-	//
-	// 	const auto pos = chamberFrame->getChambers().getNearbyPos(transed);
-	//
-	// 	chamberFrame->getChambers().erase(pos, true);
-	// });
-	//
-	// Core::input.binds.registerBind(Ctrl::Key::S, Ctrl::Act::Press, Ctrl::Mode::Ctrl, []{
-	// 	std::jthread jthread([](){
-	// 		OS::File fi{R"(D:\projects\GameEngine\properties\resource\test.json)"};
-	// 		ext::json::JsonValue jval = ext::json::getJsonOf(chamberFrame->getChambers());
-	// 		fi.writeString(std::format("{:nf0}", jval));
-	// 	});
-	//
-	// 	jthread.detach();
-	// });
-
-	//
-	// Core::input->registerKeyBind(Ctrl::Key::F1, Ctrl::Act_Act::Press, [&]{
-	// 	const OS::File tgt{R"(D:\projects\GameEngine\properties\resource\tiles.png)"};
-	//
-	// 	const auto pixmap = Game::ChamberUtil::saveToPixmap(chamberFrame->getChambers());
-	//
-	// 	pixmap.write(tgt, true);
-	// });
-
-	//
-	// Core::input.binds.registerBind(Ctrl::Key::F, Ctrl::Act::Continuous, []{
-	// 	static ext::Timer<> timer{};
-	//
-	// 	timer.run(12, OS::updateDeltaTick(), []{
-	// 		Core::audio->play(Assets::Sounds::laser5);
-	// 		Geom::RectBox box{};
-	// 		box.setSize(180, 12);
-	// 		box.offset = box.sizeVec2;
-	// 		box.offset.mul(-0.5f);
-	//
-	// 		for(int i = -3; i <= 3; ++i){
-	// 			const auto ptr = Game::EntityManage::obtain<Game::Bullet>();
-	// 			ptr->trait = &Game::Content::basicBulletType;
-	// 			ptr->trans.vec.set(Core::camera->getPosition());
-	// 			ptr->trans.rot = (Core::renderer->getSize() * 0.5f).angleTo(Core::input.getCursorPos());
-	//
-	// 			ptr->trans.vec.add(Geom::Vec2{}.setPolar(ptr->trans.rot + 90, 80.0f * i));
-	//
-	// 			ptr->vel.vec.set(320, 0).rotate(ptr->trans.rot);
-	// 			Game::EntityManage::add(ptr);
-	// 			ptr->hitBox.init(box);
-	// 			ptr->physicsBody.inertialMass = 100;
-	// 			ptr->damage.materialDamage.fullDamage = 100;
-	// 			ptr->activate();
-	// 		}
-	// 	});
-	// });
-
-	// Core::input.binds.registerBind(
-	// 	Ctrl::Mouse::_2, Ctrl::Act::Press,
-	// 	Ctrl::Mode::Shift
-	//   , []{
-	// 		Game::EntityManage::realEntities.quadTree->intersectPoint(
-	// 			Core::camera->getScreenToWorld(Core::renderer->getNormalized(Core::input.getCursorPos())),
-	// 			[](decltype(Game::EntityManage::realEntities)::ValueType* entity){
-	// 				entity->controller->selected = !entity->controller->selected;
-	// 				Game::core->overlayManager->registerSelected(
-	// 					std::dynamic_pointer_cast<Game::RealityEntity>(std::move(entity->obtainSharedSelf())));
-	// 			});
-	// 	});
 }
 
-REFL_REGISTER_CLASS_DEF(::TestChamberFactory::ChamberType<>)
-
-
 void setupBaseDraw(){
-	::Core::renderer->getListener().on<Event::Draw_Overlay>([](const auto& e){
+	::Core::renderer->getListener().on<ext::Draw_Overlay>([](const auto& e){
 		Core::uiRoot->drawCursor();
 	});
 
-	::Core::renderer->getListener().on<Event::Draw_After>([]([[maybe_unused]] const auto& e){
+	::Core::renderer->getListener().on<ext::Draw_After>([]([[maybe_unused]] const auto& e){
 		Game::core->drawBeneathUI(e.renderer);
 		// Graphic::Draw::Overlay::getBatch().flush();
 	});
 }
 
-int main(const int argc, char* argv[]){
+int main_(const int argc, char* argv[]){
 	//Init
 	::Test::init(argc, argv);
 
@@ -663,7 +501,7 @@ int main(const int argc, char* argv[]){
 	// GL::Blendings::Disable.apply(worldFrameBuffer.getID());
 
 
-	Core::renderer->getListener().on<Event::Draw_After>([&](const Event::Draw_After& event){
+	Core::renderer->getListener().on<ext::Draw_After>([&](const ext::Draw_After& event){
 		if(!drawDebug) return;
 		// event.renderer->effectBuffer.bind();
 		event.renderer->frameBegin(&frameBuffer);
@@ -680,7 +518,7 @@ int main(const int argc, char* argv[]){
 	});
 
 	// glDepthRangef(Graphic::Draw::DepthNear, Graphic::Draw::DepthFar);
-	Core::renderer->getListener().on<Event::Draw_Prepare>([&](const auto& event){
+	Core::renderer->getListener().on<ext::Draw_Prepare>([&](const auto& event){
 		GL::Blendings::Normal.apply();
 
 		Graphic::Mesh::meshBegin();
@@ -718,7 +556,7 @@ int main(const int argc, char* argv[]){
 		// GL::Blendings::Normal.apply();
 	});
 
-	Core::renderer->getListener().on<Event::Draw_After>([&](const auto& e){
+	Core::renderer->getListener().on<ext::Draw_After>([&](const auto& e){
 		if(!drawDebug) return;
 		e.renderer->frameBegin(&frameBuffer);
 		e.renderer->frameBegin(&multiSample);

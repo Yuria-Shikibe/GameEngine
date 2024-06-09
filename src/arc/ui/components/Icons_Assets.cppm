@@ -806,7 +806,7 @@ export Icon workbench{};
 export Icon zoom_in{};
 export Icon zoom_internal{};
 export Icon zoom_out{};
-	export ext::StringMap<std::reference_wrapper<Icon>> iconMap{};
+	export ext::StringHashMap<std::reference_wrapper<Icon>> iconMap{};
 
 	void loadIcons(Graphic::TextureAtlas& atlas){
 	using namespace std::string_view_literals;

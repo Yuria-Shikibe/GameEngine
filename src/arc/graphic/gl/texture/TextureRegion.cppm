@@ -78,6 +78,13 @@ export namespace GL{
 
 		//Below functions work properly only on rect regions
 
+		constexpr void copyPositionDataFrom(const TextureRegion& other) noexcept{
+			v00 = other.v00;
+			v10 = other.v10;
+			v01 = other.v01;
+			v11 = other.v11;
+		}
+
 		[[nodiscard]] float getSrcX() const {
 			return v00.x * data->getWidth();
 		}

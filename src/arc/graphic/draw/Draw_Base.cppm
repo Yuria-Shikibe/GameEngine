@@ -249,7 +249,7 @@ export namespace Graphic{
 
 
 			static void rectPoint(const Geom::Vec2 pos, const float size){
-				Fill::rectOrtho(ProvTy::contextTexture, pos.x - size * 0.5f, pos.y - size * 0.5f, size, size);
+				Fill::rectOrtho(*ProvTy::contextTexture, pos.x - size * 0.5f, pos.y - size * 0.5f, size, size);
 			}
 
 

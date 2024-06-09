@@ -3,7 +3,7 @@ export module Assets.TexturePacker;
 import std;
 
 import Assets.Loader;
-import Math.StripPacker2D;
+import Math.Algo.StripPacker2D;
 import Graphic.Pixmap;
 import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
@@ -148,7 +148,7 @@ export namespace Assets {
 		};
 
 		std::vector<std::unique_ptr<GL::Texture2D>> textures{};
-		ext::StringMap<TextureRegionPackData> packData{};
+		ext::StringHashMap<TextureRegionPackData> packData{};
 
 		std::vector<MergeTask> toMerge{};
 		std::vector<Graphic::Pixmap> mergedMaps{};
@@ -186,11 +186,11 @@ export namespace Assets {
 			TexturePackPage(pageName, cacheDir, {0, 0, GL::getMaxTextureSize(), GL::getMaxTextureSize()}){
 		}
 
-		[[nodiscard]] const ext::StringMap<TextureRegionPackData>& getData() const {
+		[[nodiscard]] const ext::StringHashMap<TextureRegionPackData>& getData() const {
 			return packData;
 		}
 
-		[[nodiscard]] ext::StringMap<TextureRegionPackData>& getData() {
+		[[nodiscard]] ext::StringHashMap<TextureRegionPackData>& getData() {
 			return packData;
 		}
 
@@ -384,7 +384,7 @@ export namespace Assets {
 
 		void apply() {
 			for(auto& map : mergedMaps) {
-				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), std::move(map).release()));
+				textures.push_back(std::make_unique<GL::Texture2D>(map.getWidth(), map.getHeight(), map.data()));
 			}
 
 			for(auto& data : packData | std::views::values) {
@@ -435,7 +435,7 @@ export namespace Assets {
 			texFutures.reserve(pageSize);
 
 			for(int i = 0; i < pageSize; ++i) {
-				texFutures.emplace_back(std::async([file = cacheDir.subFile(static_cast<std::string>(pageName) + std::to_string(i) + ".png")] {
+				texFutures.emplace_back(std::async([file = cacheDir.subFile(pageName + std::to_string(i) + ".png")] {
 					return GL::Texture2D{file, false};
 				}));
 			}
@@ -488,10 +488,10 @@ export namespace Assets {
 			packer.setMaxSize(texMaxBound.getWidth(), texMaxBound.getHeight());
 			packer.sortData();
 			packer.process();
-			const Geom::OrthoRectInt r = packer.getResultBound();
+			auto [w, h]  = packer.getResultSize();
 
 			//Move it
-			toMerge.emplace_back(std::move(packer.packed), r.getWidth(), r.getHeight(), currentID);
+			toMerge.emplace_back(std::move(packer.packed), w, h, currentID);
 			loadRemains(std::move(packer.getRemains()), currentID + 1);
 		}
 

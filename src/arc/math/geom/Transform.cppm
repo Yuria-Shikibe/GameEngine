@@ -25,44 +25,61 @@ export namespace Geom{
 			rot = NaN;
 		}
 
-		constexpr Transform& operator|=(const Transform& parentRef){
-			vec.rotate(parentRef.rot).add(parentRef.vec);
-			rot += parentRef.rot;
+		constexpr Transform& applyInv(const Transform& transform) noexcept{
+			vec.sub(transform.vec).rotate(-transform.rot);
+			rot -= transform.rot;
 
 			return *this;
 		}
 
-		constexpr Transform& operator+=(const Transform& other){
+		constexpr Transform& apply(const Transform& transform) noexcept{
+			vec.rotate(transform.rot).add(transform.vec);
+			rot += transform.rot;
+
+			return *this;
+		}
+
+		constexpr Transform& operator|=(const Transform& parentRef) noexcept{
+			return apply(parentRef);
+		}
+
+		constexpr Transform& operator+=(const Transform& other) noexcept{
 			vec += other.vec;
 			rot += other.rot;
 
 			return *this;
 		}
 
-		constexpr Transform& operator-=(const Transform& other){
+		constexpr Transform& operator-=(const Transform& other) noexcept{
 			vec -= other.vec;
 			rot -= other.rot;
 
 			return *this;
 		}
 
-		constexpr Transform& operator*=(const float scl){
+		constexpr Transform& operator*=(const float scl) noexcept{
 			vec *= scl;
 			rot *= scl;
 
 			return *this;
 		}
 
-		[[nodiscard]] constexpr friend Transform operator*(Transform self, const float scl){
+		[[nodiscard]] constexpr friend Transform operator*(Transform self, const float scl) noexcept{
 			return self *= scl;
 		}
 
-		[[nodiscard]] constexpr friend Transform operator+(Transform self, const Transform& other){
+		[[nodiscard]] constexpr friend Transform operator+(Transform self, const Transform& other) noexcept{
 			return self += other;
 		}
 
-		[[nodiscard]] constexpr friend Transform operator-(Transform self, const Transform& other){
+		[[nodiscard]] constexpr friend Transform operator-(Transform self, const Transform& other) noexcept{
 			return self -= other;
+		}
+
+		[[nodiscard]] constexpr friend Transform operator-(Transform self) noexcept{
+			self.vec.reverse();
+			self.rot *= -1;
+			return self;
 		}
 
 		/**

@@ -507,7 +507,7 @@ export namespace Game{
 		void save(){
 			const OS::File file{Assets::Dir::game.subFile(R"(hitbox\target.txt)")};
 
-			std::filesystem::path path = file.readString();
+			std::filesystem::path path = file.readString_byLine();
 
 			std::ofstream writer{path, std::ios::binary | std::ios::out};
 
@@ -531,7 +531,7 @@ export namespace Game{
 			
 			const OS::File file{Assets::Dir::game.subFile(R"(hitbox\target.txt)")};
 
-			std::ifstream reader{file.readString(), std::ios::binary | std::ios::in};
+			std::ifstream reader{file.readString_byLine(), std::ios::binary | std::ios::in};
 
 			auto view = allHitboxes | std::ranges::views::values;
 

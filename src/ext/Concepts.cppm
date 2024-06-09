@@ -41,20 +41,12 @@ namespace Concepts {
 		static constexpr bool invocableVoidAs_v() {
 			return std::is_invocable_v<Func, Args...>;
 		}
+
+		template <typename Func>
+		static constexpr bool isReuglarOf = std::regular_invocable<Func, Args...>;
 	};
 
-	#define TraitContent \
-	using ReturnType = Ret;\
-	using ArgsTuple = std::tuple<Args...>;\
-	static constexpr std::size_t argsArity = sizeof...(Args);\
-	template <typename Func>\
-	static constexpr bool isInvocable = std::is_invocable_r_v<Ret, Func, Args...>;\
-	template <typename Func>\
-	static constexpr bool invocableAs_v() {return std::is_invocable_r_v<Ret, Func, Args...>;}\
-	template <typename Func>\
-	static constexpr bool invocableVoidAs_v() {return std::is_invocable_v<Func, Args...>;}
-
-#define Variant(ext) export template<typename Ret, typename... Args> struct FunctionTraits<Ret(Args...) ext>{TraitContent};
+#define Variant(ext) export template<typename Ret, typename... Args> struct FunctionTraits<Ret(Args...) ext> : FunctionTraits<Ret(Args...)>{};
 	Variant(&);
 	Variant(&&);
 	Variant(const);
@@ -99,7 +91,10 @@ namespace Concepts {
 	concept DefConstructable = std::is_default_constructible_v<T>;
 
 	export template <typename T, typename functype>
-	concept Invokable = FunctionTraits<functype>::template invocableAs_v<T>();
+	concept Invokable = FunctionTraits<functype>::template isInvocable<T>;
+
+	export template <typename T, typename functype>
+	concept InvokableRegular = FunctionTraits<functype>::template isInvocable<T> && FunctionTraits<functype>::template isReuglarOf<T>;
 
 	export template <typename T, typename functype>
 	concept InvokableVoid = FunctionTraits<functype>::template invocableVoidAs_v<T>();
@@ -133,6 +128,18 @@ namespace Concepts {
 		std::is_base_of_v<decltype(t.getX()), NumberType>;
 		std::is_base_of_v<decltype(t.getY()), NumberType>;
 	};
+
+
+	template <template <class...> class Template, class... Args>
+	// ReSharper disable once CppFunctionIsNotImplemented
+	void derived_from_specialization_impl(const Template<Args...>&);
+
+	export
+	template <class T, template <class...> class Template>
+	concept SpecDeriveOf = requires(const T& obj) {
+		Concepts::derived_from_specialization_impl<Template>(obj);
+	};
+
 
 	export template <typename T, typename Type>
 	concept Iterator = requires(T t){

@@ -250,14 +250,14 @@ namespace OS{
 			return files;
 		}
 
-		void forSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
+		void forSubs(std::invocable<File&&> auto&& consumer) const{
 			for(const auto& item : fs::directory_iterator(getPath())){
 				consumer(File{item});
 			}
 		}
 
 		template <bool careDirs = false>
-		void forAllSubs(Concepts::Invokable<void(File&&)> auto&& consumer) const{
+		void forAllSubs(std::invocable<File&&> auto&& consumer) const{
 			for(const auto& item : fs::recursive_directory_iterator(getPath())){
 				if(File f{item}; f.isRegular()){
 					consumer(std::move(f));
@@ -283,7 +283,7 @@ namespace OS{
 		}
 
 		template <Concepts::InvokeNullable<void(std::string&)> Consumer = std::nullptr_t>
-		[[nodiscard]] std::string readString(Consumer&& consumer = nullptr) const{
+		[[nodiscard]] std::string readString_byLine(Consumer&& consumer = nullptr) const{
 			std::ifstream file_stream(getPath());
 
 			if(!file_stream.is_open()) return "";
@@ -305,7 +305,7 @@ namespace OS{
 			return std::move(file_contents).str();
 		}
 
-		[[nodiscard]] std::string quickRead() const{
+		[[nodiscard]] std::string readString() const{
 			std::ifstream file_stream(getPath(), std::ios::binary | std::ios::ate);
 			if(!file_stream.is_open()) return "";
 
@@ -330,8 +330,8 @@ namespace OS{
 		using Filter = std::pair<std::string, std::function<bool(const File&)>>;
 
 		template <bool careDirs = false>
-		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubs() const{
-			ext::StringMap<std::vector<File>> map;
+		[[nodiscard]] ext::StringHashMap<std::vector<File>> sortSubs() const{
+			ext::StringHashMap<std::vector<File>> map;
 			this->forAllSubs<careDirs>([&map](File&& file){
 				const std::string& extension = file.extension();
 				map[extension.empty() ? static_cast<std::string>(EMPTY_EXTENSION) : extension].push_back(file);
@@ -341,8 +341,8 @@ namespace OS{
 		}
 
 		template <bool careDirs = false>
-		[[nodiscard]] ext::StringMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards) const{
-			ext::StringMap<std::vector<File>> map;
+		[[nodiscard]] ext::StringHashMap<std::vector<File>> sortSubsBy(const std::span<Filter>& standards) const{
+			ext::StringHashMap<std::vector<File>> map;
 
 			this->forAllSubs<careDirs>([&standards, &map](File&& file){
 				if(const auto it = std::ranges::find_if(standards, [&file](const Filter& pair){
@@ -355,9 +355,9 @@ namespace OS{
 			return map;
 		}
 
-		static ext::StringMap<std::vector<File>> sortBy(
+		static ext::StringHashMap<std::vector<File>> sortBy(
 			const std::span<File>& files, const std::span<Filter>& standards){
-			ext::StringMap<std::vector<File>> map;
+			ext::StringHashMap<std::vector<File>> map;
 
 			for(const File& file : files){
 				if(

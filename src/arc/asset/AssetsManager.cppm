@@ -7,7 +7,7 @@ import Assets.SoundLoader;
 import Graphic.TextureAtlas;
 import GL.Shader.Manager;
 import Font;
-import Event;
+import ext.Event;
 
 import std;
 
@@ -18,22 +18,22 @@ export
 namespace Assets{
 	class Manager;
 
-	struct AssetsLoadInit final : Event::EventType {
+	struct AssetsLoadInit final : ext::EventType {
 		Manager* const manager;
 		[[nodiscard]] explicit AssetsLoadInit(Manager* const manager) : manager(manager) {}
 	};
 
-	struct AssetsLoadPull final : Event::EventType {
+	struct AssetsLoadPull final : ext::EventType {
 		Manager* const manager;
 		[[nodiscard]] explicit AssetsLoadPull(Manager* const manager) : manager(manager) {}
 	};
 
-	struct AssetsLoadPost final : Event::EventType {
+	struct AssetsLoadPost final : ext::EventType {
 		Manager* const manager;
 		[[nodiscard]] explicit AssetsLoadPost(Manager* const manager) : manager(manager) {}
 	};
 
-	struct AssetsLoadEnd final : Event::EventType {
+	struct AssetsLoadEnd final : ext::EventType {
 		Manager* const manager;
 		[[nodiscard]] explicit AssetsLoadEnd(Manager* const manager) : manager(manager) {}
 	};
@@ -47,11 +47,11 @@ namespace Assets{
 		Assets::SoundLoader soundLoader{};
 		Assets::AssetsLoader loader{};
 
-		Event::EventManager loadEvents{
-			Event::indexOf<AssetsLoadInit>(),
-			Event::indexOf<AssetsLoadPull>(),
-			Event::indexOf<AssetsLoadPost>(),
-			Event::indexOf<AssetsLoadEnd>()
+		ext::EventManager loadEvents{
+			ext::indexOf<AssetsLoadInit>(),
+			ext::indexOf<AssetsLoadPull>(),
+			ext::indexOf<AssetsLoadPost>(),
+			ext::indexOf<AssetsLoadEnd>()
 		};
 
 		std::unique_ptr<Font::FontManager> tempFontLoader{std::make_unique<Font::FontManager>()};
@@ -75,7 +75,7 @@ namespace Assets{
 			return atlas;
 		}
 
-		[[nodiscard]] Font::FontAtlas& getFonts() const{
+		[[nodiscard]] Font::FontStorage& getFonts() const{
 			return *fonts.atlas;
 		}
 
@@ -91,7 +91,7 @@ namespace Assets{
 			return loader;
 		}
 
-		[[nodiscard]] Event::EventManager& getEventTrigger() {
+		[[nodiscard]] ext::EventManager& getEventTrigger() {
 			return loadEvents;
 		}
 

@@ -1,10 +1,10 @@
-export module Event;
+export module ext.Event;
 
 import std;
 import ext.RuntimeException;
 import ext.Concepts;
 
-export namespace Event {
+export namespace ext {
 	struct EventType {};
 
 	template<Concepts::Derived<EventType> T>
@@ -90,20 +90,25 @@ export namespace Event {
 			requires static_cast<SignalType>(index) >= 0;
 		};
 
+		[[nodiscard]] static constexpr SignalType max() noexcept{
+			return maxsize;
+		}
+
 		void fire(const T signal) {
 			for (const auto& listener : events[std::to_underlying(signal)]) {
 				listener();
 			}
 		}
 
-		void on(const T signal, Concepts::Invokable<void()> auto&& func){
-			events[std::to_underlying(signal)].emplace_back(std::forward<decltype(func)>(func));
+		template <std::invocable Func>
+		void on(const T signal, Func&& func){
+			events.at(std::to_underlying(signal)).push_back(std::function<void()>{std::forward<Func>(func)});
 		}
 
-		template <T signal, Concepts::Invokable<void()> Func>
+		template <T signal, std::invocable Func>
 			requires isValid<signal>
 		void on(Func&& func){
-			events[std::to_underlying(signal)].emplace_back(std::forward<Func>(func));
+			events.at(std::to_underlying(signal)).push_back(std::function<void()>{std::forward<Func>(func)});
 		}
 
 		template <T signal>
@@ -120,7 +125,7 @@ export namespace Event {
 		begin, end,
 	};
 
-	using CycleSignalManager = Event::SignalManager<Event::CycleSignalState, 2>;
+	using CycleSignalManager = ext::SignalManager<ext::CycleSignalState, 2>;
 
 	using enum CycleSignalState;
 }

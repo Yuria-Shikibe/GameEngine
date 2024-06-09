@@ -73,8 +73,8 @@ export namespace UI{
 			touchbility = TouchbilityFlags::enabled;
 		}
 
-		bool setWidth(const float w) noexcept override{
-			if(Elem::setWidth(w)){
+		bool setWidth_Quiet(const float w) noexcept override{
+			if(Elem::setWidth_Quiet(w)){
 				buffer.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
 				camera.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
 				return true;
@@ -82,8 +82,8 @@ export namespace UI{
 			return false;
 		}
 
-		bool setHeight(const float h) noexcept override{
-			if(Elem::setHeight(h)){
+		bool setHeight_Quiet(const float h) noexcept override{
+			if(Elem::setHeight_Quiet(h)){
 				buffer.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
 				camera.resize(static_cast<int>(bound.getWidth()), static_cast<int>(bound.getHeight()));
 				return true;
