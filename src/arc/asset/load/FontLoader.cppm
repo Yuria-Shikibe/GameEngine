@@ -203,8 +203,6 @@ export namespace Assets::Load{
 			while(!instantManager.isFinished()){
 				instantManager.processRequests();
 			}
-
-			instantManager.requestDone();
 		}
 	};
 }

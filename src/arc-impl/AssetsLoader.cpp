@@ -46,7 +46,6 @@ void Assets::Load::MainLoader::loadWith(Core::Renderer* renderer){
 
 		while (!Core::platform->shouldExit()){
 			if(isFinished()) {
-				requestDone();
 				if(loadRenderer.lastProgress > 0.999f) {
 					break;
 				}

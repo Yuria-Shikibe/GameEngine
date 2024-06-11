@@ -180,11 +180,14 @@ export namespace Assets::Load{
 
 		void requestDone(){
 			//TODO set wait time for timeout handle
-			for (auto& [task, future] : tasks){
+			for (auto& future : tasks | std::views::values){
 				if(future.valid())future.get();
 			}
+
 			taskCurrentProgress = 1.f;
 			tasks.clear();
+
+			std::println("Task {} Finished | Cost Time: {}", taskName, std::chrono::duration_cast<std::chrono::milliseconds>(timer.get()));
 		}
 
 		void tryThrowException() const;
@@ -258,9 +261,6 @@ namespace Assets::Load{
 
 	void LoadManager::afterArrival() noexcept{
 		if(std::to_underlying(currentPhase) < MaxPhaseCount){
-			//TODO move this to other place
-			std::println("[{}]: Phase {} Reached | {:.1f}% Completed.", taskName, std::to_underlying(currentPhase), calCurrentProgress() * 100.f);
-			std::cout.flush();
 			for (const auto task : tasks | std::views::keys){
 				task->postEventManager.fire(currentPhase);
 			}
@@ -274,7 +274,7 @@ namespace Assets::Load{
 	}
 
 	void LoadManager::launch(){
-		std::println("Launch Assets Load | Main Thread: {}", std::this_thread::get_id());
+		std::println("Task {} Launched | On Thread: {}", taskName, std::this_thread::get_id());
 		setupBarrier();
 
 		for (auto& [task, future] : tasks){
