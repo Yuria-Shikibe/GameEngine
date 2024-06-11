@@ -29,7 +29,6 @@ import Graphic.PostProcessor.P4Processor;
 import Graphic.PostProcessor.PipeProcessor;
 import Graphic.PostProcessor;
 
-import GL.Shader.Manager;
 export import GL.Shader.UniformWrapper;
 import GL.Constants;
 
@@ -48,6 +47,13 @@ namespace Core{
  *
  */
 export namespace Assets{
+	namespace Load{
+		class FontLoader;
+		class QuickInitFontLoader;
+		class ShaderLoader;
+	}
+
+
 	inline OS::FileTree textureTree;
 
 	namespace Shaders {
@@ -90,7 +96,7 @@ export namespace Assets{
 
 		void loadPrimitive();
 
-		void load(GL::ShaderManager* manager);
+		void load(Load::ShaderLoader& manager);
 	}
 
 	namespace PostProcessors {
@@ -169,85 +175,9 @@ export namespace Assets{
 			*telegrama{nullptr}
 		;
 
-		void loadPreivous(Font::FontManager* loader) { // NOLINT(*-non-const-parameter)
-			loader->quickInit = true;
+		void loadPreivous(Load::QuickInitFontLoader& loader);
 
-			telegrama =
-				 loader->registerFont(new Font::FontFace{Dir::font.subFile("telegrama.otf"),  targetChars, DefFlag, 120});
-
-			loader->load();
-
-			Font::initParser(telegrama);
-		}
-
-		void load(Font::FontManager* loader) { // NOLINT(*-non-const-parameter
-			targetChars_withChinese.append_range(Font::genRefTable(unicodeRefDir.find("zh_cn.txt")));
-
-			sourceHan_SC_SB =
-				loader->registerFont(new Font::FontFace{Dir::font.subFile("SourceHanSerifSC-SemiBold.otf" ),  targetChars_withChinese});
-			sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
-
-			consola_Regular =
-				loader->registerFont(new Font::FontFace{Dir::font.subFile("consola.ttf" ),  targetChars});
-			consola_Italic =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("consolai.ttf"),  targetChars});
-			consola_Bold =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("consolab.ttf"),  targetChars});
-			consola_Bold_Italic =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("consolaz.ttf"),  targetChars});
-
-			times_Regular =
-				loader->registerFont(new Font::FontFace{Dir::font.subFile("times.ttf" ),  targetChars});
-			times_Italic =
-				loader->registerFont(new Font::FontFace{Dir::font.subFile("timesi.ttf"),  targetChars});
-			times_Bold =
-				loader->registerFont(new Font::FontFace{Dir::font.subFile("timesbd.ttf"),  targetChars});
-			times_Bold_Italic =
-				loader->registerFont(new Font::FontFace{Dir::font.subFile("timesbi.ttf"),  targetChars});
-
-			josefinSans_Regular =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars});
-			josefinSans_Bold =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars});
-
-			josefinSans_Regular_Large =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars, DefFlag, 90});
-			josefinSans_Bold_Large =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars, DefFlag, 90});
-
-			telegrama =
-			 	loader->registerFont(new Font::FontFace{Dir::font.subFile("telegrama.otf"),  targetChars});
-
-			telegrama->fallback = sourceHan_SC_SB;
-
-
-			Font::registerParserableFont("tms-R" , times_Regular);
-			Font::registerParserableFont("tms-B" , times_Bold);
-			Font::registerParserableFont("tms-I" , times_Italic);
-			Font::registerParserableFont("tms-BI", times_Bold_Italic);
-
-			Font::registerParserableFont("csl-R" , consola_Regular);
-			Font::registerParserableFont("csl-B" , consola_Bold);
-			Font::registerParserableFont("csl-I" , consola_Italic);
-			Font::registerParserableFont("csl-BI", consola_Bold_Italic);
-
-			Font::registerParserableFont("jfs-B", josefinSans_Bold);
-			Font::registerParserableFont("jfs-R", josefinSans_Regular);
-
-			Font::registerParserableFont("jfsL-B", josefinSans_Bold_Large);
-			Font::registerParserableFont("jfsL-R", josefinSans_Regular_Large);
-
-			Font::registerParserableFont("tele", telegrama);
-			Font::registerParserableFont("srch", sourceHan_SC_SB);
-
-
-			telegrama->setDefErrorFallback(::Assets::Textures::error);
-			sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
-
-			josefinSans_Bold_Large->setDefErrorFallback(::Assets::Textures::error);
-			josefinSans_Regular_Large->setDefErrorFallback(::Assets::Textures::error);
-
-		}
+		void pull(Load::FontLoader& loader);
 	}
 
 	namespace Meshes {

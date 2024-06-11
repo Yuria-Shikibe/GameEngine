@@ -8,7 +8,8 @@ import std;
 import ext.Heterogeneous;
 
 export namespace OS{
-	//dTODO use a struct to wrap the data structure of just directly use vector?
+	//TODO use a struct to wrap the data structure of just directly use vector?
+	//TODO redisgn this, mess
 
 	/**
 	 * \brief Uses to operate frequently used `readonly` files, static!
@@ -100,7 +101,7 @@ export namespace OS{
 		[[nodiscard]] ext::StringHashMap<File>& getFlatView(){ return flatView; }
 
 		template <bool quiet = false>
-		OS::File flatFind(const std::string_view fileName) const {
+		[[nodiscard]] OS::File flatFind(const std::string_view fileName) const {
 			if(const auto itr = flatView.find(fileName); itr != flatView.end()){
 				return itr->second;
 			}
@@ -155,7 +156,7 @@ export namespace OS{
 			return files.at(category);
 		}
 
-		File findAbsolute(const std::string_view fileName) const{
+		[[nodiscard]] OS::File findAbsolute(const std::string_view fileName) const{
 			return root.subFile(fileName);
 		}
 

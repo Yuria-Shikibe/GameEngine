@@ -8,8 +8,14 @@ import OS;
 import Geom.Vector2D;
 
 import std;
+import Font.GlyphArrangement;
+import Assets.Graphic;
 
-void Core::initMainWindow() {
+void Core::initPlatform(const int argc, char* argv[]){
+	initCurrentPlatform(platform, title, argc, argv);
+}
+
+void Core::initMainWindow(const bool maximizeWinOnInit) {
 	platform->window->initWindow(title);
 	platform->window->setVerticalSync();
 	platform->window->setWindowCallback();
@@ -19,14 +25,14 @@ void Core::initMainWindow() {
 	}
 
 	GL::init();
-	auto [x, y] = Core::platform->window->equrySize();
-	GL::viewport(x, y);
-	platform->window->lastScreenBound.set(0, 0, x, y);
+	const auto size = Core::platform->window->equrySize();
+	GL::viewport(size);
+	platform->window->lastScreenBound.setSize(size);
 	GL::enable(GL_MULTISAMPLE);
 }
 
 void Core::initFileSystem() {
-#if defined(_DEBUG) && defined(ASSETS_DIR)
+#if defined(ASSETS_DIR)
 	rootFileTree = OS::FileTree(ASSETS_DIR);
 #else
 	const auto dir = Core::platform->getProcessFileDir();
@@ -36,44 +42,67 @@ void Core::initFileSystem() {
 	rootFileTree = OS::FileTree{dir};
 
 #endif
-	OS::crashFileGetter = std::bind(&Core::Log::generateCrashFilePath, log);
 }
 
-void Core::initCore(const std::function<void()>& initializer) {
-	initMainWindow();
-
-	OS::launchApplication();
-
+void Core::initCore_Kernal(const std::function<void()>& initializer) {
 	initFileSystem();
 
 	if(initializer){
 		initializer();
 	}
 
-	{
-		if(!camera)camera = new Camera2D{};
-		if(!log)log = new Log{rootFileTree.findDir("logs")};
+	if(!log){
+		log = new Log{rootFileTree.findDir("logs")};
 	}
 
-	audio = new Core::Audio;
+	if(!loopManager){
+		loopManager = std::make_unique<MainLoopManager>();
+	}
+
+	loopManager->timer.setDeltaSetter(platform->getGlobalDeltaSetter());
+	loopManager->timer.setTimerSetter(platform->getGlobalTimeSetter());
 }
 
-void Core::initCore_Post(const std::function<void()>& initializer) {
+void Core::initCore_Interactive(const std::function<void()>& initializer) {
+	if(!camera){
+		camera = std::make_unique<Camera2D>();
+	}
+
+	if(!audio){
+		audio = new Core::Audio;
+	}
+
+	Core::focus.camera.current = Core::focus.camera.fallback = Core::camera.get();
+
 	if(initializer) {
 		initializer();
 	}
 
 	if(!batchGroup.overlay)throw ext::NullPointerException{"Empty Overlay Batch!"};
-
-	assetsManager = new Assets::Manager{};
 }
 
-void Core::loadAssets() {
-	assetsManager->getSoundLoader().setEngine(audio->engine);
-	assetsManager->pullRequest();
-	assetsManager->load_Visible(renderer->getWidth(), renderer->getHeight(), renderer);
-	assetsManager->loadPost();
-	assetsManager->loadEnd();
+void Core::beginLoadAssets(){
+	assetsLoader.fontLoader.setBindedPage(assetsManager.atlas.getUIPage());
+	assetsLoader.soundLoader.setEngine(audio->engine);
+
+	for (auto && page : assetsManager.atlas.getPages() | std::views::values){
+		assetsLoader.texturePacker.pushPage(&page);
+	}
+
+
+	assetsLoader.loadWith(renderer);
+
+	assetsLoader.phaseArriveEventManager.on<Assets::Load::Phase::post_load>([]{
+
+	});
+}
+
+void Core::endLoadAssets(){
+	assetsManager.fonts = std::move(assetsLoader.fontLoader).cropStorage();
+	assetsManager.atlas.flush();
+
+	Font::defGlyphParser->context.defaultFont = Assets::Fonts::telegrama;
+	Font::defGlyphParser->loadedFonts = &assetsManager.fonts;
 }
 
 void Core::dispose() {
@@ -83,16 +112,20 @@ void Core::dispose() {
 
 	loopManager->clearListeners();
 
-	delete camera;
 	delete renderer;
 
 	delete audio;
-	delete assetsManager;
 	delete settings;
 	delete uiRoot;
 	delete log;
 
+	//Reset
+	batchGroup.~BatchGroup();
 	new (&batchGroup) BatchGroup;
 
 	platform.reset();
+}
+
+Core::MainLoopManager* Core::getLoopManager(){
+	return loopManager.get();
 }

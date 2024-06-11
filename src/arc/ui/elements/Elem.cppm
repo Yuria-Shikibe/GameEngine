@@ -142,13 +142,13 @@ export namespace UI {
 		// std::unordered_set<Widget*> focusTarget{};
 
 		ext::EventManager inputListener{
-			ext::indexOf<UI::MouseActionPress>(),
-			ext::indexOf<UI::MouseActionRelease>(),
-			ext::indexOf<UI::MouseActionDrag>(),
-			ext::indexOf<UI::MouseActionDoubleClick>(),
-			ext::indexOf<UI::MouseActionScroll>(),
-			ext::indexOf<UI::CurosrInbound>(),
-			ext::indexOf<UI::CurosrExbound>(),
+			ext::typeIndexOf<UI::MouseActionPress>(),
+			ext::typeIndexOf<UI::MouseActionRelease>(),
+			ext::typeIndexOf<UI::MouseActionDrag>(),
+			ext::typeIndexOf<UI::MouseActionDoubleClick>(),
+			ext::typeIndexOf<UI::MouseActionScroll>(),
+			ext::typeIndexOf<UI::CurosrInbound>(),
+			ext::typeIndexOf<UI::CurosrExbound>(),
 		};
 
 		TouchbilityFlags touchbility = TouchbilityFlags::disabled;

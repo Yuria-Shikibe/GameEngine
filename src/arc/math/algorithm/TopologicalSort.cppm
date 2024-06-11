@@ -41,10 +41,10 @@ export namespace Math{
 
 		for(auto curItr = std::ranges::begin(rng); curItr != std::ranges::end(rng); ++curItr){
 			visited.clear();
-			ProjTy curNode = std::invoke(proj, *curItr);
+			auto curNode = std::invoke(proj, *curItr);
 
 			while(pred(curNode)){
-				auto key = std::invoke(keyProj, curNode);
+				ProjTy key = std::invoke(keyProj, curNode);
 
 				if(visited.contains(key) || visited.size() > std::ranges::size(rng)){
 					throw ext::IllegalArguments{"Loop Reference detected during topological sort"};

@@ -101,7 +101,7 @@ export namespace GL{
 			return Math::abs(v00.y - v01.y) * static_cast<float>(data->getHeight());
 		}
 
-		Geom::Vec2 getSize() const{
+		[[nodiscard]] Geom::Vec2 getSize() const{
 			return {getWidth(), getHeight()};
 		}
 
@@ -165,6 +165,11 @@ export namespace GL{
 			const float v1 = static_cast<float>(internal.getEndY()) / static_cast<float>(height);
 
 			resize(u0, v0, u1, v1);
+		}
+
+		template<Concepts::Number N0, Concepts::Number N1>
+		void fetchInto(const Geom::Rect_Orthogonal<N0>& internal, const Geom::Vector2D<N1> size) {
+			this->fetchInto<N0, N1>(internal, size.x, size.y);
 		}
 
 		template<Concepts::Number N0, Concepts::Number N1>

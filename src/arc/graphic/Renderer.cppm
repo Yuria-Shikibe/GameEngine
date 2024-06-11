@@ -64,10 +64,10 @@ export namespace Core{
 
 		int width{200}, height{200};
 		ext::EventManager drawControlHook{
-				ext::indexOf<ext::Draw_After>(),
-				ext::indexOf<ext::Draw_Post>(),
-				ext::indexOf<ext::Draw_Prepare>(),
-				ext::indexOf<ext::Draw_Overlay>()
+				ext::typeIndexOf<ext::Draw_After>(),
+				ext::typeIndexOf<ext::Draw_Post>(),
+				ext::typeIndexOf<ext::Draw_Prepare>(),
+				ext::typeIndexOf<ext::Draw_Overlay>()
 			};
 
 		ext::Draw_Post draw_post{this};

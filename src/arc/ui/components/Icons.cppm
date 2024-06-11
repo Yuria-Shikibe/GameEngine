@@ -88,7 +88,7 @@ export namespace UI::Icons{
 			std::string name = loadedIcon;
 			std::ranges::replace(name, '-', '_');
 
-			std::println(stream, "\t{}.wrapper = *atlas.find(\"{}-{}\");", name, UIPagePrefix, loadedIcon);
+			std::println(stream, "\t{}.wrapper = *atlas.find(atlas.getUIPage(), \"{}\");", name, loadedIcon);
 			std::println(stream, "\ticonMap.insert_or_assign(\"{}\"sv, {});", loadedIcon, name);
 		}
 

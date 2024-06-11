@@ -15,6 +15,8 @@ import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
 import OS.File;
 
+import Core.Unit;
+
 export namespace Core{
 	struct MonitorData{
 		void* handle{nullptr};
@@ -148,19 +150,19 @@ export namespace Core{
 
 		std::vector<std::string> appArgs{};
 
-		void initArgs(const int argc, char* argv[]){
+		void setExecArgs(const int argc, char* argv[]){
 			appArgs.reserve(argc);
 			for(int i = 0; i < argc; ++i)appArgs.emplace_back(argv[i]);
 		}
 
 		virtual ~PlatformHandle() = default;
 
-		[[nodiscard]] virtual OS::File getProcessFile() const{
+		[[nodiscard]] virtual OS::File getCurrent() const{
 			return OS::File{std::filesystem::current_path()};
 		}
 
-		[[nodiscard]] OS::File getProcessFileDir() const{
-			return getProcessFile().getParent();
+		[[nodiscard]] OS::File getCurrentParentDir() const{
+			return getCurrent().getParent();
 		}
 
 		[[nodiscard]] virtual std::string getClipboard() const{return {};}
@@ -176,9 +178,6 @@ export namespace Core{
 		virtual void prepareExit() const = 0;
 
 		virtual void pollEvents() const = 0;
-
-		using TimerSetter = float(*)();
-		using DeltaSetter = float(*)(float);
 
 		[[nodiscard]] virtual TimerSetter getGlobalTimeSetter() const {
 			return nullptr;

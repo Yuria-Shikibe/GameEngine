@@ -98,8 +98,8 @@ export namespace UI::Styles {
 		};
 
 		{
-			tex_elem1_egde = GL::TextureNineRegion{atlas.find("ui-elem1-edge"), {16, 16, 64, 64}};
-			tex_elem1_back = GL::TextureNineRegion{atlas.find("ui-elem1-back"), {16, 16, 64, 64}};
+			tex_elem1_egde = GL::TextureNineRegion{atlas.find_ui("elem1-edge"), {16, 16, 64, 64}};
+			tex_elem1_back = GL::TextureNineRegion{atlas.find_ui("elem1-back"), {16, 16, 64, 64}};
 
 			drawable_elem1_egde = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem1_egde);
 			drawable_elem1_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem1_back);
@@ -122,8 +122,8 @@ export namespace UI::Styles {
 		}
 
 		{
-			tex_elem2_egde = GL::TextureNineRegion{atlas.find("ui-elem2-edge"), {16, 16, 64, 64}};
-			tex_elem2_back = GL::TextureNineRegion{atlas.find("ui-elem2-back"), {16, 16, 64, 64}};
+			tex_elem2_egde = GL::TextureNineRegion{atlas.find_ui("elem2-edge"), {16, 16, 64, 64}};
+			tex_elem2_back = GL::TextureNineRegion{atlas.find_ui("elem2-back"), {16, 16, 64, 64}};
 
 			drawable_elem2_egde = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem2_egde);
 			drawable_elem2_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem2_back);
@@ -146,8 +146,8 @@ export namespace UI::Styles {
 		}
 
 		{
-			tex_elem3_egde = GL::TextureNineRegion{atlas.find("ui-elem3-edge"), {16, 16, 64, 64}};
-			tex_elem3_back = GL::TextureNineRegion{atlas.find("ui-elem3-back"), {16, 16, 64, 64}};
+			tex_elem3_egde = GL::TextureNineRegion{atlas.find_ui("elem3-edge"), {16, 16, 64, 64}};
+			tex_elem3_back = GL::TextureNineRegion{atlas.find_ui("elem3-back"), {16, 16, 64, 64}};
 
 			drawable_elem3_egde = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem3_egde);
 			drawable_elem3_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem3_back);
@@ -170,8 +170,8 @@ export namespace UI::Styles {
 		}
 
 		{
-			tex_elem_s1_egde = GL::TextureNineRegion{atlas.find("ui-elem-s1-edge"), {8, 8, 16, 16}};
-			tex_elem_s1_back = GL::TextureNineRegion{atlas.find("ui-elem-s1-back"), {8, 8, 16, 16}};
+			tex_elem_s1_egde = GL::TextureNineRegion{atlas.find_ui("elem-s1-edge"), {8, 8, 16, 16}};
+			tex_elem_s1_back = GL::TextureNineRegion{atlas.find_ui("elem-s1-back"), {8, 8, 16, 16}};
 
 			drawable_elem_s1_egde = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem_s1_egde);
 			drawable_elem_s1_back = std::make_unique<UI::TextureNineRegionDrawable>(&tex_elem_s1_back);

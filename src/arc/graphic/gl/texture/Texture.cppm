@@ -39,24 +39,6 @@ export namespace GL{
 
 		Texture() = default;
 
-		Texture(const Texture& other) = delete;
-
-		Texture(Texture&& other) noexcept
-			: GL::GLObject(std::move(other)),
-			  width(other.width),
-			  height(other.height){
-		}
-
-		Texture& operator=(const Texture& other) = delete;
-
-		Texture& operator=(Texture&& other) noexcept{
-			if(this == &other) return *this;
-			GL::GLObject::operator =(std::move(other));
-			width = other.width;
-			height = other.height;
-			return *this;
-		}
-
 		explicit Texture(const GLenum targetFlag)
 			: GLObject(targetFlag){
 		}
@@ -93,6 +75,14 @@ export namespace GL{
 		}
 
 		~Texture() override = default;
+
+		Texture(const Texture& other) = delete;
+
+		Texture(Texture&& other) noexcept = default;
+
+		Texture& operator=(const Texture& other) = delete;
+
+		Texture& operator=(Texture&& other) noexcept = default;
 
 		virtual void active(unsigned offset) const = 0;
 		virtual void activeAll(unsigned offset) const = 0;

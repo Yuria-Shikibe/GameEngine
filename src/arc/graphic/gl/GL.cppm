@@ -7,6 +7,7 @@ export module GL;
 import std;
 import ext.RuntimeException;
 import Geom.Rect_Orthogonal;
+import Geom.Vector2D;
 
 namespace GL {
     GLuint lastProgram{0};
@@ -254,6 +255,10 @@ export namespace GL {
 
     void viewport(const GLsizei width, const GLsizei height) {
         viewport(0, 0, width, height);
+    }
+
+    void viewport(const Geom::Vector2D<GLsizei> s) {
+        viewport(0, 0, s.x, s.y);
     }
 
     [[nodiscard]] Geom::OrthoRectInt getViewPort(){

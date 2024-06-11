@@ -31,8 +31,8 @@ export namespace Game {
 		std::unordered_map<IDType, std::shared_ptr<T>> idMap{std::unordered_map<IDType, std::shared_ptr<T>>{5000}};
 
 		ext::EventManager groupListener{
-			ext::indexOf<AddEvent>(),
-			ext::indexOf<RemoveEvent>()
+			ext::typeIndexOf<AddEvent>(),
+			ext::typeIndexOf<RemoveEvent>()
 		};
 
 		std::mutex removeLock{};

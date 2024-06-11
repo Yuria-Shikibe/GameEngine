@@ -49,7 +49,6 @@ import Core;
 import Core.MainLoopManager;
 
 import Core.Audio;
-import Assets.Manager;
 import Assets.Effects;
 import Assets.Sound;
 import Assets.Bundle;
@@ -79,10 +78,6 @@ import GL.Blending;
 import ext.Event;
 import Font.GlyphArrangement;
 import ext.Timer;
-
-import Assets.TexturePacker;
-import Assets.Loader;
-import Assets.Manager;
 
 //TODO 模块分区
 import UI.Elem;
@@ -149,11 +144,10 @@ bool drawDebug{false};
 import Assets.Load.State;
 import Assets.Load.Core;
 import Assets.Load.Misc;
+import Assets.Load.FontLoader;
 
 import Assets.Load.TexturePacker;
 import Assets.TexturePage;
-
-import Math.Algo.TopologicalSort;
 
 template <auto what>
 struct Print{
@@ -165,24 +159,36 @@ struct Print{
 
 
 
-int main(){
+int main_(){
+	return 0;
 	// ext::StringMap<int> map{};
 
-	Assets::TexturePage mainPage{"main"};
-	Assets::TexturePage lightPage{"light"};
+	Graphic::TextureAtlas atlas{};
+
+	Assets::TexturePage* mainPage = atlas.registerPage("main");
+	Assets::TexturePage* lightPage = atlas.registerPage("light");
+	Assets::TexturePage* fontPage = atlas.registerPage("font");
 
 	OS::File testTextureDir{R"(D:\projects\GameEngine\properties\resource\assets\texture\main)"};
 
+	const std::vector<Font::CharCode> targetChars = std::ranges::views::iota(' ' + 1, '~' + 1) | std::ranges::to<std::vector<Font::CharCode>>();// {{' ' + 1, '~'}};
+
+	Font::loadGlobalFreeTypeLib();
 
 	using namespace Assets::Load;
 	//
 	LoadManager loadManager{};
 	TexturePacker packer{};
+	FontLoader fontLoader{};
+	MiscTaskManager<> miscTaskManager{};
+
+	fontLoader.registerFont(new Font::FontFace{OS::File(R"(D:\projects\GameEngine\properties\resource\assets\fonts\consola.ttf)" ),  targetChars});
+	fontLoader.setBindedPage(fontPage);
 
 	packer.setCacheDir(OS::File{R"(D:\projects\GameEngine\properties\resource\cache)"});
 
 	testTextureDir.subFile("base").forAllSubs([&](auto&& file){
-		mainPage.pullRequest<Assets::FileImportData>(file.stem(), file);
+		mainPage->pushRequest<Assets::FileImportData>(file.stem(), file);
 	});
 
 	testTextureDir.subFile("light").forAllSubs([&](auto&& file){
@@ -190,16 +196,28 @@ int main(){
 		auto pos = name.find_first_of('.');
 		name = name.substr(0, pos);
 
-		lightPage.pullRequest<Assets::FileImportData>(name, file);
+		lightPage->pushRequest<Assets::FileImportData>(name, file);
 	});
 
-	lightPage.dependency = &mainPage;
-	packer.pushPage(&mainPage);
-	packer.pushPage(&lightPage);
+	// fontLoader.blockLoad(fontPage, OS::File{R"(D:\projects\GameEngine\properties\resource\cache)"});
+
+
+	// std::cout << "done" << std::endl;
+	// lightPage.dependency = &mainPage;
+	packer.pushPage(mainPage);
+	packer.pushPage(lightPage);
+	packer.pushPage(fontPage);
+
+	miscTaskManager.push(Phase::end, [&atlas]{
+		atlas.flush();
+	});
+
 	loadManager.registerTask(packer);
-
+	loadManager.registerTask(fontLoader);
+	loadManager.registerTask(miscTaskManager);
+	//
 	loadManager.launch();
-
+	//
 	while(!loadManager.isFinished()){
 		loadManager.processRequests();
 	}
@@ -207,62 +225,10 @@ int main(){
 	loadManager.requestDone();
 	// page.p
 
+	for (auto& [name, region] : atlas.getRegions()){
+		std::println("Loaded {}", name);
+	}
 
-	// Math::TestT _1{nullptr, 1};
-	// Math::TestT _2{nullptr, 2};
-	// Math::TestT _3{nullptr, 3};
-	// Math::TestT _4{nullptr, 4};
-	// Math::TestT _5{nullptr, 5};
-	//
-	// std::vector<Math::TestT*> arr{
-	// 	&_1,
-	// 	&_2,
-	// 	&_3,
-	// 	&_4,
-	// 	&_5,
-	// };
-	//
-	// arr[0]->dependencyTarget = arr[4];
-	// arr[4]->dependencyTarget = arr[2];
-	// arr[2]->dependencyTarget = arr[3];
-	// arr[3]->dependencyTarget = arr[1];
-	// Math::sort_topological<std::less>(arr, &Math::TestT::dependencyTarget);
-	// for (auto value : arr){
-	// 	std::println("{}", value->val);
-	// }
-
-	// MiscTaskManager miscTaskManager1{};
-	// MiscTaskManager miscTaskManager2{};
-	//
-	// miscTaskManager1.push(Phase::init, Print<1>{});
-	// miscTaskManager1.push(Phase::pull, Print<2>{});
-	// miscTaskManager1.push(Phase::load, Print<3>{});
-	// miscTaskManager1.push(Phase::load, Print<4>{});
-	// miscTaskManager1.push(Phase::post_load, Print<5>{});
-	// miscTaskManager1.push(Phase::end, Print<6>{});
-	// miscTaskManager1.push(Phase::clear, Print<7>{});
-	//
-	// miscTaskManager2.push(Phase::init, Print<11>{});
-	// miscTaskManager2.push(Phase::pull, Print<12>{});
-	// miscTaskManager2.push(Phase::load, Print<13>{});
-	// miscTaskManager2.push(Phase::load, Print<14>{});
-	// miscTaskManager2.push(Phase::post_load, Print<15>{});
-	// miscTaskManager2.push(Phase::end, Print<16>{});
-	// miscTaskManager2.push(Phase::clear, Print<17>{});
-	// // std::ranges::find_if()
-	// auto& t =miscTaskManager1.eventManager;
-	// auto i = std::to_underlying(Phase::end);
-	//
-	// miscTaskManager1.eventManager.on(Phase::end, []{
-	// 	std::println("Manager 1 End Call");
-	// });
-	//
-	// loadManager.registerTask(miscTaskManager1);
-	// loadManager.registerTask(miscTaskManager2);
-	//
-	// loadManager.launch();
-	//
-	// loadManager.requestDone();
 }
 
 //TODO temp global static mut should be remove
@@ -284,7 +250,7 @@ void setupUITest(){
 					   std::ostringstream sstream{};
 					   sstream << "$<scl#[0.55]>(" << std::fixed << std::setprecision(2) << Core::camera->
 						   getPosition().x << ", " <<
-						   Core::camera->getPosition().y << ") | " << std::to_string(OS::getFPS());
+						   Core::camera->getPosition().y << ") | " << std::to_string(Core::loopManager->getFPS());
 					   sstream << "\n\nEntity count: " << Game::EntityManage::entities.idMap.size();
 					   sstream << "\nDraw count: " << std::ranges::count_if(
 						   Game::EntityManage::drawables.idMap | std::ranges::views::values, std::identity{},
@@ -432,7 +398,7 @@ void setupBaseDraw(){
 	});
 }
 
-int main_(const int argc, char* argv[]){
+int main(const int argc, char* argv[]){
 	//Init
 	::Test::init(argc, argv);
 
@@ -575,7 +541,7 @@ int main_(const int argc, char* argv[]){
 			Overlay::color(Graphic::Colors::PALE_GREEN);
 			Overlay::Line::setLineStroke(4.f);
 			Overlay::Line::square(x, y, 50, 45);
-			Overlay::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(OS::updateTime().count() / 5.0f, 1.0f)),
+			Overlay::Line::poly(x, y, 64, 160, 0, Math::clamp(fmod(Core::loopManager->timer.getUpdateTime() / 5.0f, 1.0f)),
 				Colors::SKY.copy().setA(0.55f), Colors::ROYAL.copy().setA(0.55f),
 				Colors::SKY.copy().setA(0.55f), Colors::WHITE.copy().setA(0.55f),
 				Colors::ROYAL.copy().setA(0.55f), Colors::SKY.copy().setA(0.55f)
@@ -586,38 +552,26 @@ int main_(const int argc, char* argv[]){
 		e.renderer->frameEnd(Assets::PostProcessors::bloom.get());
 	});
 
-	OS::activateHander();
-
-	ext::Timer<1> timer{};
 	while(!Core::platform->shouldExit()){
 		Core::renderer->draw();
 
-		Core::loopManager->update();
-
-		Core::audio->setListenerPosition(Core::camera->getPosition().x, Core::camera->getPosition().y);
-
-		// std::println("{}", OS::getFPS());
+		Core::loopManager->updateTaskBegin();
+		Core::loopManager->updateMisc();
 
 		Core::platform->pollEvents();
 
-		OS::pollWindowEvent();
+		Core::loopManager->timer.fetchGlobalTime();
 
 		GL::resetDrawCallCount();
 
 		Core::renderer->drawOverlay();
 
-		// timer.run(30.f, OS::deltaTick(), []{
-		// 	std::println("{}", GL::getDrawCallCount());
-		// 	std::cout.flush();
-		// });
 		Core::renderer->blit();
 
 		Core::loopManager->updateTaskEnd();
 	}
 
 	//Application Exit
-	OS::deactivateHander();
-
 	Game::EntityManage::clear();
 
 	Assets::dispose();

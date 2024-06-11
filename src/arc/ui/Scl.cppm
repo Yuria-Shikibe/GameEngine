@@ -14,7 +14,7 @@ namespace UI {
 	float outputScale = defScale;
 }
 
-export namespace UI {
+export namespace UI { //TODO move this to other place
 	void setScreenSize(const float w, const float h) {
 		width = w;
 		height = h;

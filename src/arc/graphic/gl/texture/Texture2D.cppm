@@ -28,8 +28,6 @@ export namespace GL{
 			return ext::loadPng(file, width, height, bpp);
 		}
 
-		Texture2D* next{nullptr};
-
 	public:
 		std::unique_ptr<unsigned char[]> localData{nullptr};
 
@@ -70,24 +68,6 @@ export namespace GL{
 
 		friend bool operator!=(const Texture2D& lhs, const Texture2D& rhs){
 			return !(lhs == rhs);
-		}
-
-		Texture2D(const Texture2D& other) = delete;
-
-		Texture2D(Texture2D&& other) noexcept
-			: GL::Texture(std::move(other)),
-			  next(other.next),
-			  localData(std::move(other.localData)){
-		}
-
-		Texture2D& operator=(const Texture2D& other) = delete;
-
-		Texture2D& operator=(Texture2D&& other) noexcept{
-			if(this == &other) return *this;
-			GL::Texture::operator =(std::move(other));
-			next = other.next;
-			localData = std::move(other.localData);
-			return *this;
 		}
 
 		void free() {
@@ -148,15 +128,6 @@ export namespace GL{
 
 		void activeAll(const unsigned slotOffset) const override{
 			glBindTextureUnit(slotOffset, nameID);
-
-			if(next){
-				next->activeAll(slotOffset + 1);
-			}
-		}
-
-		Texture2D* linkTo(Texture2D* next){
-			this->next = next;
-			return next;
 		}
 
 		[[nodiscard]] int dataSize() const { //How many bytes!
@@ -186,6 +157,14 @@ export namespace GL{
 
 			return ptr;
 		}
+
+		Texture2D(const Texture2D& other) = delete;
+
+		Texture2D(Texture2D&& other) noexcept = default;
+
+		Texture2D& operator=(const Texture2D& other) = delete;
+
+		Texture2D& operator=(Texture2D&& other) noexcept = default;
 	};
 }
 

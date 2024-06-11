@@ -43,13 +43,21 @@ export namespace Assets::Load{
 		explicit operator bool() const noexcept{return !stopToken.stop_requested();}
 	};
 
+
 	class LoadTask{
 	protected:
+		using FutRetTy = bool;
+		bool finished{};
 		float progress{};
 		std::launch defaultPolicy = std::launch::async;
 		LoadTaskHandler handler;
 
 		friend LoadManager;
+
+		constexpr void done() noexcept{
+			finished = true;
+			progress = 1.f;
+		}
 
 	public:
 		LoadEventManager postEventManager{};
@@ -63,14 +71,14 @@ export namespace Assets::Load{
 
 		virtual ~LoadTask() = default;
 
-		[[nodiscard]] virtual std::future<void> launch(std::launch policy) = 0;
+		[[nodiscard]] virtual std::future<FutRetTy> launch(std::launch policy) = 0;
 
-		[[nodiscard]] std::future<void> launch(){
+		[[nodiscard]] std::future<FutRetTy> launch(){
 			return launch(defaultPolicy);
 		}
 
 		[[nodiscard]] bool shouldStop() const noexcept{
-			return handler.stopToken.stop_requested();
+			return finished || handler.stopToken.stop_requested();
 		}
 
 		[[nodiscard]] float getProgress() const noexcept{return progress;}
@@ -78,15 +86,17 @@ export namespace Assets::Load{
 		[[nodiscard]] virtual std::string_view getCurrentTaskName() const noexcept {return "";}
 
 		//TODO better done setter
-		[[nodiscard]] virtual bool isFinished() const noexcept{return handler.stopToken.stop_requested();}
+		[[nodiscard]] virtual bool isFinished() const noexcept{return finished;}
 	};
 
 
 	class LoadManager{
 		friend LoadTaskHandler;
 
+		std::string taskName{""};
+
 		std::vector<LoadTaskHandler*> handlers{};
-		std::unordered_map<LoadTask*, std::future<void>> tasks{};
+		std::unordered_map<LoadTask*, std::future<LoadTask::FutRetTy>> tasks{};
 
 		Core::Async::TaskQueue<LoadTaskType> taskQueue{};
 		std::stop_source stopSource{};
@@ -98,18 +108,27 @@ export namespace Assets::Load{
 		using BarrierType = std::barrier<decltype(std::bind_front(&LoadManager::afterArrival, static_cast<LoadManager*>(nullptr)))>;
 		std::unique_ptr<BarrierType> barrier{};
 
+		ext::StaticTimeStamper<2> timer{};
+		static constexpr decltype(timer)::DurTy maxLoadSpacing{500};
+
 		mutable std::mutex handle_mtx{};
 		mutable std::condition_variable cv{};
 
-		ext::StaticTimeStamper<2> timer{};
-		static constexpr decltype(timer)::DurTy maxLoadSpacing{330};
-
-
 		mutable std::ostringstream taskNameBuilder{};
 		mutable float taskCurrentProgress{};
+		float calCurrentProgress() const;
 
 	public:
-		LoadEventManager eventManager;
+		LoadEventManager phaseArriveEventManager;
+
+		[[nodiscard]] LoadManager(){
+			timer.mark();
+		}
+
+		[[nodiscard]] explicit LoadManager(const std::string_view taskName)
+			: taskName{taskName}{
+			timer.mark();
+		}
 
 		void launch();
 
@@ -117,24 +136,29 @@ export namespace Assets::Load{
 			return std::to_underlying(currentPhase) >= MaxPhaseCount;
 		}
 
-		float getCurrentProgress() const;
+		[[nodiscard]] auto& getTimer(){ return timer; }
+
+		constexpr float getCurrentProgress() const noexcept{
+			return taskCurrentProgress;
+		}
 
 		void registerTask(LoadTask& task);
 
 		void processRequests(){
 			tryThrowException();
 
-			taskCurrentProgress = getCurrentProgress();
+			taskCurrentProgress = calCurrentProgress();
 			if(tasks.empty() || isFinished())return;
 
-			timer.mark();
-			while(timer.get() < maxLoadSpacing) {
-				auto task = taskQueue.pop();
-
-				if(task){
+			timer.mark<1>();
+			while(auto task = taskQueue.pop()) {
+				try{
 					task.value()();
+				}catch(...){
+					if(!stopSource.stop_requested())throw;
 				}
 
+				if(timer.get<1>() > maxLoadSpacing)break;
 			}
 		}
 
@@ -159,6 +183,8 @@ export namespace Assets::Load{
 			for (auto& [task, future] : tasks){
 				if(future.valid())future.get();
 			}
+			taskCurrentProgress = 1.f;
+			tasks.clear();
 		}
 
 		void tryThrowException() const;
@@ -232,13 +258,13 @@ namespace Assets::Load{
 
 	void LoadManager::afterArrival() noexcept{
 		if(std::to_underlying(currentPhase) < MaxPhaseCount){
-			std::println("Phase {} Reached | {:.1f}% Completed.", std::to_underlying(currentPhase), getCurrentProgress() * 100.f);
+			std::println("[{}]: Phase {} Reached | {:.1f}% Completed.", taskName, std::to_underlying(currentPhase), calCurrentProgress() * 100.f);
 			std::cout.flush();
 			for (const auto task : tasks | std::views::keys){
 				task->postEventManager.fire(currentPhase);
 			}
 
-			eventManager.fire(currentPhase);
+			phaseArriveEventManager.fire(currentPhase);
 
 			currentPhase = Phase{1 + std::to_underlying(currentPhase)};
 		}else{
@@ -256,7 +282,7 @@ namespace Assets::Load{
 		}
 	}
 
-	float LoadManager::getCurrentProgress() const{
+	float LoadManager::calCurrentProgress() const{
 		float sum{};
 
 		for(const auto task : tasks | std::views::keys) {
@@ -269,7 +295,7 @@ namespace Assets::Load{
 	}
 
 	void LoadManager::registerTask(LoadTask& task){
-		tasks.try_emplace(&task, std::future<void>{});
+		tasks.try_emplace(&task, std::future<LoadTask::FutRetTy>{});
 	}
 
 	void LoadManager::tryThrowException() const{

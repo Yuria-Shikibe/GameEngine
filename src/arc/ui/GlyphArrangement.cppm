@@ -8,6 +8,7 @@ export module Font.GlyphArrangement;
 
 import ext.Container.ObjectPool;
 export import Font;
+export import Font.Manager;
 
 import Graphic.Color;
 import ext.Container.ObjectPool;
@@ -417,7 +418,7 @@ namespace ParserFunctions {
 		static constexpr char TokenBeginCode = '<';
 		static constexpr char TokenEndCode = '>';
 
-		Font::FontStorage* loadedFonts{nullptr};
+		Font::FontManager* loadedFonts{nullptr};
 
 		mutable TypesettingContext context{};
 

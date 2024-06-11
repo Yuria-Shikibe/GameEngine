@@ -26,7 +26,7 @@ Graphic::Effect* Graphic::EffectShake::create(EffectManager* manager, Core::Came
 }
 
 Graphic::Effect* Graphic::EffectShake::create(const Geom::Vec2 pos, const float intensity, const float fadeSpeed) const{
-	return create(getDefManager(), Core::camera, pos, intensity, fadeSpeed);
+	return create(getDefManager(), Core::camera.get(), pos, intensity, fadeSpeed);
 }
 
 void Graphic::EffectShake::operator()(Effect& effect) const{

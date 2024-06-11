@@ -5,11 +5,13 @@
 export module Assets.Ctrl;
 
 export import Core;
+export import Core.MainLoopManager;
 import UI.Screen;
 export import OS.Ctrl.Bind.Constants;
 export import OS.Ctrl.Operation;
 export import OS.Ctrl.Bind;
 export import OS;
+import std;
 
 import ext.Heterogeneous;
 
@@ -19,20 +21,21 @@ namespace Assets::Ctrl{
 	bool disableMove = false;
 	float cameraMoveSpeed = baseCameraMoveSpeed;
 
+
 	::Ctrl::Operation cameraMoveLeft{"cmove-left", OS::KeyBind(::Ctrl::Key::Left, ::Ctrl::Act::Continuous, +[]{
-		if(!disableMove)Core::focus.camera.move({-cameraMoveSpeed * OS::delta(), 0});
+		if(!disableMove)Core::focus.camera.move({-cameraMoveSpeed * Core::loopManager->delta(), 0});
 	})};
 
 	::Ctrl::Operation cameraMoveRight{"cmove-right", OS::KeyBind(::Ctrl::Key::Right, ::Ctrl::Act::Continuous, +[]{
-		if(!disableMove)Core::focus.camera.move({cameraMoveSpeed * OS::delta(), 0});
+		if(!disableMove)Core::focus.camera.move({cameraMoveSpeed * Core::loopManager->delta(), 0});
 	})};
 
 	::Ctrl::Operation cameraMoveUp{"cmove-up", OS::KeyBind(::Ctrl::Key::Up, ::Ctrl::Act::Continuous, +[]{
-		if(!disableMove)Core::focus.camera.move({0,  cameraMoveSpeed * OS::delta()});
+		if(!disableMove)Core::focus.camera.move({0,  cameraMoveSpeed * Core::loopManager->delta()});
 	})};
 
 	::Ctrl::Operation cameraMoveDown{"cmove-down", OS::KeyBind(::Ctrl::Key::Down, ::Ctrl::Act::Continuous, +[] {
-		if(!disableMove)Core::focus.camera.move({0, -cameraMoveSpeed * OS::delta()});
+		if(!disableMove)Core::focus.camera.move({0, -cameraMoveSpeed * Core::loopManager->delta()});
 	})};
 
 	::Ctrl::Operation cameraTeleport{"cmove-telp", OS::KeyBind(::Ctrl::Mouse::LMB, ::Ctrl::Act::DoubleClick, +[] {
@@ -56,7 +59,7 @@ namespace Assets::Ctrl{
 	}), {boostCamera_Release.name}};
 
 	::Ctrl::Operation pause{"pause", OS::KeyBind(::Ctrl::Key::P, ::Ctrl::Act::Press, +[] {
-		OS::setPause(!OS::isPaused());
+		Core::loopManager->timer.setPause(!Core::loopManager->timer.isPaused());
 	})};
 
 	::Ctrl::Operation hideUI{"ui-hide", OS::KeyBind(::Ctrl::Key::H, ::Ctrl::Act::Press, +[] {
@@ -111,8 +114,6 @@ namespace Assets::Ctrl{
 		}
 
 		void load(){
-			Core::focus.camera.current = Core::focus.camera.fallback = Core::camera;
-
 			Core::input.registerSubInput(&mainControlGroup);
 			basicGroup.targetGroup = &mainControlGroup;
 			apply();

@@ -3,6 +3,8 @@ export module Core.MainLoopManager;
 import OS.ApplicationListener;
 
 import Core;
+import Core.ApplicationTimer;
+import std;
 
 export namespace Core{
 	class MainLoopManager{
@@ -17,16 +19,39 @@ export namespace Core{
 		void updateTask(){
 			while(!taskThread.get_stop_token().stop_requested()){
 				updateBeginSemaphore.acquire();
-				if(gameCore)gameCore->update(getDeltaTick());
+				if(gameCore)gameCore->update(timer.delta());
 				updateEndSemaphore.release();
 			}
 		}
 
+		std::thread::id mainThreadID{};
+
+		float FPS_reload = 0;
+		unsigned totalFrames = 0;
+		unsigned FPS_last = 0;
+
+		void updateFPS(){
+			FPS_reload += timer.getUpdateDelta();
+
+			++totalFrames;
+			if(FPS_reload > 1.0f) {
+				FPS_last = totalFrames;
+				FPS_reload = 0.0f;
+				totalFrames = 0u;
+			}
+		}
+
 	public:
+		ApplicationTimer timer{};
+
+		[[nodiscard]] MainLoopManager() : mainThreadID{std::this_thread::get_id()}{}
+
 		~MainLoopManager(){
 			gameCore = nullptr;
 			updateBeginSemaphore.release();
 		}
+
+		[[nodiscard]] constexpr unsigned int getFPS() const noexcept{ return FPS_last; }
 
 		[[nodiscard]] OS::ApplicationListener* getGameCore() const{ return gameCore; }
 
@@ -42,29 +67,32 @@ export namespace Core{
 
 		void clearListeners(){applicationListeners.clear();}
 
-		void update(){
-			updateTaskBegin();
-
-			handleAsync();
-
+		void updateMisc(){
 			for(const auto listener : applicationListeners){
-				listener->updateGlobal(getDeltaTick());
+				listener->updateGlobal(timer.delta());
 
 				if(listener->pauseRestrictable) {
-					if(!isPaused())listener->update(getUpdateDeltaTick());
+					if(!timer.isPaused())listener->update(timer.getUpdateTick());
 				}else {
-					listener->update(getDeltaTick());
+					listener->update(timer.delta());
 				}
 			}
 
 			for(const auto listener : applicationListeners){
-				listener->updatePost(getDeltaTick());
+				listener->updatePost(timer.delta());
 			}
 
-			if(gameCore)gameCore->updateGlobal(getDeltaTick());
-			if(uiRoot)uiRoot->update(getDeltaTick());
-			input.update(getDeltaTick());
-			if(camera)camera->update(getDeltaTick());
+			updateFPS();
+			if(audio)audio->setListenerPosition(Core::camera->getPosition().x, Core::camera->getPosition().y);
+
+			if(gameCore)gameCore->updateGlobal(timer.delta());
+			if(uiRoot)uiRoot->update(timer.delta());
+			input.update(timer.delta());
+			if(camera){
+				camera->update(timer.delta());
+				audio->setListenerPosition(camera->getPosition().x, camera->getPosition().y);
+
+			}
 		}
 
 		void updateTaskBegin(){
@@ -75,16 +103,13 @@ export namespace Core{
 			updateEndSemaphore.acquire();
 		}
 
-		static Tick getDeltaTick() noexcept;
-		static Tick getUpdateDeltaTick() noexcept;
+		constexpr Tick delta() const noexcept{
+			return timer.delta();
+		}
 
-		static bool isPaused() noexcept;
-
-	private:
-		static void handleAsync();
 	};
 
-	std::unique_ptr<MainLoopManager> loopManager{std::make_unique<MainLoopManager>()};
+	std::unique_ptr<MainLoopManager> loopManager{};
 }
 
 

@@ -6,6 +6,9 @@ import Math;
 export namespace Core{
 	using TickRatio = std::ratio<1, 60>;
 
+	using TimerSetter = float(*)();
+	using DeltaSetter = float(*)(float);
+
 	template <typename T = float, typename Ratio = std::ratio<1>>
 	struct DirectAccessTimeUnit : std::chrono::duration<T, Ratio>{
 		using std::chrono::duration<T, Ratio>::count;
@@ -13,8 +16,8 @@ export namespace Core{
 		using std::chrono::duration<T, Ratio>::duration;
 		[[nodiscard]] constexpr DirectAccessTimeUnit() noexcept = default;
 
-		[[nodiscard]] constexpr DirectAccessTimeUnit(const T _Val) noexcept
-			: std::chrono::duration<T, Ratio>(_Val) {}
+		[[nodiscard]] constexpr DirectAccessTimeUnit(const T Val) noexcept
+			: std::chrono::duration<T, Ratio>(Val) {}
 
 		[[nodiscard]] constexpr operator T() const noexcept{
 			return this->count();

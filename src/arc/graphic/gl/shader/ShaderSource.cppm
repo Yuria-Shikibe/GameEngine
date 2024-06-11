@@ -315,24 +315,24 @@ export namespace GL {
 			if (uniform_count != 0){
 				uniformInfoMap.reserve(uniform_count);
 				GLint 	maxUniformLength = 0;
-				GLsizei length = 0;
+				GLsizei nameSize = 0;
 				GLsizei count = 0;
 				GLenum 	type = GL_NONE;
+
 				glGetProgramiv(programID, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxUniformLength);
 
 				const auto uniform_name = std::make_unique<char[]>(maxUniformLength);
 
 				for (GLint i = 0; i < uniform_count; ++i){
-					glGetActiveUniform(programID, i, maxUniformLength, &length, &count, &type, uniform_name.get());
+					glGetActiveUniform(programID, i, maxUniformLength, &nameSize, &count, &type, uniform_name.get());
 
-					auto str = std::string(uniform_name.get(), length);
+					auto str = std::string(uniform_name.get(), nameSize);
 					auto location = glGetUniformLocation(programID, str.c_str());
 
 					uniformInfoMap.try_emplace(
 						std::move(str),
 						location, count
 					);
-
 				}
 			}
 		}
@@ -343,6 +343,8 @@ export namespace GL {
 		}
 
 		using compileTypeList = std::pair<ShaderType, std::string>;
+
+		[[nodiscard]] ShaderSource() = default;
 
 		ShaderSource(const OS::File& directory, std::span<compileTypeList> list) : shaderDir{directory}{
 			for (const auto& [type, name] : list) {
@@ -356,15 +358,15 @@ export namespace GL {
 			}
 		}
 
-		ShaderSource(const OS::File& directory, const std::string& name, const std::initializer_list<ShaderType> list) : shaderDir{directory}{
+		ShaderSource(const OS::File& directory, const std::string_view name, const std::initializer_list<ShaderType> list) : shaderDir{directory}{
 			for (const auto& type : list) {
-				pushSource(type, name);
+				pushSource(type, std::string(name));
 			}
 		}
 
-		explicit ShaderSource(const OS::File& directory, const std::string& name) : shaderDir{directory}{
-			pushSource(ShaderType::vert, name);
-			pushSource(ShaderType::frag, name);
+		ShaderSource(const OS::File& directory, const std::string_view name) : shaderDir{directory}{
+			pushSource(ShaderType::vert, std::string(name));
+			pushSource(ShaderType::frag, std::string(name));
 		}
 
 		~ShaderSource(){ // NOLINT(*-use-equals-default)

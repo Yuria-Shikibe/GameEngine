@@ -417,7 +417,7 @@ export namespace Math {
 	}
 
 	template <Concepts::Number T>
-	constexpr float lerp(const T fromValue, const T toValue, const T progress) noexcept {
+	constexpr T lerp(const T fromValue, const T toValue, const T progress) noexcept {
 		return fromValue + (toValue - fromValue) * progress;
 	}
 

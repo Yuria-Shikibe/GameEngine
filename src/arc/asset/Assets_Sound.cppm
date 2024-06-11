@@ -1,7 +1,7 @@
 export module Assets.Sound;
 
 export import <irrKlang.h>;
-import Assets.SoundLoader;
+import Assets.Load.SoundLoader;
 import OS.File;
 
 using namespace irrklang;
@@ -18,7 +18,7 @@ export namespace Assets::Sounds{
 		laser5
 	;
 
-	void load(const OS::File& dir, Assets::SoundLoader& loader) {
+	void load(const OS::File& dir, Load::SoundLoader& loader) {
 		flak = loader.pullRequest(dir.subFile("flak.mp3"));
 		uiClick = loader.pullRequest(dir.subFile("ui-click.ogg"));
 		uiClick2 = loader.pullRequest(dir.subFile("ui-click-2.ogg"));

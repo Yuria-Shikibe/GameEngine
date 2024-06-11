@@ -6,34 +6,36 @@ module;
 export module Assets.Load.FontLoader;
 
 export import Font;
+export import Font.Manager;
 import Assets.Load.Core;
 import Assets.TexturePage;
 
 import OS.File;
 import ext.RuntimeException;
 import ext.Heterogeneous;
+import Core.IO.Specialized;
 
 import Assets.Load.TexturePacker;
+import std;
 
 export namespace Assets::Load{
 	class FontLoader : public LoadTask{
 	protected:
 		bool quickInit = false;
 		std::vector<std::unique_ptr<Font::FontFace>> flags{};
-		// std::unique_ptr<Font::FontStorage> atlas{nullptr};
 		Assets::TexturePage* bindedPage{nullptr};
 
 		static void exitLoad(std::string_view fontName) {
 			throw ext::RuntimeException{std::format("Font load failed during {}.", fontName)};
 		}
 
-		void processCustomeData(Font::FontFace& currentFace, Font::PreloadDataSet& fontDatas){
+		static void processCustomeData(Font::FontFace& currentFace, std::unordered_map<Font::CharCode, Font::FontData_Preload>& fontDatas){
 			for(auto& customeData : currentFace.customeCharDatas){
 				if(!customeData.forceOverride && fontDatas.contains(customeData.code))continue;
 
 				if(customeData.hasCopyTarget()){
 					if(auto itr = fontDatas.find(customeData.copyTarget); itr != fontDatas.end()){
-						customeData.glyphMatrices = itr->glyphMatrices;
+						customeData.glyphMatrices = itr->second.charData.glyphMatrices;
 					}
 				}
 
@@ -41,7 +43,7 @@ export namespace Assets::Load{
 					customeData.dataModifier(customeData);
 				}
 
-				fontDatas.emplace(customeData.glyphMatrices, customeData.code, std::move(customeData.data));
+				fontDatas.insert_or_assign(customeData.code, Font::FontData_Preload{customeData.code, customeData.glyphMatrices, std::move(customeData.data)});
 			}
 		}
 
@@ -50,7 +52,7 @@ export namespace Assets::Load{
 
 			if(!currentFace.face)exitLoad(fontFullName);
 
-			Font::PreloadDataSet fontDatas{};
+			std::unordered_map<Font::CharCode, Font::FontData_Preload> fontDatas{};
 
 			// Graphic::Pixmap maxMap{};
 			FT_Set_Pixel_Sizes(currentFace.face, 0, currentFace.size);
@@ -69,17 +71,26 @@ export namespace Assets::Load{
 						}
 					}
 
-					fontDatas.emplace(i, face->glyph);
+					fontDatas.insert_or_assign(i, Font::FontData_Preload{i, face->glyph});
 				}
 			}
 
 			processCustomeData(currentFace, fontDatas);
 
-			for (auto& fontData : fontDatas){
-				fontData.charData.region = bindedPage->pullRequest<BitmapLoadData>(fontFullName + std::to_string(fontData.charCode), std::move(fontData.pixmap), [](const Assets::BitmapLoadData& data){data.bitmapData.flipY();});
+			std::ostringstream ss{};
+
+			for (auto& fontData : fontDatas | std::views::values){
+				ss.str("");
+				ss << fontFullName << std::to_string(fontData.charCode);
+				fontData.charData.region = bindedPage->pushRequest(ss.view(), std::make_unique<BitmapLoadData>(
+					ss.view(), std::move(fontData.pixmap), [](const Assets::BitmapLoadData& data){data.bitmapData.flipY(); return true;}));
 			}
 
 			currentFace.data = std::make_unique<Font::FontData>(fontDatas);
+
+			if(currentFace.data->lineSpacingDef < 0) {
+				currentFace.data->lineSpacingDef = Font::normalizeLen(currentFace.face->size->metrics.ascender);
+			}
 		}
 
 		void loadAllFace() const {
@@ -107,15 +118,20 @@ export namespace Assets::Load{
 					loadedFamily.push_back(face->familyName);
 				}
 
-				face->internalID |= static_cast<unsigned char>(index) << Font::FontFace::fontOffset;
-				face->internalID |= static_cast<unsigned char>(dst) << Font::FontFace::familyOffset;
-				face->internalID |= Font::getStyleID(face->styleName) << Font::FontFace::styleOffset;
+				face->fullID |= static_cast<unsigned char>(index) << Font::FontFace::fontOffset;
+				face->fullID |= static_cast<unsigned char>(dst) << Font::FontFace::familyOffset;
+				face->fullID |= Font::getStyleID(face->styleName) << Font::FontFace::styleOffset;
 			}
 		}
 
-		//This virtual is not necessary, just fuck the IDE's warnings
-		virtual void load() { //Dose not support hot load!
-			Font::loadLib();
+		bool load() { //Dose not support hot load!
+			if(!Font::GlobalFreeTypeLib){
+				throw ext::RuntimeException{"Missing FT Lib"};
+			}
+
+			if(!bindedPage){
+				throw ext::NullPointerException{"Missing Binded Page"};
+			}
 
 			loadAllFace();
 
@@ -126,7 +142,10 @@ export namespace Assets::Load{
 
 			assignID();
 
+			done();
 			handler.join();
+
+			return finished;
 		}
 
 	public:
@@ -149,19 +168,34 @@ export namespace Assets::Load{
 			return fontFlags;
 		}
 
-		std::future<void> launch(std::launch policy) override{
+		std::future<bool> launch(const std::launch policy) override{
 			return std::async(policy, &FontLoader::load, this);
+		}
+
+		Font::FontManager cropStorage() && {
+			return Font::FontManager(std::move(flags));
 		}
 	};
 
-	class QuickInitFontLoader : public FontLoader{
+	class QuickInitFontLoader : protected FontLoader{
 	public:
 		[[nodiscard]] QuickInitFontLoader() = default;
 
+		using FontLoader::registerFont;
+		using FontLoader::cropStorage;
+		using FontLoader::setBindedPage;
 		// ReSharper disable once CppHidingFunction
-		void load() override{
-			LoadManager instantManager{};
+		void blockLoad(Assets::TexturePage* const bindedPage, const OS::File& cacheDir){
+			setBindedPage(bindedPage);
+
+			blockLoad(cacheDir);
+		}
+
+		void blockLoad(const OS::File& cacheDir){
+			LoadManager instantManager{"Instant Font Temp Loader"};
 			TexturePacker instantPacker{};
+
+			instantPacker.setCacheDir(cacheDir);
 			instantPacker.pushPage(bindedPage);
 			instantManager.registerTask(instantPacker);
 			instantManager.registerTask(*this);

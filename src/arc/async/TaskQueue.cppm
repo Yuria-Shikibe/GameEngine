@@ -15,9 +15,15 @@ export namespace Core::Async{
 
 	private:
 		std::queue<std::packaged_task<FuncTy>> tasks{};
-		std::mutex mtx{};
+		mutable std::mutex mtx{};
 
 	public:
+
+		template <Concepts::Invokable<FuncTy> Func>
+		[[nodiscard]] std::future<RstTy> push(Func&& task){
+			return this->push(std::packaged_task<FuncTy>(std::forward<Func>(task)));
+		}
+
 		[[nodiscard]] std::future<RstTy> push(TaskTy&& task){
 			std::future<RstTy> future = task.get_future();
 

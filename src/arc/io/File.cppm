@@ -458,6 +458,11 @@ struct std::hash<OS::File>{
 export
 template <>
 struct std::formatter<OS::File>{
+	template <typename Context>
+	constexpr auto parse(Context& context) const{
+		return context.begin();
+	}
+
 	auto format(const OS::File& p, auto& context) const{
 		return std::format_to(context.out(), "{}", p.filenameFull());
 	}

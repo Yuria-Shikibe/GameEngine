@@ -20,7 +20,7 @@ import GL.Texture.TextureRegion;
 import ext.json.io;
 import ext.Json;
 import ext.Heterogeneous;
-import Core.IO.Specialized;
+export import Core.IO.Specialized;
 
 import GL;
 
@@ -28,7 +28,9 @@ import Math;
 import Math.Algo.TopologicalSort;
 import Math.Algo.StripPacker2D;
 
-export namespace Assets::Load{
+import ext.RuntimeException;
+
+namespace Assets::Load{
 	/**
 	 * @brief
 	 * PackData Json Structure:
@@ -77,7 +79,6 @@ export namespace Assets::Load{
 
 	struct PageData{
 		TexturePage* page{};
-		int margin{0};
 		OS::File cacheDir{};
 
 		LoadTaskHandler handler{};
@@ -87,20 +88,20 @@ export namespace Assets::Load{
 		const ext::StringHashMap<PageData>* allPages{};
 
 		std::vector<PackRawData> rawAtlases{};
-		Geom::OrthoRectInt maxBound{GL::getMaxTextureSize(), GL::getMaxTextureSize()};
+		Geom::OrthoRectInt maxBound{2048, 2048};
 		bool fromCache = false;
 
 		[[nodiscard]] OS::File getDataFile() const{
-			return cacheDir.subFile(std::format("{}-data.json", page->name));
+			return cacheDir.subFile(std::format("{}-data.json", page->getName()));
 		}
 
 		[[nodiscard]] OS::File getImageFile(std::size_t index) const{
-			return cacheDir.subFile(std::format("{}-{}.png", page->name, index));
+			return cacheDir.subFile(std::format("{}-{}.png", page->getName(), index));
 		}
 
 		ext::json::JsonValue pageJsonValue{};
 
-		[[nodiscard]] TexturePage* getDependency() const noexcept{
+		[[nodiscard]] const TexturePage* getDependency() const noexcept{
 			return page->dependency;
 		}
 
@@ -137,7 +138,7 @@ export namespace Assets::Load{
 		}
 
 		void loadFromFetch(){
-			auto& targetLoadData = allPages->at(page->dependency->name);
+			auto& targetLoadData = allPages->at(page->dependency->getName());
 			auto& target = targetLoadData.fragments;
 			for (auto& [name, frag] : fragments){
 				if(auto itr = target.find(name); itr != target.end()){
@@ -158,34 +159,28 @@ export namespace Assets::Load{
 		}
 
 		void applyTextureToRegion(){
-			for (auto& raw : rawAtlases){
-				page->textures.emplace_back(
-					std::make_unique<GL::Texture2D>(raw.atlas.getWidth(), raw.atlas.getHeight(), std::move(raw.atlas).data(), false));
-			}
-
-			auto fut = handler.postTask([this]{
-				for (const auto& [index, texture2D] : page->textures | std::ranges::views::enumerate){
-					std::println("[load] {}-{} Try obtain GL texture at thread: {}", page->name, index, std::this_thread::get_id());
-					// texture2D->init();
+			handler.postTask([this]{
+				for (const auto& [index, raw] : rawAtlases | std::ranges::views::enumerate){
+					std::println("[load] {}-{} Try obtain GL texture at thread: {}", page->getName(), index, std::this_thread::get_id());
+					page->getTextures().emplace_back(
+						std::make_unique<GL::Texture2D>(raw.atlas.getWidth(), raw.atlas.getHeight(), raw.atlas.data(), true));
 				}
-			});
+			}).get();
 
 			for (const auto& [name, fragment] : fragments){
-				auto& textureRegion = page->textureRegions[name];
-				textureRegion.data = page->textures.at(fragment.pageID).get();
+				auto& textureRegion = page->getRegions()[name];
+				textureRegion.data = page->getTextures().at(fragment.pageID).get();
 				textureRegion.fetchIntoCurrent(fragment.region);
 			}
-
-			fut.get();
 		}
 
 		void loadPulledData(){
-			for (const auto& bitmapLoadData : page->toLoad | std::views::values){
+			for (const auto& bitmapLoadData : page->getRequests() | std::views::values){
 				bitmapLoadData->load();
 			}
 
-			fragments.reserve(page->toLoad.size());
-			for (auto& [name, data] : page->toLoad){
+			fragments.reserve(page->getRequests().size());
+			for (auto& [name, data] : page->getRequests()){
 				auto size = data->bitmapData.size2D();
 				fragments.try_emplace(name, PackData{std::move(data->bitmapData), Geom::OrthoRectInt{size}});
 			}
@@ -210,7 +205,7 @@ export namespace Assets::Load{
 			Math::StripPacker2D<PackData*, int, &PackData::region> packer{remains};
 
 			packer.setMaxSize(maxBound.getWidth(), maxBound.getHeight());
-			packer.setMargin(margin);
+			packer.setMargin(page->getMargin());
 			packer.process();
 			auto size = packer.getResultSize();
 
@@ -267,7 +262,7 @@ export namespace Assets::Load{
 			}
 
 			pageJsonValue.append(ext::json::keys::Count, static_cast<ext::json::Integer>(rawAtlases.size()));
-			pageJsonValue.append(ext::json::keys::Version, static_cast<ext::json::Integer>(page->version));
+			pageJsonValue.append(ext::json::keys::Version, static_cast<ext::json::Integer>(page->getVersion()));
 			ext::json::JsonSrlContBase_string_map<PackData, true>::write(pageJsonValue.asObject()[ext::json::keys::Value], fragments);
 
 			std::ofstream stream{getDataFile().getPath()};
@@ -279,7 +274,7 @@ export namespace Assets::Load{
 			auto& rootMap = pageJsonValue.asObject();
 
 			if(const auto version = rootMap.tryFind(ext::json::keys::Version)){
-				if(version->getOr(-1) != page->version)return false;
+				if(version->getOr(-1) != page->getVersion())return false;
 			}else return false;
 
 			unsigned pageCount = ~0u;
@@ -298,7 +293,7 @@ export namespace Assets::Load{
 
 			auto& valueMap = datas->asObject();
 
-			if(valueMap.size() != page->toLoad.size()){
+			if(valueMap.size() != page->getRequests().size()){
 				return false;
 			}
 
@@ -308,7 +303,7 @@ export namespace Assets::Load{
 				cachedNames.insert(value);
 			}
 
-			for(const auto& name : page->toLoad | std::views::keys){
+			for(const auto& name : page->getRequests() | std::views::keys){
 				if(const auto itr = cachedNames.find(name); itr != cachedNames.end()){
 					cachedNames.erase(itr);
 				}else{
@@ -325,15 +320,11 @@ export namespace Assets::Load{
 
 	};
 
-	class TexturePacker : public LoadTask{
+	export class TexturePacker : public LoadTask{
 		static constexpr int Load_PullWeight = 20;
 		static constexpr int Load_MergeWeight = 50;
 
-		int margin = 0;
-
 		ext::StringHashMap<PageData> pagesToPack{};
-
-		Geom::OrthoRectInt texMaxBound{0, 0, 2048, 2048};
 
 		ext::json::JsonValue packDataJson{};
 		OS::File cacheDir{};
@@ -342,9 +333,12 @@ export namespace Assets::Load{
 			switch(handler.getCurrentPhase()){
 				case Phase::init:
 					for (auto& pageData : pagesToPack | std::views::values){
+						pageData.maxBound.setSize(GL::getMaxTextureSize(), GL::getMaxTextureSize());
+						pageData.handler = handler;
+						pageData.cacheDir = cacheDir;
 						pageData.allPages = &pagesToPack;
 					}
-					texMaxBound.setSize(GL::getMaxTextureSize(), GL::getMaxTextureSize());
+
 					break;
 				case Phase::pull:
 					for (auto& pageData : pagesToPack | std::views::values){
@@ -354,10 +348,17 @@ export namespace Assets::Load{
 				case Phase::load:{
 					loadPages();
 
+					for (auto& pageData : pagesToPack | std::views::values){
+						pageData.applyTextureToRegion();
+					}
+
+					break;
+				}
+				case Phase::post_load:{
 					std::vector<std::future<void>> cacheTasks{};
 
 					for (auto& pageData : pagesToPack | std::views::values){
-						cacheTasks.push_back(std::async(&PageData::saveCache, pageData));
+						cacheTasks.push_back(std::async(&PageData::saveCache, std::move(pageData)));
 					}
 
 					try{
@@ -366,13 +367,6 @@ export namespace Assets::Load{
 						handler.throwException(std::current_exception());
 					}
 
-					for (auto& pageData : pagesToPack | std::views::values){
-						pageData.applyTextureToRegion();
-					}
-
-					break;
-				}
-				case Phase::post_load:{
 					break;
 				}
 				case Phase::end:
@@ -383,17 +377,19 @@ export namespace Assets::Load{
 			}
 		}
 
-		void load(){
-			for (auto && toPack : pagesToPack | std::views::values){
-				toPack.handler = handler;
+		bool load(){
+			if(!cacheDir.exist()){
+				if(!cacheDir.createDir(false))
+					throw ext::IllegalArguments{std::format("Invalid Cache Dir : {}", cacheDir)};
 			}
 			while(!handler.stopToken.stop_requested()){
 				execCurrentPhase();
 				tryArriveAndWait();
 			}
 
-			progress = 1.f;
+			if(pagesToPack.empty())done();
 			handler.join();
+			return finished;
 		}
 
 		void loadPages(){ //TODO optm
@@ -403,7 +399,7 @@ export namespace Assets::Load{
 			std::deque<std::vector<PageData*>> loadSections(depthMap.size());
 
 			for (const auto& [page, depth] : depthMap){
-				loadSections[depth].push_back(&pagesToPack.at(page->name));
+				loadSections[depth].push_back(&pagesToPack.at(page->getName()));
 			}
 
 			std::vector<std::future<void>> tasksFuture{};
@@ -452,12 +448,12 @@ export namespace Assets::Load{
 
 		void setCacheDir(const OS::File& cacheDir){ this->cacheDir = cacheDir; }
 
-		[[nodiscard]] std::future<void> launch(const std::launch policy) override{
+		[[nodiscard]] std::future<bool> launch(const std::launch policy) override{
 			return std::async(policy, &TexturePacker::load, this);
 		}
 
-		void pushPage(TexturePage* page, const int margin = 1){
-			pagesToPack.insert_or_assign(page->name, PageData{page, margin, cacheDir});
+		void pushPage(TexturePage* page){
+			pagesToPack.insert_or_assign(page->getName(), PageData{page});
 		}
 
 

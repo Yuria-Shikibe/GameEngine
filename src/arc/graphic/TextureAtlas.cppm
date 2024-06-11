@@ -5,15 +5,12 @@ export module Graphic.TextureAtlas;
 import GL.Texture.TextureRegion;
 import GL.Texture.Texture2D;
 import GL.TextureArray;
-import Assets.TexturePacker;
+import Assets.TexturePage;
 import OS.File;
 
 import ext.RuntimeException;
 
 import ext.Heterogeneous;
-
-// import Event;
-
 import std;
 
 export namespace Graphic {
@@ -29,16 +26,21 @@ export namespace Graphic {
 
 	class TextureAtlas {
 	protected:
-		std::unordered_map<std::string_view, Assets::TexturePackPage> pages{};
-		ext::StringHashMap<GL::TextureRegion*> regions{};
+		ext::StringHashMap<Assets::TexturePage> pages{};
 
+		ext::StringHashMap<GL::TextureRegion*> regions{};
 		ext::StringHashMap<std::unique_ptr<GL::Texture2DArray>> textureGroups{};
 
-		const GL::TextureRegion* fallbackTextureRegion{nullptr};
+		GL::TextureRegion* fallbackTextureRegion{nullptr};
 
-		Assets::TexturePackPage* contextPage{nullptr};
-
+		Assets::TexturePage* uiPage{};
 	public:
+		[[nodiscard]] TextureAtlas() : uiPage{registerPage("ui")}{
+			uiPage->setMargin(2);
+		}
+
+		[[nodiscard]] Assets::TexturePage* getUIPage() const{ return uiPage; }
+
 		template <Concepts::InvokeNullable<void(GL::Texture2DArray*)> Func = std::nullptr_t>
 		void bindTextureArray(std::string_view mergedPageName, const std::initializer_list<std::string_view> compPageNames, Func&& func = nullptr){
 			std::unordered_map<const GL::Texture*, const GL::Texture2DArray*> textureReplaceMap{};
@@ -87,9 +89,9 @@ export namespace Graphic {
 				textureReplaceMap.insert_or_assign(mainPage.getTextures().at(texID).get(), curArray.get());
 			}
 
-			for(auto& data : mainPage.getData() | std::ranges::views::values){
-				const GL::Texture2DArray* textureArray = textureReplaceMap.at(data.textureRegion.data);
-				data.textureRegion.data = textureArray;
+			for(auto& region : mainPage.getRegions() | std::ranges::views::values){
+				const GL::Texture2DArray* textureArray = textureReplaceMap.at(region.data);
+				region.data = textureArray;
 			}
 
 			//TODO move this other place
@@ -102,19 +104,15 @@ export namespace Graphic {
 			return textureGroups;
 		}
 
-		const GL::TextureRegion* load(const OS::File& file, const Assets::PixmapModifer& modifer = nullptr) const { // NOLINT(*-use-nodiscard)
-			return contextPage->pushRequest(file, modifer);
-		}
-
-		const GL::TextureRegion* load(const std::string_view pageName, const OS::File& file, const Assets::PixmapModifer& modifer = nullptr){
+		const GL::TextureRegion* load(const std::string_view pageName, const OS::File& file){
 			if(const auto itr = pages.find(pageName); itr != pages.end()) {
-				return itr->second.pushRequest(file, modifer);
+				return itr->second.pushRequest<Assets::FileImportData>(file.stem(), file);
 			}
 
 			return nullptr;
 		}
 
-		[[nodiscard]] Assets::TexturePackPage& getPage(const std::string_view pageName) {
+		[[nodiscard]] auto& getPage(const std::string_view pageName) {
 			if(const auto itr = pages.find(pageName); itr != pages.end()) {
 				return itr->second;
 			}
@@ -122,35 +120,33 @@ export namespace Graphic {
 			throw ext::IllegalArguments{"Cannot Find Texture Page: " + static_cast<std::string>(pageName)};
 		}
 
-		Assets::TexturePackPage* registerAttachmentPage(const std::string_view pageName, const Assets::TexturePackPage* target) {
+		Assets::TexturePage* registerAttachmentPage(const std::string_view pageName, Assets::TexturePage* target) {
 			if(!target){
 				throw ext::NullPointerException{std::format("{}: {}", "Register Attachment Page Failed", pageName)};
 			}
 
-			Assets::TexturePackPage* page = registerPage(pageName, target->getCacheDir());
-			page->linkTarget = target;
+			Assets::TexturePage* page = registerPage(pageName);
+			page->dependency = target;
 
 			return page;
 		}
 
-		Assets::TexturePackPage* registerPage(const std::string_view pageName, const OS::File& cacheDir) {
-			const auto [itr, success] = pages.try_emplace(pageName, pageName, cacheDir);
-
-			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(pageName)};
-
+		auto* registerPage(const std::string_view pageName) {
+			const auto [itr, success] = pages.try_emplace(std::string(pageName), Assets::TexturePage{pageName});
+			
 			return &itr->second;
 		}
 
-		Assets::TexturePackPage* registerPage(Assets::TexturePackPage&& page) {
-			const auto [itr, success] = pages.try_emplace(page.pageName, std::forward<Assets::TexturePackPage>(page));
+		auto* registerPage(Assets::TexturePage&& page) {
+			const auto [itr, success] = pages.try_emplace(std::string(page.getName()), std::forward<Assets::TexturePage>(page));
 
-			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(page.pageName)};
+			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(page.getName())};
 
 			return &itr->second;
 		}
 
 		template <typename ...Args>
-		Assets::TexturePackPage* registerPage(const std::string_view pageName, Args&&... args) {
+		auto* registerPage(const std::string_view pageName, Args&&... args) {
 			const auto [itr, success] = pages.try_emplace(pageName, pageName, args...);
 
 			if(!success)throw ext::IllegalArguments{"Cannot Register Pages That Has The Same Name: " + static_cast<std::string>(pageName)};
@@ -162,32 +158,44 @@ export namespace Graphic {
 			size_t size{0};
 
 			for(auto& element : this->pages | std::ranges::views::values) {
-				size += element.getData().size();
+				size += element.getRegions().size();
 			}
 
 			regions.reserve(size);
 
-			std::stringstream ss{};
+			std::ostringstream ss{};
 
 			for(auto& [pageName, page] : pages) {
-				for(auto& [dataName, data] : page.getData()) {
-					ss.str(std::string{});
-					ss << pageName << "-" << dataName;
-					regions.emplace(ss.str(), &data.textureRegion);
+				for(auto& [dataName, data] : page.getRegions()) {
+					ss.str("");
+					ss << pageName << '[' << dataName << ']';
+					regions.emplace(std::move(ss).str(), &data);
 				}
 			}
 		}
 
 		[[nodiscard]]
-		const GL::TextureRegion* find(const std::string_view regionName) {
-			if(const auto itr = regions.find(regionName); itr != regions.end()) {
-				return itr->second;
+		GL::TextureRegion* find_ui(const std::string_view regionName) const{
+			return uiPage->find(regionName, fallbackTextureRegion);
+		}
+
+		[[nodiscard]]
+		GL::TextureRegion* find(Assets::TexturePage* page, const std::string_view regionName) const{
+			return page->find(regionName, fallbackTextureRegion);
+		}
+
+		[[nodiscard]]
+		GL::TextureRegion* find(const std::string_view pageName, const std::string_view regionName) {
+			if(const auto page = pages.find(pageName); page != pages.end()){
+				if(const auto itr = page->second.getRegions().find(regionName); itr != page->second.getRegions().end()) {
+					return &itr->second;
+				}
 			}
 
 			return fallbackTextureRegion;
 		}
 
-		[[nodiscard]] std::unordered_map<std::string_view, Assets::TexturePackPage>& getPages(){
+		[[nodiscard]] auto& getPages(){
 			return pages;
 		}
 
@@ -199,24 +207,10 @@ export namespace Graphic {
 			return fallbackTextureRegion;
 		}
 
-		[[nodiscard]] Assets::TexturePackPage* getContextPage() const {
-			return contextPage;
-		}
-
-		void setFail(const GL::TextureRegion* rect) {
+		void setFail(GL::TextureRegion* rect) {
 			this->fallbackTextureRegion = rect;
 		}
 
-		void setContextPage(Assets::TexturePackPage* const context_page) {
-			contextPage = context_page;
-		}
 
-		void setContextPage(const std::string_view pageName) {
-			if(const auto itr = pages.find(pageName); itr != pages.end()) {
-				contextPage = &itr->second;
-			}else {
-				throw ext::IllegalArguments{"Cannot Find Texture Page: " + static_cast<std::string>(pageName)};;
-			}
-		}
 	};
 }

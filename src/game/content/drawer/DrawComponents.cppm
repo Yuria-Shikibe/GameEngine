@@ -14,6 +14,7 @@ import GL.Texture.TextureRegion;
 import Graphic.TextureAtlas;
 import Graphic.Draw;
 
+import Assets.TexturePage;
 import ext.Concepts;
 
 import std;
@@ -90,9 +91,9 @@ export namespace Game::Drawer{
 		void pullLoadRequest(Graphic::TextureAtlas& atlas, const OS::FileTree& searchTree, std::string prefix) override{
 			prefix.append(name);
 
-			mainRegion = atlas.getPage("base").pushRequest(prefix, searchTree.flatFind<true>(prefix));
+			mainRegion = atlas.getPage("base").pushRequest<Assets::FileImportData>(prefix, searchTree.flatFind<true>(prefix));
 			// atlas->getPage("base").pushRequest(prefix, searchTree.flatFind(prefix));
-			atlas.getPage("light").pushRequest(prefix, searchTree.flatFind<true>(prefix + ".light"));
+			atlas.getPage("light").pushRequest<Assets::FileImportData>(prefix, searchTree.flatFind<true>(prefix + ".light"));
 		}
 
 		void draw(const DrawParam& param, const T* entity) const override{

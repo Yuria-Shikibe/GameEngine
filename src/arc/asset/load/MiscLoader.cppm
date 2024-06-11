@@ -48,7 +48,7 @@ export namespace Assets::Load{
 			}
 		}
 
-		void load(){
+		bool load(){
 			while(!handler.stopToken.stop_requested() && !tasks.empty()){
 				execCurrentPhase();
 				if(auto* barriar = handler.getBarriar()){
@@ -56,8 +56,13 @@ export namespace Assets::Load{
 				}
 			}
 
-			progress = 1.f;
+			if(tasks.empty()){
+				done();
+			}
+
 			handler.join();
+
+			return finished;
 		}
 
 	public:
@@ -79,7 +84,7 @@ export namespace Assets::Load{
 			return future;
 		}
 
-		[[nodiscard]] std::future<void> launch(std::launch policy) override{
+		[[nodiscard]] std::future<bool> launch(std::launch policy) override{
 			return std::async(policy, &MiscTaskManager::load, this);
 		}
 

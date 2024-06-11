@@ -328,7 +328,7 @@ export namespace Core{
 
 	void initCurrentPlatform(std::unique_ptr<PlatformHandle>& toInit, const std::string_view name, const int argc = 0, char* argv[] = nullptr){
 		toInit.reset(new CurrentPlatfrom{name});
-		toInit->initArgs(argc, argv);
+		toInit->setExecArgs(argc, argv);
 	}
 }
 

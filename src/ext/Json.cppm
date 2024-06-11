@@ -510,6 +510,7 @@ namespace ext::json{
 	}
 
 	JsonValue parseJsonFromString(std::string_view text){
+		if(text.empty())return {};
 		static constexpr auto Invalid = std::string_view::npos;
 
 		bool escapeTheNext{false};

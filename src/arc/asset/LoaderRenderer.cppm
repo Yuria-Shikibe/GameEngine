@@ -15,7 +15,7 @@ import Geom.Matrix3D;
 
 import Core;
 import GL.Buffer.FrameBuffer;
-import Assets.Loader;
+import Assets.Load.Core;
 import Assets.Graphic;
 
 import Font.GlyphArrangement;
@@ -26,7 +26,7 @@ import ext.Guard;
 
 export namespace Assets {
 	class LoaderRenderer final : public Core::Renderer{
-		AssetsLoader* loader{nullptr};
+		Assets::Load::LoadManager* loader{nullptr};
 
 		Geom::Matrix3D mat{};
 
@@ -40,7 +40,7 @@ export namespace Assets {
 		float lastProgress = 0.0f;
 		float lastThreshold = 0.0f;
 
-		[[nodiscard]] LoaderRenderer(const int w, const int h, AssetsLoader* const loader)
+		[[nodiscard]] LoaderRenderer(const int w, const int h, Assets::Load::LoadManager* const loader)
 			: Renderer(w, h), loader(loader) {
 			GL::Blendings::Normal.apply();
 			GL::setStencilOperation(GL::StencilOperation::KEEP, GL::StencilOperation::KEEP, GL::StencilOperation::REPLACE);
@@ -66,12 +66,12 @@ export namespace Assets {
 
 		void update(){
 			if(!loader)return;
-			if(!loader->finished()) {
-				Font::defGlyphParser->parseWith(loadTasks, loader->getTaskNames("$<alp#[0.3]>$<scl#[1.5]>", ">> "));
-				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.075f);
+			if(!loader->isFinished()) {
+				Font::defGlyphParser->parseWith(loadTasks, R"(loader->getCurrentProgress("$<alp#[0.3]>$<scl#[1.5]>", ">> ")");
+				lastProgress = Math::lerp(lastProgress, loader->getCurrentProgress(), 0.075f);
 			}else {
 				Font::defGlyphParser->parseWith(loadTasks, "$<alp#[0.3]>$<scl#[1.8]>LOAD DONE");
-				lastProgress = std::lerp(lastProgress, loader->getProgress(), 0.15f);
+				lastProgress = Math::lerp(lastProgress, loader->getCurrentProgress(), 0.15f);
 			}
 		}
 
@@ -121,8 +121,9 @@ export namespace Assets {
 				x - preBlockWidth + slideLineSize, y + stroke + slideLineSize
 			);
 
-			const Color begin = loader->postedTasks.empty() ? Colors::ROYAL : Colors::RED;
-			const Color end = begin.createLerp(loader->postedTasks.empty() ? Colors::SKY : Colors::ORANGE, lastProgress);
+			const bool empty = loader->getTaskQueue().empty();
+			const Color begin = empty ? Colors::ROYAL : Colors::RED;
+			const Color end = begin.createLerp(empty ? Colors::SKY : Colors::ORANGE, lastProgress);
 
 			{
 				Overlay::getBatch().flush();
@@ -184,7 +185,7 @@ export namespace Assets {
 			ss.str("");
 			ss << "$<scl#[0.4]>Loading$<scl#[0.3]>: ($<color#[" << end << "]>";
 			ss << std::fixed << std::setprecision(1) << lastProgress * 100.0f << "$<scl#[0.25]>%$<color#[]>$<scl#[0.3]>)";
-			ss << "\n$<scl#[0.3]>$<color#[" << end << "]>" << static_cast<float>(loader->getTimer().toMark().count()) / 1000.0f << "$<color#[]>sec.";
+			ss << "\n$<scl#[0.3]>$<color#[" << end << "]>" << static_cast<float>(loader->getTimer().get().count()) / 1000.0f << "$<color#[]>sec.";
 
 			Font::defGlyphParser->parseWith(loadStatus, std::move(ss).str());
 			loadStatus->offset.set(x, y - stroke - slideLineSize * 2.0f);

@@ -1,10 +1,14 @@
 module Assets.Graphic;
 
 import Core;
-import OS;
+import Core.MainLoopManager;
 import std;
 import Geom.Vector3D;
 import Math.Rand;
+
+import Assets.Load.FontLoader;
+import Assets.Load.ShaderLoader;
+import Assets.Load.TexturePacker;
 
 using namespace GL;
 using namespace Graphic;
@@ -33,7 +37,7 @@ void Assets::Shaders::loadPrimitive() {
 		}else{
 			shader.setVec2("scale", ~vec);
 		}
-		shader.setFloat("time", OS::globalTick().count() * slideLineShaderScaleArgs.get<0>());
+		shader.setFloat("time", Core::loopManager->timer.getGlobalTick() * slideLineShaderScaleArgs.get<0>());
 
 		shader.setFloat("angle", slideLineShaderAngle.get<0>() + 45.0f);
 	});
@@ -80,16 +84,18 @@ void Assets::Shaders::loadPrimitive() {
 	screenSpace->compile();
 }
 
-void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-parameter)
-	texPost = manager->registerShader(Dir::shader, "tex-std");
+void Assets::Shaders::load(Load::ShaderLoader& manager) { // NOLINT(*-non-const-parameter)
+	using namespace std::string_view_literals;
+
+	texPost = manager.emplaceShader(Dir::shader, "tex-std");
 	texPost->setUniformer([]([[maybe_unused]] const ShaderProgram& shader) {});
 
-	stdPost = manager->registerShader(Dir::shader, "std");
+	stdPost = manager.emplaceShader(Dir::shader, "std");
 	stdPost->setUniformer([]([[maybe_unused]] const ShaderProgram& shader) {
 		// GL::uniformColor(0, Graphic::Colors::WHITE);
 	});
 
-	gaussian_world = manager->registerShader(Dir::shader, "gaussian-blur");
+	gaussian_world = manager.emplaceShader(Dir::shader, "gaussian-blur");
 	gaussian_world->setUniformer(+[](const ShaderProgram& shader) {
 		shader.setTexture2D("texture");
 		shader.setVec2("size", ~Core::renderer->getSize() * Core::camera->getScale());
@@ -97,24 +103,24 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 
 	});
 
-	coordAxis = manager->registerShader(Dir::shader, "coordinate-axis");
+	coordAxis = manager.emplaceShader(Dir::shader, "coordinate-axis");
 	coordAxis->setUniformer([](const ShaderProgram& shader) {
 		shader.setFloat("width", 3.0f);
 		shader.setFloat("spacing", 100);
-		auto* camera = coordAxisArgs.get<0>() ? coordAxisArgs.get<0>() : Core::camera;
+		const auto* camera = coordAxisArgs.get<0>() ? coordAxisArgs.get<0>() : Core::camera.get();
 		shader.setFloat("scale",  camera->getScale());
 		shader.setVec2("screenSize", camera->getScreenSize());
 		shader.setVec2("cameraPos", camera->getViewportCenter());
 	});
 
-	filter = manager->registerShader(Dir::shader, "filter");
+	filter = manager.emplaceShader(Dir::shader, "filter");
 	filter->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("tex");
 	});
 
-	world = manager->registerShader(Dir::shader, "screenspace-world");
+	world = manager.emplaceShader(Dir::shader, "screenspace-world");
 
-	merge = manager->registerShader(new ShaderSource{Dir::shader.subFile("world"),{{ShaderType::frag, "merge"}, {ShaderType::vert, "blit"}}});
+	merge = manager.registerShader(new ShaderSource{Dir::shader.subFile("world"),{{ShaderType::frag, "merge"}, {ShaderType::vert, "blit"}}});
 	merge->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texBase", 0);
 		shader.setTexture2D("texNormal", 1);
@@ -157,21 +163,21 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		// shader.setVec2("screenSizeInv", 1.0f / Core::renderer->getDrawWidth(), 1.0f / Core::renderer->getDrawHeight());
 	});
 
-	worldBloom = manager->registerShader(new ShaderSource{Dir::shader.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
-	mask = manager->registerShader(new ShaderSource{Dir::shader.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
+	worldBloom = manager.registerShader(new ShaderSource{Dir::shader.subFile("world"), {{ShaderType::frag, "bloom-world"}, {ShaderType::vert, "blit"}}});
+	mask = manager.registerShader(new ShaderSource{Dir::shader.subFile("post-process"), {{ShaderType::frag, "mask"}, {ShaderType::vert, "blit"}}});
 	mask->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("srcTex", 0);
 		shader.setTexture2D("dstTex", 1);
 		shader.setTexture2D("maskTex", 2);
 	});
 
-	frostedGlass = manager->registerShader(new ShaderSource{Dir::shader.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
+	frostedGlass = manager.registerShader(new ShaderSource{Dir::shader.subFile("post-process"), {{ShaderType::frag, "frosted-glass"}, {ShaderType::vert, "blit"}}});
 	frostedGlass->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("norStep", ~Core::renderer->getSize() * 1.0f);
 	});
 
-	outline_ortho = manager->registerShader(new ShaderSource{Dir::shader, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
+	outline_ortho = manager.registerShader(new ShaderSource{Dir::shader, {{ShaderType::frag, "outline-ortho"}, {ShaderType::vert, "blit"}}});
 	outline_ortho->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("scaleInv", outlineArgs.get<2>());
@@ -179,19 +185,19 @@ void Assets::Shaders::load(GL::ShaderManager* manager) { // NOLINT(*-non-const-p
 		shader.setFloat("rot", outlineArgs.get<1>());
 	});
 
-	outline_sobel = manager->registerShader(new ShaderSource{Dir::shader, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
+	outline_sobel = manager.registerShader(new ShaderSource{Dir::shader, {{ShaderType::frag, "outline-sobel"}, {ShaderType::vert, "blit"}}});
 	outline_sobel->setUniformer([](const ShaderProgram& shader) {
 		shader.setTexture2D("texture", 0);
 		shader.setVec2("scaleInv", outlineArgs.get<2>());
 		shader.setFloat("stepLength", outlineArgs.get<0>());
 	});
 
-	manager->registerShader(screenSpace);
-	manager->registerShader(threshold_light);
-	manager->registerShader(gaussian);
-	manager->registerShader(bloom);
-	manager->registerShader(blit);
-	manager->registerShader(sildeLines);
+	manager.registerShader(screenSpace);
+	manager.registerShader(threshold_light);
+	manager.registerShader(gaussian);
+	manager.registerShader(bloom);
+	manager.registerShader(blit);
+	manager.registerShader(sildeLines);
 }
 
 void Assets::PostProcessors::loadPrimitive(){
@@ -256,6 +262,83 @@ void Assets::PostProcessors::load(){
 
 }
 
+void Assets::Fonts::loadPreivous(Load::QuickInitFontLoader& loader){ // NOLINT(*-non-const-parameter)
+	telegrama =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("telegrama.otf"),  targetChars, DefFlag, 120});
+
+	loader.blockLoad(Assets::Dir::cache.subFile("font-load"));
+
+	Font::initParser(telegrama);
+}
+
+void Assets::Fonts::pull(Load::FontLoader& loader){ // NOLINT(*-non-const-parameter
+	targetChars_withChinese.append_range(Font::genRefTable(unicodeRefDir.find("zh_cn.txt")));
+
+	sourceHan_SC_SB =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("SourceHanSerifSC-SemiBold.otf" ),  targetChars_withChinese});
+	sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
+
+	consola_Regular =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("consola.ttf" ),  targetChars});
+	consola_Italic =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("consolai.ttf"),  targetChars});
+	consola_Bold =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("consolab.ttf"),  targetChars});
+	consola_Bold_Italic =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("consolaz.ttf"),  targetChars});
+
+	times_Regular =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("times.ttf" ),  targetChars});
+	times_Italic =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("timesi.ttf"),  targetChars});
+	times_Bold =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("timesbd.ttf"),  targetChars});
+	times_Bold_Italic =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("timesbi.ttf"),  targetChars});
+
+	josefinSans_Regular =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars});
+	josefinSans_Bold =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars});
+
+	josefinSans_Regular_Large =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Regular.ttf"),  targetChars, DefFlag, 90});
+	josefinSans_Bold_Large =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("josefinSans-ES-Bold.ttf"),  targetChars, DefFlag, 90});
+
+	telegrama =
+		loader.registerFont(new Font::FontFace{Dir::font.subFile("telegrama.otf"),  targetChars});
+
+	telegrama->fallback = sourceHan_SC_SB;
+
+
+	Font::registerParserableFont("tms-R" , times_Regular);
+	Font::registerParserableFont("tms-B" , times_Bold);
+	Font::registerParserableFont("tms-I" , times_Italic);
+	Font::registerParserableFont("tms-BI", times_Bold_Italic);
+
+	Font::registerParserableFont("csl-R" , consola_Regular);
+	Font::registerParserableFont("csl-B" , consola_Bold);
+	Font::registerParserableFont("csl-I" , consola_Italic);
+	Font::registerParserableFont("csl-BI", consola_Bold_Italic);
+
+	Font::registerParserableFont("jfs-B", josefinSans_Bold);
+	Font::registerParserableFont("jfs-R", josefinSans_Regular);
+
+	Font::registerParserableFont("jfsL-B", josefinSans_Bold_Large);
+	Font::registerParserableFont("jfsL-R", josefinSans_Regular_Large);
+
+	Font::registerParserableFont("tele", telegrama);
+	Font::registerParserableFont("srch", sourceHan_SC_SB);
+
+
+	telegrama->setDefErrorFallback(::Assets::Textures::error);
+	sourceHan_SC_SB->setDefErrorFallback(::Assets::Textures::error);
+
+	josefinSans_Bold_Large->setDefErrorFallback(::Assets::Textures::error);
+	josefinSans_Regular_Large->setDefErrorFallback(::Assets::Textures::error);
+}
+
 void Assets::loadBasic() {
 	OS::FileTree& mainTree = Core::rootFileTree;
 	
@@ -275,7 +358,7 @@ void Assets::loadBasic() {
 	// 	std::cout << textureTree.flatFind(string) << std::endl;
 	// }
 
-	Font::loadLib();
+	Font::loadGlobalFreeTypeLib();
 	//
 	// //TODO uses this if showing text during load is needed.
 	// Fonts::loadPreivous();

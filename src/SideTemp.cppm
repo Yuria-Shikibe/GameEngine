@@ -193,6 +193,7 @@ export namespace Test{
 
 	void genRandomEntities(){
 		// return;
+		// return;
 		loadChamberTest();
 
 		Game::EntityManage::clear();

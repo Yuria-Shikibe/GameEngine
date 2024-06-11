@@ -8,7 +8,7 @@ export namespace ext {
 	struct EventType {};
 
 	template<Concepts::Derived<EventType> T>
-	constexpr std::type_index indexOf() {
+	constexpr std::type_index typeIndexOf() {
 		return std::type_index(typeid(T));
 	}
 
@@ -25,20 +25,26 @@ export namespace ext {
 #ifdef _DEBUG
 			checkRegister<T>();
 #endif
-			if (const auto itr = events.find(indexOf<T>()); itr != events.end()) {
+			if (const auto itr = events.find(typeIndexOf<T>()); itr != events.end()) {
 				for (const auto& listener : itr->second) {
 					listener(&event);
 				}
 			}
 		}
 
-		template <Concepts::Derived<EventType> T>
+		template <Concepts::Derived<EventType> T, typename ...Args>
 			requires std::is_final_v<T>
-		void on(Concepts::Invokable<void(const T&)> auto&& func){
+		void emplace_fire(Args&& ...args) const {
+			this->fire<T>(T{std::forward<Args>(args) ...});
+		}
+
+		template <Concepts::Derived<EventType> T, std::invocable<const T&> Func>
+			requires std::is_final_v<T>
+		void on(Func&& func){
 #ifdef _DEBUG
 			checkRegister<T>();
 #endif
-			events[indexOf<T>()].emplace_back([fun = std::forward<decltype(func)>(func)](const void* event) {
+			events[typeIndexOf<T>()].emplace_back([fun = std::forward<decltype(func)>(func)](const void* event) {
 				fun(*static_cast<const T*>(event));
 			});
 		}
@@ -46,7 +52,7 @@ export namespace ext {
 		template <Concepts::Derived<EventType> ...T>
 		void registerType() {
 #ifdef _DEBUG
-			(registered.insert(indexOf<T>()), ...);
+			(registered.insert(typeIndexOf<T>()), ...);
 #endif
 		}
 
@@ -67,7 +73,7 @@ export namespace ext {
 		template <Concepts::Derived<EventType> T>
 		void checkRegister() const {
 #ifdef _DEBUG
-			if(!registered.empty() && !registered.contains(indexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
+			if(!registered.empty() && !registered.contains(typeIndexOf<T>()))throw ext::RuntimeException{"Unexpected Event Type!"};
 #endif
 		}
 

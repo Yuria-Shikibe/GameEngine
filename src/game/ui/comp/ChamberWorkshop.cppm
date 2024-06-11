@@ -21,15 +21,12 @@ export import Game.Chamber;
 export import Game.Chamber.Frame;
 
 import Core;
+import Core.MainLoopManager;
 import Graphic.Draw;
 import Assets.Graphic;
 import GL.Shader.UniformWrapper;
 
 import ext.bool_merge;
-
-//TODO move the timer to other place
-//TODO continas a timer in root maybe
-import OS;
 
 namespace Game::Scene{
 	export
@@ -402,7 +399,7 @@ namespace Game::Scene{
 				Overlay::Line::rectOrtho(tile->getEntityBound());
 			}
 
-			Overlay::color(UI::Pal::THEME.createLerp(Colors::WHITE, Math::absin(OS::globalTime(), 0.83f, 0.53f)));
+			Overlay::color(UI::Pal::THEME.createLerp(Colors::WHITE, Math::absin(Core::getLoopManager()->timer.getGlobalTime(), 0.83f, 0.53f)));
 			for(const Tile& tile : selected | std::ranges::views::values | std::ranges::views::transform(
 				    &TileGrid::ItrType::operator*)){
 				const auto region = tile.getChamberRegion();

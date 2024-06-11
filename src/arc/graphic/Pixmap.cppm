@@ -178,6 +178,7 @@ export namespace Graphic{
         }
 
         void write(const OS::File& file, const bool autoCreate = false) const {
+            if(!valid())throw ext::RuntimeException{"Invalid Pixmap Data!"};
             if(!file.exist()) {
                 bool result = false;
 

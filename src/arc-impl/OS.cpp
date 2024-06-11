@@ -10,8 +10,8 @@ import StackTrace;
 import Core;
 import Assets.Graphic;
 
-void OS::exitApplication(const int s, const std::string_view what) {
-	std::ostringstream ss;
+[[noreturn]] void OS::exitApplication(const int s, const std::string_view what) {
+	std::ostringstream ss{};
 
 	if(!what.empty()) {
 		ss << what << "\n\n";
@@ -21,7 +21,7 @@ void OS::exitApplication(const int s, const std::string_view what) {
 
 	ext::getStackTraceBrief(ss);
 
-	const OS::File file{OS::crashFileGetter()};
+	const OS::File file{Core::log->generateCrashFile()};
 
 	file.writeString(ss.str());
 
@@ -29,5 +29,5 @@ void OS::exitApplication(const int s, const std::string_view what) {
 	Assets::dispose();
 	Core::dispose();
 
-	std::exit(s);
+	std::abort();
 }
