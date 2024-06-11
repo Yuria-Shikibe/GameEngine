@@ -266,7 +266,7 @@ namespace Assets::Load{
 			ext::json::JsonSrlContBase_string_map<PackData, true>::write(pageJsonValue.asObject()[ext::json::keys::Value], fragments);
 
 			std::ofstream stream{getDataFile().getPath()};
-			stream << pageJsonValue;
+			std::print(stream, "{:nf0}", pageJsonValue);
 		}
 
 		//TODO load by cache
@@ -339,11 +339,16 @@ namespace Assets::Load{
 						pageData.allPages = &pagesToPack;
 					}
 
+					progress = .1f;
+
 					break;
 				case Phase::pull:
 					for (auto& pageData : pagesToPack | std::views::values){
 						pageData.loadPulledData();
 					}
+
+					progress = .3f;
+
 					break;
 				case Phase::load:{
 					loadPages();
@@ -351,6 +356,8 @@ namespace Assets::Load{
 					for (auto& pageData : pagesToPack | std::views::values){
 						pageData.applyTextureToRegion();
 					}
+
+					progress = .5f;
 
 					break;
 				}
@@ -362,7 +369,11 @@ namespace Assets::Load{
 					}
 
 					try{
-						std::ranges::for_each(cacheTasks, &std::future<void>::get);
+						for (std::future<void>& cacheTask : cacheTasks){
+							cacheTask.get();
+
+							progress += .5f / static_cast<float>(cacheTasks.size());
+						}
 					}catch(...){
 						handler.throwException(std::current_exception());
 					}

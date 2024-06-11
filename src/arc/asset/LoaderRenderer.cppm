@@ -67,7 +67,7 @@ export namespace Assets {
 		void update(){
 			if(!loader)return;
 			if(!loader->isFinished()) {
-				Font::defGlyphParser->parseWith(loadTasks, R"(loader->getCurrentProgress("$<alp#[0.3]>$<scl#[1.5]>", ">> ")");
+				Font::defGlyphParser->parseWith(loadTasks, R"($<alp#[0.3]>$<scl#[1.5]>Loading...)");
 				lastProgress = Math::lerp(lastProgress, loader->getCurrentProgress(), 0.075f);
 			}else {
 				Font::defGlyphParser->parseWith(loadTasks, "$<alp#[0.3]>$<scl#[1.8]>LOAD DONE");

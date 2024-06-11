@@ -35,7 +35,7 @@ void Core::initFileSystem() {
 #if defined(ASSETS_DIR)
 	rootFileTree = OS::FileTree(ASSETS_DIR);
 #else
-	const auto dir = Core::platform->getProcessFileDir();
+	const auto dir = Core::platform->getCurrentParentDir();
 
 	std::cout << "Targeted Resource Root:" << dir.absolutePath() << std::endl;
 

@@ -258,6 +258,7 @@ namespace Assets::Load{
 
 	void LoadManager::afterArrival() noexcept{
 		if(std::to_underlying(currentPhase) < MaxPhaseCount){
+			//TODO move this to other place
 			std::println("[{}]: Phase {} Reached | {:.1f}% Completed.", taskName, std::to_underlying(currentPhase), calCurrentProgress() * 100.f);
 			std::cout.flush();
 			for (const auto task : tasks | std::views::keys){

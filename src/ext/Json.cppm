@@ -619,9 +619,8 @@ namespace ext::json{
 
 		std::unreachable();
 	}
-}
 
-export namespace ext::json{
+	export
 	[[nodiscard]] JsonValue parse(const std::string_view view){
 		return parseJsonFromString(view);
 	}
