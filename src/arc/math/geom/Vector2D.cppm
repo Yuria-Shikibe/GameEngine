@@ -132,12 +132,12 @@ export namespace Geom{
 			return obj.hash_value();
 		}
 
-		constexpr std::size_t hash_value() const requires requires{sizeof(T) == 4;}{
-			constexpr std::hash<std::size_t> hasher{};
+		[[nodiscard]] constexpr std::size_t hash_value() const requires requires{sizeof(T) == 4;}{
+			static constexpr std::hash<std::size_t> hasher{};
 			const std::size_t l = std::bit_cast<unsigned>(x);
 			const std::size_t r = std::bit_cast<unsigned>(y);
 			const std::size_t raw = l << 32 | r;
-			return raw;
+			return hasher(raw);
 		}
 
 		constexpr Vector2D& set(const T ox, const T oy) noexcept {
@@ -180,7 +180,7 @@ export namespace Geom{
 			return this->add(other.x, other.y);
 		}
 
-		constexpr Vector2D& mulAdd(const PassType other, const T scale) noexcept {
+		constexpr Vector2D& addScaled(const PassType other, const T scale) noexcept {
 			return this->add(other.x * scale, other.y * scale);
 		}
 
@@ -740,6 +740,11 @@ export namespace Geom{
 	constexpr Vec2 SNAN2{ std::numeric_limits<float>::signaling_NaN(), std::numeric_limits<float>::signaling_NaN() };
 	constexpr Vec2 X2{ 1, 0 };
 	constexpr Vec2 Y2{ 0, 1 };
+
+
+	constexpr Vec2 dirNor(const float angle_Degree) noexcept{
+		return {Math::cosDeg(angle_Degree), Math::sinDeg(angle_Degree)};
+	}
 }
 
 
@@ -747,7 +752,7 @@ export namespace Geom{
 export
 	template<>
 	struct std::hash<Geom::Vec2>{
-		size_t operator()(const Geom::Vec2& v) const noexcept {
+		constexpr size_t operator()(const Geom::Vec2& v) const noexcept {
 			return v.hash_value();
 		}
 	};
@@ -755,7 +760,7 @@ export
 export
 	template<>
 	struct std::hash<Geom::Point2>{
-		size_t operator()(const Geom::Point2& v) const noexcept {
+		constexpr size_t operator()(const Geom::Point2& v) const noexcept {
 			return v.hash_value();
 		}
 	};
@@ -763,7 +768,7 @@ export
 export
 	template<>
 	struct std::hash<Geom::Point2U>{
-		size_t operator()(const Geom::Point2U& v) const noexcept {
+		constexpr size_t operator()(const Geom::Point2U& v) const noexcept {
 			return v.hash_value();
 		}
 	};

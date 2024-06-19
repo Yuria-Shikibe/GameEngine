@@ -601,6 +601,7 @@ namespace Geom{
 			if(currentSize == 0) return;
 
 			{
+				auto _ = this->getLeafGruard_Unique();
 				const bool _isLeaf = leaf.load();
 				leaf = true;
 				currentSize = 0;

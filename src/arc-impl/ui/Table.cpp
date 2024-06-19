@@ -11,15 +11,23 @@ void UI::Table::layoutRelative(){
 
 	recalculateLayoutSize();
 
-	cells.back().item->setEndRow(true);
+	cells.back().endLine();
+
+	enum Priority : int{
+		soft, //No Explicit Size Reuqire
+		soft_ratio, //Ratioed Size From Implicit Size
+		hard_ratio, //Ratioed Size From Explicit Size
+		hard //Explicit Size
+	};
 
 	// [y0, y1, ... yn, x1, x2, ... xn]
-	std::vector<std::pair<float, bool>> maxSizeArr(columns() + rows());
+	std::vector<std::pair<float, Priority>> maxSizeArr(columns() + rows());
 	// maxSizeArr.resize();
 
 	//Split all into boxes
 	//TODO should cells have their own column or row data?
 
+	Geom::Vec2 maximumPad{};
 
 	Geom::Point2 scaleRequester{};
 
@@ -34,23 +42,31 @@ void UI::Table::layoutRelative(){
 	{
 		//Register Self Adapted Row Max width & height
 		Geom::Point2 currentLineScaleRequester{};
+		Geom::Vec2 currentPad{};
 
 		for(Geom::Point2 curPos{}; const auto& cell : cells){
 			if(cell.isIgnoreLayout()) continue;
 
 			hasRatioCalculate = hasRatioCalculate || cell.hasRatioFromHeight() || cell.hasRatioFromWidth();
 
-			if(!cell.scaleRelativeToParentX){
-				const auto curPosX_indexed = rows() + curPos.x;
-				maxSizeArr[curPosX_indexed] = {Math::max(maxSizeArr[curPosX_indexed].first, cell.getDefWidth()), true};
-			} else{
+			if(cell.scaleRelativeToParentX){
 				currentLineScaleRequester.x++;
+			} else if(cell.isSlaveX()){
+
+			} else {
+				auto& [size, priority] = maxSizeArr[rows() + curPos.x];
+				size = Math::max(size, cell.getDefWidth());
+				priority = Math::max(priority, hard);
 			}
 
-			if(!cell.scaleRelativeToParentY){
-				maxSizeArr[curPos.y] = {Math::max(maxSizeArr[curPos.y].first, cell.getDefHeight()), true};
-			} else{
+			if(cell.scaleRelativeToParentY){
 				currentLineScaleRequester.y = 1;
+			} else if(cell.isSlaveY()){
+
+			} else {
+				auto& [size, priority] = maxSizeArr[curPos.y];
+				size = Math::max(size, cell.getDefHeight());
+				priority = Math::max(priority, hard);
 			}
 
 			expandX |= cell.modifyParentX;
@@ -59,200 +75,236 @@ void UI::Table::layoutRelative(){
 			expandX_ifLarger &= cell.modifyParentX_ifLarger;
 			expandY_ifLarger &= cell.modifyParentY_ifLarger;
 
+			currentPad.x += cell.getPadHori();
+			currentPad.maxY(cell.getPadVert());
+
 			curPos.x++;
 
 			if(cell.isEndRow()){
 				curPos.y++;
 				curPos.x = 0;
 
+				maximumPad.maxX(currentPad.x);
+				maximumPad.y += currentPad.y;
+
 				scaleRequester.maxX(currentLineScaleRequester.x);
 				scaleRequester.y += currentLineScaleRequester.y;
 
 				currentLineScaleRequester.setZero();
+				currentPad.setZero();
 			}
 		}
 	}
 
-	{
-
 	allocateBound:{
-			//Assign Cell Position
-			float capturedW{0};
-			float capturedH{0};
+		//Assign Cell Position
+		Geom::Vec2 capturedSize{};
+		Geom::Vec2 slaveRatioCapturedSize{};
 
-			const int remainColomns{scaleRequester.x};
-			const int remainRows{scaleRequester.y};
+		Geom::Point2 masterCells{};
+		Geom::Point2 slaveRatioCells{};
 
-			auto captured = maxSizeArr | std::ranges::views::elements<1>;
+		static constexpr auto isMaster = [](const Priority priority) constexpr {return priority >= hard_ratio;};
 
-			capturedW = std::accumulate(captured.begin() + rows(), captured.end(), 0);
-			capturedH = std::accumulate(captured.begin(), captured.begin() + rows(), 0);
-
-			for(int y = 0; y < rows(); ++y){
-				if(maxSizeArr[y].second) capturedH += maxSizeArr[y].first;
-			}
-
-			for(int x = rows(); x < maxSizeArr.size(); ++x){
-				if(maxSizeArr[x].second) capturedW += maxSizeArr[x].first;
-			}
-
-			const float spacingX = remainColomns
-				                       ? Math::clampPositive(
-					                       (getValidWidth() - capturedW) / static_cast<float>(remainColomns))
-				                       : 0.0f;
-			const float spacingY = remainRows
-				                       ? Math::clampPositive(
-					                       (getValidHeight() - capturedH) / static_cast<float>(remainRows))
-				                       : 0.0f;
-
-			for(int y = 0; y < rows(); ++y){
-				if(!maxSizeArr[y].second) maxSizeArr[y].first = spacingY;
-			}
-
-			for(int x = rows(); x < maxSizeArr.size(); ++x){
-				if(!maxSizeArr[x].second) maxSizeArr[x].first = spacingX;
-			}
-		}
-
-		if(hasRatioCalculate){
-			hasRatioCalculate = false;
-
-			for(Geom::Point2 curPos{}; const auto& cell : cells){
-				if(cell.isIgnoreLayout()) continue;
-
-				if(cell.hasRatioFromHeight()){
-					const auto curPosX_indexed = rows() + curPos.x;
-					maxSizeArr[curPosX_indexed].first = Math::max(maxSizeArr[curPosX_indexed].first,
-						maxSizeArr[curPos.y].first * cell.getRatio_H2W());
-					maxSizeArr[curPosX_indexed].second |= maxSizeArr[curPos.y].second;
-				}
-
-
-				if(cell.hasRatioFromWidth()){
-					const auto curPosX_indexed = rows() + curPos.x;
-					maxSizeArr[curPos.y].first = Math::max(maxSizeArr[curPos.y].first,
-						maxSizeArr[curPosX_indexed].first * cell.getRatio_W2H());
-					maxSizeArr[curPos.y].second |= maxSizeArr[curPosX_indexed].second;
-				}
-
-				curPos.x++;
-
-				if(cell.isEndRow()){
-					curPos.y++;
-					curPos.x = 0;
-				}
-			}
-
-			goto allocateBound;
-		}
-
-		auto sizes = maxSizeArr | std::ranges::views::elements<0>;
-		Geom::Vec2 cellSize{
-				std::accumulate(sizes.begin() + rows(), sizes.end(), 0.0f),
-				std::accumulate(sizes.begin(), sizes.begin() + rows(), 0.0f)
-			};
-
-		if(expandX && !fillParentX){
-			if(expandX_ifLarger){
-				setWidth(Math::max(cellSize.x + getBorderWidth(), getWidth()));
-			} else{
-				if(!scaleRequester.x || Math::zero(getWidth())) setWidth(cellSize.x + getBorderWidth());
-			}
-		}
-
-		if(expandY && !fillParentY){
-			if(expandY_ifLarger){
-				setHeight(Math::max(cellSize.y + getBorderHeight(), getHeight()));
-			} else{
-				if(!scaleRequester.y || Math::zero(getHeight())) setHeight(cellSize.y + getBorderHeight());
-			}
-		}
-
-		//TODO cells may expand during this process
-		//Need another re-layout to handle this
 		{
-			Geom::Vec2 currentSrc{};
-			Geom::Vec2 currentPad{};
-			Geom::Vec2 maximumPad{};
-
-			Geom::Vec2 currentMaxSize{};
-
-			cellSize.setZero();
-
-			for(Geom::Point2 curPos{}; auto& cell : cells){
-				if(cell.isIgnoreLayout()) continue;
-
-				const auto curPosX_indexed = rows() + curPos.x;
-
-				cell.allocatedBound.setSize(maxSizeArr[curPosX_indexed].first, maxSizeArr[curPos.y].first);
-
-				cell.allocatedBound.setSrc(
-					currentSrc.x, currentSrc.y - cell.allocatedBound.getHeight() //Top src to Bottom src transform
-				);
-
-				const Geom::Vec2 thisPad{cell.pad.left, -cell.pad.top};
-
-				cell.applySizeToItem();
-				cell.allocatedBound.move(Geom::Vec2{currentPad.x, -maximumPad.y} + thisPad);
-
-				curPos.x++;
-				currentSrc.x += maxSizeArr[curPosX_indexed].first;
-
-				currentPad.x += cell.getPadHori();
-				currentPad.maxY(cell.getPadVert());
-
-				currentMaxSize.x += cell.getCellWidth();
-				currentMaxSize.maxY(cell.getCellHeight());
-
-				if(cell.isEndRow()){
-					maximumPad.maxX(currentPad.x);
-					maximumPad.y += currentPad.y;
-
-					cellSize.maxX(currentMaxSize.x);
-					cellSize.y += currentMaxSize.y;
-
-					currentPad.setZero();
-					currentMaxSize.setZero();
-
-					currentSrc.x = 0;
-					currentSrc.y -= maxSizeArr[curPos.y].first;
-
-					curPos.y++;
-					curPos.x = 0;
+			auto cur = maxSizeArr.begin();
+			for(; cur < maxSizeArr.begin() + rows(); ++cur){
+				auto& [size, priority] = *cur;
+				if(priority == soft_ratio){
+					slaveRatioCapturedSize.y += size;
+					slaveRatioCells.y++;
+				}else if(isMaster(priority)){
+					capturedSize.y += size;
+					masterCells.y++;
 				}
 			}
 
+			for(; cur < maxSizeArr.end(); ++cur){
+				auto& [size, priority] = *cur;
 
-			if(!maximumPad.isZero()){
-				cellSize += maximumPad;
-
-				if(expandX && !fillParentX){
-					if(expandX_ifLarger){
-						setWidth(Math::max(cellSize.x + getBorderWidth(), getWidth()));
-					} else{
-						if(!scaleRequester.x) setWidth(cellSize.x + getBorderWidth());
-					}
-				}
-
-				if(expandY && !fillParentY){
-					if(expandY_ifLarger){
-						setHeight(Math::max(cellSize.y + getBorderHeight(), getHeight()));
-					} else{
-						if(!scaleRequester.y) setHeight(cellSize.y + getBorderHeight());
-					}
+				if(priority == soft_ratio){
+					slaveRatioCapturedSize.x += size;
+					slaveRatioCells.x++;
+				}else if(isMaster(priority)){
+					capturedSize.x += size;
+					masterCells.x++;
 				}
 			}
 		}
 
-		Geom::Vec2 offset = Align::getOffsetOf(cellAlignMode, cellSize, getValidBound());
-		offset.y += cellSize.y;
+		Geom::Vec2 validSpace{getValidSize() - capturedSize - slaveRatioCapturedSize - maximumPad};
 
-		for(auto& cell : cells){
+		Geom::Point2 slaveCells = scaleRequester - slaveRatioCells;
+
+		if(slaveCells.x)validSpace.x /= static_cast<float>(slaveCells.x);
+		else validSpace.x = 0;
+
+		if(slaveCells.y)validSpace.y /= static_cast<float>(slaveCells.y);
+		else validSpace.y = 0;
+
+		validSpace.maxX(0);
+		validSpace.maxY(0);
+
+		{
+			auto cur = maxSizeArr.begin();
+			for(; cur < maxSizeArr.begin() + rows(); ++cur){
+				auto& [size, priority] = *cur;
+				if(priority == soft)size = validSpace.y;
+			}
+
+			for(; cur < maxSizeArr.end(); ++cur){
+				auto& [size, priority] = *cur;
+				if(priority == soft)size = validSpace.x;
+			}
+		}
+	}
+
+	if(hasRatioCalculate){
+		hasRatioCalculate = false;
+
+		for(Geom::Point2 curPos{}; const auto& cell : cells){
 			if(cell.isIgnoreLayout()) continue;
 
-			cell.allocatedBound.move(offset);
-			cell.applyPosToItem(this);
+			const auto curPosX_indexed = rows() + curPos.x;
+			auto& sizeDataX = maxSizeArr[curPosX_indexed];
+			auto& sizeDataY = maxSizeArr[curPos.y];
+
+			if(cell.hasRatioFromHeight() && sizeDataX.second != hard){
+				sizeDataX.first = Math::max(sizeDataX.first, sizeDataY.first * cell.getRatio_H2W());
+
+				switch(sizeDataY.second){
+					case hard : sizeDataX.second = Math::max(hard_ratio, sizeDataX.second); break;
+					case soft_ratio: [[fallthrough]];
+					case soft : sizeDataX.second = Math::max(soft_ratio, sizeDataX.second); break;
+					default: break;
+				}
+			}
+
+
+			if(cell.hasRatioFromWidth() && sizeDataY.second != hard){
+				sizeDataY.first = Math::max(sizeDataY.first, sizeDataX.first * cell.getRatio_W2H());
+
+				switch(sizeDataX.second){
+					case hard : sizeDataY.second = Math::max(hard_ratio, sizeDataY.second); break;
+					case soft_ratio: [[fallthrough]];
+					case soft : sizeDataY.second = Math::max(soft_ratio, sizeDataY.second); break;
+					default: break;
+				}
+			}
+
+			curPos.x++;
+
+			if(cell.isEndRow()){
+				curPos.y++;
+				curPos.x = 0;
+			}
 		}
+
+		goto allocateBound;
+	}
+
+	auto sizes = maxSizeArr | std::ranges::views::elements<0>;
+	Geom::Vec2 cellSize{
+			std::accumulate(sizes.begin() + rows(), sizes.end(), 0.0f),
+			std::accumulate(sizes.begin(), sizes.begin() + rows(), 0.0f)
+		};
+
+	if(expandX && !fillParentX){
+		if(expandX_ifLarger){
+			setWidth(Math::max(cellSize.x + getBorderWidth(), getWidth()));
+		} else{
+			if(!scaleRequester.x || Math::zero(getValidWidth()) || getValidWidth() > cellSize.x + getBorderWidth()) setWidth(cellSize.x + getBorderWidth());
+		}
+	}
+
+	if(expandY && !fillParentY){
+		if(expandY_ifLarger){
+			setHeight(Math::max(cellSize.y + getBorderHeight(), getHeight()));
+		} else{
+			if(!scaleRequester.y || Math::zero(getValidHeight()) || getValidHeight() > cellSize.y + getBorderHeight()) setHeight(cellSize.y + getBorderHeight());
+		}
+	}
+
+	//TODO cells may expand during this process
+	//Need another re-layout to handle this
+	{
+		Geom::Vec2 currentSrc{};
+
+		Geom::Vec2 currentMaxSize{};
+
+		cellSize.setZero();
+
+		float maxYPad{};
+
+		for(Geom::Point2 curPos{}; auto& cell : cells){
+			if(cell.isIgnoreLayout()) continue;
+
+			const auto curPosX_indexed = rows() + curPos.x;
+
+			cell.allocatedBound.setSize(maxSizeArr[curPosX_indexed].first, maxSizeArr[curPos.y].first);
+
+			cell.allocatedBound.setSrc(
+				currentSrc.x, currentSrc.y - cell.allocatedBound.getHeight() //Top src to Bottom src transform
+			);
+
+			const Geom::Vec2 thisPad{cell.pad.left, -cell.pad.top};
+
+			cell.applySizeToItem();
+			cell.allocatedBound.move(thisPad);
+
+			curPos.x++;
+			currentSrc.x += maxSizeArr[curPosX_indexed].first + cell.getPadHori();
+
+			maxYPad = Math::max(maxYPad, cell.getPadVert());
+
+			currentMaxSize.x += cell.getCellWidth();
+			currentMaxSize.maxY(cell.getCellHeight());
+
+			if(cell.isEndRow()){
+				cellSize.maxX(currentMaxSize.x);
+				cellSize.y += currentMaxSize.y;
+
+				currentMaxSize.setZero();
+
+				currentSrc.x = 0;
+				currentSrc.y -= maxSizeArr[curPos.y].first + maxYPad;
+				maxYPad = 0;
+
+				curPos.y++;
+				curPos.x = 0;
+			}
+		}
+
+
+		if(!maximumPad.isZero()){
+			cellSize += maximumPad;
+
+			if(expandX && !fillParentX){
+				if(expandX_ifLarger){
+					setWidth(Math::max(cellSize.x + getBorderWidth(), getWidth()));
+				} else{
+					if(!scaleRequester.x) setWidth(cellSize.x + getBorderWidth());
+				}
+			}
+
+			if(expandY && !fillParentY){
+				if(expandY_ifLarger){
+					setHeight(Math::max(cellSize.y + getBorderHeight(), getHeight()));
+				} else{
+					if(!scaleRequester.y) setHeight(cellSize.y + getBorderHeight());
+				}
+			}
+		}
+	}
+
+	Geom::Vec2 offset = Align::getOffsetOf(cellAlignMode, cellSize, getValidBound());
+	offset.y += cellSize.y;
+
+	for(auto& cell : cells){
+		if(cell.isIgnoreLayout()) continue;
+
+		cell.allocatedBound.move(offset);
+		cell.applyPosToItem(this);
 	}
 }
 
@@ -270,14 +322,31 @@ void UI::Table::layoutIrrelative(){
 void UI::Table::layout(){
 	layout_tryFillParent();
 
+	Group::layout();
+
 	if(relativeLayoutFormat){
 		layoutRelative();
 	} else{
 		layoutIrrelative();
 	}
 
-	lastSignal = lastSignal - ChangeSignal::notifySubs;
 	Group::layout();
+
+	// layoutChildren();
+
+	// layoutChanged = false;
+	//
+	// if(relativeLayoutFormat){
+	// 	layoutRelative();
+	// } else{
+	// 	layoutIrrelative();
+	// }
+	//
+	// layoutChildren();
+
+	//
+	// Group::layout();
+	lastSignal = lastSignal - ChangeSignal::notifySubs;
 }
 
 void UI::Table::drawContent() const{
@@ -286,10 +355,10 @@ void UI::Table::drawContent() const{
 	// 	rect.move(absoluteSrc);
 	//
 	// 	using namespace Graphic;
-	// 	Draw::color(Colors::YELLOW);
-	// 	Draw::Line::setLineStroke(1.0f);
-	// 	Draw::Line::rectOrtho(rect);
-	// 	Draw::Line::line(absoluteSrc, absoluteSrc + border.bot_lft());
+	// 	Draw::Overlay::color(Colors::YELLOW, 0.7f);
+	// 	Draw::Overlay::Line::setLineStroke(1.0f);
+	// 	Draw::Overlay::Line::rectOrtho(rect);
+	// 	Draw::Overlay::Line::line(absoluteSrc, absoluteSrc + border.bot_lft());
 	// }
 
 	Group::drawContent();

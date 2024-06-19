@@ -26,11 +26,11 @@ export namespace ext::algo{
 		};
 
 	constexpr std::array AllNamedBoolOp{
-			std::pair<merge_policy, std::string_view>{merge_policy::replace, "subtract-selection"},
-			std::pair<merge_policy, std::string_view>{merge_policy::join, "union-selection"},
-			std::pair<merge_policy, std::string_view>{merge_policy::overlaped, "intersect-selection"},
-			std::pair<merge_policy, std::string_view>{merge_policy::minus, "minus-selection"},
-			std::pair<merge_policy, std::string_view>{merge_policy::diff, "exclude-selection"},
+			std::pair<merge_policy, std::string_view>{merge_policy::replace, "blender_icon_select_set"},
+			std::pair<merge_policy, std::string_view>{merge_policy::join, "blender_icon_select_extend"},
+			std::pair<merge_policy, std::string_view>{merge_policy::overlaped, "blender_icon_select_intersect"},
+			std::pair<merge_policy, std::string_view>{merge_policy::minus, "blender_icon_select_subtract"},
+			std::pair<merge_policy, std::string_view>{merge_policy::diff, "blender_icon_select_difference"},
 		};
 
 	constexpr std::string_view getBoolOpName(merge_policy op){

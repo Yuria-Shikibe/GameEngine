@@ -62,7 +62,7 @@ export namespace Assets{
 		inline GL::ShaderSource* screenSpace = nullptr;
 
 		/** @brief [Screen Size, Camera Pos]*/
-		inline GL::UniformArgsWrapper coordAxisArgs{static_cast<Core::Camera2D*>(nullptr)};
+		inline GL::UniformArgsWrapper coordAxisArgs{static_cast<Core::Camera2D*>(nullptr), Graphic::Color{0.22f, 0.35f, 0.6f, 0.12f}};
 		inline GL::ShaderSource* coordAxis = nullptr;
 		inline GL::ShaderSource* filter = nullptr;
 

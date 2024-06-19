@@ -57,12 +57,12 @@ export namespace Core{
 			deltaTime_internal = deltaSetter(globalTime_internal);
 			globalTime_internal = timerSetter();
 
-			updateDeltaTime_internal = paused * deltaTime_internal;
+			updateDeltaTime_internal = !paused * deltaTime_internal;
 			updateTime_internal += updateDeltaTime_internal;
 
 			globalTick_internal = globalTime_internal * TicksPerSecond;
 			deltaTick_internal = deltaTime_internal * TicksPerSecond;
-			updateDeltaTick_internal = paused * deltaTick_internal;
+			updateDeltaTick_internal = !paused * deltaTick_internal;
 
 			updateTick_internal = updateTime_internal * TicksPerSecond;
 
@@ -75,13 +75,15 @@ export namespace Core{
 			globalTime_internal = globalTick_internal = updateTime_internal = updateTick_internal = 0;
 		}
 
+		//TODO all uses tick?
+
 		[[nodiscard]] constexpr Core::Tick getDeltaTick() const noexcept{return {deltaTick_internal};}
 
 		[[nodiscard]] constexpr Core::Tick delta() const noexcept{return getDeltaTick();}
 
 		[[nodiscard]] constexpr Core::Sec getDeltaTime() const noexcept{return {deltaTime_internal};}
 
-		[[nodiscard]] constexpr Core::Sec getUpdateDelta() const noexcept{return updateTime_internal;}
+		[[nodiscard]] constexpr Core::Sec getUpdateDelta() const noexcept{return updateDeltaTime_internal;}
 
 		[[nodiscard]] constexpr Core::Tick getUpdateDeltaTick() const noexcept{return {updateDeltaTick_internal};}
 

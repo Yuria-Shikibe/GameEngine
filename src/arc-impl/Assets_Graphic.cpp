@@ -111,6 +111,7 @@ void Assets::Shaders::load(Load::ShaderLoader& manager) { // NOLINT(*-non-const-
 		shader.setFloat("scale",  camera->getScale());
 		shader.setVec2("screenSize", camera->getScreenSize());
 		shader.setVec2("cameraPos", camera->getViewportCenter());
+		shader.setColor("emptyColor", coordAxisArgs.get<1, true>());
 	});
 
 	filter = manager.emplaceShader(Dir::shader, "filter");

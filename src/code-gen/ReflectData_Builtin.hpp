@@ -30,29 +30,29 @@ REFL_REGISTER_COMPLETION(Geom::Vector2D<type>, &Geom::Vector2D<type>::x, &Geom::
 
 //
 //
-REG_VEC(char              );
-REG_VEC(signed char       );
-REG_VEC(unsigned char     );
-REG_VEC(wchar_t           );
-REG_VEC(char8_t           );
-REG_VEC(char16_t          );
-REG_VEC(char32_t          );
-REG_VEC(short             );
-REG_VEC(unsigned short    );
-REG_VEC(int               );
-REG_VEC(unsigned int      );
-REG_VEC(long              );
-REG_VEC(unsigned long     );
-REG_VEC(long long         );
-REG_VEC(unsigned long long);
-REG_VEC(float             );
-REG_VEC(double            );
+REG_VEC(char              )
+REG_VEC(signed char       )
+REG_VEC(unsigned char     )
+REG_VEC(wchar_t           )
+REG_VEC(char8_t           )
+REG_VEC(char16_t          )
+REG_VEC(char32_t          )
+REG_VEC(short             )
+REG_VEC(unsigned short    )
+REG_VEC(int               )
+REG_VEC(unsigned int      )
+REG_VEC(long              )
+REG_VEC(unsigned long     )
+REG_VEC(long long         )
+REG_VEC(unsigned long long)
+REG_VEC(float             )
+REG_VEC(double            )
 
-REFL_REGISTER_CLASS_DEF(Geom::OrthoRectFloat);
-REFL_REGISTER_CLASS_DEF(Geom::OrthoRectInt);
-REFL_REGISTER_CLASS_DEF(Geom::OrthoRectUInt);
+REFL_REGISTER_CLASS_DEF(Geom::OrthoRectFloat)
+REFL_REGISTER_CLASS_DEF(Geom::OrthoRectInt)
+REFL_REGISTER_CLASS_DEF(Geom::OrthoRectUInt)
 
-REFL_REGISTER_CLASS_DEF(Geom::Transform);
+REFL_REGISTER_CLASS_DEF(Geom::Transform)
 
 REFL_REGISTER_CLASS_DEF(Graphic::Color);
 REFL_REGISTER_FIELD_DEF(Graphic::Color, r)
@@ -80,7 +80,3 @@ REFL_REGISTER_CLASS_DEF(Math::Section<float>);
 // 	&TestT::point2,
 // 	&TestT::quadFloat,
 // 	&TestT::quadFloat2)
-
-REFL_REGISTER_FIELD_DEF(Geom::Transform, vec)
-REFL_REGISTER_FIELD_DEF(Geom::Transform, rot)
-REFL_REGISTER_COMPLETION(Geom::Transform, &Geom::Transform::vec, &Geom::Transform::rot)

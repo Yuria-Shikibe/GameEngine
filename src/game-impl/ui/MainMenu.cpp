@@ -61,7 +61,7 @@ void Game::Scenes::MainMenu::build(){
 			table.add<UI::ScrollPane>([](UI::ScrollPane& pane){
 				pane.setItem<UI::Table>([](UI::Table& menu){
 					menu.setEmptyDrawer();
-					menu.setCellAlignMode(Align::Layout::bottom);
+					menu.setCellAlignMode(Align::Layout::top);
 					menu.add<UI::Label>([](UI::Label& label){
 						label.setTextAlign(Align::Layout::center);
 						label.setWrap(false);
@@ -109,7 +109,7 @@ void Game::Scenes::MainMenu::build(){
 								{
 									"file-tree", [](const UI::Button& b){
 										Core::uiRoot->showDialog(true, [](UI::Dialog& dialog){
-											dialog.content.add<UI::FileTreeSelector>([&dialog](UI::FileTreeSelector& selector){
+											dialog.content.add<UI::FileSelector>([&dialog](UI::FileSelector& selector){
 												selector.gotoDirectory(Assets::Dir::assets.getParent(), false);
 												selector.createDialogQuitButton(dialog);
 											}).fillParent().setAlign(Align::Layout::top_center);

@@ -2,7 +2,7 @@ module;
 
 #include <cerrno>
 
-export module ext.Json;
+export module ext.json;
 
 import std;
 import ext.Heterogeneous;
@@ -31,6 +31,8 @@ export namespace ext::json{
 		constexpr std::string_view Version = "$ver";   //version
 		constexpr std::string_view Pos = "$pos";       //position
 		constexpr std::string_view Size2D = "$sz2";   //size 2D
+		constexpr std::string_view Offset = "$off";   //offset
+		constexpr std::string_view Trans = "$trs";   //transform
 		constexpr std::string_view Size = "$sz1";     //size 1D
 		constexpr std::string_view Bound = "$b";     //bound
 
@@ -57,41 +59,16 @@ export namespace ext::json{
 	};
 
 	inline Integer parseInt(const std::string_view str, const int base = 10){
-		int& errno_ref = errno; // Nonzero cost, pay it once
-		const char* ptr = str.data();
-		char* endPtr{nullptr};
-		errno_ref = 0;
-		const long ans = std::strtol(ptr, &endPtr, base);
-
-		if(ptr == endPtr){
-			throw IllegalJsonSegment("invalid stoi argument");
-		}
-
-		if(errno_ref == ERANGE){
-			throw IllegalJsonSegment("stoi argument out of range");
-		}
-
-		return ans;
+		Integer val;
+		std::from_chars(str.data(), str.data() + str.size(), val, base);
+		return val;
 	}
 
 	inline Float parseFloat(const std::string_view str){
-		int& errno_ref = errno; // Nonzero cost, pay it once
-		const char* ptr = str.data();
-		char* endPtr{nullptr};
-		errno_ref = 0;
-		const auto ans = std::strtof(ptr, &endPtr);
-
-		if(ptr == endPtr){
-			throw IllegalJsonSegment("invalid stoi argument");
-		}
-
-		if(errno_ref == ERANGE){
-			throw IllegalJsonSegment("stoi argument out of range");
-		}
-
-		return ans;
+		Float val;
+		std::from_chars(str.data(), str.data() + str.size(), val);
+		return val;
 	}
-
 
 	enum struct JsonValueTag : std::size_t{
 		null,
@@ -120,6 +97,8 @@ export namespace ext::json{
 	private:
 		using VariantTypeTuple = std::tuple<TypeGroup>;
 		std::variant<TypeGroup> data{};
+
+#undef TypeGroup
 
 	public:
 		template <std::size_t index>
@@ -236,7 +215,7 @@ export namespace ext::json{
 
 		auto& asObject(){
 			if(getTag() != object){
-				setData(ext::StringHashMap<JsonValue>{});
+				setData(Object{});
 			}
 
 			return std::get<Object>(data);
@@ -303,7 +282,7 @@ export namespace ext::json{
 		// ReSharper restore CppDFAUnreachableCode
 
 
-		[[nodiscard]] JsonValueTag getTag() const noexcept{ return JsonValueTag{getTagIndex()}; }
+		[[nodiscard]] constexpr  JsonValueTag getTag() const noexcept{ return JsonValueTag{getTagIndex()}; }
 
 		friend bool operator==(const JsonValue& lhs, const JsonValue& rhs){
 			return lhs.getTagIndex() == rhs.getTagIndex()
@@ -422,6 +401,17 @@ export namespace ext::json{
 			obj.print(os);
 
 			return os;
+		}
+
+		template <typename T>
+		JsonValue& operator <<(std::pair<std::string_view, T>&& pair){
+			asObject().insert_or_assign(pair.first, std::move(pair.second));
+			return *this;
+		}
+
+		template <typename T>
+		JsonValue& operator <<(std::pair<const char*, T>&& pair){
+			return this->operator<<(std::pair{std::string_view{pair.first}, std::move(pair.second)});
 		}
 	};
 

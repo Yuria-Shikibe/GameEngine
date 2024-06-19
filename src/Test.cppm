@@ -351,6 +351,11 @@ export namespace Test{
 			Assets::Ctrl::basicGroup.loadInstruction(Core::bundle);
 
 			UI::Icons::load(Core::assetsManager.atlas);
+
+			initForwardParser();
+			// std::filesystem::path path = R"(D:\projects\GameEngine\src\arc\ui\components\Icons_Assets.cppm)";
+			// std::ofstream stOfstream{path};
+			// UI::Icons::genCode(stOfstream);
 		});
 
 
@@ -379,10 +384,6 @@ export namespace Test{
 		});
 
 		Core::batchGroup.world->setProjection(&Core::camera->getWorldToScreen());
-
-		// std::filesystem::path path = R"(D:\projects\GameEngine\src\arc\ui\components\Icons_Assets.cppm)";
-		// std::ofstream stOfstream{path};
-		// UI::Icons::genCode(stOfstream);
 	}
 
 	void setupAudioTest(){}

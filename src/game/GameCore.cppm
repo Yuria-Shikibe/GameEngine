@@ -88,6 +88,10 @@ export namespace Game {
 			}
 		}
 
+		void updatePost(::Core::Tick delta) override{
+			EntityManage::postRemove();
+		}
+
 		virtual void drawAboveUI(FrameCore::Renderer* renderer) const{
 			if(overlayManager->activated){
 				overlayManager->drawAboveUI(renderer);

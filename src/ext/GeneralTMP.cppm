@@ -201,6 +201,29 @@ export namespace ext{
 	template <typename T>
 	constexpr bool isConstRef = std::is_const_v<std::remove_reference_t<T>>;
 
+	template <typename T>
+	struct is_const_lvalue_reference{
+		static constexpr bool value = false;
+	};
+
+	template <typename T>
+	struct is_const_lvalue_reference<T&>{
+		static constexpr bool value = false;
+	};
+
+	template <typename T>
+	struct is_const_lvalue_reference<const T&>{
+		static constexpr bool value = true;
+	};
+
+	template <typename T>
+	struct is_const_lvalue_reference<const volatile T&>{
+		static constexpr bool value = true;
+	};
+
+	template <typename T>
+	constexpr bool is_const_lvalue_reference_v = is_const_lvalue_reference<T>::value;
+
 	//
 	// template <auto... ptr>
 	// struct SeqMemberPtrAccessor;

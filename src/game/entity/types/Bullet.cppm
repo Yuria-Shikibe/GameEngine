@@ -19,6 +19,9 @@ import Graphic.Trail;
 import ext.Timer;
 
 import Math.Timed;
+import std;
+
+import Game.Graphic.Draw;
 
 export namespace Game{
 	class Bullet;
@@ -119,13 +122,13 @@ export namespace Game{
 			}
 
 			//Loacl process
-			vel.vec.mulAdd(accel.vec, delta);
+			vel.vec.addScaled(accel.vec, delta);
 			vel.rot += accel.rot * delta;
 
 			vel.rot = Math::clampRange(vel.rot, angularVelocityLimit);
 			vel.vec.clampMax(speedLimit);
 
-			trans.vec.mulAdd(vel.vec, delta);
+			trans.vec.addScaled(vel.vec, delta);
 
 			if(controller->moveCommand.rotateActivated()){
 				trans.rot = Math::Angle::moveToward_signed(
@@ -199,7 +202,8 @@ export namespace Game{
 		}
 
 		void drawDebug() const override{
-
+			Graphic::Draw::Overlay::color(Graphic::Colors::YELLOW, 0.5f);
+			Game::Draw::hitbox<Graphic::Draw::Overlay>(hitBox.wrapBound_CCD);
 		}
 	};
 

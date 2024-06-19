@@ -19,11 +19,6 @@ namespace UI{
 	export class Table;
 }
 
-
-using Geom::Point2;
-using Geom::Vec2;
-using Geom::OrthoRectFloat;
-
 namespace Game{
 	constexpr std::string_view ChamberRegionFieldName = "region";
 
@@ -37,7 +32,7 @@ export namespace Game{
 		Geom::OrthoRectInt gridBound{};
 		unsigned id{};
 
-		[[nodiscard]] constexpr OrthoRectFloat getEntityBound() const noexcept{
+		[[nodiscard]] constexpr Geom::OrthoRectFloat getEntityBound() const noexcept{
 			return gridBound.as<float>().scl(TileSize, TileSize);
 		}
 	};
@@ -92,16 +87,16 @@ export namespace Game{
 	struct ChamberTile : Geom::QuadTreeAdaptable<ChamberTile<Entity>, float>{
 		// using EntityType = int;
 		using EntityType = Entity;
-		Point2 pos{};
+		Geom::Point2 pos{};
 
 		std::shared_ptr<Chamber<EntityType>> chamber{};
 
 		[[nodiscard]] ChamberTile() = default;
 
-		[[nodiscard]] explicit ChamberTile(const Point2 pos)
+		[[nodiscard]] explicit ChamberTile(const Geom::Point2 pos)
 			: pos{pos}{}
 
-		[[nodiscard]] ChamberTile(const Point2 pos,
+		[[nodiscard]] ChamberTile(const Geom::Point2 pos,
 			 std::shared_ptr<Chamber<EntityType>> chamber)
 			: pos{pos},
 			  chamber{std::move(chamber)}{}
@@ -167,7 +162,7 @@ export namespace Game{
 			return getBound().overlap(other.getBound());
 		}
 
-		bool containsPoint(Vec2 point) const noexcept{
+		bool containsPoint(Geom::Vec2 point) const noexcept{
 			return getBound().contains(point);
 		}
 	};
@@ -262,7 +257,7 @@ export namespace Game{
 			return tile;
 		}
 
-		static ChamberTile<Entity> genEmptyTile(const Point2 pos){
+		static ChamberTile<Entity> genEmptyTile(const Geom::Point2 pos){
 			return {pos};
 		}
 	};
@@ -279,7 +274,7 @@ export namespace Game{
 	template <typename Entity> 
 	struct TurretChamberFactory : ChamberFactory<Entity>{
 		struct TurretChamberData : ChamberMetaDataBase{
-			Vec2 targetPos{};
+			Geom::Vec2 targetPos{};
 			float reload{};
 		};
 

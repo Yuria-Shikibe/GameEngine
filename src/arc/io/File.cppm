@@ -42,7 +42,7 @@ namespace OS{
 			return fs::directory_entry{rawPath};
 		}
 
-		explicit operator fs::path() const{
+		operator const fs::path&() const{
 			return rawPath;
 		}
 
@@ -194,6 +194,18 @@ namespace OS{
 			if(!isDir()) throw ext::RuntimeException{};
 
 			return File{absolutePath().append(name)};
+		}
+
+		[[nodiscard]] File subFile(const std::string& name) const{
+			if(!isDir()) throw ext::RuntimeException{};
+
+			return File{absolutePath().append(name)};
+		}
+
+		[[nodiscard]] File subFile(const fs::path& path) const{
+			if(!isDir()) throw ext::RuntimeException{};
+
+			return File{absolutePath() / path};
 		}
 
 		[[nodiscard]] File subFile(const char* name) const{

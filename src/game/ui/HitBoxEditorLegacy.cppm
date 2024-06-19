@@ -32,10 +32,10 @@ export namespace Game{
 
 		void drawDebug() const override{
 			Graphic::Draw::Overlay::color();
-			Game::Draw::hitbox(tempHitbox.hitBoxGroup.back().boxData);
+			Game::Draw::hitbox(tempHitbox.hitBoxGroup.back().box);
 
 			if(controller->selected)Graphic::Draw::Overlay::color(Graphic::Colors::ORANGE);
-			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().boxData);
+			Game::Draw::hitbox(tempHitbox.hitBoxGroup.front().box);
 		}
 
 		bool ignoreCollisionTo(const Game::RealityEntity& object) const override{
@@ -312,7 +312,7 @@ export namespace Game{
 
 			if(hasOp()){
 				for (const auto entity : selected){
-					auto trans = entity->hitBox.hitBoxGroup.front().localTrans;
+					auto trans = entity->hitBox.hitBoxGroup.front().trans;
 					Overlay::Line::setLineStroke(2.0f);
 					if(!Math::zero(clamp.x)){
 						Overlay::color(Graphic::Colors::RED_DUSK);
@@ -373,8 +373,8 @@ export namespace Game{
 			for (const auto& entity : selected){
 				entity->tempHitbox = entity->hitBox;
 
-				entity->tempHitbox.hitBoxGroup.front().localTrans = entity->hitBox.hitBoxGroup.front().localTrans;
-				entity->tempHitbox.hitBoxGroup.front().localTrans.vec += dst;
+				entity->tempHitbox.hitBoxGroup.front().trans = entity->hitBox.hitBoxGroup.front().trans;
+				entity->tempHitbox.hitBoxGroup.front().trans.vec += dst;
 
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
@@ -396,19 +396,19 @@ export namespace Game{
 			for (const auto& entity : selected){
 				auto& data = entity->tempHitbox.hitBoxGroup.front();
 
-				const float ang1 = (opBeginMousePos - data.localTrans.vec).angle();
-				const float ang2 = (mouseWorldPos - data.localTrans.vec).angle();
+				const float ang1 = (opBeginMousePos - data.trans.vec).angle();
+				const float ang2 = (mouseWorldPos - data.trans.vec).angle();
 				const float dst = Math::Angle::angleDstWithSign(ang1, ang2);
 
 				entity->tempHitbox = entity->hitBox;
-				data.localTrans.rot += dst;
+				data.trans.rot += dst;
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
 		}
 
 		void resetTransMove() const{
 			for (const auto& entity : selected){
-				entity->hitBox.hitBoxGroup.front().localTrans.vec.setZero();
+				entity->hitBox.hitBoxGroup.front().trans.vec.setZero();
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
 		}
@@ -425,7 +425,7 @@ export namespace Game{
 
 		void resetRotate() const{
 			for (const auto& entity : selected){
-				entity->hitBox.hitBoxGroup.front().localTrans.rot = 0;
+				entity->hitBox.hitBoxGroup.front().trans.rot = 0;
 				entity->tempHitbox.updateHitbox(entity->hitBox.trans);
 			}
 		}
@@ -485,7 +485,7 @@ export namespace Game{
 
 		void flipX() const{
 			for (const auto& entity : selected){
-				if(Math::zero(entity->hitBox.hitBoxGroup.front().localTrans.vec.y))continue;
+				if(Math::zero(entity->hitBox.hitBoxGroup.front().trans.vec.y))continue;
 				Game::flipX(entity->hitBox);
 				entity->tempHitbox = entity->hitBox;
 			}

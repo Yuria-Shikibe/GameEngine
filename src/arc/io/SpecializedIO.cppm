@@ -5,14 +5,14 @@ module;
 export module Core.IO.Specialized;
 
 export import Core.IO.BinaryIO;
-export import ext.Json;
+export import ext.json;
 export import ext.json.io;
 
 export import Geom.Vector2D;
+export import Geom.Transform;
 export import Geom.Rect_Orthogonal;
 export import Graphic.Color;
 export import Math;
-export import OS.Ctrl.Operation;
 
 import ext.StaticReflection;
 import ext.Base64;
@@ -123,6 +123,7 @@ namespace ext::json{
 		}
 	};
 
+	export
 	template <>
 	struct ext::json::JsonSerializator<Graphic::Color>{
 		static void write(ext::json::JsonValue& jsonValue, const Graphic::Color& data){
@@ -134,45 +135,26 @@ namespace ext::json{
 		}
 	};
 
+	export
 	template <>
-		struct ext::json::JsonSerializator<Ctrl::Operation>{
-		static void write(ext::json::JsonValue& jsonValue, const Ctrl::Operation& data){
-			jsonValue.asObject();
-			jsonValue.append("full", static_cast<ext::json::Integer>(data.customeBind.getFullKey()));
-			jsonValue.append("ignore", data.customeBind.isIgnoreMode());
+	struct ext::json::JsonSerializator<Geom::Transform>{
+		using Ty = ext::json::JsonScalarType<float>;
+		static constexpr std::size_t ExpectedDataMinSize = 3;
 
+		static void write(ext::json::JsonValue& jsonValue, const Geom::Transform& data){
+			auto& val = jsonValue.asArray();
+			val.resize(3);
+			val[0].setData<Ty>(data.vec.x);
+			val[1].setData<Ty>(data.vec.y);
+			val[2].setData<Ty>(data.rot);
 		}
 
-		static void read(const ext::json::JsonValue& jsonValue, Ctrl::Operation& data){
-			auto& map = jsonValue.asObject();
-			if(const auto val = map.tryFind("full")){
-				auto [k, a, m] = Ctrl::getSeperatedKey(val->as<int>());
-				data.setCustom(k, m);
+		static void read(const ext::json::JsonValue& jsonValue, Geom::Transform& data){
+			if(auto* ptr = jsonValue.tryGetValue<ext::json::array>(); ptr && ptr->size() >= ExpectedDataMinSize){
+				data.vec.x = ptr->at(0).as<Ty>();
+				data.vec.y = ptr->at(1).as<Ty>();
+				data.rot = ptr->at(2).as<Ty>();
 			}
-
-			if(const auto val = map.tryFind("ignore")){
-				data.customeBind.setIgnoreMode(val->as<bool>());
-			}
-		}
-	};
-
-	template <>
-		struct ext::json::JsonSerializator<Ctrl::OperationGroup>{
-		using UmapIO = JsonSrlContBase_string_map<Ctrl::Operation, true>;
-
-		static void write(ext::json::JsonValue& jsonValue, const Ctrl::OperationGroup& data){
-			ext::json::JsonValue bindsData{};
-
-			UmapIO::write(bindsData, data.getBinds());
-
-			jsonValue.asObject();
-			jsonValue.append("binds", bindsData);
-		}
-
-		static void read(const ext::json::JsonValue& jsonValue, Ctrl::OperationGroup& data){
-			const ext::json::JsonValue* bindsData = jsonValue.asObject().tryFind("binds");
-
-			if(bindsData)UmapIO::read(*bindsData, data.getBinds());
 		}
 	};
 }

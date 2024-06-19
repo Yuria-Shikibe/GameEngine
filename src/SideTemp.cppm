@@ -39,6 +39,8 @@ import Game.Chamber.Util;
 import Graphic.Draw;
 import Graphic.Color;
 
+import OS.Ctrl.Operation;
+
 export struct TestChamberFactory : Game::ChamberFactory<Game::SpaceCraft>{
 	struct TestChamberData : Game::ChamberMetaDataBase{
 		Vec2 targetPos{};

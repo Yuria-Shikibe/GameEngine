@@ -25,7 +25,6 @@ export namespace UI {
 				item->changed(signal);
 			}
 		}
-	public:
 		//Weak Reference Object
 		Elem* item{nullptr};
 
@@ -57,6 +56,15 @@ export namespace UI {
 
 		bool scaleRelativeToParentX{true};
 		bool scaleRelativeToParentY{true};
+
+		friend Table;
+	public:
+		[[nodiscard]] constexpr LayoutCell() noexcept = default;
+
+		[[nodiscard]] constexpr explicit LayoutCell(Elem* item) noexcept
+			: item{item}{}
+
+		[[nodiscard]] constexpr Elem* getItem() const noexcept{ return item; }
 
 		[[nodiscard]] bool isEndRow() const {
 			return item->isEndingRow();
@@ -107,6 +115,14 @@ export namespace UI {
 			scaleRelativeToParentX = false;
 			modifyParentX = true;
 			modifyParentX_ifLarger = false;
+			return *this;
+		}
+
+		LayoutCell& setSlave(){
+			scaleRelativeToParentX = scaleRelativeToParentY = false;
+			modifyParentX_ifLarger = modifyParentY_ifLarger = false;
+			modifyParentX = modifyParentY = false;
+
 			return *this;
 		}
 
@@ -347,6 +363,14 @@ export namespace UI {
 
 		[[nodiscard]] bool hasRatioFromWidth() const{
 			return !std::isnan(defSize.y) && (defSize.area() <= 0 || std::isnan(defSize.x)) && defSize.y < 0;
+		}
+
+		[[nodiscard]] bool isSlaveX() const noexcept{
+			return !(scaleRelativeToParentX || modifyParentX || modifyParentX_ifLarger);
+		}
+
+		[[nodiscard]] bool isSlaveY() const noexcept{
+			return !(scaleRelativeToParentY || modifyParentY || modifyParentY_ifLarger);
 		}
 
 		[[nodiscard]] float getRatioedWidth() const{

@@ -8,6 +8,8 @@ uniform float scale;
 uniform vec2 screenSize;
 uniform vec2 cameraPos;
 
+uniform vec4 emptyColor;
+
 bool modified(float a){
 	return a > 0.0;
 }
@@ -56,16 +58,14 @@ void main() {
 		}
 		
 		if(modified(newA)){
-			color.r = 0.3f;
-			color.g = 0.961f;
-			color.b = 0.671f;
+			color.rgb = vec3(0.3f, 0.961f, 0.671f);
 		}
 		
 		color.a = max(color.a, newA);
 	}
 	
 	if(!modified(color.a)){
-		color = vec4(0.22f, 0.35f, 0.6f, 0.12f);
+		color = emptyColor;
 	}
 	
 //	color.rg *= (gl_FragCoord.xy / screenSize);

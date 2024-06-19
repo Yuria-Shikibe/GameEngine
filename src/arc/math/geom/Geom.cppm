@@ -14,7 +14,6 @@ import Geom.Shape.Circle;
 import Geom.Shape.RectBox;
 import Geom.Rect_Orthogonal;
 
-
 using namespace Geom::Shape;
 
 export namespace Geom {

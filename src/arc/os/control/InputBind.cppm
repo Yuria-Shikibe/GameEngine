@@ -307,7 +307,9 @@ export namespace OS{
 			if(activated) registerList.inform(key, action, mods);
 		}
 
-		[[nodiscard]] bool isActivated() const{ return activated; }
+		void setActivated(const bool activated) noexcept{ this->activated = activated; }
+
+		[[nodiscard]] bool isActivated() const noexcept{ return activated; }
 
 		void activate() noexcept{ activated = true; }
 

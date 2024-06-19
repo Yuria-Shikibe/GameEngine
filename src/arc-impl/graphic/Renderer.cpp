@@ -128,7 +128,7 @@ void Core::Renderer::processUISperateDraw(const UI::SeperateDrawable* drawable){
 
 	Graphic::Frame::blit(contextFrameBuffer, 0, Assets::Shaders::mask, [](const GL::ShaderProgram& shader){
 		shader.setColor("mixColor", Colors::AQUA_SKY.createLerp(Colors::DARK_GRAY, 0.55f).setA(0.25f));
-		shader.setColor("srcColor", Colors::GRAY.createLerp(Colors::DARK_GRAY, 0.35f).createLerp(Colors::AQUA_SKY, 0.125f));
+		shader.setColor("srcColor", Colors::GRAY.createLerp(Colors::DARK_GRAY, 0.65f).createLerp(Colors::AQUA_SKY, 0.125f));
 	});
 	GL::enable(GL::State::BLEND);
 

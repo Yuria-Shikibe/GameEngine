@@ -24,8 +24,6 @@ import StackTrace;
 import Graphic.Draw;
 import Graphic.Pixmap;
 import Core.Renderer;
-import Graphic.Viewport.Viewport_OrthoRect;
-import Graphic.Viewport;
 
 import Graphic.PostProcessor.BloomProcessor;
 import Graphic.PostProcessor.ShaderProcessor;
@@ -125,7 +123,7 @@ import ext.Encoding;
 import ext.TreeStructure;
 import ext.algorithm;
 import ext.Heterogeneous;
-import ext.Json;
+import ext.json;
 import ext.Base64;
 import ext.StringParse;
 import ext.StaticReflection;
@@ -393,7 +391,7 @@ int main(const int argc, char* argv[]){
 	// GL::Blendings::Disable.apply(worldFrameBuffer.getID());
 
 
-	Core::renderer->getListener().on<ext::Draw_After>([&](const ext::Draw_After& event){
+	Core::renderer->getListener().on<ext::Draw_Prepare>([&](const ext::Draw_Prepare& event){
 		if(!drawDebug) return;
 		// event.renderer->effectBuffer.bind();
 		event.renderer->frameBegin(&frameBuffer);

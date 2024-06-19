@@ -126,8 +126,8 @@ export namespace Assets{
 
 		[[nodiscard]] TexturePage() = default;
 
-		[[nodiscard]] explicit TexturePage(const std::convertible_to<std::string_view> auto name)
-			: name{name}{}
+		[[nodiscard]] explicit TexturePage(const std::convertible_to<std::string_view> auto name, const int margin = 1)
+			: name{name}, margin{margin}{}
 
 		[[nodiscard]] explicit TexturePage(std::string&& name)
 			: name{std::move(name)}{}

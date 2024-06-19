@@ -18,7 +18,7 @@ import std;
 
 export namespace Game::Scenes{
 	class MainMenu : public ::UI::Scene{
-		UI::Screen* screen{};
+		UI::Viewport* screen{};
 	public:
 		[[nodiscard]] MainMenu(){}
 

@@ -13,7 +13,8 @@ import Geom.Matrix3D;
 
 
 export namespace UI{
-	class Screen : public Elem{
+	class Viewport : public Elem{
+		Geom::Matrix3D matrix{};
 		Core::Camera2D camera{};
 		GL::FrameBuffer buffer{GL::FrameBuffer::RecommendedMinSize, GL::FrameBuffer::RecommendedMinSize, 2};
 
@@ -29,12 +30,12 @@ export namespace UI{
 		/** @brief Whether adapt ui bloom effect*/
 		bool usesUIEffect{true};
 
-		~Screen() override{
+		~Viewport() override{
 			endDraw_noContextFallback();
 			endCameraFocus();
 		}
 
-		[[nodiscard]] Screen(){
+		[[nodiscard]] Viewport(){
 			inputListener.on<CurosrExbound>([this](const auto&) {
 				if(focusWhenInbound)endCameraFocus();
 			});
@@ -94,6 +95,9 @@ export namespace UI{
 		void draw() const override;
 
 		void beginDraw(std::unique_ptr<Core::Batch> Core::BatchGroup::* batchPtr = nullptr) const;
+
+		void draw_OrthoPort();
+		void draw_CameraPort();
 
 		void endDraw() const;
 

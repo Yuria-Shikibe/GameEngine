@@ -26,12 +26,14 @@ import UI.Palette;
 export namespace UI{
 	//TODO uses another class to do things like this for files:
 	//THis cannot support such a hugh range search
-	class FileTreeSelector : public Table{
+	class FileSelector : public Table{
+	protected:
 		std::shared_ptr<Font::GlyphLayout> glyphLayout{};
 		std::stack<OS::File> trace{};
 
 		Table* sideMenu{};
 		Table* selectMenu{};
+
 
 		UI::Dialog* parentDialog{};
 
@@ -114,7 +116,7 @@ export namespace UI{
 												 buildCurrentPage();
 											 }, [this](UI::Button& button){
 												 button.setActivatedChecker([this](auto&){
-													 return OS::FileSortFunc::ascend & sortFunc_order;
+													 return !(OS::FileSortFunc::descend & sortFunc_order);
 												 });
 											 }).first
 									 ).endLine();
@@ -126,7 +128,7 @@ export namespace UI{
 												 buildCurrentPage();
 											 }, [this](UI::Button& button){
 												 button.setActivatedChecker([this](auto&){
-													 return !(OS::FileSortFunc::ascend & sortFunc_order);
+													 return OS::FileSortFunc::descend & sortFunc_order;
 												 });
 											 }).first
 									 ).endLine();
@@ -139,12 +141,13 @@ export namespace UI{
 
 					sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(), Icons::check,
 						 [this]{
-						 	if(confirmCallback && confirmCallback(selected) && parentDialog){
+						 	if(validFileChecker && validFileChecker(selected) && parentDialog){
+						 		if(confirmCallback)confirmCallback(std::move(selected));
 						 		parentDialog->destroy();
 						 	}
 						 }, [this](Button& b){
 							 b.disableChecker = [this](auto&){
-								 return (confirmCallback && !confirmCallback(selected));
+								 return (validFileChecker && !validFileChecker(selected));
 							 };
 						 }
 					 ).first).endLine();
@@ -188,7 +191,9 @@ export namespace UI{
 		void buildCurrentPage(){
 			// return;
 			if(!selectMenu) return;
-			selectMenu->clearChildrenSafely();
+			selectMenu->setFillparent();
+			selectMenu->setCellAlignMode(Align::Layout::top);
+			selectMenu->clearChildrenInstantly();
 
 			if(current.exist()){
 				selectMenu->add<Button>([this](Button& button){
@@ -199,10 +204,10 @@ export namespace UI{
 					button.add<Label>([this](Label& label){
 						label.setEmptyDrawer();
 						label.setFillparentX();
-						label.setWrap(true, true);
+						label.setWrap();
 						label.setText(std::format("{} {}", ">..", current.filenameFullPure()));
 						label.getGlyphLayout()->setSCale(0.5f);
-					}).wrapY().setMargin(Align::Spacing{.left = 10.0f});
+					}).expandY().setPad(Align::Spacing{.left = 10.0f});
 				}).wrapY().endLine().setAlign(Align::Layout::top_center);
 			}
 
@@ -223,7 +228,7 @@ export namespace UI{
 						            });
 
 						            std::ranges::sort(subs, OS::getFileSortter(sortFunc_order | sortFunc_type));
-						            for(auto [index, fi] : subs | std::ranges::views::enumerate){
+						            for(auto&& [index, fi] : subs | std::ranges::views::enumerate){
 							            buildSingle(table, fi);
 						            }
 					            } else{
@@ -232,10 +237,10 @@ export namespace UI{
 						            }
 					            }
 				            });
-			            }).setPad({.top = 5 * static_cast<float>(current.exist())}).setAlign(Align::Layout::top_center).
+			            }).setPad({.top = 5 * static_cast<float>(current.exist())}).
 			            fillParentY();
 
-			selectMenu->changed(ChangeSignal::notifySelf);
+			selectMenu->layout();
 		}
 
 		void buildSingle(Table& menu, const OS::File& file){
@@ -256,13 +261,13 @@ export namespace UI{
 				};
 
 				fButton.setCall([this, fileCopy = file](UI::Button&, int k, int){
-					gotoDirectory(fileCopy, true);
-
 					if(k == Ctrl::Mouse::LMB){
 						addSelected(fileCopy);
 					}else{
 						eraseSelected(fileCopy);
 					}
+
+					gotoDirectory(fileCopy, true);
 				});
 
 				fButton.setTooltipBuilder({
@@ -324,9 +329,14 @@ export namespace UI{
 		std::unordered_set<OS::File> selected{};
 		ext::StringHashSet<> suffixFilter{};
 
-		std::function<bool(decltype(selected)&)> confirmCallback{[](const decltype(selected)& files){
+		using ValidPred = std::function<bool(const decltype(selected)&)>;
+		using ConfirmCallback = std::function<void(std::add_rvalue_reference_t<decltype(selected)>)>;
+
+		ValidPred validFileChecker{[](const decltype(selected)& files){
 			return !files.empty();
 		}};
+
+		ConfirmCallback confirmCallback{};
 
 		void setDialog(UI::Dialog& dialog){
 			parentDialog = &dialog;
@@ -341,8 +351,8 @@ export namespace UI{
 			).first).endLine();
 		}
 
-		FileTreeSelector(){
-			defaultCellLayout.fillParentX().wrapY().setMargin(5);
+		FileSelector(){
+			defaultCellLayout.setMargin(5);
 			setCellAlignMode(Align::Layout::top_center);
 			Table::setEmptyDrawer();
 
@@ -353,8 +363,8 @@ export namespace UI{
 			if(file.isDir() || file == OS::File{}){
 				if(record) trace.push(current);
 				current = file;
-				buildCurrentPage();
 				clearSelected();
+				buildCurrentPage();
 			}
 		}
 
@@ -372,6 +382,60 @@ export namespace UI{
 			}
 
 			return true;
+		}
+	};
+
+	class OutputFileSelector : public FileSelector{
+		bool lastCreateResult{};
+		InputArea* nameInput{};
+
+		[[nodiscard]] bool hasCreator() const noexcept{
+			return nameInput != nullptr;
+		}
+
+		OS::File getFileToAdd() const{
+			std::filesystem::path path = nameInput->getClearedTextView();
+
+			if(!targetSuffix.empty()){
+				if(path.has_extension()){
+					path.replace_extension(std::filesystem::path{targetSuffix});
+				}else{
+					path += targetSuffix;
+				}
+			}
+
+			return current.subFile(path);
+		}
+
+		void buildCreator(){
+			endline().transferElem(Create::imageButton(UI::Icons::file_addition_one, [this]{
+
+			}, [this](UI::Button& button){
+				button.setCall([this]{
+					if(getFileToAdd().createFile()){
+						buildCurrentPage();
+					}
+				});
+				button.disableChecker = [this, &button](auto&){
+					return nameInput->getClearedTextView().empty() || getFileToAdd().exist();
+				};
+			}).first).setSlave();
+
+			nameInput = &add<UI::InputArea>([](auto& inputArea){
+				inputArea.ignoredText = {U'\n', U'*', U'<', U'>', U'"', U'?', U'\\', U'/', U'|', U':'};
+				inputArea.setFillparent();
+				inputArea.setWrap();
+				inputArea.setTextAlign(Align::Layout::left);
+				inputArea.setMaxTextLength(64);
+				inputArea.setTextScl(0.75f);
+				inputArea.setHintText(inputArea.getBundleEntry("input-name"));
+			}).setHeight(100.f).fillParentX().as<UI::InputArea>();
+		}
+
+	public:
+		std::string targetSuffix = "";
+		[[nodiscard]] OutputFileSelector() : FileSelector{}{
+			buildCreator();
 		}
 	};
 }

@@ -77,6 +77,10 @@ export namespace Graphic{
 			}
 		}
 
+		static void mixColor(const Color color, const float alpha) noexcept{
+			contextMixColor.set(color.r, color.g, color.b, alpha);
+		}
+
 		static void alpha(const float a = 1.0f) noexcept{ contextColor.setA(a); }
 
 		static void mixAlpha(const float a) noexcept{ contextMixColor.setA(a); }

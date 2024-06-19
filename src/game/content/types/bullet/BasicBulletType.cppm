@@ -80,6 +80,7 @@ namespace _{
 			Game::Content::basicBulletTypeSlow.initSpeed = 20;
 			Game::Content::basicBulletTypeSlow.maximumLifetime = 200;
 			Game::Content::basicBulletTypeSlow.trailUpdateSpacing = 3;
+			Game::Content::basicBulletType.initSpeed = 400;
 
 		}
 	}_t;

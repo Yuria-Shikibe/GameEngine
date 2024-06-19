@@ -19,22 +19,22 @@ export namespace Core{
 		void updateTask(){
 			while(!taskThread.get_stop_token().stop_requested()){
 				updateBeginSemaphore.acquire();
-				if(gameCore)gameCore->update(timer.delta());
+				if(gameCore)gameCore->update(timer.isPaused() ? Core::Tick{0.f} : timer.getUpdateDeltaTick());
 				updateEndSemaphore.release();
 			}
 		}
 
 		std::thread::id mainThreadID{};
 
-		float FPS_reload = 0;
+		Core::Sec FPS_reload = 0;
 		unsigned totalFrames = 0;
 		unsigned FPS_last = 0;
 
 		void updateFPS(){
-			FPS_reload += timer.getUpdateDelta();
+			FPS_reload += timer.getDeltaTick();
 
 			++totalFrames;
-			if(FPS_reload > 1.0f) {
+			if(FPS_reload > 1) {
 				FPS_last = totalFrames;
 				FPS_reload = 0.0f;
 				totalFrames = 0u;
@@ -91,7 +91,6 @@ export namespace Core{
 			if(camera){
 				camera->update(timer.delta());
 				audio->setListenerPosition(camera->getPosition().x, camera->getPosition().y);
-
 			}
 		}
 
@@ -101,6 +100,7 @@ export namespace Core{
 
 		void updateTaskEnd(){
 			updateEndSemaphore.acquire();
+			gameCore->updatePost(0);
 		}
 
 		constexpr Tick delta() const noexcept{

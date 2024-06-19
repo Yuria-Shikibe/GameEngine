@@ -18,9 +18,10 @@ import GL.Texture.Texture2D;
 import GL.Texture.TextureRegion;
 
 import ext.json.io;
-import ext.Json;
-import ext.Heterogeneous;
+import ext.json;
 export import Core.IO.Specialized;
+
+import ext.Heterogeneous;
 
 import GL;
 
@@ -266,7 +267,7 @@ namespace Assets::Load{
 			ext::json::JsonSrlContBase_string_map<PackData, true>::write(pageJsonValue.asObject()[ext::json::keys::Value], fragments);
 
 			std::ofstream stream{getDataFile().getPath()};
-			std::print(stream, "{:nf0}", pageJsonValue);
+			std::print(stream, "{}", pageJsonValue);
 		}
 
 		//TODO load by cache

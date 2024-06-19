@@ -34,7 +34,7 @@ export namespace Assets::Load{
 
 	class MainLoader : public LoadManager{
 		QuickInitFontLoader tempFontLoader{};
-		Assets::TexturePage tempPage{"font-load"};
+		Assets::TexturePage tempPage{"font-load", 2};
 
 		void pull_builtin();
 

@@ -164,6 +164,9 @@ namespace Core{
 			projection = porj;
 		}
 
+		/**
+		 * @warning Projection Should have a long enough lifetime
+		 */
 		void setProjection(const Geom::Matrix3D& porj){
 			projection = &porj;
 		}

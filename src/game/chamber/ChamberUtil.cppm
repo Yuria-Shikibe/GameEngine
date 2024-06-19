@@ -11,7 +11,7 @@ import Geom.Rect_Orthogonal;
 import Graphic.Color;
 import std;
 import ext.DynamicBuffer;
-import ext.Json;
+import ext.json;
 
 import Core.IO.Specialized;
 

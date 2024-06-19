@@ -1,6 +1,6 @@
-//
-// Created by Matrix on 2024/3/21.
-//
+module;
+
+#include <../src/code-gen/ReflectData_Builtin.hpp>
 
 export module Game.Entity.Collision;
 
@@ -12,6 +12,13 @@ import Geom.Matrix3D;
 import Math;
 import Geom;
 
+import ext.json;
+import ext.json.io;
+export import Core.IO.Specialized;
+
+import ext.StaticReflection;
+
+
 //TODO remove the IO to other place
 import OS.File;
 
@@ -19,10 +26,12 @@ import std;
 
 export namespace Game{
 
+	//TODO no mutable
+	//TODO json srl
 	/**
 	 * \brief Used of CCD precision, the larger - the slower and more accurate
 	 */
-	constexpr float ContinousTestScl = 1.5f;
+	constexpr float ContinousTestScl = 1.25f;
 
 	struct CollisionData {
 		Geom::Vec2 intersection{Geom::SNAN2};
@@ -33,80 +42,71 @@ export namespace Game{
 			return !intersection.isNaN();
 		}
 
-		void set(const Geom::Vec2 intersection, const int subjectSubBoxIndex, const int objectSubBoxIndex){
+		constexpr void set(const Geom::Vec2 intersection, const int subjectSubBoxIndex, const int objectSubBoxIndex) noexcept{
 			this->intersection = intersection;
 			this->objectSubBoxIndex = objectSubBoxIndex;
 			this->subjectSubBoxIndex = subjectSubBoxIndex;
 		}
 
-		void swapIndex(){
+		void swapIndex() noexcept{
 			std::swap(subjectSubBoxIndex, objectSubBoxIndex);
 		}
 	};
 
-	struct HitBoxFragmentData {
-		Geom::Transform localTrans{};
-		Geom::RectBox boxData{};
+	struct HitBoxFragment {
+		/** @brief Local Transform */
+		Geom::Transform trans{};
 
-		HitBoxFragmentData() = default;
+		/** @brief Raw Box Data */
+		Geom::RectBox box{};
 
-		HitBoxFragmentData(const Geom::Transform relaTrans, const Geom::RectBox& original)
-			: localTrans(relaTrans),
-			  boxData(original){
+		[[nodiscard]] constexpr HitBoxFragment() noexcept = default;
+
+		HitBoxFragment(const Geom::Transform relaTrans, const Geom::RectBox& original) noexcept
+			: trans(relaTrans),
+			  box(original){
 		}
 
 		void read(std::istream& reader){
-			reader.read(reinterpret_cast<char*>(&this->localTrans), sizeof Geom::Transform);
-			reader.read(reinterpret_cast<char*>(static_cast<Geom::RectBoxBrief*>(&this->boxData)), sizeof Geom::RectBoxBrief);
+			reader.read(reinterpret_cast<char*>(&this->trans), sizeof Geom::Transform);
+			reader.read(reinterpret_cast<char*>(static_cast<Geom::RectBoxIdentity*>(&this->box)), sizeof Geom::RectBoxIdentity);
 		}
 
 		void write(std::ostream& writer) const{ //TODO rectbox opt
-			writer.write(reinterpret_cast<const char*>(&this->localTrans), sizeof Geom::Transform);
-			writer.write(reinterpret_cast<const char*>(static_cast<const Geom::RectBoxBrief*>(&this->boxData)), sizeof Geom::RectBoxBrief);
+			writer.write(reinterpret_cast<const char*>(&this->trans), sizeof Geom::Transform);
+			writer.write(reinterpret_cast<const char*>(static_cast<const Geom::RectBoxIdentity*>(&this->box)), sizeof Geom::RectBoxIdentity);
 		}
 	};
 
-	struct HitBox {
-		struct BoxStateData : HitBoxFragmentData{
-			mutable Geom::RectBox temp{};
+	class HitBox {
+	public:
+		static constexpr std::string_view HitboxFileSuffix{".hitbox"};
 
-			constexpr void reset() const{
-				temp = boxData;
-			}
-
-			constexpr void trans(const Geom::Vec2 vec2) const{
-				temp.move(vec2, boxData);
-			}
-
-			BoxStateData() = default;
-
-			BoxStateData(const Geom::Transform& relaTrans, const Geom::RectBox& original, const Geom::RectBox& temp)
-				: HitBoxFragmentData(relaTrans, original),
-				  temp(temp){
-			}
-		};
-
-		std::vector<BoxStateData> hitBoxGroup{};
-		mutable Geom::Transform trans{};
-
-		//Bolow are transient fields
-
+	private:
 		/** @brief CCD-traces size.*/
-		int sizeTrace{};
+		int size_CCD{};
 		/** @brief CCD-traces spacing*/
-		Geom::Vec2 transitionCCD{};
-		/** @brief CCD-traces clamp size.*/
-		mutable std::atomic<int> sizeTraceClamped{};
+		Geom::Vec2 displacement_CCD{};
+		/** @brief CCD-traces clamp size. shrink only!*/
+		mutable std::atomic<int> sizeClamped_CCD{};
 
-		Geom::OrthoRectFloat maxTransientBound{};
+		// Geom::OrthoRectFloat maxBound_CCD{};
+
+	public:
+		Geom::RectBoxBrief wrapBound_CCD;
+
+
 		Geom::OrthoRectFloat maxBound{};
+
+		std::vector<HitBoxFragment> hitBoxGroup{};
+		Geom::Transform trans{};
 
 		HitBox() = default;
 
 		HitBox(const HitBox& other)
 			: hitBoxGroup(other.hitBoxGroup),
 			  trans(other.trans){
-			sizeTraceClamped = sizeTrace;
+			sizeClamped_CCD = size_CCD;
 		}
 
 		HitBox(HitBox&& other) noexcept
@@ -130,16 +130,57 @@ export namespace Game{
 		void updateHitbox(const Geom::Transform translation){
 			this->trans = translation;
 
-			for(auto& group : hitBoxGroup){
-				group.boxData.update(group.localTrans | trans);
-				group.reset();
+			const auto displayment = displacement_CCD * static_cast<float>(size_CCD);
+			const float ang = displayment.angle();
+
+			const float cos = Math::cosDeg(-ang);
+			const float sin = Math::sinDeg(-ang);
+
+			float minX = std::numeric_limits<float>::max();
+			float minY = std::numeric_limits<float>::max();
+			float maxX = std::numeric_limits<float>::lowest();
+			float maxY = std::numeric_limits<float>::lowest();
+
+			//TODO Simple object [box == 1] Optimization (for bullets mainly)
+
+			for(auto& boxData : hitBoxGroup){
+				boxData.box.update(boxData.trans | trans);
+
+				const std::array verts{
+					boxData.box.v0.copy().rotate(cos, sin),
+					boxData.box.v1.copy().rotate(cos, sin),
+					boxData.box.v2.copy().rotate(cos, sin),
+					boxData.box.v3.copy().rotate(cos, sin)};
+
+				for (auto [x, y] : verts){
+					minX = Math::min(minX, x);
+					minY = Math::min(minY, y);
+					maxX = Math::max(maxX, x);
+					maxY = Math::max(maxY, y);
+				}
 			}
 
-			updateMaxBound();
+			[[assume(minX <= maxX)]];
+			[[assume(minY <= maxY)]];
+
+			maxX += displayment.length();
+
+
+			wrapBound_CCD = Geom::RectBoxBrief{
+				Geom::Vec2{minX, minY}.rotate(cos, -sin),
+				Geom::Vec2{maxX, minY}.rotate(cos, -sin),
+				Geom::Vec2{maxX, maxY}.rotate(cos, -sin),
+				Geom::Vec2{minX, maxY}.rotate(cos, -sin)
+			};
+
+			wrapBound_CCD.updateBound();
+			wrapBound_CCD.updateNormal();
+
+			maxBound = wrapBound_CCD.maxOrthoBound.shrinkBy(-displayment);
 		}
 
 		[[nodiscard]] float getAvgSizeSqr() const{
-			return maxTransientBound.maxDiagonalSqLen() * 0.35f;
+			return maxBound.maxDiagonalSqLen() * 0.35f;
 		}
 
 		/**
@@ -157,96 +198,54 @@ export namespace Game{
 			const int seg = Math::ceil(std::sqrtf(dst2 / size2) * scl + 0.00001f);
 
 			velo.div(static_cast<float>(seg));
-			sizeTrace = seg + 1;
-			sizeTraceClamped = sizeTrace;
-			transitionCCD = -velo;
+			size_CCD = seg + 1;
+			sizeClamped_CCD = size_CCD;
+			displacement_CCD = -velo;
 		}
 
 		void scl(const Geom::Vec2 scl){
 			for (auto& data : hitBoxGroup){
-				data.boxData.offset *= scl;
-				data.boxData.sizeVec2 *= scl;
+				data.box.offset *= scl;
+				data.box.sizeVec2 *= scl;
 			}
 		}
 
-		void updateMaxBound(){
-			float minX = std::numeric_limits<float>::max();
-			float minY = std::numeric_limits<float>::max();
-			float maxX = std::numeric_limits<float>::lowest();
-			float maxY = std::numeric_limits<float>::lowest();
-
-			for(auto& boxData : hitBoxGroup){
-				minX = Math::min(minX, boxData.boxData.maxOrthoBound.getSrcX());
-				minY = Math::min(minY, boxData.boxData.maxOrthoBound.getSrcY());
-				maxX = Math::max(maxX, boxData.boxData.maxOrthoBound.getEndX());
-				maxY = Math::max(maxY, boxData.boxData.maxOrthoBound.getEndY());
-			}
-
-			maxBound.setVert(minX, minY, maxX, maxY);
-
-			maxTransientBound = maxBound;
-
-			if(sizeTrace == 0)return;
-
-			Geom::Vec2 trans = transitionCCD;
-			trans.scl(static_cast<float>(sizeCCD()));
-
-			if(trans.x > 0){
-				(void)maxBound.addWidth(trans.x);
-			}else{
-				maxBound.setSrcX(minX + trans.x);
-			}
-
-			if(trans.y > 0){
-				(void)maxBound.addHeight(trans.y);
-			}else{
-				maxBound.setSrcY(minY + trans.y);
-			}
-		}
-
-		void init(const std::vector<HitBoxFragmentData>& sample){
+		void init(const std::vector<HitBoxFragment>& sample){
 			hitBoxGroup.resize(sample.size());
 
-			for(int i = 0; i < sample.size(); ++i){
-				auto& boxData = hitBoxGroup.at(i);
-				auto& [tgtTrans, tgtBox] = sample.at(i);
-				boxData.temp = boxData.boxData = tgtBox;
-				boxData.localTrans = tgtTrans;
+			for(const auto& [index, boxData] : hitBoxGroup | std::views::enumerate){
+				auto& [tgtTrans, tgtBox] = sample.at(index);
+				boxData.box = tgtBox;
+				boxData.trans = tgtTrans;
 			}
 		}
 
 		void init(const Geom::RectBox& sample, const Geom::Transform trans = {}){
-			hitBoxGroup.emplace_back(trans, sample, sample);
-		}
-
-		constexpr void reset() const noexcept{
-			for(auto& group : hitBoxGroup){
-				group.reset();
-			}
+			hitBoxGroup.emplace_back(trans, sample);
 		}
 
 		[[nodiscard]] bool enableCCD() const noexcept{
-			return sizeTraceClamped > 0;
+			return sizeClamped_CCD > 0;
 		}
 
 		void clampCCDTo(const int index) const noexcept{
-			if(index>= sizeTraceClamped)return;
-			sizeTraceClamped = index;
+			if(index>= sizeClamped_CCD)return;
+			sizeClamped_CCD = index;
 		}
 
 		void resizeCCD(const int tgtSize) const noexcept{
-			sizeTraceClamped = tgtSize;
+			sizeClamped_CCD = tgtSize;
 		}
 
-		[[nodiscard]] int sizeCCD() const noexcept{
-			return Math::max(static_cast<int>(sizeTraceClamped), 1);
+		[[nodiscard]] int sizeCCD_clamped() const noexcept{ // always >= 1
+			return Math::max(sizeClamped_CCD.load(), 1);
 		}
 
 		[[nodiscard]] bool emptyCCD() const noexcept{
-			return sizeTraceClamped == 0;
+			return sizeClamped_CCD == 0;
 		}
 
-		[[nodiscard]] std::size_t size() const noexcept{
+		[[nodiscard]] constexpr std::size_t size() const noexcept{
 			return hitBoxGroup.size();
 		}
 
@@ -257,92 +256,148 @@ export namespace Game{
 		 * |    End              Initial
 		 * |   State              State
 		 * @endcode
-		 * @param transIndex [0, @link sizeCCD() @endlink)
+		 * @param transIndex [0, @link sizeCCD_clamped() @endlink)
 		 * @return Translation
 		 */
-		[[nodiscard]] constexpr Geom::Vec2 transTo(const int transIndex) const{
-			Geom::Vec2 trans = transitionCCD;
-			trans.scl(sizeTrace - transIndex - 1.0f);
-			for(auto& rectBox : hitBoxGroup){
-				rectBox.trans(trans);
-			}
+		[[nodiscard]] constexpr Geom::Vec2 getDisplacement_CCD(const int transIndex) const{
+			return displacement_CCD * (size_CCD - transIndex - 1.0f);
+		}
 
-			return trans;
+		static void transHitboxGroup(const std::span<HitBoxFragment> boxes, const Geom::Vec2 trans){
+			for (auto && box : boxes){
+				box.box.move(trans);
+			}
 		}
 
 		[[nodiscard]] Geom::Vec2 getAvgEdgeNormal(const CollisionData data) const{
-			return Geom::avgEdgeNormal(data.intersection, hitBoxGroup.at(data.objectSubBoxIndex).boxData);
+			return Geom::avgEdgeNormal(data.intersection, hitBoxGroup.at(data.objectSubBoxIndex).box);
 		}
 
 		[[nodiscard]] bool collideWithRough(const HitBox& other) const{
-			return maxBound.overlap(other.maxBound);
+			return wrapBound_CCD.overlapRough(other.wrapBound_CCD) && wrapBound_CCD.overlapExact(other.wrapBound_CCD);
 		}
 
 		[[nodiscard]] CollisionData collideWithExact(const HitBox& other, const bool requiresIntersection = true) const{
-			CollisionData collisionData{};
+			CollisionData collisionData{Geom::SNAN2};
 
-			int objectLastIndex = 0;
-			for(int subjectIndex = 0; subjectIndex < sizeCCD(); ++subjectIndex){
+			const auto subjectCCD_size = sizeCCD_clamped();
+			const auto objectCCD_size = other.sizeCCD_clamped();
+
+			Geom::OrthoRectFloat bound_subject = this->maxBound;
+			Geom::OrthoRectFloat bound_object = other.maxBound;
+
+			std::vector<Geom::RectBoxBrief> tempHitboxes{};
+			tempHitboxes.reserve(hitBoxGroup.size() + other.hitBoxGroup.size());
+
+			tempHitboxes.append_range(hitBoxGroup | std::views::transform(&HitBoxFragment::box));
+			tempHitboxes.append_range(other.hitBoxGroup | std::views::transform(&HitBoxFragment::box));
+
+			const auto rangeSubject = std::span{tempHitboxes.begin(), size()};
+			const auto rangeObject = std::span{tempHitboxes.begin() + size(), tempHitboxes.end()};
+
+			const auto maxTrans_subject = this->getDisplacement_CCD(0);
+			const auto maxTrans_object = other.getDisplacement_CCD(0);
+
+			//Move to initial stage
+			for (auto& box : rangeSubject){
+				box.move(maxTrans_subject);
+			}
+
+			for (auto& box : rangeObject){
+				box.move(maxTrans_object);
+			}
+
+			bound_subject.move(maxTrans_subject);
+			bound_object.move(maxTrans_object);
+
+			const auto trans_subject = -this->displacement_CCD;
+			const auto trans_object = -other.displacement_CCD;
+
+			int lastCheckedIndex_subject{};
+			int lastCheckedIndex_object{};
+
+			for(int lastIndex_object{}, index_subject{}; index_subject < subjectCCD_size; ++index_subject){
 				//Calculate Move Step
-				const float curRatio = (static_cast<float>(subjectIndex) + 1) / static_cast<float>(sizeCCD());
+				const float curRatio = (static_cast<float>(index_subject) + 1) / static_cast<float>(subjectCCD_size);
 				const int objectCurrentIndex = //The subject's size may shrink, cause the ratio larger than 1, resulting in array index out of bound
-					Math::min(
-						Math::ceil(curRatio * static_cast<float>(other.sizeCCD())),
-						other.sizeCCD());
+					Math::ceil(curRatio * static_cast<float>(objectCCD_size));
 
-				for(int objectIndex = objectLastIndex; objectIndex < objectCurrentIndex; ++objectIndex){
+				for(int index_object = lastIndex_object; index_object < objectCurrentIndex; ++index_object){
 					//Perform CCD approach
-					const auto transSubject = this->transTo(subjectIndex);
-					const auto transObject = other.transTo(objectIndex);
 
 					//Rough collision test 1;
-					if(!maxTransientBound.overlap(other.maxTransientBound, transSubject, transObject))continue;
+					if(!bound_subject.overlap(bound_object)){
+						bound_subject.move(trans_subject);
+						bound_object.move(trans_object);
+
+						continue;
+					}
+
+					bound_subject.move(trans_subject);
+					bound_object.move(trans_object);
+
+					//Rough test passed, move boxes to last valid position
+					for (auto& box : rangeSubject){
+						box.move(trans_subject * (index_subject - lastCheckedIndex_subject));
+					}
+
+					for (auto& box : rangeObject){
+						box.move(trans_object * (index_object - lastCheckedIndex_object));
+					}
 
 					//Collision Test
-					//Is a small local quad tree necessary?
-					//Should less than 6quads collide with 6quads
-					for(auto [subjectBoxIndex, subject] : this->hitBoxGroup | std::ranges::views::transform(&BoxStateData::temp) | std::views::enumerate){
-						for(auto [objectBoxIndex, object] : other.hitBoxGroup | std::ranges::views::transform(&BoxStateData::temp) | std::views::enumerate){
+					//TODO O(n^2) Is a small local quad tree necessary?
+					for(auto&& [subjectBoxIndex, subject] : rangeSubject | std::views::enumerate){
+						for(auto&& [objectBoxIndex, object] : rangeObject | std::views::enumerate){
+							if(subjectCCD_size > this->sizeCCD_clamped() || objectCCD_size > other.sizeCCD_clamped())return collisionData;
+
 							if(!subject.overlapRough(object) || !subject.overlapExact(object))continue;
+
 							if(requiresIntersection){
 								collisionData.set(Geom::rectAvgIntersection(subject, object), subjectBoxIndex, objectBoxIndex);
 							}else{
-								collisionData.intersection = Geom::ZERO;
+								collisionData.intersection = Geom::SNAN2;
 							}
 
-							this->clampCCDTo(subjectIndex);
-							other.clampCCDTo(objectIndex);
 
-							//TODO is this position clamp necessary？
-							this->trans.vec.mulAdd(transitionCCD, static_cast<float>(subjectIndex));
-							other.trans.vec.mulAdd(other.transitionCCD, static_cast<float>(objectIndex));
+							this->clampCCDTo(index_subject);
+							other.clampCCDTo(index_object);
 
 							return collisionData;
 						}
 					}
+
+					lastCheckedIndex_subject = index_subject;
+					lastCheckedIndex_object = index_object;
 				}
 
-				objectLastIndex = objectCurrentIndex;
+				lastIndex_object = objectCurrentIndex;
 			}
 
 			return collisionData;
 		}
 
+		//TODO shrink CCD bound
+		//TODO shrink requires atomic...
+		void fetchToLastClampPosition(){
+			this->trans.vec.addScaled(displacement_CCD, static_cast<float>(sizeClamped_CCD.load()));
+		}
+
 		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
 			return std::accumulate(hitBoxGroup.begin(), hitBoxGroup.end(),
-				1.0f, [mass, scale, lengthRadiusRatio](const float val, const BoxStateData& pair){
-				return val + pair.boxData.getRotationalInertia(mass, scale, lengthRadiusRatio) + mass * pair.localTrans.vec.length2();
+				1.0f, [mass, scale, lengthRadiusRatio](const float val, const HitBoxFragment& pair){
+				return val + pair.box.getRotationalInertia(mass, scale, lengthRadiusRatio) + mass * pair.trans.vec.length2();
 			});
 		}
 
 		[[nodiscard]] bool contains(const Geom::Vec2 vec2) const{
-			return std::ranges::any_of(hitBoxGroup, [vec2](const BoxStateData& data){
-				return data.boxData.contains(vec2);
+			return std::ranges::any_of(hitBoxGroup, [vec2](const auto& data){
+				return data.box.contains(vec2);
 			});
 		}
 	};
 
-	template <Concepts::Derived<HitBoxFragmentData> T>
+	template <Concepts::Derived<HitBoxFragment> T>
 	void flipX(std::vector<T>& datas){
 		const std::size_t size = datas.size();
 
@@ -350,27 +405,24 @@ export namespace Game{
 
 		for(int i = 0; i < size; ++i){
 			auto& dst = datas.at(i + size);
-			dst.localTrans.vec.y *= -1;
-			dst.localTrans.rot *= -1;
-			dst.localTrans.rot = Math::Angle::getAngleInPi2(dst.localTrans.rot);
-			dst.boxData.offset.y *= -1;
-			dst.boxData.sizeVec2.y *= -1;
+			dst.trans.vec.y *= -1;
+			dst.trans.rot *= -1;
+			dst.trans.rot = Math::Angle::getAngleInPi2(dst.trans.rot);
+			dst.box.offset.y *= -1;
+			dst.box.sizeVec2.y *= -1;
 		}
 	}
 
-	void scl(std::vector<HitBoxFragmentData>& datas, const float scl){
+	void scl(std::vector<HitBoxFragment>& datas, const float scl){
 		for (auto& data : datas){
-			data.boxData.offset *= scl;
-			data.boxData.sizeVec2 *= scl;
-			data.localTrans.vec *= scl;
+			data.box.offset *= scl;
+			data.box.sizeVec2 *= scl;
+			data.trans.vec *= scl;
 		}
 	}
 
 	void flipX(HitBox& datas){
 		flipX(datas.hitBoxGroup);
-		for (auto& stateData : datas.hitBoxGroup){
-			stateData.reset();
-		}
 	}
 
 	void read(const OS::File& file, HitBox& box){
@@ -390,3 +442,49 @@ export namespace Game{
 	}
 }
 
+export template<>
+struct ext::json::JsonSerializator<Geom::RectBox>{
+	static void write(ext::json::JsonValue& jsonValue, const Geom::RectBox& data){
+		ext::json::append(jsonValue, ext::json::keys::Size2D, data.sizeVec2);
+		ext::json::append(jsonValue, ext::json::keys::Offset, data.offset);
+		ext::json::append(jsonValue, ext::json::keys::Trans, data.transform);
+	}
+
+	static void read(const ext::json::JsonValue& jsonValue, Geom::RectBox& data){
+		ext::json::read(jsonValue, ext::json::keys::Size2D, data.sizeVec2);
+		ext::json::read(jsonValue, ext::json::keys::Offset, data.offset);
+		ext::json::read(jsonValue, ext::json::keys::Trans, data.transform);
+	}
+};
+
+export template<>
+struct ext::json::JsonSerializator<Game::HitBoxFragment>{
+	static void write(ext::json::JsonValue& jsonValue, const Game::HitBoxFragment& data){
+		ext::json::append(jsonValue, ext::json::keys::Trans, data.trans);
+		ext::json::append(jsonValue, ext::json::keys::Data, data.box);
+	}
+
+	static void read(const ext::json::JsonValue& jsonValue, Game::HitBoxFragment& data){
+		ext::json::read(jsonValue, ext::json::keys::Trans, data.trans);
+		ext::json::read(jsonValue, ext::json::keys::Data, data.box);
+	}
+};
+
+export template<>
+struct ext::json::JsonSerializator<Game::HitBox>{
+	static void write(ext::json::JsonValue& jsonValue, const Game::HitBox& data){
+		ext::json::JsonValue boxData{};
+		ext::json::JsonSrlContBase_vector<decltype(data.hitBoxGroup)>::write(boxData, data.hitBoxGroup);
+
+		ext::json::append(jsonValue, ext::json::keys::Data, std::move(boxData));
+		ext::json::append(jsonValue, ext::json::keys::Trans, data.trans);
+	}
+
+	static void read(const ext::json::JsonValue& jsonValue, Game::HitBox& data){
+		const auto& map = jsonValue.asObject();
+		const ext::json::JsonValue boxData = map.at(ext::json::keys::Data);
+		ext::json::JsonSrlContBase_vector<decltype(data.hitBoxGroup)>::read(boxData, data.hitBoxGroup);
+		ext::json::read(jsonValue, ext::json::keys::Trans, data.trans);
+		data.updateHitbox(data.trans);
+	}
+};

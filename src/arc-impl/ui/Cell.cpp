@@ -28,11 +28,11 @@ bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 		// allocatedBound.setShorterHeight(item->getHeight());
 	}
 
-	if(scaleRelativeToParentX){
+	if(scaleRelativeToParentX || isSlaveX()){
 		exportSize.x = allocatedBound.getWidth() * getHoriScale();
 	}
 
-	if(scaleRelativeToParentY){
+	if(scaleRelativeToParentY || isSlaveY()){
 		exportSize.y = allocatedBound.getHeight() * getVertScale();
 	}
 
@@ -44,16 +44,18 @@ bool UI::LayoutCell::applySizeToItem(){ // NOLINT(*-make-member-function-const)
 		exportSize.x = exportSize.y * getRatio_H2W();
 	}
 
+	// exportSize.clampX(0, allocatedBound.getWidth());
+	// exportSize.clampY(0, allocatedBound.getHeight());
+
 	item->setWidth_Quiet(Math::clampPositive(exportSize.x - getMarginHori()));
 	item->setHeight_Quiet(Math::clampPositive(exportSize.y - getMarginVert()));
 
-	const Geom::Vec2 currentSize = item->bound.getSize();
-	if(currentSize == Geom::maxVec2<float>){
-		item->setMaximumSize(allocatedBound.getSize());
-	}
+	// const Geom::Vec2 currentSize = item->bound.getSize();
+	// if(currentSize == Geom::maxVec2<float>){
+	// 	item->setMaximumSize(allocatedBound.getSize());
+	// }
 
 	item->changed(ChangeSignal::notifySubs, ChangeSignal::notifyParentOnly);
-	item->layout();
 
 	return allocatedBound.getSize() != originalSize;
 }
@@ -63,6 +65,8 @@ void UI::LayoutCell::applyAlignToItem(const Rect bound) const{
 }
 
 void UI::LayoutCell::applyPosToItem(Elem* parent) const{
+	item->layout();
+
 	applyAlignToItem(allocatedBound);
 
 	float xMove{};
@@ -83,6 +87,5 @@ void UI::LayoutCell::applyPosToItem(Elem* parent) const{
 
 	item->bound.move(xMove, yMove);
 	//TODO align...
-
 	item->calAbsoluteSrc(parent);
 }

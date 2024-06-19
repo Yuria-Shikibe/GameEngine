@@ -7,9 +7,7 @@ module ;
 export module Core.Camera;
 
 import ext.Concepts;
-import Graphic.Viewport;
 import Graphic.Resizeable;
-import Graphic.Viewport.Viewport_OrthoRect;
 import Geom.Rect_Orthogonal;
 import Geom.Vector2D;
 import Geom.Matrix3D;

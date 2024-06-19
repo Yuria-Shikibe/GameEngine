@@ -21,7 +21,7 @@ export namespace Math {
     template <typename T, Concepts::Number N, auto trans>
 		requires requires(){
     		requires std::is_pointer_v<T>;
-    		std::same_as<Geom::Rect_Orthogonal<N>&, std::invoke_result_t<decltype(trans), T>>;
+    		requires std::same_as<Geom::Rect_Orthogonal<N>&, std::invoke_result_t<decltype(trans), T>>;
 	    }
 	struct StripPacker2D {
     protected:

@@ -16,6 +16,7 @@ import Geom.Vector2D;
 using Rect = Geom::OrthoRectFloat;
 
 //TODO Using Pool to avoid heap allocation
+//TODO seperate table that has a layout and not
 export namespace UI {
 	template <Concepts::Derived<Elem> T>
 	struct ElemCreater{
@@ -86,12 +87,7 @@ export namespace UI {
 
 
 
-		template <typename Creater = ElemCreater<Elem>, Concepts::InvokeNullable<void(typename Creater::ElemType&)> Func = std::nullptr_t>
-			requires requires(Creater creater){
-				typename Creater::ElemType;
-				requires Concepts::Derived<typename Creater::ElemType, Elem>;
-				requires Concepts::Derived<Creater, ElemCreater<typename Creater::ElemType>>;
-			}
+		template <Concepts::SpecDeriveOf<ElemCreater> Creater = ElemCreater<Elem>, Concepts::InvokeNullable<void(typename Creater::ElemType&)> Func = std::nullptr_t>
 		LayoutCell& emplace(const Creater& creater, Func&& func = nullptr) {
 			using T = typename Creater::ElemType;
 			static_assert(requires(Creater c, T elem){
@@ -106,8 +102,8 @@ export namespace UI {
 				func(cell.as<T>());
 			}
 
-			if constexpr (requires(Creater c, LayoutCell _cell){
-				c(_cell);
+			if constexpr (requires(Creater c, LayoutCell cell_1){
+				c(cell_1);
 			}){
 				creater(cell);
 			}
@@ -115,8 +111,8 @@ export namespace UI {
 			return cell;
 		}
 
-		template <Concepts::Derived<Elem> T>
-		LayoutCell& add(std::invocable<T&> auto&& func, const unsigned depth = std::numeric_limits<unsigned>::max()) {
+		template <Concepts::Derived<Elem> T, std::invocable<T&> Func>
+		LayoutCell& add(Func&& func, const unsigned depth = std::numeric_limits<unsigned>::max()) {
 			LayoutCell& cell = tryAdd<T>(depth);
 			cell.applyLayout(defaultCellLayout);
 
@@ -145,16 +141,16 @@ export namespace UI {
 
 		LayoutCell& transferElem(Elem* elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
 			addChildren(elem, depth);
-			return cells.emplace_back(LayoutCell{.item = elem}).applyLayout(defaultCellLayout);
+			return cells.emplace_back(LayoutCell{elem}).applyLayout(defaultCellLayout);
 		}
 
 		LayoutCell& transferElem(std::unique_ptr<Elem>&& elem, const unsigned depth = std::numeric_limits<unsigned>::max()) { // NOLINT(*-non-const-parameter)
 			auto* ptr = addChildren(std::move(elem), depth);
-			return cells.emplace_back(LayoutCell{.item = ptr}).applyLayout(defaultCellLayout);
+			return cells.emplace_back(LayoutCell{ptr}).applyLayout(defaultCellLayout);
 		}
 
 		constexpr LayoutCell* getCellOf(Elem* elem){
-			if(const auto itr = std::ranges::find(cells, elem, &LayoutCell::item); itr != cells.end()){
+			if(const auto itr = std::ranges::find(cells, elem, &LayoutCell::getItem); itr != cells.end()){
 				return itr.operator->();
 			}
 
@@ -167,7 +163,7 @@ export namespace UI {
 			if(toRemove.empty() || children.empty())return;
 
 			std::erase_if(cells, [this](const decltype(cells)::value_type& cell) {
-				return toRemove.contains(cell.item);
+				return toRemove.contains(cell.getItem());
 			});
 			std::erase_if(children, [this](const decltype(children)::value_type& ptr) {
 				return toRemove.contains(ptr.get());

@@ -71,7 +71,7 @@ export namespace UI::Icons{
 
 		std::println(stream, "namespace UI::Icons{{");
 
-		std::println(stream, "\texport ext::StringMap<std::reference_wrapper<Icon>> iconMap{{}};");
+		std::println(stream, "\texport ext::StringHashMap<std::reference_wrapper<Icon>> iconMap{{}};");
 
 		for(auto& loadedIcon : loadedIcons){
 			std::string name = loadedIcon;
@@ -82,14 +82,14 @@ export namespace UI::Icons{
 
 
 		std::println(stream, "void loadIcons(Graphic::TextureAtlas& atlas){{");
-		std::println(stream, "\tusing namespace std::string_view_literals;");
+		std::println(stream, "\tusing namespace std::string_literals;");
 
 		for(auto& loadedIcon : loadedIcons){
 			std::string name = loadedIcon;
 			std::ranges::replace(name, '-', '_');
 
 			std::println(stream, "\t{}.wrapper = *atlas.find(atlas.getUIPage(), \"{}\");", name, loadedIcon);
-			std::println(stream, "\ticonMap.insert_or_assign(\"{}\"sv, {});", loadedIcon, name);
+			std::println(stream, "\ticonMap.insert_or_assign(\"{}\"s, {});", loadedIcon, name);
 		}
 
 		std::println(stream, "}}");

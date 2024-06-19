@@ -11,7 +11,7 @@ export namespace UI{
 		using Point = Geom::Vector2D<T>;
 		using Rect = Geom::Rect_Orthogonal<T>;
 
-		static constexpr Point InvalidPosValue{[]{
+		static constexpr Point InvalidPos{[]{
 			if constexpr (std::is_floating_point_v<T>){
 				return Geom::signalNanVec2<T>;
 			}else{
@@ -19,7 +19,7 @@ export namespace UI{
 			}
 		}()};
 
-		Point src{InvalidPosValue};
+		Point src{InvalidPos};
 
 		constexpr void setInvalid() noexcept{
 			if constexpr (std::is_floating_point_v<T>){

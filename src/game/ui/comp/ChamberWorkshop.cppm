@@ -43,7 +43,7 @@ namespace Game::Scene{
 			return progress.scl(MaxTileSize - 1).round<int>().add(1, 1);
 		}
 
-		UI::Screen* screen{};
+		UI::Viewport* screen{};
 		UI::Table* selectionTable{};
 		UI::SliderBar* slider{};
 
@@ -202,9 +202,9 @@ namespace Game::Scene{
 				// });
 			}).setSizeScale(0.2f, 0.1f).setMargin(4.0f).setAlign(Align::Layout::bottom_left);
 
-			screen = &UI::Table::add<UI::Screen>([](UI::Screen& screen){
+			screen = &UI::Table::add<UI::Viewport>([](UI::Viewport& screen){
 				screen.usesUIEffect = true;
-			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Layout::right).as<UI::Screen>();
+			}).setSizeScale(0.8f, 1.0f).setMargin(4.0f).setAlign(Align::Layout::right).as<UI::Viewport>();
 		}
 
 	public:

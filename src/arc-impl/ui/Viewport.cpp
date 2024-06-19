@@ -6,7 +6,7 @@ import Core;
 import Assets.Graphic;
 
 
-void UI::Screen::endDraw_noContextFallback() const{
+void UI::Viewport::endDraw_noContextFallback() const{
 
 	if(batchPtr){
 		(Core::batchGroup.*batchPtr)->flush();
@@ -25,11 +25,11 @@ void UI::Screen::endDraw_noContextFallback() const{
 	buffer.unbind();
 }
 
-void UI::Screen::draw() const{
+void UI::Viewport::draw() const{
 	Elem::draw();
 }
 
-void UI::Screen::beginDraw(std::unique_ptr<Core::Batch> Core::BatchGroup::* batchPtr) const{
+void UI::Viewport::beginDraw(std::unique_ptr<Core::Batch> Core::BatchGroup::* batchPtr) const{
 	this->batchPtr = batchPtr;
 
 	if(batchPtr){
@@ -45,14 +45,29 @@ void UI::Screen::beginDraw(std::unique_ptr<Core::Batch> Core::BatchGroup::* batc
 
 }
 
-void UI::Screen::endDraw() const{
+void UI::Viewport::draw_OrthoPort(){
+	matrix.setOrthogonal(0, 0, getValidWidth(), getValidHeight());
+	if(batchPtr){
+		(Core::batchGroup.*batchPtr)->flush();
+		(Core::batchGroup.*batchPtr)->setProjection(matrix);
+	}
+}
+
+void UI::Viewport::draw_CameraPort(){
+	if(batchPtr){
+		(Core::batchGroup.*batchPtr)->flush();
+		(Core::batchGroup.*batchPtr)->setProjection(camera.getWorldToScreen());
+	}
+}
+
+void UI::Viewport::endDraw() const{
 	endDraw_noContextFallback();
 
 	Core::renderer->contextFrameBuffer->bind();
 	Core::renderer->contextFrameBuffer->enableDrawAll();
 }
 
-void UI::Screen::drawContent() const{
+void UI::Viewport::drawContent() const{
 	using namespace Graphic;
 
 	{
@@ -95,23 +110,23 @@ void UI::Screen::drawContent() const{
 	}
 }
 
-void UI::Screen::beginCameraFocus(){
+void UI::Viewport::beginCameraFocus(){
 	Core::focus.camera.switchFocus(&camera);
 }
 
-void UI::Screen::endCameraFocus() const{
+void UI::Viewport::endCameraFocus() const{
 	if(Core::focus.camera.operator->() == &camera)Core::focus.camera.switchDef();
 }
 
-void UI::Screen::lockViewport() const noexcept{
+void UI::Viewport::lockViewport() const noexcept{
 	GL::lockViewport = true;
 }
 
-void UI::Screen::unlockViewport() const noexcept{
+void UI::Viewport::unlockViewport() const noexcept{
 	GL::lockViewport = false;
 }
 
-Core::Batch* UI::Screen::getBatch() const{
+Core::Batch* UI::Viewport::getBatch() const{
 	if(batchPtr){
 		return (Core::batchGroup.*batchPtr).get();
 	}

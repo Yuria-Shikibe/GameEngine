@@ -314,6 +314,7 @@ export namespace UI{
 		virtual void operator()(const TextCaret* caret) = 0;
 	};
 
+	//TODO ...
 	void TextCaret::draw() const{
 		// drawer->operator()(this);
 	}
@@ -710,12 +711,12 @@ export namespace UI{
 		void insertText(const Font::TextView text){
 			if(text.empty())return;
 
-			int remainSize = maxTextByteLength - static_cast<int>(glyphLayout->lastText.size());
+			const int remainSize = maxTextByteLength - static_cast<int>(glyphLayout->lastText.size());
 			if(remainSize <= 0)return;
 
 			auto view = text.substr(0, remainSize);
 
-			const auto charBegin = ext::gotoUnicodeHead(view.end() - 1);
+			const auto charBegin = ext::gotoUnicodeHead(std::prev(view.end()));
 			if(const unsigned length = ext::getUnicodeLength(*charBegin); length != view.end() - charBegin){
 				view = text.substr(0, remainSize - (view.end() - charBegin));
 			}
@@ -918,6 +919,18 @@ export namespace UI{
 
 		void informEscape(unsigned int codepoint, int mods) override{
 			onEsc();
+		}
+
+		Font::TextView getClearedTextView() const noexcept{
+			if(glyphLayout->ignore()){
+				return {};
+			}else if(glyphLayout->lastText.ends_with('\n')){
+				auto view = Font::TextView(glyphLayout->lastText);
+				view.remove_suffix(1);
+				return view;
+			}else{
+				return glyphLayout->lastText;
+			}
 		}
 
 		[[nodiscard]] Font::TextString& getHintText(){ return hintText; }

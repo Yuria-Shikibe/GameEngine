@@ -24,7 +24,7 @@ namespace Game::Draw{
 	void hitbox(const ::Game::HitBox& hitBox){
 		for(const auto& data : hitBox.hitBoxGroup){
 			Base::Fill::quad(Base::getContextTexture(),
-			                               data.boxData.v0, data.boxData.v1, data.boxData.v2, data.boxData.v3);
+			                               data.box.v0, data.box.v1, data.box.v2, data.box.v3);
 		}
 	}
 

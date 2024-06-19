@@ -59,12 +59,13 @@ export namespace Geom {
 		}
 
 		constexpr void move(const Vec2 trans, const QuadBox& other) noexcept{
-			v0.set(other.v0).add(trans);
-			v1.set(other.v1).add(trans);
-			v2.set(other.v2).add(trans);
-			v3.set(other.v3).add(trans);
+			this->operator=(other);
 
-			maxOrthoBound = other.maxOrthoBound;
+			v0.add(trans);
+			v1.add(trans);
+			v2.add(trans);
+			v3.add(trans);
+
 			maxOrthoBound.move(trans.x, trans.y);
 		}
 
@@ -78,20 +79,21 @@ export namespace Geom {
 		}
 
 		constexpr void move(const Vec2 vec2, const float scl) noexcept{
-			v0.mulAdd(vec2, scl);
-			v1.mulAdd(vec2, scl);
-			v2.mulAdd(vec2, scl);
-			v3.mulAdd(vec2, scl);
+			v0.addScaled(vec2, scl);
+			v1.addScaled(vec2, scl);
+			v2.addScaled(vec2, scl);
+			v3.addScaled(vec2, scl);
 
 			maxOrthoBound.move(vec2.x * scl, vec2.y * scl);
 		}
 
-		constexpr void updateBound(){
-			auto [xMin, xMax] = std::minmax({v0.x, v1.x, v2.x, v3.x});
-			auto [yMin, yMax] = std::minmax({v0.y, v1.y, v2.y, v3.y});
+		constexpr void updateBound() noexcept{
+			const auto [xMin, xMax] = std::minmax({v0.x, v1.x, v2.x, v3.x});
+			const auto [yMin, yMax] = std::minmax({v0.y, v1.y, v2.y, v3.y});
 
 			maxOrthoBound.setVert(xMin, yMin, xMax, yMax);
 		}
+
 
 		friend bool operator==(const QuadBox& lhs, const QuadBox& rhs) noexcept{
 			return lhs.v0 == rhs.v0
@@ -102,7 +104,7 @@ export namespace Geom {
 
 		friend bool operator!=(const QuadBox& lhs, const QuadBox& rhs) noexcept{ return !(lhs == rhs); }
 
-		[[nodiscard]] constexpr bool axisOverlap(const QuadBox& other, const Vec2& axis) const noexcept{
+		[[nodiscard]] constexpr bool axisOverlap(const QuadBox& other, const Vec2 axis) const noexcept{
 			float box1_min   = v0.dot(axis);
 			float box1_max   = box1_min;
 			float projection = v1.dot(axis);
@@ -205,7 +207,7 @@ export namespace Geom {
 		}
 	};
 
-	struct RectBoxBrief{
+	struct RectBoxIdentity{
 		/**
 		 * \brief x for rect width, y for rect height, static
 		 */
@@ -217,19 +219,8 @@ export namespace Geom {
 		Vec2 offset{};
 	};
 
-	struct RectBox : QuadBox, RectBoxBrief{
-		//Transient Fields
-
-		/**
-		 * \brief Box Origin Point
-		 * Should Be Mass Center if possible!
-		 */
-		Vec2 originPoint{};
-		/**
-		 * \brief Rect Rotation
-		 */
-		float rotation{0};
-
+	struct RectBoxBrief : QuadBox{
+		using QuadBox::QuadBox;
 		/**
 		 * \brief
 		 * Normal Vector for v0-v1, v2-v3
@@ -244,78 +235,12 @@ export namespace Geom {
 		 */
 		Vec2 normalV{};
 
-		using QuadBox::v0;
-		using QuadBox::v1;
-		using QuadBox::v2;
-		using QuadBox::v3;
-		using QuadBox::maxOrthoBound;
-		using QuadBox::axisOverlap;
-		using QuadBox::move;
-		using QuadBox::overlapRough;
-		using QuadBox::overlapExact;
-
-		constexpr RectBox& copyNecessary(const RectBox& other){
-			rotation = other.rotation;
-			originPoint = other.originPoint;
-			sizeVec2 = other.sizeVec2;
-			offset = other.offset;
-
-			return *this;
+		constexpr void updateNormal() noexcept{
+			normalU = v0 - v3;
+			normalV = v1 - v2;
 		}
 
-		constexpr void setSize(const float w, const float h) {
-			sizeVec2.set(w, h);
-		}
-
-		[[nodiscard]] constexpr Vec2 getNormalVec(const int index) const {
-			switch(index) {
-				case 0 : return -normalU;
-				case 1 : return normalV;
-				case 2 : return normalU;
-				case 3 : return -normalV;
-				default: return Geom::QNAN2;
-			}
-		}
-
-		/**
-		 * \param mass
-		 * \param scale Manually assign a correction scale
-		 * \param lengthRadiusRatio to decide the R(radius) scale for simple calculation
-		 * \brief From: [mr^2/4 + ml^2 / 12]
-		 * \return Rotational Inertia Estimation
-		 */
-		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
-			return sizeVec2.length2() * (scale + lengthRadiusRatio) * mass;
-		}
-
-		constexpr void update(const Transform transform){
-			update(transform.vec, transform.rot);
-		}
-
-		constexpr void update(const Vec2 pos, const float rot) {
-			originPoint = pos;
-			rotation = rot;
-
-			const float cos = Math::cosDeg(rotation);
-			const float sin = Math::sinDeg(rotation);
-
-			v0.set(offset).rotate(cos, sin);
-			v1.set(sizeVec2.x, 0).rotate(cos, sin);
-			v3.set(0, sizeVec2.y).rotate(cos, sin);
-			v2 = v1 + v3;
-
-			normalU = v3;
-			normalV = v1;
-
-			v0 += originPoint;
-			v1 += v0;
-			v2 += v0;
-			v3 += v0;
-
-			updateBound();
-		}
-
-		[[nodiscard]] constexpr bool overlapExact(const RectBox& other) const {
+		[[nodiscard]] constexpr bool overlapExact(const RectBoxBrief& other) const {
 			return
 				axisOverlap(other, normalU) && axisOverlap(other, normalV) &&
 				axisOverlap(other, other.normalU) && axisOverlap(other, other.normalV);
@@ -352,7 +277,127 @@ export namespace Geom {
 			}
 			return oddNodes;
 		}
+
+		[[nodiscard]] constexpr Vec2 getNormalVec(const int index) const {
+			switch(index) {
+				case 0 : return -normalU;
+				case 1 : return normalV;
+				case 2 : return normalU;
+				case 3 : return -normalV;
+				default: return Geom::QNAN2;
+			}
+		}
 	};
 
+	struct RectBox : RectBoxBrief, RectBoxIdentity{
+		/**
+		 * \brief Box Origin Point
+		 * Should Be Mass Center if possible!
+		 */
+		Transform transform;
 
+		using QuadBox::v0;
+		using QuadBox::v1;
+		using QuadBox::v2;
+		using QuadBox::v3;
+		using QuadBox::maxOrthoBound;
+		using QuadBox::axisOverlap;
+		using QuadBox::move;
+		using QuadBox::overlapRough;
+		using QuadBox::overlapExact;
+		using RectBoxBrief::overlapExact;
+
+		constexpr RectBox& copyNecessary(const RectBox& other){
+			transform = other.transform;
+			sizeVec2 = other.sizeVec2;
+			offset = other.offset;
+
+			return *this;
+		}
+
+		constexpr void setSize(const float w, const float h) {
+			sizeVec2.set(w, h);
+		}
+
+		/**
+		 * \param mass
+		 * \param scale Manually assign a correction scale
+		 * \param lengthRadiusRatio to decide the R(radius) scale for simple calculation
+		 * \brief From: [mr^2/4 + ml^2 / 12]
+		 * \return Rotational Inertia Estimation
+		 */
+		[[nodiscard]] constexpr float getRotationalInertia(const float mass, const float scale = 1 / 12.0f, const float lengthRadiusRatio = 0.25f) const {
+			return sizeVec2.length2() * (scale + lengthRadiusRatio) * mass;
+		}
+
+		constexpr void update(const Transform transform) noexcept{
+			update(transform.vec, transform.rot);
+		}
+
+		constexpr void update(const Vec2 pos, const float rot) noexcept{
+			transform.vec = pos;
+			transform.rot = rot;
+
+			const float cos = Math::cosDeg(transform.rot);
+			const float sin = Math::sinDeg(transform.rot);
+
+			v0.set(offset).rotate(cos, sin);
+			v1.set(sizeVec2.x, 0).rotate(cos, sin);
+			v3.set(0, sizeVec2.y).rotate(cos, sin);
+			v2 = v1 + v3;
+
+			normalU = v3;
+			normalV = v1;
+
+			v0 += transform.vec;
+			v1 += v0;
+			v2 += v0;
+			v3 += v0;
+
+			updateBound();
+		}
+
+		explicit operator RectBoxBrief() const noexcept{
+			return static_cast<RectBoxBrief>(*this);
+		}
+	};
+
+	RectBoxBrief genRectBoxBrief_byQuad(const Geom::OrthoRectFloat src, const Geom::Vec2 dir){
+		const float ang = dir.angle();
+
+		const float cos = Math::cosDeg(-ang);
+		const float sin = Math::sinDeg(-ang);
+
+		std::array verts{
+			src.vert_00().rotate(cos, sin),
+			src.vert_10().rotate(cos, sin),
+			src.vert_11().rotate(cos, sin),
+			src.vert_01().rotate(cos, sin)};
+
+		float minX = std::numeric_limits<float>::max();
+		float minY = std::numeric_limits<float>::max();
+		float maxX = std::numeric_limits<float>::lowest();
+		float maxY = std::numeric_limits<float>::lowest();
+
+		for (auto [x, y] : verts){
+			minX = Math::min(minX, x);
+			minY = Math::min(minY, y);
+			maxX = Math::max(maxX, x);
+			maxY = Math::max(maxY, y);
+		}
+
+		maxX += dir.length();
+
+		RectBoxBrief box{
+			Vec2{minX, minY}.rotate(cos, -sin),
+			Vec2{maxX, minY}.rotate(cos, -sin),
+			Vec2{maxX, maxY}.rotate(cos, -sin),
+			Vec2{minX, maxY}.rotate(cos, -sin)
+		};
+
+		box.updateBound();
+		box.updateNormal();
+
+		return box;
+	}
 }

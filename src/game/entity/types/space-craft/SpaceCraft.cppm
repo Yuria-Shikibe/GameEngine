@@ -192,13 +192,13 @@ export namespace Game {
 			}
 
 			//Loacl process
-			vel.vec.mulAdd(accel.vec, delta);
+			vel.vec.addScaled(accel.vec, delta);
 			vel.rot += accel.rot * delta;
 
 			vel.rot = Math::clampRange(vel.rot, angularVelocityLimit);
 			vel.vec.clampMax(trait->maximumSpeed * powerScale);
 
-			trans.vec.mulAdd(vel.vec, delta);
+			trans.vec.addScaled(vel.vec, delta);
 
 			if(controller->moveCommand.rotateActivated()){
 				trans.rot = Math::Angle::moveToward_signed(
@@ -281,9 +281,9 @@ export namespace Game {
 			Overlay::alpha();
 			Overlay::color(Graphic::Colors::RED);
 
-			for(const auto& data : intersectedPointWith | std::ranges::views::values) {
-				Overlay::Fill::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
-			}
+			// for(const auto& data : intersectedPointWith | std::ranges::views::values) {
+			// 	Overlay::Fill::rectOrtho(data.intersection.x - 2, data.intersection.y - 2, 4, 4);
+			// }
 
 			Overlay::Line::setLineStroke(1.0f);
 			Overlay::color(Graphic::Colors::MAGENTA);
@@ -293,7 +293,7 @@ export namespace Game {
 
 			for (auto& boxData : hitBox.hitBoxGroup){
 				constexpr Graphic::Color colors[]{Graphic::Colors::ROYAL, Graphic::Colors::PINK, Graphic::Colors::GREEN, Graphic::Colors::PURPLE};
-				auto& cur = boxData.boxData;
+				auto& cur = boxData.box;
 				for(int i = 0; i < 4; ++i) {
 					Overlay::color(colors[i]);
 					Overlay::Fill::rectOrtho(cur[i].x - 2, cur[i].y - 2, 4, 4);
@@ -312,12 +312,14 @@ export namespace Game {
 				Overlay::Line::setLineStroke(2);
 				Overlay::Line::quad(cur);
 
-				Overlay::Line::line(cur.v0, cur.originPoint, colors[0], Graphic::Colors::RED);
+				Overlay::Line::line(cur.v0, cur.transform.vec, colors[0], Graphic::Colors::RED);
 
 				Overlay::color(Graphic::Colors::RED);
-				Overlay::Fill::rectOrtho(cur.originPoint.x - 2, cur.originPoint.y - 2, 4, 4);
+				Overlay::Fill::rectOrtho(cur.transform.vec.x - 2, cur.transform.vec.y - 2, 4, 4);
 			}
 
+			Overlay::color(Graphic::Colors::YELLOW, 0.5f);
+			Game::Draw::hitbox<Overlay>(hitBox.wrapBound_CCD);
 
 			Overlay::color(Graphic::Colors::PURPLE);
 			Overlay::Fill::rectOrtho(hitBox.trans.vec.x - 2, hitBox.trans.vec.y - 2, 4, 4);

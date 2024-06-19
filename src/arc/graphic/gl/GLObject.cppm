@@ -66,6 +66,10 @@ export namespace GL{
 			swap(lhs.nameID, rhs.nameID);
 			swap(lhs.targetFlag, rhs.targetFlag);
 		}
+
+		[[nodiscard]] constexpr bool valid() const noexcept{
+			return nameID != 0;
+		}
 	};
 }
 export

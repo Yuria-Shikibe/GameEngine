@@ -10,6 +10,8 @@ export import OS.Ctrl.Bind.Constants;
 import ext.Heterogeneous;
 import Assets.Bundle;
 
+import ext.json.io;
+
 export namespace Ctrl{
 	namespace InstructionEntry{
 		constexpr std::string_view Unavaliable = "N/A";
@@ -319,6 +321,50 @@ template<>
 struct ::std::equal_to<Ctrl::OperationGroup>{
 	bool operator()(const Ctrl::OperationGroup& l, const Ctrl::OperationGroup& r) const noexcept{
 		return l.getName() == r.getName();
+	}
+};
+
+export
+template <>
+	struct ext::json::JsonSerializator<Ctrl::Operation>{
+	static void write(ext::json::JsonValue& jsonValue, const Ctrl::Operation& data){
+		jsonValue.asObject();
+		jsonValue.append("full", static_cast<ext::json::Integer>(data.customeBind.getFullKey()));
+		jsonValue.append("ignore", data.customeBind.isIgnoreMode());
+
+	}
+
+	static void read(const ext::json::JsonValue& jsonValue, Ctrl::Operation& data){
+		auto& map = jsonValue.asObject();
+		if(const auto val = map.tryFind("full")){
+			auto [k, a, m] = Ctrl::getSeperatedKey(val->as<int>());
+			data.setCustom(k, m);
+		}
+
+		if(const auto val = map.tryFind("ignore")){
+			data.customeBind.setIgnoreMode(val->as<bool>());
+		}
+	}
+};
+
+export
+template <>
+	struct ext::json::JsonSerializator<Ctrl::OperationGroup>{
+	using UmapIO = JsonSrlContBase_string_map<Ctrl::Operation, true>;
+
+	static void write(ext::json::JsonValue& jsonValue, const Ctrl::OperationGroup& data){
+		ext::json::JsonValue bindsData{};
+
+		UmapIO::write(bindsData, data.getBinds());
+
+		jsonValue.asObject();
+		jsonValue.append("binds", bindsData);
+	}
+
+	static void read(const ext::json::JsonValue& jsonValue, Ctrl::OperationGroup& data){
+		const ext::json::JsonValue* bindsData = jsonValue.asObject().tryFind("binds");
+
+		if(bindsData)UmapIO::read(*bindsData, data.getBinds());
 	}
 };
 

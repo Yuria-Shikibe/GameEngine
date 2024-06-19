@@ -12,6 +12,8 @@ import UI.ControlBindTable;
 
 import Assets.Ctrl;
 
+import std;
+
 export namespace UI{
 	class CtrlBindDialog : public Dialog{
 		UI::ControlBindTable* currentBindTable{nullptr};
@@ -49,7 +51,7 @@ export namespace UI{
 									t.setEmptyDrawer();
 								}).as<UI::ControlBindTable>();
 							});
-							button.setActivatedChecker([&, this](auto&){
+							button.setActivatedChecker([this, &group](auto&){
 								return group->getName() == currentSelectedName;
 							});
 						}).setHeight(80.0f).setPad({.bottom = 10.0f}).endLine();

@@ -56,20 +56,21 @@ export namespace Game::EntityManage{
 		buildTree({-10000, -10000, 20000, 20000});
 	}
 
-	void update(const float delta) {
+	void postRemove(){
 		drawables.processRemoves();
 		realEntities.processRemoves();
+	}
 
-		if(delta == 0.0F){
-			return;
+	void update(const float delta) {
+		if(delta != 0.0F){
+			entities.updateMain(delta);
+
+			updateTree();
+
+			realEntities.each([delta](const decltype(realEntities)::StoreType& t) {
+				t->updateCollision(delta);
+			});
 		}
-		entities.updateMain(delta);
-
-		updateTree();
-
-		realEntities.each([delta](const decltype(realEntities)::StoreType& t) {
-			t->updateCollision(delta);
-		});
 
 		mainTree.intersectRect(drawables.getViewPort(), [](RealityEntity& entity, const Geom::OrthoRectFloat& rect){
 			entity.calculateInScreen(rect);

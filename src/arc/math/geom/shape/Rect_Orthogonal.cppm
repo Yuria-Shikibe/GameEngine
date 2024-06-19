@@ -199,6 +199,24 @@ export namespace Geom{
 			return *this;
 		}
 
+		constexpr Rect_Orthogonal& shrinkBy(const typename Vector2D<T>::PassType directionAndSize) noexcept{
+			const T minX = Math::min(directionAndSize.x, width);
+			width -= minX;
+
+			if(directionAndSize.x > 0){
+				srcX += minX;
+			}
+
+			const T minY = Math::min(directionAndSize.y, height);
+			height -= minY;
+
+			if(directionAndSize.y > 0){
+				srcY += minY;
+			}
+
+			return *this;
+		}
+
 		constexpr Rect_Orthogonal& addHeight(const T y) noexcept requires Concepts::Signed<T> {
 			this->template setHeight<T>(height + y);
 

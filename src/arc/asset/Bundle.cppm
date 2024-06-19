@@ -2,7 +2,7 @@ module ;
 
 export module Assets.Bundle;
 
-import ext.Json;
+import ext.json;
 import std;
 import ext.Heterogeneous;
 import OS.File;
@@ -59,7 +59,7 @@ export namespace Assets{
 
 		static std::optional<std::string_view> find(const std::vector<std::string_view>& dir, const ext::json::Object* last){
 			if(dir.size() > 1){
-				for(auto cates : std::ranges::subrange{dir.begin(), dir.end() - 1}){
+				for(auto cates : std::ranges::subrange{dir.begin(), std::prev(dir.end())}){
 					if(const auto itr = last->find(cates); itr != last->end()){
 						if(itr->second.is<ext::json::Object>()){
 							last = &itr->second.asObject();

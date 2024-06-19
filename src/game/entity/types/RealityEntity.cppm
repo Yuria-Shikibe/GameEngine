@@ -70,6 +70,7 @@ export namespace Game {
 		RealityEntity* parent{nullptr};
 
 		//TODO no mutable
+		//TODO uses shared mutex?
 		/**
 		 * \brief Entity collided with self. Modifiy physics should only done to self as the const said.
 		 */
@@ -197,6 +198,7 @@ export namespace Game {
 				calCollideTo(entity, point, delatTick);
 			}
 
+			hitBox.fetchToLastClampPosition();
 			fetchToHitbox();
 		}
 
@@ -342,13 +344,13 @@ export namespace Game {
 			}
 
 			//Loacl process
-			vel.vec.mulAdd(accel.vec, delta);
+			vel.vec.addScaled(accel.vec, delta);
 			vel.rot += accel.rot * delta;
 
 			vel.rot = Math::clampRange(vel.rot, angularVelocityLimit);
 			vel.vec.clampMax(speedLimit);
 
-			trans.vec.mulAdd(vel.vec, delta);
+			trans.vec.addScaled(vel.vec, delta);
 
 			if(controller->moveCommand.rotateActivated()){
 				trans.rot = Math::Angle::moveToward_signed(
@@ -398,8 +400,9 @@ export namespace Game {
 			if(Math::abs(zLayer - object.zLayer) > collisionThickness + collisionThickness)return false;
 			if(deletable() || object.deletable() || this == &object)return false;
 			if(ignoreCollisionTo(object) || object.ignoreCollisionTo(*this))return false;
+
 			// if(subject->intersectedPointWith.contains(object))return false;
-			return true;
+			return hitBox.collideWithRough(object.hitBox);
 		}
 
 		// ReSharper disable once CppHidingFunction
@@ -407,7 +410,7 @@ export namespace Game {
 			const bool needInterscetPointCalculation_subject = requiresCollisionIntersection();
 			const bool needInterscetPointCalculation_object = requiresCollisionIntersection();
 
-			CollisionData data = hitBox.collideWithExact(object.hitBox, needInterscetPointCalculation_object || needInterscetPointCalculation_subject);
+			const CollisionData data = hitBox.collideWithExact(object.hitBox, needInterscetPointCalculation_object || needInterscetPointCalculation_subject);
 
 			if(data.valid()){
 				if(needInterscetPointCalculation_subject){
@@ -426,55 +429,8 @@ export namespace Game {
 		}
 
 		// ReSharper disable once CppHidingFunction
-		bool containsPoint(Geom::Vec2 point) const{
+		bool containsPoint(const Geom::Vec2 point) const{
 			return hitBox.contains(point);
-		}
-
-		//TODO abstract these to other classes
-		//TODO is this a good idea? this actually modifies many state of the entities
-		/**
-		 * @brief WARNING: this function may change the position of an entity enabling CCD!!!
-		 */
-		static bool exactInterscet(const RealityEntity& subject, const RealityEntity& object) {
-			const bool needInterscetPointCalculation_subject = subject.requiresCollisionIntersection();
-			const bool needInterscetPointCalculation_object = subject.requiresCollisionIntersection();
-
-			CollisionData data = subject.hitBox.collideWithExact(object.hitBox, needInterscetPointCalculation_object || needInterscetPointCalculation_subject);
-
-			if(data.valid()){
-				if(needInterscetPointCalculation_subject){
-					subject.addIntersection(&object, data);
-				}
-
-				// if(needInterscetPointCalculation_object){
-				// 	data.swapIndex();
-				// 	object->addIntersection(subject, data);
-				// }
-
-				return true;
-			}
-
-			return false;
-		}
-
-		static const Geom::OrthoRectFloat& getHitBoound(const RealityEntity& reality_entity) {
-			return reality_entity.hitBox.maxBound;
-		}
-
-		static bool roughInterscet(const RealityEntity& subject, const RealityEntity& object) {
-			if(Math::abs(subject.zLayer - object.zLayer) > subject.collisionThickness + subject.collisionThickness)return false;
-			if(subject.deletable() || object.deletable() || &subject == &object)return false;
-			if(subject.ignoreCollisionTo(object) || object.ignoreCollisionTo(subject))return false;
-			// if(subject->intersectedPointWith.contains(object))return false;
-			return true;
-		}
-
-		static bool pointInterscet(const RealityEntity& subject, const Geom::Vec2 point) {
-			return subject.hitBox.contains(point);
-		}
-
-		static bool within(const float dst, const RealityEntity& subject, const RealityEntity& object) {
-			return subject.trans.vec.within(object.trans.vec, dst);
 		}
 
 		static void checkStateValid(const RealityEntity& subject) {

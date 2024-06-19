@@ -284,7 +284,7 @@ export namespace Math {
 	}
 
 	/** Returns the next power of two. Returns the specified value if the value is already a power of two. */
-	constexpr int nextPowerOfTwo(int value) noexcept {
+	constexpr int nextPowerOfTwo(int value) noexcept { //bullshit, transform to std::has_single_bit
 		if(value == 0) return 1;
 		value--;
 		value |= value >> 1;
@@ -363,13 +363,21 @@ export namespace Math {
 		return {left, right};
 	}
 
-	template <Concepts::Number T>
-	constexpr T max(const T v1, const T v2) noexcept {
-		return v1 > v2 ? v1 : v2;
+	template <typename  T>
+		requires requires(T t){
+			requires std::is_trivial_v<T>;
+			{t < t} -> std::convertible_to<bool>;
+		}
+	constexpr T max(const T v1, const T v2) noexcept(noexcept(v2 < v1)) {
+		return v2 < v1 ? v1 : v2;
 	}
 
-	template <Concepts::Number T>
-	constexpr T min(const T v1, const T v2) noexcept {
+	template <typename  T>
+		requires requires(T t){
+		requires std::is_trivial_v<T>;
+			{t < t} -> std::convertible_to<bool>;
+		}
+	constexpr T min(const T v1, const T v2) noexcept(noexcept(v1 < v2)) {
 		return v1 < v2 ? v1 : v2;
 	}
 

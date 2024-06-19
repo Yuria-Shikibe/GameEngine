@@ -91,5 +91,13 @@ export namespace Geom{
 		[[nodiscard]] constexpr friend Transform operator|(Transform self, const Transform& parentRef){
 			return self |= parentRef;
 		}
+
+		[[nodiscard]] constexpr friend Geom::Vec2& operator|=(Geom::Vec2& vec, const Transform& transform){
+			return vec.rotate(transform.rot).add(transform.vec);
+		}
+
+		[[nodiscard]] constexpr friend Geom::Vec2 operator|(Geom::Vec2 vec, const Transform& transform){
+			return vec |= transform;
+		}
 	};
 }

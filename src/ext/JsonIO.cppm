@@ -1,6 +1,6 @@
 export module ext.json.io;
 
-export import ext.Json;
+export import ext.json;
 import ext.MetaProgramming;
 import ext.Owner;
 import ext.Base64;
@@ -21,8 +21,9 @@ namespace ext::json{
 
 	export
 	template <typename T>
-	inline constexpr bool jsonDirectSerializable = requires{
-		requires ext::isTypeComplteted<JsonSerializator<std::decay_t<T>>>;
+	inline constexpr bool jsonDirectSerializable = requires (JsonValue& j, T& t){
+		JsonSerializator<std::decay_t<T>>::write(j, t);
+		JsonSerializator<std::decay_t<T>>::read(j, t);
 	};
 }
 
@@ -168,6 +169,10 @@ export namespace ext::json{
 		return t;
 	}
 
+	void append(ext::json::JsonValue& jval, const std::string_view key, ext::json::JsonValue&& val){
+		jval.asObject().insert_or_assign(key, std::move(val));
+	}
+
 	template <typename T>
 	void append(ext::json::JsonValue& jval, const std::string_view key, const T& val){
 		jval.asObject().insert_or_assign(key, ext::json::getJsonOf(val));
@@ -296,14 +301,16 @@ export namespace ext::json{
 		static void write(ext::json::JsonValue& jsonValue, const Cont& data){
 			auto& val = jsonValue.asArray();
 			val.resize(data.size());
-			std::ranges::transform(data, val.begin(), ext::json::getJsonOf);
+			std::ranges::transform(data, val.begin(), []<typename T>(T&& t){
+				return ext::json::getJsonOf(std::forward<T>(t));
+			});
 		}
 
 		static void read(const ext::json::JsonValue& jsonValue, Cont& data){
 			if(auto* ptr = jsonValue.tryGetValue<ext::json::array>()){
 				data.resize(ptr->size());
 
-				for(auto& [index, element] : data | std::ranges::views::enumerate){
+				for(auto&& [index, element] : data | std::ranges::views::enumerate){
 					ext::json::getValueTo(element, ptr->at(index));
 				}
 			}

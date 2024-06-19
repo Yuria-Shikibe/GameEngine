@@ -93,7 +93,7 @@ export namespace GL{
 			// glTextureStorage2D(nameID, 1, GL_RGBA8, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 		}
 
-		[[nodiscard]] bool valid() const {
+		[[nodiscard]] bool localDataValid() const {
 			return localData != nullptr;
 		}
 
@@ -135,7 +135,7 @@ export namespace GL{
 		}
 
 		[[nodiscard]] std::unique_ptr<unsigned char[]> copyData() const{
-			if(!valid()) {
+			if(!localDataValid()) {
 				return loadGPUData();
 			}
 

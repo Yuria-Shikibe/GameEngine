@@ -136,7 +136,22 @@ export namespace ext{
 	};
 
 	template <typename Alloc = std::allocator<std::string>>
-	using StringHashSet = std::unordered_set<std::string, transparent::StringHasher, transparent::StringEqualComparator>;
+	struct StringHashSet : std::unordered_set<std::string, transparent::StringHasher, transparent::StringEqualComparator, Alloc>{
+	private:
+		using SelfType = std::unordered_set<std::string, transparent::StringHasher, transparent::StringEqualComparator, Alloc>;
+
+	public:
+		using SelfType::unordered_set;
+		using SelfType::insert;
+
+		decltype(auto) insert(const std::string_view string){
+			return this->insert(std::string(string));
+		}
+
+		decltype(auto) insert(const char* string){
+			return this->insert(std::string(string));
+		}
+	};
 
 	template <template<typename > typename Comp = std::less, typename Alloc = std::allocator<std::string>>
 	using StringSet = std::set<std::string, transparent::StringComparator<Comp>, Alloc>;

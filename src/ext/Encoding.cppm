@@ -112,16 +112,10 @@ export namespace ext{
 	 * @brief Warning: this function assume that inItr is always derreferenceable
 	 * @param inItr Search Pos
 	 */
-	[[nodiscard]] std::string::iterator gotoUnicodeHead(std::string::iterator inItr){
-		while(!isUnicodeHead(inItr.operator*())){
-			--inItr;
-		}
-
-		return inItr;
-	}
-
-	[[nodiscard]] std::string_view::iterator gotoUnicodeHead(std::string_view::iterator inItr){
-		while(!isUnicodeHead(inItr.operator*())){
+	template <std::contiguous_iterator Itr>
+		requires std::same_as<typename std::iterator_traits<Itr>::value_type, char>
+	[[nodiscard]] Itr gotoUnicodeHead(Itr inItr){
+		while(!ext::isUnicodeHead(inItr.operator*())){
 			--inItr;
 		}
 
