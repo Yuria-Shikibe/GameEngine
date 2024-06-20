@@ -13,11 +13,17 @@ import UI.Align;
 import ext.Concepts;
 import Geom.Vector2D;
 
-using Rect = Geom::OrthoRectFloat;
-
 //TODO Using Pool to avoid heap allocation
 //TODO seperate table that has a layout and not
+
+//TODO specified layout policy
+//TODO grid [auto re-layout after size changed]
+//TODO forward table [most simplized table]
+//TODO list table [simplized table]
+//TODO element sandbox [random layout, no overlap]
+//TODO stack layout [seperate false `relativeLayoutFormat` Table]
 export namespace UI {
+	//TODO move this to other place
 	template <Concepts::Derived<Elem> T>
 	struct ElemCreater{
 		using ElemType = T;
