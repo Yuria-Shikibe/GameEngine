@@ -264,6 +264,8 @@ namespace Game::Scene{
 		std::shared_ptr<Font::GlyphLayout> glyphLayout = Font::obtainLayoutPtr();
 		std::string specifiedMovement{};
 
+		bool saved{};
+
 		std::optional<float> getSpecMovement() const noexcept{
 			float val;
 			auto [ptr, ec] = std::from_chars(specifiedMovement.data(),
@@ -350,6 +352,22 @@ namespace Game::Scene{
 			selected.clear();
 		}
 
+		void duplicateSelected(){
+			std::list<EditBox> toCopy{};
+
+			for(const auto entity : selected){
+				auto& n = toCopy.emplace_back(*entity);
+				n.selected = true;
+				entity -> selected = false;
+			}
+
+			selected.clear();
+
+			selected.insert_range(toCopy | std::views::transform([](auto& t){return std::addressof(t);}));
+
+			boxes.append_range(std::move(toCopy));
+		}
+
 		void mirrowSelected(){
 			std::vector<EditBox> copy{};
 			copy.reserve(boxes.size());
@@ -373,7 +391,7 @@ namespace Game::Scene{
 					 sideMenu.setFillparent();
 					 sideMenu.setCellAlignMode(Align::Layout::top_center);
 
-					 sideMenu.add<UI::Table>([this](UI::Table& transTable){
+					 sideMenu.add<Table>([this](Table& transTable){
 						 transTable.setEmptyDrawer();
 						 transTable.defaultCellLayout.setMargin(2.f).fillParent();
 
@@ -406,9 +424,9 @@ namespace Game::Scene{
 
 										 b.setTooltipBuilder({
 												 .followTarget = TooltipFollowTarget::cursor,
-												 .builder = [name](UI::Table& hint){
-													 hint.setDrawer(UI::Styles::drawer_elem_s1_noEdge.get());
-													 hint.add<UI::Label>([name](UI::Label& l){
+												 .builder = [name](Table& hint){
+													 hint.setDrawer(Styles::drawer_elem_s1_noEdge.get());
+													 hint.add<Label>([name](Label& l){
 														 l.setText(l.getBundleEntry(name));
 														 l.setTextScl(0.75f);
 														 l.setWrap();
@@ -430,7 +448,7 @@ namespace Game::Scene{
 					 sideMenu.endline().emplace(Create::LineCreater{}).setHeight(4.f).setPad(
 						 {.bottom = 4.f, .top = 4.f}).fillParentX().endLine();
 
-					 sideMenu.add<UI::Table>([this](UI::Table& transTable){
+					 sideMenu.add<Table>([this](Table& transTable){
 						 transTable.setEmptyDrawer();
 						 transTable.defaultCellLayout.setMargin(2.f).fillParent();
 
@@ -465,9 +483,9 @@ namespace Game::Scene{
 
 										 b.setTooltipBuilder({
 												 .followTarget = TooltipFollowTarget::cursor,
-												 .builder = [name](UI::Table& hint){
-													 hint.setDrawer(UI::Styles::drawer_elem_s1_noEdge.get());
-													 hint.add<UI::Label>([name](UI::Label& l){
+												 .builder = [name](Table& hint){
+													 hint.setDrawer(Styles::drawer_elem_s1_noEdge.get());
+													 hint.add<Label>([name](Label& l){
 														 l.setText(l.getBundleEntry(name));
 														 l.setTextScl(0.75f);
 														 l.setWrap();
@@ -490,12 +508,12 @@ namespace Game::Scene{
 						 {.bottom = 4.f, .top = 4.f}).fillParentX().endLine();
 
 					 sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(),
-							 UI::Icons::inbox_upload_r,
+							 Icons::inbox_upload_r,
 							 [this]{
 								 getRoot()->showDialog(true, Create::OutputFileDialog{
 										 [this](OutputFileSelector& f){
-											 f.targetSuffix = Game::HitBox::HitboxFileSuffix;
-											 f.suffixFilter.insert(Game::HitBox::HitboxFileSuffix);
+											 f.targetSuffix = HitBox::HitboxFileSuffix;
+											 f.suffixFilter.insert(HitBox::HitboxFileSuffix);
 											 f.singleSelect = true;
 											 f.confirmCallback = [this](std::unordered_set<OS::File>&& files){
 												 saveFile = *files.begin();
@@ -507,11 +525,25 @@ namespace Game::Scene{
 					 ).fillParentX().setMargin(2.f).setYRatio(.5f).endLine();
 
 					 sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(),
-							 UI::Icons::inbox_download_r,
+							 Icons::down,
+							 [this]{
+							 	saveData();
+							 }, [this](Button& b){
+								 b.disableChecker = [this](auto&){
+									 return !saveFile.exist();
+								 };
+							 }).first
+					 ).fillParentX().setMargin(2.f).setYRatio(.5f).endLine();
+
+					sideMenu.endline().emplace(Create::LineCreater{.defColor = UI::Pal::LIGHT_GRAY}).setHeight(2.f).setPad(
+	{.bottom = 2.f, .top = 2.f}).fillParentX().endLine();
+
+					 sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(),
+							 Icons::code_download,
 							 [this]{
 								 getRoot()->showDialog(true, Create::BasicFileDialog{
 										 [this](FileSelector& f){
-											 f.suffixFilter.insert(Game::HitBox::HitboxFileSuffix);
+											 f.suffixFilter.insert(HitBox::HitboxFileSuffix);
 											 f.singleSelect = true;
 											 f.confirmCallback = [this](std::unordered_set<OS::File>&& files){
 												 saveFile = *files.begin();
@@ -526,16 +558,16 @@ namespace Game::Scene{
 						 {.bottom = 4.f, .top = 4.f}).fillParentX().endLine();
 
 					 sideMenu.transferElem(Create::imageButton(Styles::drawer_elem_s1_noEdge.get(),
-							 UI::Icons::blender_icon_image_data,
+							 Icons::blender_icon_image_data,
 							 [this]{
-								 getRoot()->showDialog(true, Create::BasicFileDialog{
+								 root->showDialog(true, Create::BasicFileDialog{
 										 [this](FileSelector& f){
 											 f.suffixFilter.insert(".png");
 											 f.singleSelect = true;
 											 f.confirmCallback = [this](std::unordered_set<OS::File>&& files){
 												 if(files.empty()) return;
 
-												 refImageTexture = GL::Texture2D{*files.begin()};
+												 this->refImageTexture = GL::Texture2D{*files.begin()};
 
 												 Geom::RectBox& box{refImageBound.box.cap.box};
 												 box.setSize(refImageTexture.getWidth(), refImageTexture.getHeight());
@@ -553,11 +585,11 @@ namespace Game::Scene{
 				 .fillParentY()
 				 .as<Table>();
 
-			screen = &add<UI::Viewport>([](UI::Viewport& section){
+			screen = &add<Viewport>([](Viewport& section){
 				// section.setEmptyDrawer();
-			}).fillParent().as<UI::Viewport>();
+			}).fillParent().as<Viewport>();
 
-			screen->getInputListener().on<UI::MouseActionPress>([this](const UI::MouseActionPress& e){
+			screen->getInputListener().on<MouseActionPress>([this](const MouseActionPress& e){
 				EditBox* hit{};
 
 				if(hasOp() && e.key == Ctrl::Mouse::LMB){
@@ -579,7 +611,12 @@ namespace Game::Scene{
 						quadTree.intersectPoint(screen->getCursorPosInScreen(), [&hit](EditBox& b){
 							if(!hit && !b.selected) hit = &b;
 						});
-						if(hit) addSelection(hit);
+						if(hit) switch(e.mode){
+							case Ctrl::Mode::Shift : addSelection(hit); break;
+							case Ctrl::Mode::None : clearSelected(); addSelection(hit); break;
+							default: break;
+						}
+
 						break;
 					}
 
@@ -940,6 +977,12 @@ namespace Game::Scene{
 					})
 				};
 
+			::Ctrl::Operation duplicate{
+				"duplicate", OS::KeyBind(Ctrl::Key::D, Ctrl::Act::Press, Ctrl::Mode::Shift, [this]{
+					duplicateSelected();
+				})
+			};
+
 			::Ctrl::Operation deleteSelection{
 					"deleteSelection", OS::KeyBind(Ctrl::Key::Delete, Ctrl::Act::Press, [this]{
 						deleteSelected();
@@ -1046,6 +1089,7 @@ namespace Game::Scene{
 						std::move(accurate_prs),
 						std::move(accurate_rls),
 						std::move(op_mirrow),
+						std::move(duplicate),
 					}
 				};
 
@@ -1095,7 +1139,7 @@ namespace Game::Scene{
 
 			// originTrans = {-100, 200, 40};
 
-			glyphLayout->setSCale(0.65f);
+			glyphLayout->setSCale(0.5f);
 
 			loadBinds();
 		}
@@ -1158,7 +1202,7 @@ namespace Game::Scene{
 				GL::TextureRegion wrap{&refImageTexture};
 				ext::GuardRef<const GL::TextureRegion*> _{Overlay::contextTexture, &wrap};
 
-				Overlay::color(UI::Pal::GRAY, .65f);
+				Overlay::color(UI::Pal::GRAY, .5f);
 				Overlay::mixColor(UI::Pal::GRAY, .1f);
 
 				Game::Draw::hitbox<Overlay>(refImageBound.box.snap.box);

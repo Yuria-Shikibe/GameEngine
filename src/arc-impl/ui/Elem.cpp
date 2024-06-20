@@ -14,7 +14,7 @@ void UI::Elem::passSound(const SoundSource sound) const{
 bool UI::Elem::layout_tryFillParent() noexcept{
 	if(parent) {
 		if(const Rect rect = parent->getFilledChildrenBound(this); rect != bound) {
-			setSrc(rect.getSrcX(), rect.getSrcY());
+			setSrc(rect.getSrc());
 			setSize(rect.getWidth(), rect.getHeight());
 			overrideChanged(false);
 			changed(ChangeSignal::notifySubs);

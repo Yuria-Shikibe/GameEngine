@@ -300,6 +300,12 @@ export namespace Geom{
 				other.srcY > srcY && other.srcY + other.height < srcY + height;
 		}
 
+		[[nodiscard]] constexpr bool containsLoose(const Rect_Orthogonal& other) const noexcept{
+			return
+				other.srcX >= srcX && other.getEndX() <= getEndX() &&
+				other.srcY >= srcY && other.getEndY() <= getEndY();
+		}
+
 		[[nodiscard]] constexpr bool contains(const Rect_Orthogonal& other) const noexcept{
 			return
 				other.srcX >= srcX && other.getEndX() < getEndX() &&

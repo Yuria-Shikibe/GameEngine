@@ -208,7 +208,8 @@ export namespace UI::Styles {
 		{
 			style_elem_s1_noEdge.operator*() = style_elem_s1.operator*();
 			style_elem_s1_noEdge->edge = {};
-			drawer_elem_s1_noEdge = std::make_unique<UI::StyleDrawer>(style_elem_s1_noEdge.get());;
+			// style_elem_s1_noEdge->margin.set(4.f);
+			drawer_elem_s1_noEdge = std::make_unique<UI::StyleDrawer>(style_elem_s1_noEdge.get());
 		}
 
 		UI::defDrawer = drawer_elem_s1.get();

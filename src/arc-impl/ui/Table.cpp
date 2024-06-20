@@ -53,9 +53,9 @@ void UI::Table::layoutRelative(){
 				currentLineScaleRequester.x++;
 			} else if(cell.isSlaveX()){
 
-			} else {
+			} else if(!cell.hasRatioFromHeight()){
 				auto& [size, priority] = maxSizeArr[rows() + curPos.x];
-				size = Math::max(size, cell.getDefWidth());
+				size = Math::max(size, cell.getDefWidth() + cell.getMarginHori());
 				priority = Math::max(priority, hard);
 			}
 
@@ -63,11 +63,12 @@ void UI::Table::layoutRelative(){
 				currentLineScaleRequester.y = 1;
 			} else if(cell.isSlaveY()){
 
-			} else {
+			} else if(!cell.hasRatioFromWidth()){
 				auto& [size, priority] = maxSizeArr[curPos.y];
-				size = Math::max(size, cell.getDefHeight());
+				size = Math::max(size, cell.getDefHeight() + cell.getMarginVert());
 				priority = Math::max(priority, hard);
 			}
+
 
 			expandX |= cell.modifyParentX;
 			expandY |= cell.modifyParentY;
@@ -244,13 +245,10 @@ void UI::Table::layoutRelative(){
 			cell.allocatedBound.setSize(maxSizeArr[curPosX_indexed].first, maxSizeArr[curPos.y].first);
 
 			cell.allocatedBound.setSrc(
-				currentSrc.x, currentSrc.y - cell.allocatedBound.getHeight() //Top src to Bottom src transform
+				currentSrc.x + cell.pad.left, currentSrc.y - cell.allocatedBound.getHeight() - cell.pad.top//Top src to Bottom src transform
 			);
 
-			const Geom::Vec2 thisPad{cell.pad.left, -cell.pad.top};
-
 			cell.applySizeToItem();
-			cell.allocatedBound.move(thisPad);
 
 			curPos.x++;
 			currentSrc.x += maxSizeArr[curPosX_indexed].first + cell.getPadHori();
@@ -267,7 +265,7 @@ void UI::Table::layoutRelative(){
 				currentMaxSize.setZero();
 
 				currentSrc.x = 0;
-				currentSrc.y -= maxSizeArr[curPos.y].first + maxYPad;
+				currentSrc.y -= (maxSizeArr[curPos.y].first + maxYPad);
 				maxYPad = 0;
 
 				curPos.y++;
@@ -330,10 +328,8 @@ void UI::Table::layout(){
 		layoutIrrelative();
 	}
 
-	Group::layout();
-
 	// layoutChildren();
-
+	//
 	// layoutChanged = false;
 	//
 	// if(relativeLayoutFormat){
@@ -341,8 +337,8 @@ void UI::Table::layout(){
 	// } else{
 	// 	layoutIrrelative();
 	// }
-	//
-	// layoutChildren();
+
+	Group::layout();
 
 	//
 	// Group::layout();
@@ -354,11 +350,22 @@ void UI::Table::drawContent() const{
 	// 	Rect rect{cell.allocatedBound};
 	// 	rect.move(absoluteSrc);
 	//
+	// 	Rect itemBound{cell.item->getBound().setSrc(cell.item->getAbsSrc())};
+	//
 	// 	using namespace Graphic;
 	// 	Draw::Overlay::color(Colors::YELLOW, 0.7f);
 	// 	Draw::Overlay::Line::setLineStroke(1.0f);
 	// 	Draw::Overlay::Line::rectOrtho(rect);
-	// 	Draw::Overlay::Line::line(absoluteSrc, absoluteSrc + border.bot_lft());
+	//
+	// 	Draw::Overlay::color(Colors::ORANGE, 0.67f);
+	// 	Draw::Overlay::Line::rectOrtho(itemBound);
+	//
+	// 	// Draw::Overlay::Line::line(absoluteSrc, cell.item->getAbsSrc());
+	//
+	// 	if(!rect.containsLoose(itemBound)){
+	// 		Draw::Overlay::color(Colors::RED_DUSK, 0.37f);
+	// 		Draw::Overlay::Fill::rectOrtho(Draw::Overlay::getContextTexture(), itemBound);
+	// 	}
 	// }
 
 	Group::drawContent();
