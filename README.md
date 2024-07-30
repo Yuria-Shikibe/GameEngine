@@ -1,12 +1,3 @@
-# 临时信息：
-本仓库暂时用于南京航空航天大学2023级C++程序设计课设用途
-
-本人学号162320129
-
-## 模块关系总览（.svg）
-![svg_img](D:\projects\GameEngine\doc-export\Core_Module_Relations.svg)
-
-
 # What will this project about and be
 
 ## Wrong Project Name Currently: This is not an engine at all!
